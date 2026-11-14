@@ -290,9 +290,11 @@
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   .passo output { min-width: 6.5rem; text-align: center; font-variant-numeric: tabular-nums; }
-  /* Botões compactos numa linha ("▶ Intro", "▶ 1ª", "▶ 3ª ⚑"); quebram de linha se faltar espaço. O que toca fica em destaque. */
+  /* Botões compactos ("▶ Intro", "▶ 1ª", "▶ 3ª ⚑") que dividem a linha inteira. O que toca fica em destaque. */
   .vezes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .vez { gap: 0.35rem; min-width: 48px; padding: 0 0.8rem; }
+  /* Cada botão ocupa uma fatia igual da linha (flex: 1 1 0). Com muitas vezes (até 8 + Intro), quebram de linha e
+     cada linha também se reparte por inteiro. */
+  .vez { flex: 1 1 0; gap: 0.35rem; min-width: 48px; padding: 0 0.4rem; }
 
   .vozes { display: grid; gap: 0.5rem; }
   .voz { display: grid; grid-template-columns: 48px minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }
