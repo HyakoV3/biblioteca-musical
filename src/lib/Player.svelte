@@ -116,7 +116,7 @@
       {#if comIntroducao}
         <button
           class="botao vez"
-          class:primario={ativa("intro")}
+          class:tocando={ativa("intro")}
           aria-pressed={ativa("intro")}
           aria-label={dicaDaParte("intro")}
           onclick={() => reproducao.alternar(hino, "intro")}
@@ -129,18 +129,20 @@
         {#each vezes as vez}
           <button
             class="botao vez"
-            class:primario={ativa(vez)}
+            class:tocando={ativa(vez)}
             aria-pressed={ativa(vez)}
             aria-label={dicaDaParte(vez)}
             onclick={() => reproducao.alternar(hino, vez)}
           >
             <span aria-hidden="true">{icone(vez)}</span>
-            {rotuloCurtoDaVez(vez)}{#if vez === totalVezes}<span aria-hidden="true"> ⚑</span>{/if}
+            {rotuloCurtoDaVez(vez)}{#if vez === totalVezes}<span class="flag" aria-hidden="true"> ⚑</span>{/if}
           </button>
         {/each}
       {/if}
     </div>
-    <p class="meta dica">{comFinalDisponivel ? t("vez.dica") : t("vez.dica_pausa")}</p>
+    <p class="meta dica">
+      {#if comFinalDisponivel}<span class="flag" aria-hidden="true">⚑</span> {/if}{comFinalDisponivel ? t("vez.dica") : t("vez.dica_pausa")}
+    </p>
   {/if}
 
   <div class="progresso-bloco">
@@ -275,7 +277,7 @@
   .tocar { flex: 1; min-height: 56px; font-size: 1.15rem; }
   .parar { min-height: 56px; }
   .progresso { height: 8px; border-radius: 4px; background: var(--borda); overflow: hidden; }
-  .preenchido { height: 100%; background: var(--acento); }
+  .preenchido { height: 100%; background: var(--ouro-linha); }
   .tempos { display: flex; justify-content: space-between; margin-top: 0.3rem; font-size: 0.85rem; color: var(--suave); font-variant-numeric: tabular-nums; }
   .dica { margin: 0; }
 

@@ -6,6 +6,8 @@
  * Contraste: rode `python3 tools/contraste.py` depois de mexer em qualquer cor.
  *   --borda           divisórias decorativas (não delimita controles)
  *   --borda-controle  limite de campos, botões, abas e trilhas (mínimo 3:1, WCAG 1.4.11)
+ *   --ouro            preenchimento da parte que toca (texto em --ouro-sobre)
+ *   --ouro-linha      linhas, barra de progresso e marca do final (no claro é mais escuro, para dar contraste)
  */
 :root {
   color-scheme: light dark;
@@ -21,6 +23,10 @@
   --perigo: #b42318;
   --sucesso: #1a7f37;
   --foco: #1768b3;
+  /* Dourado (do ícone): marca "onde estou na música". O azul fica para ações. */
+  --ouro: #f8b000;
+  --ouro-sobre: #10151d;
+  --ouro-linha: #946200;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -38,6 +44,9 @@
     --perigo: #ff928a;
     --sucesso: #56d364;
     --foco: #7bbcff;
+    --ouro: #f8b000;
+    --ouro-sobre: #10151d;
+    --ouro-linha: #f8b000;
   }
 }
 
@@ -59,4 +68,7 @@
   --perigo: #ff928a;
   --sucesso: #56d364;
   --foco: #7bbcff;
+  --ouro: #f8b000;
+  --ouro-sobre: #10151d;
+  --ouro-linha: #f8b000;
 }

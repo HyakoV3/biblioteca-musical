@@ -136,7 +136,7 @@ export const pt = {
   "vez.intro_curta": "Intro",
   "vez.tudo": "Tocar o hino todo",
   "vez.grupo": "Tocar só uma parte",
-  "vez.dica": "⚑ A última vez termina de forma diferente (o final). No hino todo há uma pausa de 2 segundos entre as partes.",
+  "vez.dica": "A última vez termina de forma diferente (o final). No hino todo há uma pausa de 2 segundos entre as partes.",
 };
 
 export type Chave = keyof typeof pt;

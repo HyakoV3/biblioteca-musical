@@ -136,5 +136,5 @@ export const es: Dicionario = {
   "vez.intro_curta": "Intro",
   "vez.tudo": "Tocar el himno completo",
   "vez.grupo": "Tocar solo una parte",
-  "vez.dica": "⚑ La última vez termina distinto (el final). En el himno completo hay una pausa de 2 segundos entre las partes.",
+  "vez.dica": "La última vez termina distinto (el final). En el himno completo hay una pausa de 2 segundos entre las partes.",
 };

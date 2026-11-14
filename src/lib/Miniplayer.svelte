@@ -76,5 +76,5 @@
   .titulo { overflow-wrap: anywhere; font-weight: 600; }
   .tempo { font-size: 0.8rem; color: var(--suave); font-variant-numeric: tabular-nums; }
   .fio { height: 4px; background: var(--borda); }
-  .preenchido { height: 100%; background: var(--acento); }
+  .preenchido { height: 100%; background: var(--ouro-linha); }
 </style>

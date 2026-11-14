@@ -21,10 +21,16 @@ usa cor fixa; todos usam estes nomes.
 | `--suave` | Texto secundário (legendas, rótulos) |
 | `--borda` | Divisórias e trilhas **decorativas** (não delimitam controles) |
 | `--borda-controle` | Limite de campos, botões, abas, listas e interruptores |
-| `--acento` / `--acento-texto` | Botão principal, aba selecionada, progresso; e o texto sobre ele |
+| `--acento` / `--acento-texto` | **Ações**: botão principal, links; e o texto sobre ele |
+| `--ouro` / `--ouro-sobre` | **Onde estou na música**: preenchimento da parte que toca (Intro, 1ª, 2ª...); e o texto sobre ele |
+| `--ouro-linha` | Linhas e marcas douradas: barra de progresso, aba selecionada, ⚑ do final e contorno da parte que toca. No claro é mais escuro (`#946200`) porque o `#f8b000` tem só 1,8:1 sobre o fundo claro |
 | `--perigo` | Ações destrutivas e avisos de erro |
 | `--sucesso` | Avisos de sucesso |
 | `--foco` | Anel de foco |
+
+## Cor de destaque: azul para agir, dourado para a posição
+
+O azul (`--acento`) continua nas **ações**. O dourado (o mesmo do ícone) marca **onde se está na música**: a parte que toca, a barra de progresso, a aba selecionada e o ⚑ do final. Prévia lado a lado em [`design/identidade/previa-dourado.png`](../design/identidade/previa-dourado.png).
 
 ## Contraste verificado
 
@@ -49,7 +55,10 @@ tema escuro têm os mesmos valores. Metas: **4,5:1** para texto e **3:1** para c
 | `borda-controle` / `superficie` | Limite de controles sobre cartões | 3.0:1 | 3.97:1 ✓ | 4.03:1 ✓ |
 | `foco` / `fundo` | Anel de foco sobre o fundo | 3.0:1 | 5.39:1 ✓ | 9.14:1 ✓ |
 | `foco` / `superficie` | Anel de foco sobre cartões | 3.0:1 | 5.73:1 ✓ | 7.88:1 ✓ |
-| `acento` / `borda` | Preenchimento da barra de progresso sobre a trilha | 3.0:1 | 4.23:1 ✓ | 4.95:1 ✓ |
+| `ouro-linha` / `borda` | Preenchimento da barra de progresso sobre a trilha | 3.0:1 | 3.87:1 ✓ | 5.29:1 ✓ |
+| `ouro-linha` / `fundo` | Marca do final e aba selecionada sobre o fundo | 4.5:1 | 4.93:1 ✓ | 9.77:1 ✓ |
+| `ouro-linha` / `superficie` | Marca do final e contorno da parte que toca sobre cartões | 4.5:1 | 5.24:1 ✓ | 8.42:1 ✓ |
+| `ouro-sobre` / `ouro` | Texto da parte que está tocando | 4.5:1 | 9.77:1 ✓ | 9.77:1 ✓ |
 
 A paleta de partida sugerida no início do redesenho tinha **bordas que reprovavam** como limite de
 componente (1,27:1 no claro e 1,59:1 no escuro). Por isso existe o token `--borda-controle`, separado da

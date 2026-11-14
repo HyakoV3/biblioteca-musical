@@ -144,7 +144,7 @@
     flex: 1; min-height: 48px; font-size: 1rem; background: transparent; color: var(--suave);
     border: 0; border-bottom: 3px solid transparent; cursor: pointer;
   }
-  [role="tab"][aria-selected="true"] { color: var(--texto); font-weight: 600; border-bottom-color: var(--acento); }
+  [role="tab"][aria-selected="true"] { color: var(--texto); font-weight: 600; border-bottom-color: var(--ouro-linha); }
   .estrofe { margin-bottom: 1.4rem; }
   .estrofe h2 { margin: 0 0 0.3rem; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--suave); }
   .estrofe p { margin: 0; font-size: 1.15rem; line-height: 1.7; overflow-wrap: anywhere; }

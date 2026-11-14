@@ -29,7 +29,10 @@ PARES = [
     ("borda-controle", "superficie", 3.0, "Limite de controles sobre cartões"),
     ("foco", "fundo", 3.0, "Anel de foco sobre o fundo"),
     ("foco", "superficie", 3.0, "Anel de foco sobre cartões"),
-    ("acento", "borda", 3.0, "Preenchimento da barra de progresso sobre a trilha"),
+    ("ouro-linha", "borda", 3.0, "Preenchimento da barra de progresso sobre a trilha"),
+    ("ouro-linha", "fundo", 4.5, "Marca do final e aba selecionada sobre o fundo"),
+    ("ouro-linha", "superficie", 4.5, "Marca do final e contorno da parte que toca sobre cartões"),
+    ("ouro-sobre", "ouro", 4.5, "Texto da parte que está tocando"),
 ]
 
 

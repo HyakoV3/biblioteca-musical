@@ -138,11 +138,11 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
       por `tools/ajustar-icones.py` (ícone adaptativo do Android com fundo e primeiro plano separados; ícones do iOS
       sem canal alfa). Verificado em arquivo e em prévia sob máscaras redonda, arredondada e "squircle". Favicon trocado.
 - [ ] **Ver o ícone no emulador** (o lançador e a lista de apps): falta reinstalar o app para o ícone novo aparecer.
-- [ ] Identidade visual além do ícone: hoje a cor de acento do app é azul (`#1768b3`) e o ícone é azul-marinho e
-      dourado (`#f8b000`). **Prévia feita** em `design/identidade/previa-dourado.png` (claro e escuro, hoje e com
-      dourado): o dourado marcaria "onde estou na música" (parte que toca, progresso, aba, ⚑ do final) e o azul
-      ficaria para ações. No claro o `#f8b000` tem só 1,8:1 sobre o fundo, então textos e linhas usam `#946200`
-      (4,9:1). **Aguardando a decisão do responsável.**
+- [x] **Identidade visual: dourado adotado** (decisão do responsável, 2026-11-14). O azul fica para **ações** e o
+      dourado do ícone (`#f8b000`) marca **onde se está na música**: parte que toca (Intro, 1ª, 2ª...), barra de
+      progresso, aba selecionada e ⚑ do final. Tokens `--ouro`, `--ouro-sobre` e `--ouro-linha` em `tema.css`; no
+      claro as linhas usam `#946200`, porque o `#f8b000` tem só 1,8:1 sobre o fundo. Contraste conferido por
+      `tools/contraste.py` (18 pares ok). Prévia: `design/identidade/previa-dourado.png`. **Falta ver no emulador.**
 - [ ] Ícone **monocromático** do Android 13+ (ícones temáticos).
 - [x] **Animações discretas** (até 200 ms), todas em `src/lib/movimento.css`: troca de tela com leve fade, avisos que
       entram, miniplayer que sobe, barra de progresso suave, resposta ao toque e transições de cor. Com "reduzir

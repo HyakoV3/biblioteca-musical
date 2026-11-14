@@ -58,6 +58,10 @@
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto); cursor: pointer;
   }
   :global(.botao.primario) { background: var(--acento); color: var(--acento-texto); border-color: var(--acento); font-weight: 600; }
+  /* A parte do hino que está tocando: dourado. O contorno escuro dá contraste também no tema claro. */
+  :global(.botao.tocando) { background: var(--ouro); color: var(--ouro-sobre); border: 2px solid var(--ouro-linha); font-weight: 600; }
+  :global(.flag) { color: var(--ouro-linha); font-weight: 700; }
+  :global(.botao.tocando .flag) { color: inherit; }
   :global(.botao.perigo) { color: var(--perigo); border-color: var(--perigo); }
   :global(.botao:disabled) { opacity: 0.5; cursor: not-allowed; }
 </style>

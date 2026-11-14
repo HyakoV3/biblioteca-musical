@@ -136,5 +136,5 @@ export const en: Dicionario = {
   "vez.intro_curta": "Intro",
   "vez.tudo": "Play the whole hymn",
   "vez.grupo": "Play only one part",
-  "vez.dica": "⚑ The last time ends differently (the final). The whole hymn has a 2-second pause between parts.",
+  "vez.dica": "The last time ends differently (the final). The whole hymn has a 2-second pause between parts.",
 };
