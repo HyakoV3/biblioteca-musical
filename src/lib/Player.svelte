@@ -111,8 +111,7 @@
 
   <div class="principal">
     <button
-      class="botao tocar"
-      class:primario={ativa("tudo") || !comPartes}
+      class="botao tocar primario"
       aria-pressed={comPartes ? ativa("tudo") : undefined}
       onclick={() => reproducao.alternar(hino, "tudo")}
     >
@@ -318,6 +317,7 @@
   /* Cada botão ocupa uma fatia igual da linha (flex: 1 1 0). Com muitas vezes (até 8 + Intro), quebram de linha e
      cada linha também se reparte por inteiro. */
   .vez { flex: 1 1 0; gap: 0.35rem; min-width: 48px; padding: 0 0.4rem; }
+  .dica .flag { margin-inline-end: 0.3em; }
 
   .vozes { display: grid; gap: 0.5rem; }
   .voz { display: grid; grid-template-columns: 48px minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }
@@ -340,8 +340,11 @@
   }
   .resumo { font-weight: 400; color: var(--suave); font-size: 0.9rem; }
   .lista-instrumentos { display: grid; gap: 0.6rem; padding: 0.2rem 0.9rem 0.9rem; }
-  .inst-linha { display: grid; grid-template-columns: minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }
+  /* minmax(0, 1fr) + largura limitada: sem isso, o nome mais longo ("Órgão de palhetas gravado (teste)") alarga o
+     seletor e ele passa da borda do painel. */
+  .inst-linha { display: grid; grid-template-columns: minmax(5.5rem, 8rem) minmax(0, 1fr); align-items: center; gap: 0.5rem; }
   select {
+    width: 100%; min-width: 0; max-width: 100%; text-overflow: ellipsis;
     min-height: 48px; font-size: 1rem; border-radius: 12px; padding: 0 0.5rem;
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
