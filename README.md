@@ -25,6 +25,7 @@ O código foi escrito do zero (clean room): nenhum código ou arquivo de outros 
   ([`docs/TRADUCOES.md`](docs/TRADUCOES.md)).
 
 Prioridades e próximas etapas: [`docs/roadmap-uxui-inicial.md`](docs/roadmap-uxui-inicial.md).
+Ideias para o futuro: [`docs/roadmap-ideas.md`](docs/roadmap-ideas.md).
 
 ## Desenvolvimento
 
