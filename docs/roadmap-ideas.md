@@ -41,16 +41,27 @@ O progresso e o miniplayer passariam a considerar a duração total (todas as pa
 
 ### Perguntas em aberto
 
-1. **Como o final está representado nos dados?** Nos 3 hinos de amostra (1, 283 e 398) **não há marcas de
-   repetição, volta ou salto** (ritornelo, volta 1/2, coda, D.C./D.S.), então não sabemos como um hino com
-   final aparece nos arquivos do MuseScore. Precisamos de pelo menos um hino com final como amostra, o que
-   depende da autorização do autor das transcrições para baixar mais arquivos.
+1. **Como o final está representado nos dados?** Nos 4 hinos de amostra (1, 276, 283 e 398) **não há marcas de
+   repetição, volta ou salto** (ritornelo, volta 1/2, coda, D.C./D.S.), então não sabemos com certeza como um
+   hino com final aparece nos arquivos do MuseScore. Precisamos de pelo menos um hino que o responsável
+   confirme ter final.
 
-   **Observação nos arquivos (verificada em 2026-11-14):** os três hinos têm um marcador de texto **`*`**
-   sempre no **compasso 5** (hino 1: 5 de 11 compassos; hino 283: 5 de 18; hino 398: 5 de 56), e os hinos 283
-   e 398 têm também o rótulo **"Coro"** (compassos 11 e 28). **Hipótese não confirmada:** o `*` pode marcar o
-   ponto onde o hino termina na passada do final. Faltam duas respostas do responsável: o que o `*` significa
-   no hinário impresso, e se ele aparece nos hinos que não têm coro e que têm a passada do final.
+   **Observação nos arquivos (verificada em 2026-11-14):** todos os quatro hinos têm um marcador de texto
+   **`*`**, mas a posição **varia** (uma versão anterior deste texto dizia "sempre no compasso 5", o que a
+   amostra do hino 276 desmentiu):
+
+   | Hino | Tem rótulo "Coro" | Compassos | Posição do `*` |
+   |---|---|---|---|
+   | 1 | não | 11 | compasso 5 (cerca de 45% do hino) |
+   | 276 | não | 8 | compasso 4 (50% do hino) |
+   | 283 | sim (compasso 11) | 18 | compasso 5 (início) |
+   | 398 | sim (compasso 28) | 56 | compasso 5 (início) |
+
+   Nos dois hinos **sem coro** o `*` fica por volta do **meio** do hino; nos dois **com coro** fica logo no
+   **início**, antes do rótulo "Coro". **Hipótese não confirmada:** o `*` marca o ponto onde o hino termina na
+   passada do final (nos hinos sem coro, a metade do hino). São só 4 hinos, então o padrão pode ser
+   coincidência. Faltam respostas do responsável: o que o `*` significa no hinário impresso, e se na última
+   passada dos hinos 1 e 276 a música termina nele.
 2. **O final é um trecho a mais no fim da partitura, ou uma volta alternativa (volta 1/2) que substitui o
    fim da passada?** Muda como o conversor precisa tratar.
 3. **O número de passadas é sempre igual ao de estrofes?** Há hinos com refrão, em que a estrofe 1
