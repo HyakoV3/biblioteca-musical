@@ -2,7 +2,8 @@
 """Ajusta os ícones gerados por `npm run tauri icon` para Android e iOS, a partir de design/icone/icone-origem.png.
 
 Faz duas coisas que o comando do Tauri não faz:
-  A) Android 8.0+: gera as camadas do ícone adaptativo (fundo + primeiro plano), detalhadas abaixo;
+  A) Android 8.0+: gera as camadas do ícone adaptativo (fundo + primeiro plano), detalhadas abaixo, e a camada
+     monocromática do Android 13+ (ícones temáticos: o sistema pinta a silhueta com a cor do tema do usuário);
   B) iOS: achata os ícones para RGB, sem canal alfa (a App Store recusa ícone com canal alfa).
 
 
@@ -19,7 +20,9 @@ O que faz:
   2. tira a moldura (anel dourado) e transforma o azul em transparência ("cor para alfa", como no GIMP);
   3. reduz o desenho para ~60% do lado, dentro da zona segura (a máscara mostra ~66% e a parte
      garantida é um círculo de ~61%);
-  4. grava ic_launcher_foreground.png em cada densidade e a cor em values/ic_launcher_background.xml.
+  4. grava ic_launcher_foreground.png em cada densidade e a cor em values/ic_launcher_background.xml;
+  5. grava ic_launcher_monochrome.png (a silhueta: só o canal alfa do primeiro plano, em preto) e o
+     mipmap-anydpi-v26/ic_launcher.xml que liga fundo, primeiro plano e monocromático.
 Requer Pillow e numpy.
 """
 from pathlib import Path
@@ -93,6 +96,23 @@ def main():
         pasta = RES / f"mipmap-{dens}"
         pasta.mkdir(parents=True, exist_ok=True)
         tela.resize((lado, lado), Image.LANCZOS).save(pasta / "ic_launcher_foreground.png", optimize=True)
+        # Monocromático (Android 13+): só importa o alfa; o sistema ignora a cor e pinta com a do tema.
+        alfa_mono = tela.getchannel("A").resize((lado, lado), Image.LANCZOS)
+        mono = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
+        mono.putalpha(alfa_mono)
+        mono.save(pasta / "ic_launcher_monochrome.png", optimize=True)
+
+    anydpi = RES / "mipmap-anydpi-v26"
+    anydpi.mkdir(parents=True, exist_ok=True)
+    (anydpi / "ic_launcher.xml").write_text(
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
+        '  <foreground android:drawable="@mipmap/ic_launcher_foreground"/>\n'
+        '  <background android:drawable="@color/ic_launcher_background"/>\n'
+        '  <monochrome android:drawable="@mipmap/ic_launcher_monochrome"/>\n'
+        '</adaptive-icon>\n',
+        encoding="utf-8",
+    )
 
     hexa = "#{:02X}{:02X}{:02X}".format(*fundo)
     (RES / "values" / "ic_launcher_background.xml").write_text(
