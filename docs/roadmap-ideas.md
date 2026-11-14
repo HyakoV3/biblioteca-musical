@@ -470,6 +470,48 @@ Timbres que lembrem mais o instrumento de verdade (flauta, clarinete, violino, �
 
 ---
 
+## I-08 — Mostrar a partitura no hino
+
+> **Origem:** sugestão do responsável: "como temos letras, mostrarmos a partitura também". Não estava no escopo
+> inicial. O formato já tem o campo opcional `partitura` (caminho de arquivo), mas nunca foi usado.
+
+### O que se deseja
+Uma aba **Partitura** no hino (ao lado de Ouvir e Letra) para o músico ler a música enquanto ouve.
+
+### Caminho recomendado (a confirmar com um teste pequeno)
+1. **Gerar imagens fora do app**, na conversão: uma ferramenta de linha de comando transforma cada `.mscx` em **SVG**
+   (um por página), por exemplo o MuseScore (`mscore -o hino.svg`). A partitura sai idêntica à do arquivo.
+2. **Empacotar** as imagens junto do `hinario.json`, usando o campo `partitura`.
+3. **Aba "Partitura"** com zoom e rolagem. SVG fica nítido em qualquer tamanho, o que ajuda quem tem baixa visão.
+4. **Extra, depois:** acompanhar a música tocando (cursor ou compasso destacado). É viável, porque o conversor já
+   sabe o instante de cada compasso.
+
+**Por que não desenhar a partitura a partir do JSON:** o JSON guarda só altura e duração. Faltam armadura, fórmula
+de compasso, acidentes, ligaduras, cifras e casas de volta. Reconstruir isso seria reinventar a roda.
+
+### Pontos de atenção
+- **Direitos:** as partituras vêm das mesmas transcrições do autor das transcrições, então a resposta dele vale aqui também. As
+  imagens ficam **fora do Git**, como as letras.
+- **Importação:** hoje o app importa um só JSON (limite de 20 MB). Com imagens, é preciso um **pacote de vários
+  arquivos** (um `.zip`). É a parte de maior trabalho.
+- **Tamanho:** 480 hinos em SVG podem somar dezenas de MB; avaliar compressão.
+- **Ferramenta:** o MuseScore **não está instalado** no computador de desenvolvimento. Alternativa sem instalar:
+  renderizar no próprio app com uma biblioteca como o OpenSheetMusicDisplay, mas exige converter antes para
+  MusicXML e é mais frágil. Pesquisar as duas opções antes de escolher (ver também I-01, "Alternativas
+  consideradas", onde o MuseScore em linha de comando já foi avaliado para outro fim).
+
+### Perguntas em aberto
+1. Instalar o MuseScore para o primeiro teste, ou avaliar a alternativa sem instalar?
+2. A aba Partitura deve aparecer só quando o hino tem partitura, ou sempre, com aviso?
+3. Vale já planejar o cursor acompanhando a música, ou fica para depois?
+
+### Critérios de aceitação (propostos)
+- A partitura de um hino de amostra aparece nítida na aba, com zoom e rolagem, no emulador e no desktop.
+- O pacote importa sem passar de um tamanho combinado e sem ir para o Git.
+- Com a fonte do sistema no máximo e nos temas claro, escuro e baixa visão, a aba continua utilizável.
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
