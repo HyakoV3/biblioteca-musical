@@ -133,7 +133,7 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
   Hinários já importados continuam válidos (os campos são opcionais), mas só ganham título e autoria reais se
   forem **regenerados e importados de novo**.
 
-**Etapa 5 — Polimento** — *em andamento (2026-11-14)*
+**Etapa 5 — Polimento** — *fechada em 2026-11-14 (animações validadas pelo responsável; sobram duas decisões visuais, abaixo)*
 - [x] **Ícone** (a versão plana, ver `design/icone/README.md`): gerado com o comando oficial `tauri icon` e ajustado
       por `tools/ajustar-icones.py` (ícone adaptativo do Android com fundo e primeiro plano separados; ícones do iOS
       sem canal alfa). Verificado em arquivo e em prévia sob máscaras redonda, arredondada e "squircle". Favicon trocado.
@@ -144,7 +144,7 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
 - [x] **Animações discretas** (até 200 ms), todas em `src/lib/movimento.css`: troca de tela com leve fade, avisos que
       entram, miniplayer que sobe, barra de progresso suave, resposta ao toque e transições de cor. Com "reduzir
       movimento" ligado no sistema **nada se move** (as cores mudam sem transição). `tools/verificar-movimento.py`
-      confere isso no código e foi testado contra violações de propósito. **Falta ver rodando** no emulador.
+      confere isso no código e foi testado contra violações de propósito. Validado pelo responsável no emulador.
 - [x] **Roteiro de teste de uso** com músicos: `docs/teste-de-uso.md` (12 tarefas, perguntas finais, como classificar).
 - [ ] **Aplicar o teste** com 3 a 5 músicos reais (depende do responsável).
 
