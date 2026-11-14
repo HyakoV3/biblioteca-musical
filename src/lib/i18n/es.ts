@@ -75,6 +75,7 @@ export const es: Dicionario = {
   "ajustes.idioma": "Idioma de la interfaz",
   "ajustes.biblioteca": "Biblioteca",
   "ajustes.fonte_atual": "Contenido actual: {nome} ({total})",
+  "ajustes.versao": "Versión {v}",
   "ajustes.sobre": "Acerca de",
   "ajustes.remover_titulo": "¿Quitar el contenido importado?",
   "ajustes.remover_texto": "Los himnos importados se borrarán de este dispositivo y la app volverá a mostrar solo el paquete de ejemplo. Puedes importar de nuevo más tarde.",

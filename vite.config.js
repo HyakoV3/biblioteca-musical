@@ -2,11 +2,29 @@ import { defineConfig } from "vite";
 import { sveltekit } from "@sveltejs/kit/vite";
 // @ts-expect-error type error without @types/node package
 import process from "node:process";
+// @ts-expect-error type error without @types/node package
+import { execSync } from "node:child_process";
+// @ts-expect-error type error without @types/node package
+import { readFileSync } from "node:fs";
 const host = process.env.TAURI_DEV_HOST;
+
+// Versão (de package.json) e commit do build, para a tela Ajustes mostrar qual build está instalado. O "+" no fim do
+// commit avisa que havia alterações não commitadas. Fora de um repositório git, o commit vira "sem-git".
+const versao = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf-8")).version;
+function commit() {
+  try {
+    const id = execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
+    const sujo = execSync("git status --porcelain", { stdio: ["ignore", "pipe", "ignore"] }).toString().trim() !== "";
+    return id + (sujo ? "+" : "");
+  } catch {
+    return "sem-git";
+  }
+}
 
 // https://vite.dev/config/
 export default defineConfig(() => ({
   plugins: [sveltekit()],
+  define: { __APP_VERSAO__: JSON.stringify(versao), __APP_COMMIT__: JSON.stringify(commit()) },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //

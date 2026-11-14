@@ -75,6 +75,7 @@ export const pt = {
   "ajustes.idioma": "Idioma da interface",
   "ajustes.biblioteca": "Biblioteca",
   "ajustes.fonte_atual": "Conteúdo atual: {nome} ({total})",
+  "ajustes.versao": "Versão {v}",
   "ajustes.sobre": "Sobre",
   "ajustes.remover_titulo": "Remover conteúdo importado?",
   "ajustes.remover_texto": "Os hinos importados serão apagados deste aparelho e o app voltará a mostrar só o pacote de exemplo. Você pode importar de novo depois.",

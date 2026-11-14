@@ -75,6 +75,7 @@ export const en: Dicionario = {
   "ajustes.idioma": "Interface language",
   "ajustes.biblioteca": "Library",
   "ajustes.fonte_atual": "Current content: {nome} ({total})",
+  "ajustes.versao": "Version {v}",
   "ajustes.sobre": "About",
   "ajustes.remover_titulo": "Remove imported content?",
   "ajustes.remover_texto": "The imported hymns will be deleted from this device and the app will show only the sample package again. You can import again later.",

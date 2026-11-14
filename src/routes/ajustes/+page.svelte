@@ -116,6 +116,7 @@
     <h2>{t("ajustes.sobre")}</h2>
     <p>{t("app.aviso")}</p>
     <p class="meta">BibliotecaMusical CCB · MIT</p>
+    <p class="meta">{t("ajustes.versao", { v: `${__APP_VERSAO__} (${__APP_COMMIT__})` })}</p>
   </section>
 </main>
 

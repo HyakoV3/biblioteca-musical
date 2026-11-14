@@ -526,6 +526,8 @@ decide **de ouvido**.
 6. O **flugelhorn não existe** no padrão General MIDI: decidir o substituto (trompete, trompa ou manter a síntese).
 7. **Comparação feita (2026-11-14):** o responsável achou o **órgão de tirantes (`drawbar_organ`) o mais parecido com o da
    igreja**, e ele vai na frente da lista. Seu volume estava baixo, e os ganhos por instrumento foram calibrados.
+   **Confirmado depois da calibração: "faz mais sentido esse de tirantes, agora ficou bom".** O órgão de tirantes é o
+   **escolhido** para o pacote de sons (os outros dois órgãos eram só para comparar).
    Antes disso: o responsável não sabe a "configuração" do órgão que a igreja usa. Para achar o mais parecido, comparar de ouvido
    outros órgãos do banco (`reed_organ`, `drawbar_organ`); cada um é mais um download de ~3 MB (pedir permissão).
 
@@ -710,9 +712,26 @@ cor dos tokens, nem a de baixa visão quando existir).
    mais e menos, e a seta dos cards.
 4. Ícone decorativo com `aria-hidden`; o nome acessível continua no botão (`aria-label`).
 
+### Prévia feita (2026-11-14)
+Prévia lado a lado em [`design/icones/previa-icones.png`](../design/icones/previa-icones.png): os 12 ícones, nos temas
+claro e escuro, em três conjuntos desse projeto, mais uma tira que imita o player (botão principal, partes com uma tocando em
+dourado, linha de voz). O `fluent-color` ficou de fora: esse projeto documenta que ele é voltado a objetos e marcas, sem
+equivalente para ícones de ação. Os desenhos vieram da API pública do Iconify (a mesma fonte do script desse projeto).
+
+| Conjunto | Licença | Cobre os 12? | Cor |
+|---|---|---|---|
+| `ic` (Google Material Icons, contorno) | Apache-2.0 | **Sim** | `currentColor`: **herda os temas** |
+| `material-symbols-light` (Google) | Apache-2.0 | **Sim** | `currentColor`: herda os temas |
+| `withicons-pastel` (Evergrow) | MIT | **Não**: falta o alto-falante ligado | **Cores fixas** (roxo, rosa, verde): ignora os temas, como os emojis de hoje |
+
+**Recomendação do assistente: `ic`.** Cobre tudo, herda a cor dos tokens (azul, dourado, escuro, e a baixa visão
+futura) e tem traço mais firme em tamanhos pequenos que o `material-symbols-light`, que é fino e leve (elegante, mas
+fraco a 20 px). O `withicons-pastel` não serve ao esquema azul e dourado nem à baixa visão (contraste não controlável).
+Decisão do responsável: **pendente**.
+
 ### Decisões que faltam
-1. **Qual conjunto de ícones?** O outro projeto do responsável oferece quatro; o responsável quer ver uma prévia (como foi com o dourado).
-2. **Licença do conjunto escolhido**, registrada nos créditos (a página de licenças dos sons da I-07 já precisa existir).
+1. **Qual conjunto?** (recomendação acima: `ic`.)
+2. **Créditos:** Apache-2.0 pede manter o aviso de copyright e a licença; vão na mesma página de créditos dos sons (I-07).
 3. **Reaproveitar o `icons.js` ou fazer um componente Svelte?** Recomendação: componente Svelte com o mesmo subset e o
    mesmo script de geração, porque o `icons.js` foi feito para HTML sem framework (observa o DOM e troca texto).
 
