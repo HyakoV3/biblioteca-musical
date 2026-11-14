@@ -3,12 +3,18 @@
 // static/sons/FluidR3_GM/ (fora do Git; ver docs/roadmap-ideas.md, I-07) e vêm do repositório
 // midi-js-soundfonts, de Benjamin Gleitzman.
 
+/**
+ * `ganho`: multiplicador de volume que iguala o som gravado ao da síntese equivalente. As amostras do banco vêm bem
+ * mais baixas que a síntese. Medido em 2026-11-14 (RMS de três notas, com a mesma cadeia de áudio): órgãos contra o
+ * "orgao_principal" (0,109), flauta contra "flauta_doce" (0,216) e clarinete contra "clarinete" (0,125); gravados:
+ * 0,052 / 0,047 / 0,040 / 0,050 / 0,065. Ganho = volume da síntese ÷ volume do gravado.
+ */
 export const REALISTAS = {
-  real_orgao: { arquivo: "church_organ" },
-  real_orgao_palheta: { arquivo: "reed_organ" },
-  real_orgao_tirantes: { arquivo: "drawbar_organ" },
-  real_flauta: { arquivo: "flute" },
-  real_clarinete: { arquivo: "clarinet" },
+  real_orgao: { arquivo: "church_organ", ganho: 2.1 },
+  real_orgao_palheta: { arquivo: "reed_organ", ganho: 2.3 },
+  real_orgao_tirantes: { arquivo: "drawbar_organ", ganho: 2.7 },
+  real_flauta: { arquivo: "flute", ganho: 4.3 },
+  real_clarinete: { arquivo: "clarinet", ganho: 1.9 },
 } as const;
 
 export type RealistaId = keyof typeof REALISTAS;

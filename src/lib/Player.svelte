@@ -290,7 +290,8 @@
     </div>
   </details>
 
-  <button class="botao secundario" onclick={redefinirVozes}>{t("player.redefinir")}</button>
+  <!-- Redefine também os instrumentos, que só mudam parado ou pausado (como "Restaurar padrão"). -->
+  <button class="botao secundario" disabled={!editavel} onclick={redefinirVozes}>{t("player.redefinir")}</button>
 </section>
 
 <style>

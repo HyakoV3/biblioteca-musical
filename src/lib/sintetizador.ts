@@ -4,7 +4,7 @@
 // Para mudar instrumento, andamento ou tom no meio do hino, `tocar` reagenda tudo a partir de uma posição em batidas.
 import { Soundfont } from "smplr";
 import { INSTRUMENTOS, PADRAO, type InstrumentoId, type Perfil, type SinteticoId } from "./instrumentos";
-import { ehRealista, urlDoRealista, type RealistaId } from "./realista";
+import { REALISTAS, ehRealista, urlDoRealista, type RealistaId } from "./realista";
 
 export type Nota = [inicio: number, duracao: number, midi: number];
 export type Voz = { nome: string; notas: Nota[] };
@@ -68,6 +68,7 @@ export class Sintetizador {
     let r = this.reais.get(chave);
     if (!r) {
       const saida = ctx.createGain();
+      saida.gain.value = REALISTAS[id].ganho; // iguala o volume ao da síntese equivalente
       r = { inst: Soundfont(ctx, { instrumentUrl: urlDoRealista(id), destination: saida, volume: 100 }), saida };
       this.reais.set(chave, r);
     }
