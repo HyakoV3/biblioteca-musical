@@ -23,8 +23,22 @@ pub struct Hino {
     pub letra: Vec<String>,
     #[serde(default)]
     pub partitura: Option<String>,
+    /// Andamento em batidas por minuto (padrão 90 na interface).
     #[serde(default)]
-    pub audio: Option<String>,
+    pub andamento: Option<u32>,
+    /// Notas de cada voz, tocadas por um sintetizador (não há gravações).
+    #[serde(default)]
+    pub vozes: Vec<Voz>,
+}
+
+/// Evento de nota: `[inicio_em_batidas, duracao_em_batidas, nota_midi]`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Nota(pub f32, pub f32, pub u8);
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Voz {
+    pub nome: String,
+    pub notas: Vec<Nota>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -75,6 +89,15 @@ mod testes {
         let h = ler(EXEMPLO).unwrap();
         assert_eq!(h.hinario.id, "exemplo");
         assert_eq!(h.hinos.len(), 3);
+        assert_eq!(h.hinos[0].vozes.len(), 2);
+        assert_eq!(h.hinos[0].vozes[0].notas[0], Nota(0.0, 1.0, 72));
+    }
+
+    #[test]
+    fn notas_sao_arrays_no_json() {
+        let v: Voz = serde_json::from_str(r#"{"nome":"S","notas":[[0,1.5,60]]}"#).unwrap();
+        assert_eq!(v.notas[0], Nota(0.0, 1.5, 60));
+        assert_eq!(serde_json::to_string(&v.notas[0]).unwrap(), "[0.0,1.5,60]");
     }
 
     #[test]
@@ -82,7 +105,8 @@ mod testes {
         let h = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":7,"titulo":"T"}]}"#)
             .unwrap();
         let hino = &h.hinos[0];
-        assert!(hino.letra.is_empty() && hino.tonalidade.is_none() && hino.audio.is_none());
+        assert!(hino.letra.is_empty() && hino.tonalidade.is_none());
+        assert!(hino.vozes.is_empty() && hino.andamento.is_none());
     }
 
     #[test]

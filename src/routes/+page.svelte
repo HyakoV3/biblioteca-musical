@@ -1,6 +1,8 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
+  import Player from "$lib/Player.svelte";
+  import type { Voz } from "$lib/sintetizador";
 
   type Hino = {
     numero: number;
@@ -8,7 +10,8 @@
     tonalidade?: string | null;
     letra: string[];
     partitura?: string | null;
-    audio?: string | null;
+    andamento?: number | null;
+    vozes: Voz[];
   };
   type Pacote = {
     hinario: { versao: number; hinario: { id: string; nome: string }; hinos: Hino[] };
@@ -57,6 +60,11 @@
     <article>
       <h2>{aberto.numero}. {aberto.titulo}</h2>
       {#if aberto.tonalidade}<p class="meta">Tonalidade: {aberto.tonalidade}</p>{/if}
+      {#if aberto.vozes.length}
+        {#key aberto.numero}
+          <Player vozes={aberto.vozes} andamentoInicial={aberto.andamento ?? 90} />
+        {/key}
+      {/if}
       {#each aberto.letra as linha}<p>{linha}</p>{:else}<p class="meta">Sem letra neste pacote.</p>{/each}
     </article>
   {:else}
