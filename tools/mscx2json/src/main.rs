@@ -120,6 +120,15 @@ struct Trilha {
     pendentes: Vec<(u8, usize)>,
 }
 
+/// Sílaba da letra com o instante (em batidas) da nota a que pertence.
+struct Silaba {
+    t: f64,
+    voz: usize,
+    verso: u32,
+    continua: bool, // "begin"/"middle": a palavra segue na próxima sílaba
+    texto: String,
+}
+
 struct Estado<'a> {
     andamento: Option<u32>,
     tuplos: Vec<f64>,
@@ -132,6 +141,9 @@ struct Estado<'a> {
     divisao: f64,
     /// Acordes por voz da pauta atual.
     saida: &'a mut BTreeMap<usize, Vec<Acorde>>,
+    /// Sílabas e respirações (instantes) da pauta atual.
+    silabas: &'a mut Vec<Silaba>,
+    respiracoes: &'a mut Vec<f64>,
 }
 
 fn voz_do(c: Node, est: &Estado) -> usize {
@@ -165,6 +177,7 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                     *t = v / est.divisao;
                 }
             }
+            "Breath" => est.respiracoes.push(*t),
             "endTuplet" => {
                 est.tuplos.pop();
             }
@@ -182,8 +195,20 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                     let midi: u8 = numero(nota, "pitch").ok_or("nota sem <pitch> válido")?;
                     notas.push((midi, liga_fim(nota), liga_inicio(nota)));
                 }
+                let voz = voz_do(c, est);
+                for l in c.children().filter(|x| x.has_tag_name("Lyrics")) {
+                    let sil = texto(l, "text").map(str::trim).filter(|t| !t.is_empty());
+                    if let Some(sil) = sil {
+                        est.silabas.push(Silaba {
+                            t: *t,
+                            voz,
+                            verso: numero(l, "no").unwrap_or(0),
+                            continua: matches!(texto(l, "syllabic"), Some("begin" | "middle")),
+                            texto: sil.to_string(),
+                        });
+                    }
+                }
                 if !notas.is_empty() {
-                    let voz = voz_do(c, est);
                     est.saida.entry(voz).or_default().push(Acorde { inicio: *t, dur, notas });
                 }
                 *t += dur;
@@ -281,54 +306,49 @@ fn dividir_em_vozes(camadas: Vec<Vec<Acorde>>, limite: Option<usize>) -> (Vec<Ve
     (saida, omitidos)
 }
 
-/// Extrai a letra da primeira pauta que tiver `<Lyrics>`. Cada estrofe (`<no>`, 0 = primeira)
-/// vira uma sequência de linhas; uma nova linha começa depois de cada respiração (`<Breath>`).
-/// Estrofes são separadas por uma linha vazia e a primeira linha de cada uma leva "N. ".
-fn extrair_letra(score: Node) -> Vec<String> {
-    let pauta = score
-        .children()
-        .filter(|c| c.has_tag_name("Staff") && c.children().any(|m| m.has_tag_name("Measure")))
-        .find(|p| p.descendants().any(|n| n.has_tag_name("Lyrics")));
-    let Some(pauta) = pauta else { return vec![] };
+/// Monta a letra a partir das sílabas, **ordenadas pelo tempo da nota** (e não pela ordem no
+/// arquivo, onde as camadas de uma pauta vêm uma depois da outra). Cada estrofe (`<no>`,
+/// 0 = primeira) vira uma sequência de linhas, com quebra a cada respiração. Estrofes são
+/// separadas por uma linha vazia e a primeira linha de cada uma leva "N. ". Se duas camadas
+/// trazem sílaba para o mesmo instante e estrofe, vale a da voz mais alta (menor número).
+fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> Vec<String> {
+    const EPS: f64 = 1e-6;
+    silabas.sort_by(|a, b| a.t.total_cmp(&b.t).then(a.voz.cmp(&b.voz)));
+    respiracoes.sort_by(|a, b| a.total_cmp(b));
 
     struct Estrofe {
         linhas: Vec<String>,
         espaco: bool,
         quebra_vista: usize,
+        ultimo_t: f64,
     }
     let mut estrofes: BTreeMap<u32, Estrofe> = BTreeMap::new();
-    let mut quebras = 0usize;
 
-    for n in pauta.descendants() {
-        match n.tag_name().name() {
-            "Breath" => quebras += 1,
-            "Chord" => {
-                for l in n.children().filter(|c| c.has_tag_name("Lyrics")) {
-                    let texto_sil = l.children().find(|c| c.has_tag_name("text")).and_then(|t| t.text());
-                    let Some(sil) = texto_sil.map(str::trim).filter(|t| !t.is_empty()) else { continue };
-                    let verso: u32 = numero(l, "no").unwrap_or(0);
-                    let e = estrofes.entry(verso).or_insert_with(|| Estrofe {
-                        linhas: vec![String::new()],
-                        espaco: false,
-                        quebra_vista: 0,
-                    });
-                    if quebras > e.quebra_vista {
-                        e.quebra_vista = quebras;
-                        if !e.linhas.last().is_some_and(|l| l.is_empty()) {
-                            e.linhas.push(String::new());
-                            e.espaco = false;
-                        }
-                    }
-                    let linha = e.linhas.last_mut().unwrap();
-                    if e.espaco && !linha.is_empty() {
-                        linha.push(' ');
-                    }
-                    linha.push_str(sil);
-                    e.espaco = !matches!(texto(l, "syllabic"), Some("begin" | "middle"));
-                }
-            }
-            _ => {}
+    for sil in silabas {
+        let e = estrofes.entry(sil.verso).or_insert_with(|| Estrofe {
+            linhas: vec![String::new()],
+            espaco: false,
+            quebra_vista: 0,
+            ultimo_t: f64::NEG_INFINITY,
+        });
+        if (sil.t - e.ultimo_t).abs() < EPS {
+            continue; // outra camada com a mesma sílaba no mesmo instante
         }
+        e.ultimo_t = sil.t;
+        let quebras = respiracoes.iter().filter(|&&r| r <= sil.t + EPS).count();
+        if quebras > e.quebra_vista {
+            e.quebra_vista = quebras;
+            if !e.linhas.last().is_some_and(|l| l.is_empty()) {
+                e.linhas.push(String::new());
+                e.espaco = false;
+            }
+        }
+        let linha = e.linhas.last_mut().unwrap();
+        if e.espaco && !linha.is_empty() {
+            linha.push(' ');
+        }
+        linha.push_str(&sil.texto);
+        e.espaco = !sil.continua;
     }
 
     let mut saida = vec![];
@@ -405,6 +425,7 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
         .unwrap_or(480.0);
     let mut vozes: Vec<Voz> = vec![];
     let mut avisos: Vec<String> = vec![];
+    let mut letra: Vec<String> = vec![];
     let mut andamento = None;
 
     let pautas = score
@@ -416,6 +437,8 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
         let (mut sig_n, mut sig_d) = (4.0f64, 4.0f64);
         let mut inicio_compasso = 0.0;
         let mut da_pauta: BTreeMap<usize, Vec<Acorde>> = BTreeMap::new();
+        let mut silabas: Vec<Silaba> = vec![];
+        let mut respiracoes: Vec<f64> = vec![];
 
         for compasso in pauta.children().filter(|c| c.has_tag_name("Measure")) {
             if let Some(ts) = compasso.descendants().find(|n| n.has_tag_name("TimeSig")) {
@@ -451,6 +474,8 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
                     voz_base: voz,
                     divisao,
                     saida: &mut da_pauta,
+                    silabas: &mut silabas,
+                    respiracoes: &mut respiracoes,
                 };
                 let mut t = inicio_compasso;
                 percorrer(no, &mut t, &mut est)?;
@@ -459,6 +484,9 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
             inicio_compasso += comp;
         }
 
+        if letra.is_empty() && !silabas.is_empty() {
+            letra = montar_letra(silabas, respiracoes);
+        }
         let base = if nome_parte.is_empty() { format!("Voz {id}") } else { nome_parte.clone() };
         let sufixo = if total > 1 { format!(" (pauta {pos_pauta})") } else { String::new() };
         let partes: Vec<&str> = base.split(" e ").collect();
@@ -501,7 +529,6 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
         .map(String::from)
         .unwrap_or_else(|| format!("Hino {numero_hino}"));
 
-    let letra = extrair_letra(score);
     Ok(Hino { numero: numero_hino, titulo, andamento, vozes, letra, avisos })
 }
 
@@ -786,6 +813,35 @@ mod testes {
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap();
         assert_eq!(h.letra, vec!["1. bala", "um", "", "2. la lá", "dois"]);
         assert!(para_json(&h)["letra"].is_array());
+    }
+
+    #[test]
+    fn letra_segue_o_tempo_e_nao_a_ordem_no_arquivo() {
+        // Voz 1: pausa de mínima e, na batida 2, "c". Depois <tick>0 e a camada 2 traz "a" (t=0)
+        // e "b" (t=1): no arquivo vêm DEPOIS de "c", mas no tempo vêm antes.
+        let l = |t: &str| format!("<Lyrics><text>{t}</text></Lyrics>");
+        let ch = |t: &str, p: u8, extra: &str| {
+            format!("<Chord>{extra}<durationType>quarter</durationType>{}<Note><pitch>{p}</pitch></Note></Chord>", l(t))
+        };
+        let c = format!(
+            "{C44}<Rest><durationType>half</durationType></Rest>{}<tick>0</tick>{}{}",
+            ch("c", 60, ""),
+            ch("a", 62, "<track>1</track>"),
+            ch("b", 64, "<track>1</track>"),
+        );
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap();
+        assert_eq!(h.letra, vec!["1. a b c"]);
+    }
+
+    #[test]
+    fn letra_duplicada_em_duas_camadas_vale_uma_vez() {
+        let l = |t: &str| format!("<Lyrics><text>{t}</text></Lyrics>");
+        let ch = |t: &str, p: u8, extra: &str| {
+            format!("<Chord>{extra}<durationType>quarter</durationType>{}<Note><pitch>{p}</pitch></Note></Chord>", l(t))
+        };
+        let c = format!("{C44}{}<tick>0</tick>{}", ch("la", 60, ""), ch("la", 55, "<track>1</track>"));
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap();
+        assert_eq!(h.letra, vec!["1. la"]);
     }
 
     #[test]
