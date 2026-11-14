@@ -202,14 +202,14 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                 }
                 let voz = voz_do(c, est);
                 for l in c.children().filter(|x| x.has_tag_name("Lyrics")) {
-                    let sil = texto(l, "text").map(str::trim).filter(|t| !t.is_empty());
+                    let sil = filho(l, "text").map(texto_completo).filter(|t| !t.is_empty());
                     if let Some(sil) = sil {
                         est.silabas.push(Silaba {
                             t: *t,
                             voz,
                             verso: numero(l, "no").unwrap_or(0),
                             continua: matches!(texto(l, "syllabic"), Some("begin" | "middle")),
-                            texto: sil.to_string(),
+                            texto: sil,
                         });
                     }
                 }
@@ -326,6 +326,8 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> Vec<Stri
         espaco: bool,
         quebra_vista: usize,
         ultimo_t: f64,
+        ultimo_texto: String,
+        ultima_voz: usize,
     }
     let mut estrofes: BTreeMap<u32, Estrofe> = BTreeMap::new();
 
@@ -335,11 +337,23 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> Vec<Stri
             espaco: false,
             quebra_vista: 0,
             ultimo_t: f64::NEG_INFINITY,
+            ultimo_texto: String::new(),
+            ultima_voz: usize::MAX,
         });
-        if (sil.t - e.ultimo_t).abs() < EPS {
-            continue; // outra camada com a mesma sílaba no mesmo instante
+        // Só é duplicata a MESMA sílaba, no mesmo instante, vinda de OUTRA camada. Duas sílabas diferentes no
+        // mesmo instante (ou na mesma camada) são texto de verdade e ficam.
+        if (sil.t - e.ultimo_t).abs() < EPS && sil.voz != e.ultima_voz && sil.texto == e.ultimo_texto {
+            continue;
         }
         e.ultimo_t = sil.t;
+        e.ultimo_texto = sil.texto.clone();
+        e.ultima_voz = sil.voz;
+        // O autor às vezes escreve o número da estrofe dentro da primeira sílaba ("1. Pa"): o app já numera.
+        let primeira = e.linhas.iter().all(|l| l.is_empty());
+        let texto = if primeira { sem_numero_inicial(&sil.texto) } else { sil.texto.as_str() };
+        if texto.is_empty() {
+            continue;
+        }
         let quebras = respiracoes.iter().filter(|&&r| r <= sil.t + EPS).count();
         if quebras > e.quebra_vista {
             e.quebra_vista = quebras;
@@ -352,7 +366,7 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> Vec<Stri
         if e.espaco && !linha.is_empty() {
             linha.push(' ');
         }
-        linha.push_str(&sil.texto);
+        linha.push_str(texto);
         e.espaco = !sil.continua;
     }
 
@@ -368,10 +382,34 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> Vec<Stri
     saida
 }
 
-/// Todo o texto dentro de um elemento (inclui trechos com formatação), sem espaços repetidos.
+/// Todo o texto dentro de um elemento, sem espaços repetidos. Entende o texto rico do MuseScore:
+/// - trechos com formatação (`<i>`, `<b>`...) entram inteiros;
+/// - o símbolo de **elisão** (`<sym>lyricsElision...</sym>`, duas palavras cantadas numa nota só,
+///   como "go‿es") vira um espaço: "go es";
+/// - o nome de qualquer outro símbolo (`<sym>...</sym>`) é ignorado, para não vazar no texto.
 fn texto_completo(n: Node) -> String {
-    let junto: String = n.descendants().filter(|d| d.is_text()).filter_map(|d| d.text()).collect();
-    junto.split_whitespace().collect::<Vec<_>>().join(" ")
+    let mut s = String::new();
+    for d in n.descendants() {
+        if d.is_text() {
+            if d.parent().is_some_and(|p| p.has_tag_name("sym")) {
+                continue; // nome do símbolo, não é texto
+            }
+            s.push_str(d.text().unwrap_or(""));
+        } else if d.has_tag_name("sym") && d.text().is_some_and(|t| t.trim().starts_with("lyricsElision")) {
+            s.push(' ');
+        }
+    }
+    s.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// Tira um número de estrofe escrito no começo do texto ("1. Pa" -> "Pa"): o app já numera as estrofes.
+fn sem_numero_inicial(s: &str) -> &str {
+    let t = s.trim_start();
+    let digitos = t.chars().take_while(|c| c.is_ascii_digit()).count();
+    match t[digitos..].strip_prefix('.') {
+        Some(resto) if digitos > 0 => resto.trim_start(),
+        _ => s,
+    }
 }
 
 /// Textos de moldura (`<Text>` com `<style>` igual a um dos estilos pedidos), na ordem do arquivo.
@@ -1256,6 +1294,77 @@ mod testes {
         let final_: Vec<_> = h.passada_final.unwrap().iter().map(|v| v.nome.clone()).collect();
         assert_eq!(normal, vec!["Soprano", "Contralto", "Tenor", "Baixo"]);
         assert_eq!(final_, normal, "as vozes do final devem ter os mesmos nomes, na mesma ordem");
+    }
+
+    /// Sílaba como no MuseScore 2; `texto_xml` pode ter formatação interna (ex.: `<sym>`).
+    fn sil(sy: &str, texto_xml: &str) -> String {
+        let sy = if sy.is_empty() { String::new() } else { format!("<syllabic>{sy}</syllabic>") };
+        format!("<Lyrics>{sy}<text>{texto_xml}</text></Lyrics>")
+    }
+    fn acorde_letra(pitch: u8, letras: &str) -> String {
+        format!("<Chord><durationType>quarter</durationType>{letras}<Note><pitch>{pitch}</pitch></Note></Chord>")
+    }
+    fn letra_de(chords: &[String]) -> Vec<String> {
+        let c = format!("{C44}{}", chords.concat());
+        converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap().letra
+    }
+
+    #[test]
+    fn elisao_vira_espaco_e_nao_perde_as_letras() {
+        // Elisão do MuseScore: <text>to<sym>lyricsElisionWide</sym>a</text> = "to a" numa nota só.
+        let letra = letra_de(&[
+            acorde_letra(60, &sil("begin", "Ba")),
+            acorde_letra(62, &sil("middle", "ra")),
+            acorde_letra(64, &sil("middle", "to<sym>lyricsElisionWide</sym>a")),
+            acorde_letra(65, &sil("end", "li")),
+        ]);
+        assert_eq!(letra, vec!["1. Barato ali"]);
+    }
+
+    #[test]
+    fn numero_de_estrofe_escrito_na_primeira_silaba_nao_duplica() {
+        // A primeira sílaba traz o número da estrofe: "1. Pa".
+        let letra = letra_de(&[
+            acorde_letra(60, &sil("", "1. Pa")),
+            acorde_letra(62, &sil("", "ra,")),
+            acorde_letra(64, &sil("", "meu")),
+        ]);
+        assert_eq!(letra, vec!["1. Pa ra, meu"]);
+    }
+
+    #[test]
+    fn duas_silabas_diferentes_no_mesmo_instante_ficam_so_a_repetida_de_outra_camada_sai() {
+        // mesma camada, mesmo instante, textos diferentes: as duas ficam
+        let duas = format!("{}{}", sil("", "a"), sil("", "b"));
+        assert_eq!(letra_de(&[acorde_letra(60, &duas)]), vec!["1. a b"]);
+        // textos diferentes em camadas diferentes no mesmo instante também ficam (não é duplicata)
+        let c = format!(
+            "{C44}{}<tick>0</tick><Chord><track>1</track><durationType>quarter</durationType>{}<Note><pitch>55</pitch></Note></Chord>",
+            acorde_letra(60, &sil("", "a")),
+            sil("", "b")
+        );
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap();
+        assert_eq!(h.letra, vec!["1. a b"]);
+    }
+
+    #[test]
+    fn so_o_nome_de_simbolo_comum_e_ignorado_e_o_titulo_tambem_entende_elisao() {
+        let m = format!(
+            "<VBox>{}</VBox>",
+            texto_moldura("Title", "a<sym>lyricsElisionWide</sym>b e c<sym>fermataAbove</sym>d")
+        );
+        let h = converter(&doc_com_moldura(&m), 1).unwrap();
+        assert_eq!(h.titulo, "a b e cd"); // elisão vira espaço; outro símbolo some sem deixar o nome
+    }
+
+    #[test]
+    fn sem_numero_inicial_so_tira_numero_seguido_de_ponto() {
+        assert_eq!(sem_numero_inicial("1. Pa"), "Pa");
+        assert_eq!(sem_numero_inicial("  12.Pa"), "Pa");
+        assert_eq!(sem_numero_inicial("1."), "");
+        assert_eq!(sem_numero_inicial("Pa"), "Pa");
+        assert_eq!(sem_numero_inicial("3 meu"), "3 meu"); // sem ponto: é texto
+        assert_eq!(sem_numero_inicial("a1. b"), "a1. b");
     }
 
     #[test]

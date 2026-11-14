@@ -279,6 +279,81 @@ para escolher o WhatsApp e o instrutor; o app não precisa conhecer contatos.
 
 ---
 
+## I-04 — Alinhamento e tamanho da letra
+
+- **Status:** anotada
+- **Origem:** pedido do responsável, 2026-11-14.
+- **Prioridade:** a definir
+
+### O que se deseja (nas palavras do responsável)
+
+Na aba da **letra**, oferecer:
+
+- **Alinhamento** à **esquerda**, à **direita** e **justificado**.
+- **Tamanho**: **diminuir**, **restaurar** (voltar ao padrão) e **aumentar**.
+
+### Ideia de comportamento (a validar)
+
+Uma barra pequena no topo da aba Letra (ou no menu da aba) com três botões de alinhamento e os controles **A−**,
+**A** (restaurar) e **A+**. As escolhas valem para todos os hinos e ficam salvas no aparelho. O plano original já
+previa "Leitura: tamanho da letra" em Ajustes; esta ideia traz o controle para perto do texto.
+
+### Perguntas em aberto
+
+1. **Onde ficam os controles?** Na própria aba Letra (mais rápido para quem está lendo) ou só em Ajustes?
+2. **Quantos passos de tamanho** e qual o mínimo e o máximo? Sugestão inicial: 6 passos, de 85% a 160% do padrão.
+3. **Justificado em versos curtos:** a letra é em linhas curtas (um verso por linha), então o justificado pode abrir
+   espaços feios. Vale conferir com hinos reais e talvez justificar só a última linha da estrofe, ou aplicar só
+   quando houver quebra de linha. Precisa de teste visual.
+4. **Alinhamento à direita** pode fazer sentido para idiomas lidos da direita para a esquerda (hoje não tratados).
+
+### Impacto técnico (hipóteses, não verificadas)
+
+- **Tamanho:** o texto da letra já usa `rem`; basta uma variável CSS (por exemplo `--escala-letra`) aplicada a
+  `.estrofe p`. Respeitar também o tamanho de fonte do sistema (acessibilidade), multiplicando por ele em vez de
+  substituí-lo.
+- **Alinhamento:** `text-align: left | right | justify` na área da letra (`src/routes/hino/[numero]/+page.svelte`);
+  para o justificado, `text-align-last` e `hyphens: auto` com o `lang` do conteúdo já marcado.
+- **Preferência:** guardar no aparelho, como já é feito com idioma e tema (`src/lib/tema.svelte.ts` é o modelo).
+- **Acessibilidade:** botões com 48 dp e nome acessível ("Diminuir letra", "Aumentar letra", "Restaurar tamanho da
+  letra"); o estado do alinhamento escolhido precisa ser anunciado (botões de alternância com `aria-pressed`).
+- **Traduções:** novas chaves nos três idiomas.
+
+### Critérios de aceitação (propostos)
+
+- Cada alinhamento muda a letra na hora, e a escolha sobrevive ao fechar o app.
+- Aumentar, diminuir e restaurar funcionam, com limites mínimo e máximo, sem cortar texto nem quebrar o layout.
+- Com a fonte do sistema no máximo mais o tamanho da letra no máximo, nada fica cortado.
+
+---
+
+## I-05 — Arquivo de correções para a letra (proposta do assistente)
+
+- **Status:** anotada
+- **Origem:** observação do assistente, 2026-11-14, a partir do hino 1.
+- **Prioridade:** a definir
+
+### O problema
+
+Algumas partituras trazem a letra com marcas incompletas ou erros de digitação: numa partitura, "Pa" e "ra," sem marca de continuação (saem "Pa ra,") e "Ia" com "I" maiúsculo no lugar de "la" ("cantêIa"). O
+conversor mostra o texto como está no arquivo. Corrigir isso por heurística seria arriscado (poderia alterar o texto
+de um hino sem ninguém perceber).
+
+### Ideia
+
+Um arquivo de **correções explícitas**, mantido pelo responsável (por exemplo `content/correcoes.json`, fora do Git
+como o resto do conteúdo): uma lista de "trocar este texto por este, neste hino". O conversor aplica só o que estiver
+listado e **avisa** cada correção aplicada. Assim o texto dos hinos nunca muda sem registro.
+
+### Perguntas em aberto
+
+1. As correções devem ficar no repositório (úteis a todos, mas são texto do hinário) ou só locais?
+2. Prefere corrigir direto nos `.mscx` (sem arquivo de correções)? Isso diverge dos arquivos do autor das transcrições.
+3. Vale uma ferramenta que liste os suspeitos (palavras com "I" maiúsculo no meio, sílabas sem marca de continuação)
+   para o responsável revisar, em vez de procurar à mão?
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown

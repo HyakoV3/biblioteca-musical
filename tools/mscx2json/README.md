@@ -18,6 +18,13 @@ cargo run --release -- --id meu-hinario --nome "Meu hinário" /pasta/com/hino-1.
   sequência de linhas, com quebra a cada respiração (`<Breath>`), estrofes separadas por linha
   vazia e a primeira linha numerada ("1. ..."). O refrão, quando está guardado na estrofe 1,
   continua nela, como no arquivo.
+- **Letra: o que o conversor faz com as sílabas.** Lê a sílaba inteira, inclusive formatação interna. A **elisão**
+  do MuseScore (`go‿es`, duas palavras cantadas numa nota só) vira um espaço ("go es"). O número da estrofe que o
+  autor escreve dentro da primeira sílaba ("1. Pa") é removido, porque o app já numera as estrofes. Uma sílaba só
+  é descartada como repetida se for **idêntica**, no mesmo instante e vier de **outra camada**.
+- **Letra: o que o conversor não corrige.** Ele une as sílabas só onde o arquivo marca início, meio e fim da palavra,
+  e mostra o texto exatamente como está. Partitura que não marca ("Pa" e "ra," saem separados) ou
+  que tem erro de digitação ("Ia" com "I" maiúsculo no lugar de "la") produz a mesma coisa na letra.
 - **Título e autoria:** o título vem do texto de moldura com estilo `Title` (se não houver, do metadado
   `workTitle`, e por último "Hino N"). A autoria junta os textos com estilo `Lyricist` e `Composer`
   (letrista primeiro, sem repetir). Hinos sem esses textos ficam sem `autoria`.
