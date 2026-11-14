@@ -1,32 +1,14 @@
 // Sintetizador simples com Web Audio: toca notas (MIDI) de várias vozes.
 // Não usa gravações: tudo é gerado a partir dos eventos de nota do pacote.
+import { INSTRUMENTOS, PADRAO, type InstrumentoId, type Perfil } from "./instrumentos";
 
 export type Nota = [inicio: number, duracao: number, midi: number];
 export type Voz = { nome: string; notas: Nota[] };
 
-export type Timbre = "orgao" | "flauta" | "metal" | "teclado";
-
-type Perfil = {
-  nome: string;
-  /** Amplitudes dos harmônicos (índice 0 é ignorado). Sem isso, usa a onda `onda`. */
-  harmonicos?: number[];
-  onda?: OscillatorType;
-  ataque: number; // segundos
-  solta: number; // segundos
-  nivel: number; // volume geral do timbre (equilibra a sensação de volume)
-};
-
-export const TIMBRES: Record<Timbre, Perfil> = {
-  orgao: { nome: "Órgão", harmonicos: [0, 1, 0.5, 0.35, 0.25, 0.15, 0.1, 0.07], ataque: 0.03, solta: 0.09, nivel: 0.2 },
-  flauta: { nome: "Flauta", harmonicos: [0, 1, 0.12, 0.04], ataque: 0.06, solta: 0.1, nivel: 0.3 },
-  metal: { nome: "Metal", harmonicos: [0, 1, 0.8, 0.6, 0.5, 0.4, 0.3, 0.2, 0.15, 0.1], ataque: 0.02, solta: 0.05, nivel: 0.1 },
-  teclado: { nome: "Teclado", onda: "triangle", ataque: 0.02, solta: 0.06, nivel: 0.25 },
-};
-
 export type Opcoes = {
   andamento: number; // batidas por minuto
   transposicao: number; // semitons
-  timbre: Timbre;
+  instrumentos: InstrumentoId[]; // um por voz
   volumes: number[]; // 0..1 por voz (0 = silenciada)
 };
 
@@ -36,19 +18,17 @@ export class Sintetizador {
   private ctx: AudioContext | null = null;
   private mestre: GainNode | null = null;
   private ganhos: GainNode[] = [];
-  private osciladores: OscillatorNode[] = [];
-  private ondas = new Map<Timbre, PeriodicWave>();
+  private fontes: AudioScheduledSourceNode[] = [];
+  private ondas = new Map<InstrumentoId, PeriodicWave>();
   private temporizador: ReturnType<typeof setTimeout> | null = null;
 
   tocando = false;
 
-  private onda(ctx: AudioContext, t: Timbre): PeriodicWave | null {
-    const h = TIMBRES[t].harmonicos;
-    if (!h) return null;
-    let w = this.ondas.get(t);
+  private onda(ctx: AudioContext, id: InstrumentoId, perfil: Perfil): PeriodicWave {
+    let w = this.ondas.get(id);
     if (!w) {
-      w = ctx.createPeriodicWave(new Float32Array(h.length), Float32Array.from(h));
-      this.ondas.set(t, w);
+      w = ctx.createPeriodicWave(new Float32Array(perfil.harmonicos.length), Float32Array.from(perfil.harmonicos));
+      this.ondas.set(id, w);
     }
     return w;
   }
@@ -59,12 +39,13 @@ export class Sintetizador {
     // Em iOS/WebView o áudio só inicia após um gesto do usuário (clique em "Tocar").
     await this.ctx.resume();
     const ctx = this.ctx;
-    const perfil = TIMBRES[opcoes.timbre];
-    const onda = this.onda(ctx, opcoes.timbre);
 
+    // Compressor no fim da cadeia: várias vozes somadas não estouram o volume.
+    const compressor = ctx.createDynamicsCompressor();
+    compressor.connect(ctx.destination);
     this.mestre = ctx.createGain();
-    this.mestre.gain.value = perfil.nivel;
-    this.mestre.connect(ctx.destination);
+    this.mestre.gain.value = 0.9;
+    this.mestre.connect(compressor);
     // Todas as vozes são agendadas; silenciar é só baixar o volume da voz (vale ao vivo).
     this.ganhos = vozes.map((_, i) => {
       const g = ctx.createGain();
@@ -78,23 +59,40 @@ export class Sintetizador {
     let fim = 0;
 
     vozes.forEach((voz, i) => {
+      const id = opcoes.instrumentos[i] && opcoes.instrumentos[i] in INSTRUMENTOS ? opcoes.instrumentos[i] : PADRAO;
+      const perfil: Perfil = INSTRUMENTOS[id];
+      const onda = this.onda(ctx, id, perfil);
       for (const [t, dur, midi] of voz.notas) {
         const osc = ctx.createOscillator();
         const env = ctx.createGain();
-        if (onda) osc.setPeriodicWave(onda);
-        else osc.type = perfil.onda ?? "triangle";
+        osc.setPeriodicWave(onda);
         osc.frequency.value = frequencia(midi + opcoes.transposicao);
         const ini = inicio + t * seg;
         const fimNota = ini + Math.max(dur * seg, 0.05);
         const ataque = Math.min(perfil.ataque, (fimNota - ini) / 2);
         env.gain.setValueAtTime(0, ini);
-        env.gain.linearRampToValueAtTime(1, ini + ataque);
-        env.gain.setValueAtTime(1, Math.max(ini + ataque, fimNota - perfil.solta));
+        env.gain.linearRampToValueAtTime(perfil.nivel, ini + ataque);
+        env.gain.setValueAtTime(perfil.nivel, Math.max(ini + ataque, fimNota - perfil.solta));
         env.gain.linearRampToValueAtTime(0, fimNota);
         osc.connect(env).connect(this.ganhos[i]);
+
+        if (perfil.vibrato) {
+          // O vibrato entra devagar, depois do atraso: notas curtas quase não o recebem.
+          const lfo = ctx.createOscillator();
+          const prof = ctx.createGain();
+          lfo.frequency.value = perfil.vibrato.hz;
+          prof.gain.setValueAtTime(0, ini);
+          prof.gain.setValueAtTime(0, ini + perfil.vibrato.atraso);
+          prof.gain.linearRampToValueAtTime(perfil.vibrato.cents, ini + perfil.vibrato.atraso + 0.25);
+          lfo.connect(prof).connect(osc.detune);
+          lfo.start(ini);
+          lfo.stop(fimNota + 0.02);
+          this.fontes.push(lfo);
+        }
+
         osc.start(ini);
         osc.stop(fimNota + 0.02);
-        this.osciladores.push(osc);
+        this.fontes.push(osc);
         fim = Math.max(fim, fimNota - inicio);
       }
     });
@@ -115,14 +113,14 @@ export class Sintetizador {
   parar() {
     if (this.temporizador) clearTimeout(this.temporizador);
     this.temporizador = null;
-    for (const o of this.osciladores) {
+    for (const o of this.fontes) {
       try {
         o.stop();
       } catch {
         /* já parado */
       }
     }
-    this.osciladores = [];
+    this.fontes = [];
     this.ganhos = [];
     this.mestre?.disconnect();
     this.mestre = null;

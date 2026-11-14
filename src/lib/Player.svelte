@@ -1,8 +1,11 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
-  import { Sintetizador, TIMBRES, type Timbre, type Voz } from "./sintetizador";
+  import { i18n } from "$lib/i18n/index.svelte";
+  import { ORGAOS, PADRAO, instrumentosDaVoz, tipoDaVoz, type InstrumentoId } from "./instrumentos";
+  import { Sintetizador, type Voz } from "./sintetizador";
 
   let { vozes, andamentoInicial = 90 }: { vozes: Voz[]; andamentoInicial?: number } = $props();
+  const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
 
   const sint = new Sintetizador();
   let tocando = $state(false);
@@ -10,13 +13,19 @@
   // svelte-ignore state_referenced_locally
   let andamento = $state(andamentoInicial);
   let transposicao = $state(0);
-  let timbre = $state<Timbre>("orgao");
+  // svelte-ignore state_referenced_locally
+  let instrumentos = $state<InstrumentoId[]>(vozes.map(() => PADRAO));
   // svelte-ignore state_referenced_locally
   let volumes = $state(vozes.map(() => 1));
   // svelte-ignore state_referenced_locally
   let mudas = $state(vozes.map(() => false));
 
   const efetivo = (i: number) => (mudas[i] ? 0 : volumes[i]);
+  // Nomes do arquivo como "Soprano"/"Baixo" são traduzidos; outros ("Parte I") ficam como estão.
+  const nomeVoz = (nome: string) => {
+    const tipo = tipoDaVoz(nome);
+    return tipo ? t(`voz.${tipo}`) : nome;
+  };
 
   async function alternar() {
     if (tocando) {
@@ -27,7 +36,7 @@
     tocando = true;
     await sint.tocar(
       vozes,
-      { andamento, transposicao, timbre, volumes: vozes.map((_, i) => efetivo(i)) },
+      { andamento, transposicao, instrumentos: [...instrumentos], volumes: vozes.map((_, i) => efetivo(i)) },
       () => (tocando = false),
     );
   }
@@ -38,16 +47,16 @@
   onDestroy(() => sint.parar());
 </script>
 
-<section class="player" aria-label="Player">
-  <button class="tocar" onclick={alternar}>{tocando ? "■ Parar" : "▶ Tocar"}</button>
+<section class="player" aria-label={t("player.titulo")}>
+  <button class="tocar" onclick={alternar}>{tocando ? t("player.parar") : t("player.tocar")}</button>
 
-  <div class="vozes" role="group" aria-label="Vozes">
+  <div class="vozes" role="group" aria-label={t("player.vozes")}>
     {#each vozes as v, i}
       <div class="voz">
         <button
           class="muda"
           aria-pressed={mudas[i]}
-          aria-label={mudas[i] ? `Ativar ${v.nome}` : `Silenciar ${v.nome}`}
+          aria-label={mudas[i] ? t("player.ativar", { voz: nomeVoz(v.nome) }) : t("player.silenciar", { voz: nomeVoz(v.nome) })}
           onclick={() => {
             mudas[i] = !mudas[i];
             aoMudarVoz(i);
@@ -55,39 +64,43 @@
         >
           {mudas[i] ? "🔇" : "🔊"}
         </button>
-        <span class="nome" class:apagada={mudas[i]}>{v.nome}</span>
+        <span class="nome" class:apagada={mudas[i]}>{nomeVoz(v.nome)}</span>
         <input
           type="range"
           min="0"
           max="1"
           step="0.05"
-          aria-label={`Volume de ${v.nome}`}
+          aria-label={t("player.volume", { voz: nomeVoz(v.nome) })}
           bind:value={volumes[i]}
           oninput={() => aoMudarVoz(i)}
         />
+        <select
+          class="instrumento"
+          aria-label={t("player.instrumento", { voz: nomeVoz(v.nome) })}
+          bind:value={instrumentos[i]}
+          disabled={tocando}
+        >
+          <optgroup label={t("grupo.orgaos")}>
+            {#each ORGAOS as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
+          </optgroup>
+          <optgroup label={t("grupo.instrumentos")}>
+            {#each instrumentosDaVoz(v.nome) as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
+          </optgroup>
+        </select>
       </div>
     {/each}
   </div>
 
   <label>
-    Timbre
-    <select bind:value={timbre} disabled={tocando}>
-      {#each Object.entries(TIMBRES) as [id, t]}
-        <option value={id}>{t.nome}</option>
-      {/each}
-    </select>
-  </label>
-
-  <label>
-    Andamento: {andamento} bpm
+    {t("player.andamento", { bpm: andamento })}
     <input type="range" min="40" max="160" bind:value={andamento} disabled={tocando} />
   </label>
 
   <label>
-    Transposição
+    {t("player.transposicao")}
     <select bind:value={transposicao} disabled={tocando}>
       {#each Array.from({ length: 13 }, (_, i) => i - 6) as s}
-        <option value={s}>{s > 0 ? `+${s}` : s} semitons</option>
+        <option value={s}>{t("player.semitons", { n: s > 0 ? `+${s}` : s })}</option>
       {/each}
     </select>
   </label>
@@ -96,8 +109,9 @@
 <style>
   .player { display: grid; gap: 0.9rem; margin: 1rem 0; padding: 0.9rem; border: 1px solid #ddd; border-radius: 12px; }
   .tocar { min-height: 52px; font-size: 1.1rem; font-weight: 600; border-radius: 12px; border: 1px solid #888; background: #fff; color: inherit; cursor: pointer; }
-  .vozes { display: grid; gap: 0.4rem; }
-  .voz { display: grid; grid-template-columns: 44px 5.5rem 1fr; align-items: center; gap: 0.5rem; }
+  .vozes { display: grid; gap: 0.8rem; }
+  .voz { display: grid; grid-template-columns: 44px 6rem 1fr; align-items: center; gap: 0.4rem 0.5rem; }
+  .instrumento { grid-column: 1 / -1; }
   .muda { min-width: 44px; min-height: 44px; font-size: 1.2rem; border-radius: 10px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
   .muda[aria-pressed="true"] { background: #eee; }
   .nome.apagada { opacity: 0.45; text-decoration: line-through; }

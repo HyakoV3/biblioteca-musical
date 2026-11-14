@@ -15,6 +15,15 @@ O formato esperado dos dados está em [`docs/FORMATO.md`](docs/FORMATO.md).
 
 O código foi escrito do zero (clean room): nenhum código ou arquivo de outros aplicativos foi copiado.
 
+## Recursos
+
+- Player por síntese, sem gravações: cada voz (Soprano, Contralto, Tenor e Baixo) pode ter seu
+  instrumento (3 órgãos, flauta doce, violino, clarinete, trompete, sax, flugelhorn, trombone,
+  tuba e outros), volume próprio e ser silenciada durante a execução.
+- Andamento e transposição ajustáveis.
+- Interface em português, espanhol e inglês, pronta para novos idiomas
+  ([`docs/TRADUCOES.md`](docs/TRADUCOES.md)).
+
 ## Desenvolvimento
 
 Requisitos: Rust, Node.js e as [dependências do Tauri](https://tauri.app/start/prerequisites/)

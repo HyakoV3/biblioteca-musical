@@ -4,6 +4,7 @@
   import { pushState } from "$app/navigation";
   import { page } from "$app/state";
   import Player from "$lib/Player.svelte";
+  import { IDIOMAS, i18n, type Idioma } from "$lib/i18n/index.svelte";
   import type { Voz } from "$lib/sintetizador";
 
   type Hino = {
@@ -20,6 +21,8 @@
     exemplo: boolean;
   };
 
+  const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
+
   let pacote = $state<Pacote | null>(null);
   let erro = $state("");
   let busca = $state("");
@@ -34,6 +37,11 @@
     window.scrollTo(0, 0);
   };
   const voltar = () => history.back();
+
+  // Mantém o atributo lang do documento em sintonia com o idioma escolhido.
+  $effect(() => {
+    document.documentElement.lang = i18n.idioma;
+  });
 
   onMount(async () => {
     try {
@@ -52,9 +60,9 @@
     try {
       pacote = await invoke<Pacote>("importar_hinario", { json: await arquivo.text() });
       busca = "";
-      aviso = `Importado: ${pacote.hinario.hinos.length} hinos de "${pacote.hinario.hinario.nome}".`;
+      aviso = t("importar.ok", { n: pacote.hinario.hinos.length, nome: pacote.hinario.hinario.nome });
     } catch (err) {
-      aviso = `Não foi possível importar: ${err}`;
+      aviso = t("importar.erro", { erro: String(err) });
     }
   }
 
@@ -66,9 +74,9 @@
     confirmandoRemocao = false;
     try {
       pacote = await invoke<Pacote>("remover_conteudo");
-      aviso = "Conteúdo importado removido. Mostrando o pacote de exemplo.";
+      aviso = t("remover.ok");
     } catch (err) {
-      aviso = `Não foi possível remover: ${err}`;
+      aviso = t("remover.erro", { erro: String(err) });
     }
   }
 
@@ -87,47 +95,55 @@
 <main class="container">
   <header>
     <h1>BibliotecaMusical CCB</h1>
-    <p class="aviso">App não oficial, sem vínculo com a Congregação Cristã no Brasil.</p>
+    <p class="aviso">{t("app.aviso")}</p>
+    <select
+      class="idioma"
+      aria-label={t("app.idioma")}
+      value={i18n.idioma}
+      onchange={(e) => (i18n.idioma = e.currentTarget.value as Idioma)}
+    >
+      {#each Object.entries(IDIOMAS) as [id, l]}<option value={id}>{l.nome}</option>{/each}
+    </select>
   </header>
 
   {#if erro}
-    <p class="erro" role="alert">Erro ao carregar o hinário: {erro}</p>
+    <p class="erro" role="alert">{t("erro.carregar", { erro })}</p>
   {:else if !pacote}
-    <p>Carregando…</p>
+    <p>{t("carregando")}</p>
   {:else if aberto}
-    <button class="voltar" onclick={voltar}>← Voltar</button>
+    <button class="voltar" onclick={voltar}>{t("hino.voltar")}</button>
     <article>
       <h2>{aberto.numero}. {aberto.titulo}</h2>
-      {#if aberto.tonalidade}<p class="meta">Tonalidade: {aberto.tonalidade}</p>{/if}
+      {#if aberto.tonalidade}<p class="meta">{t("hino.tonalidade", { tom: aberto.tonalidade })}</p>{/if}
       {#if aberto.vozes.length}
         {#key aberto.numero}
           <Player vozes={aberto.vozes} andamentoInicial={aberto.andamento ?? 90} />
         {/key}
       {/if}
       <div class="letra">
-        {#each aberto.letra as linha}<p>{linha}</p>{:else}<p class="meta">Sem letra neste pacote.</p>{/each}
+        {#each aberto.letra as linha}<p>{linha}</p>{:else}<p class="meta">{t("hino.sem_letra")}</p>{/each}
       </div>
     </article>
   {:else}
     <p class="meta">
       {pacote.hinario.hinario.nome}
-      {#if pacote.exemplo}— <strong>pacote de exemplo</strong>{/if}
+      {#if pacote.exemplo}— <strong>{t("lista.exemplo")}</strong>{/if}
     </p>
     <input
       type="search"
       inputmode="search"
-      placeholder="Buscar por número ou título"
-      aria-label="Buscar hino"
+      placeholder={t("lista.buscar")}
+      aria-label={t("lista.buscar_aria")}
       bind:value={busca}
     />
     <div class="importar">
       <label class="botao">
-        Importar hinário (.json)
+        {t("importar.botao")}
         <input type="file" accept=".json,application/json" onchange={importar} hidden />
       </label>
       {#if !pacote.exemplo}
         <button class="secundario" onclick={removerConteudo}>
-          {confirmandoRemocao ? "Confirmar remoção" : "Remover conteúdo importado"}
+          {confirmandoRemocao ? t("importar.confirmar") : t("importar.remover")}
         </button>
       {/if}
     </div>
@@ -142,7 +158,7 @@
           </button>
         </li>
       {:else}
-        <li class="meta">Nenhum hino encontrado.</li>
+        <li class="meta">{t("lista.vazio")}</li>
       {/each}
     </ul>
   {/if}
@@ -163,6 +179,7 @@
       max(1.5rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   }
   h1 { font-size: 1.4rem; margin: 0; }
+  .idioma { min-height: 40px; margin: 0.3rem 0; padding: 0 0.5rem; font-size: 0.95rem; border-radius: 10px; }
   .aviso, .meta { color: #666; font-size: 0.9rem; }
   input[type="search"] {
     width: 100%; box-sizing: border-box; min-height: 48px; padding: 0.7rem 0.9rem; margin: 0.5rem 0 0.8rem;
