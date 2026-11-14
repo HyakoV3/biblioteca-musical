@@ -133,9 +133,16 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
   Hinários já importados continuam válidos (os campos são opcionais), mas só ganham título e autoria reais se
   forem **regenerados e importados de novo**.
 
-**Etapa 5 — Polimento**
-- [ ] Ícone e identidade visual (o ícone atual é o padrão do Tauri).
-- [ ] Animações discretas; teste de uso com músicos reais (tarefas: achar hino, ler, ouvir só uma voz).
+**Etapa 5 — Polimento** — *em andamento (2026-11-14)*
+- [x] **Ícone** (a versão plana, ver `design/icone/README.md`): gerado com o comando oficial `tauri icon` e ajustado
+      por `tools/ajustar-icones.py` (ícone adaptativo do Android com fundo e primeiro plano separados; ícones do iOS
+      sem canal alfa). Verificado em arquivo e em prévia sob máscaras redonda, arredondada e "squircle". Favicon trocado.
+- [ ] **Ver o ícone no emulador** (o lançador e a lista de apps): falta reinstalar o app para o ícone novo aparecer.
+- [ ] Identidade visual além do ícone: hoje a cor de acento do app é azul (`#1768b3`) e o ícone é azul-marinho e
+      dourado. Decidir se o dourado entra como cor secundária.
+- [ ] Ícone **monocromático** do Android 13+ (ícones temáticos).
+- [ ] Animações discretas (respeitando "reduzir movimento").
+- [ ] Teste de uso com músicos reais (tarefas: achar hino, ler, ouvir só uma voz).
 
 ### Decisões a validar
 
