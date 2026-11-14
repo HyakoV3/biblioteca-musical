@@ -139,7 +139,10 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
       sem canal alfa). Verificado em arquivo e em prévia sob máscaras redonda, arredondada e "squircle". Favicon trocado.
 - [ ] **Ver o ícone no emulador** (o lançador e a lista de apps): falta reinstalar o app para o ícone novo aparecer.
 - [ ] Identidade visual além do ícone: hoje a cor de acento do app é azul (`#1768b3`) e o ícone é azul-marinho e
-      dourado. Decidir se o dourado entra como cor secundária.
+      dourado (`#f8b000`). **Prévia feita** em `design/identidade/previa-dourado.png` (claro e escuro, hoje e com
+      dourado): o dourado marcaria "onde estou na música" (parte que toca, progresso, aba, ⚑ do final) e o azul
+      ficaria para ações. No claro o `#f8b000` tem só 1,8:1 sobre o fundo, então textos e linhas usam `#946200`
+      (4,9:1). **Aguardando a decisão do responsável.**
 - [ ] Ícone **monocromático** do Android 13+ (ícones temáticos).
 - [x] **Animações discretas** (até 200 ms), todas em `src/lib/movimento.css`: troca de tela com leve fade, avisos que
       entram, miniplayer que sobe, barra de progresso suave, resposta ao toque e transições de cor. Com "reduzir
@@ -152,10 +155,10 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
 
 | # | Decisão | Proposta atual | Situação |
 |---|---|---|---|
-| D1 | Abas **Letra \| Ouvir** no hino, ou tela única com mixer em painel inferior | Abas | **(a validar)** |
-| D2 | Miniplayer só no hino ou global (continua ao voltar à lista) | Global, na etapa 2 | **(a validar)** |
-| D3 | Letra estruturada em estrofes (`{numero, linhas}`) no formato e no conversor | Sim; invalida JSONs já gerados, que são regeneráveis | **(a validar)** |
-| D4 | Favoritos e histórico | Fora desta fase | **(a validar)** |
+| D1 | Abas **Letra \| Ouvir** no hino, ou tela única com mixer em painel inferior | Abas (abre em Ouvir, a pedido do responsável) | **Validada** (2026-11-14) |
+| D2 | Miniplayer só no hino ou global (continua ao voltar à lista) | Global, na etapa 2 | **Validada** (2026-11-14) |
+| D3 | Letra estruturada em estrofes (`{numero, linhas}`) no formato e no conversor | Sim; invalida JSONs já gerados, que são regeneráveis | **Validada** (2026-11-14) |
+| D4 | Favoritos e histórico | Fora da fase 1; **entra no planejamento da fase 2** | **Validada** (2026-11-14) |
 
 ## 3. Conteúdo e direitos (bloqueia distribuição)
 

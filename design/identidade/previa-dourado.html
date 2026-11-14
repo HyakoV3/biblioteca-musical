@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pt-BR"><meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: #888; font-family: system-ui, sans-serif; }
+  .linha { display: grid; grid-template-columns: repeat(4, 380px); gap: 16px; }
+  .rotulo { color: #fff; font-weight: 700; font-size: 15px; margin: 0 0 6px; }
+  .tela { border-radius: 18px; padding: 14px 16px 18px; background: var(--fundo); color: var(--texto); height: 760px; overflow: hidden; }
+
+  .claro  { --fundo:#f7f8fa; --superficie:#fff; --texto:#1b2430; --suave:#526173; --borda:#d8dee7; --controle:#738193; --acento:#1768b3; --acento-texto:#fff; --foco:#1768b3;
+            --ouro-texto:#946200; --ouro-fill:#f8b000; --ouro-sobre:#10151d; }
+  .escuro { --fundo:#10151d; --superficie:#1b2330; --texto:#f2f5f9; --suave:#bac6d5; --borda:#374454; --controle:#738295; --acento:#7bbcff; --acento-texto:#10151d; --foco:#7bbcff;
+            --ouro-texto:#f8b000; --ouro-fill:#f8b000; --ouro-sobre:#10151d; }
+
+  /* destaque da parte que toca e da aba: azul hoje, dourado na proposta */
+  .hoje   { --destaque: var(--acento); --destaque-texto: var(--acento-texto); --marca: var(--suave); }
+  .ouro   { --destaque: var(--ouro-fill); --destaque-texto: var(--ouro-sobre); --marca: var(--ouro-texto); }
+
+  h1 { font-size: 20px; margin: 4px 0 0; } .aut { color: var(--suave); font-size: 14px; margin: 2px 0 10px; }
+  .abas { display: flex; border-bottom: 1px solid var(--borda); margin-bottom: 14px; }
+  .abas div { flex: 1; text-align: center; padding: 12px 0; color: var(--suave); border-bottom: 3px solid transparent; font-size: 16px; }
+  .abas .sel { color: var(--texto); font-weight: 600; border-bottom-color: var(--destaque); }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--controle); background: var(--superficie); color: var(--texto); font-size: 16px; }
+  .btn.prim { background: var(--acento); color: var(--acento-texto); border-color: var(--acento); font-weight: 600; }
+  .btn.tocando { background: var(--destaque); color: var(--destaque-texto); border-color: var(--destaque); font-weight: 600; }
+  .topo { display: flex; gap: 8px; margin-bottom: 10px; } .topo .prim { flex: 1; }
+  .partes { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+  .flag { color: var(--marca); font-weight: 700; }
+  .btn.tocando .flag { color: var(--destaque-texto); }
+  .dica { color: var(--suave); font-size: 13.5px; margin: 8px 0 12px; }
+
+  .barra { height: 10px; border-radius: 6px; background: var(--borda); overflow: hidden; border: 1px solid var(--controle); }
+  .barra i { display: block; height: 100%; width: 38%; background: var(--destaque); }
+  .tempos { display: flex; justify-content: space-between; color: var(--suave); font-size: 13px; margin: 4px 0 14px; }
+
+  .linhaCtl { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; font-size: 16px; }
+  .pm { display: flex; align-items: center; gap: 10px; } .pm .btn { min-width: 48px; padding: 0; } .pm span { min-width: 88px; text-align: center; }
+  .voz { display: grid; grid-template-columns: 48px 1fr; gap: 10px; align-items: center; margin: 8px 0; } .voz b { font-size: 16px; } .voz small { color: var(--suave); display:block; }
+  .mini { margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--superficie); border: 1px solid var(--borda); font-size: 14px; }
+  .mini .barra { height: 6px; margin-top: 8px; }
+</style>
+<body>
+<div class="linha">
+  <div><p class="rotulo">CLARO · hoje (azul)</p><div class="tela claro hoje"></div></div>
+  <div><p class="rotulo">CLARO · com dourado</p><div class="tela claro ouro"></div></div>
+  <div><p class="rotulo">ESCURO · hoje (azul)</p><div class="tela escuro hoje"></div></div>
+  <div><p class="rotulo">ESCURO · com dourado</p><div class="tela escuro ouro"></div></div>
+</div>
+<template id="t">
+  <h1>457 · Hino de exemplo</h1><p class="aut">Autoria: exemplo</p>
+  <div class="abas"><div class="sel">Ouvir</div><div>Letra</div></div>
+  <div class="topo"><span class="btn prim">▶ Tocar o hino todo</span><span class="btn">■ Parar</span></div>
+  <div class="partes">
+    <span class="btn">▶ Intro</span><span class="btn">▶ 1ª</span>
+    <span class="btn tocando">❚❚ 2ª</span>
+    <span class="btn">▶ 3ª <span class="flag">⚑</span></span>
+  </div>
+  <p class="dica"><span class="flag">⚑</span> A última vez termina de forma diferente (o final). No hino todo há uma pausa de 2 segundos entre as partes.</p>
+  <div class="barra"><i></i></div><div class="tempos"><span>1:28</span><span>3:50</span></div>
+  <div class="linhaCtl"><span>Andamento</span><div class="pm"><span class="btn">−</span><span>52 bpm</span><span class="btn">+</span></div></div>
+  <div class="linhaCtl"><span>Transposição</span><div class="pm"><span class="btn">−</span><span>0 semitons</span><span class="btn">+</span></div></div>
+  <div class="voz"><span class="btn">🔊</span><div><b>Soprano</b><small>80%</small></div></div>
+  <div class="voz"><span class="btn">🔊</span><div><b>Contralto</b><small>65%</small></div></div>
+  <div class="mini"><b>457 · Hino de exemplo</b> · 2ª vez<div class="barra"><i></i></div></div>
+</template>
+<script>
+  document.querySelectorAll(".tela").forEach(t => t.append(document.getElementById("t").content.cloneNode(true)));
+</script>
+</body></html>
