@@ -211,4 +211,13 @@ mod testes {
         assert!(remover(&d).unwrap().exemplo); // idempotente
         std::fs::remove_dir_all(&d).ok();
     }
+
+    #[test]
+    fn saida_do_conversor_mscx2json_e_aceita() {
+        // Gerada por tools/mscx2json a partir de partituras fictícias.
+        let h = ler(include_str!("../../tools/mscx2json/tests/fixtures/hinario.json")).unwrap();
+        assert_eq!(h.hinos.len(), 2);
+        assert_eq!(h.hinos[0].andamento, Some(80));
+        assert_eq!(h.hinos[0].vozes[0].notas[0], Nota(0.0, 1.0, 72));
+    }
 }

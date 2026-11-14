@@ -1,0 +1,10 @@
+[package]
+name = "mscx2json"
+version = "0.1.0"
+description = "Converte partituras MuseScore (.mscx) para o formato hinario.json do BibliotecaMusical CCB"
+license = "MIT"
+edition = "2024"
+
+[dependencies]
+roxmltree = "0.20"
+serde_json = "1"
