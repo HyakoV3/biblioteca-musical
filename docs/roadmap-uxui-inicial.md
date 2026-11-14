@@ -141,8 +141,12 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
 - [ ] Identidade visual além do ícone: hoje a cor de acento do app é azul (`#1768b3`) e o ícone é azul-marinho e
       dourado. Decidir se o dourado entra como cor secundária.
 - [ ] Ícone **monocromático** do Android 13+ (ícones temáticos).
-- [ ] Animações discretas (respeitando "reduzir movimento").
-- [ ] Teste de uso com músicos reais (tarefas: achar hino, ler, ouvir só uma voz).
+- [x] **Animações discretas** (até 200 ms), todas em `src/lib/movimento.css`: troca de tela com leve fade, avisos que
+      entram, miniplayer que sobe, barra de progresso suave, resposta ao toque e transições de cor. Com "reduzir
+      movimento" ligado no sistema **nada se move** (as cores mudam sem transição). `tools/verificar-movimento.py`
+      confere isso no código e foi testado contra violações de propósito. **Falta ver rodando** no emulador.
+- [x] **Roteiro de teste de uso** com músicos: `docs/teste-de-uso.md` (12 tarefas, perguntas finais, como classificar).
+- [ ] **Aplicar o teste** com 3 a 5 músicos reais (depende do responsável).
 
 ### Decisões a validar
 

@@ -1,0 +1,71 @@
+/*
+ * Movimento do app, num lugar só. Regras:
+ *  - Tudo que SE MOVE (animation, transform, @keyframes) fica dentro de
+ *    @media (prefers-reduced-motion: no-preference): quem pediu menos movimento no sistema não vê nada se mover.
+ *  - Transições de cor usam var(--duracao), que vira 0 com movimento reduzido.
+ *  - Efeitos discretos e curtos (até ~200 ms), nunca decorativos.
+ * Confira com: python3 tools/verificar-movimento.py
+ */
+:root {
+  --duracao: 150ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duracao: 0ms;
+  }
+}
+
+/* Cor de fundo, borda e texto mudam suavemente (foco, toque, aba selecionada). */
+.botao,
+li > a,
+[role="tab"],
+.chave,
+.passo button {
+  transition:
+    background-color var(--duracao) ease,
+    border-color var(--duracao) ease,
+    color var(--duracao) ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes entrar {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes subir {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: none;
+    }
+  }
+
+  /* A tela nova aparece com um leve fade; avisos entram do mesmo jeito. */
+  .conteudo {
+    animation: entrar 180ms ease-out both;
+  }
+  .aviso {
+    animation: entrar 200ms ease-out both;
+  }
+  /* O miniplayer sobe da borda de baixo. */
+  .mini {
+    animation: subir 200ms ease-out both;
+  }
+  /* A barra de progresso avança sem "pulos" (o tempo é atualizado a cada 200 ms). */
+  .preenchido {
+    transition: width 220ms linear;
+  }
+  /* Resposta ao toque. */
+  .botao:active,
+  li > a:active {
+    transform: scale(0.985);
+  }
+}
