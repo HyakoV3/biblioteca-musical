@@ -55,7 +55,8 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
 **Etapa 1 — Navegação e separação das funções** (sem mexer em cores) — *implementada em 2026-11-14; falta validar no aparelho*
 - [x] Barra de topo de uma linha; Biblioteca enxuta (busca com botão limpar + lista).
 - [x] Tela **Ajustes** com idioma, importar e remover (confirmação explicando o impacto) e Sobre.
-- [x] Detalhe do hino (rota `/hino/<número>`) com abas **Letra** e **Ouvir**; aba Letra sem nenhum controle de áudio.
+- [x] Detalhe do hino (rota `/hino/<número>`) com abas **Ouvir** e **Letra**; a aba padrão é **Ouvir** (decisão do
+      responsável, 2026-11-14); aba Letra sem nenhum controle de áudio. Hino sem notas mostra só a Letra.
 - [x] Voltar preserva busca e posição da lista (estado da biblioteca compartilhado entre telas).
 - [x] Estrofes com rótulo "Estrofe N" (o número sai do verso; sem mudar o formato dos dados).
 - [x] Abas acessíveis (papéis tablist/tab/tabpanel, estado selecionado, setas do teclado).
@@ -135,3 +136,5 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
 | 2026-11-14 | Conteúdo de hinos fora do repositório público até haver autorização. |
 | 2026-11-14 | Vozes nomeadas Soprano, Contralto, Tenor e Baixo (de "Parte I a IV"). |
 | 2026-11-14 | Redesenho começa por navegação e separação de funções, antes de cores. |
+| 2026-11-14 | D1 a D4 aprovados como propostos (abas, miniplayer global, letra em estrofes, favoritos depois). |
+| 2026-11-14 | Ao abrir um hino a aba padrão é **Ouvir**, e ela vem antes de **Letra** (a letra fica a um toque). |

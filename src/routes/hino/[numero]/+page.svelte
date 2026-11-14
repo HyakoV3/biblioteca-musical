@@ -18,9 +18,9 @@
   const temAudio = $derived((hino?.vozes.length ?? 0) > 0);
 
   let aba = $state<Aba>("letra");
-  // Ao abrir outro hino: Letra primeiro; se não houver letra mas houver notas, abre em Ouvir.
+  // Ao abrir um hino: Ouvir primeiro (se houver notas para tocar); sem notas, só existe a Letra.
   $effect(() => {
-    aba = hino && hino.letra.length === 0 && hino.vozes.length > 0 ? "ouvir" : "letra";
+    aba = hino && hino.vozes.length > 0 ? "ouvir" : "letra";
   });
 
   // Setas esquerda/direita trocam de aba (padrão de abas acessíveis).
@@ -57,19 +57,19 @@
       <div class="coluna abas" role="tablist" aria-label={t("hino.abas")} tabindex="-1" onkeydown={teclas}>
         <button
           role="tab"
-          id="aba-letra"
-          aria-selected={aba === "letra"}
-          aria-controls="painel-letra"
-          tabindex={aba === "letra" ? 0 : -1}
-          onclick={() => (aba = "letra")}>{t("hino.aba_letra")}</button
-        >
-        <button
-          role="tab"
           id="aba-ouvir"
           aria-selected={aba === "ouvir"}
           aria-controls="painel-ouvir"
           tabindex={aba === "ouvir" ? 0 : -1}
           onclick={() => (aba = "ouvir")}>{t("hino.aba_ouvir")}</button
+        >
+        <button
+          role="tab"
+          id="aba-letra"
+          aria-selected={aba === "letra"}
+          aria-controls="painel-letra"
+          tabindex={aba === "letra" ? 0 : -1}
+          onclick={() => (aba = "letra")}>{t("hino.aba_letra")}</button
         >
       </div>
     </div>
