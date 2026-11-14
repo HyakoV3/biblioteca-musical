@@ -4,7 +4,7 @@
   import { i18n } from "$lib/i18n/index.svelte";
   import { ORGAOS, instrumentosDaVoz, tipoDaVoz } from "./instrumentos";
   import { padrao, salvarVozes } from "./preferencias";
-  import { IDS_REALISTAS } from "./realista";
+  import { realistasDisponiveis, type RealistaId } from "./realista";
   import { ANDAMENTO_MAX, ANDAMENTO_MIN, TRANSPOSICAO_MAX, reproducao, vezesDoHino } from "./reproducao.svelte";
   import { rotuloCurtoDaVez, rotuloDaParte } from "./rotulo-vez";
   import { formatarTempo, fracao } from "./tempo";
@@ -18,6 +18,12 @@
   const cfg = reproducao.config(hino);
   // svelte-ignore state_referenced_locally
   const padraoAndamento = hino.andamento ?? 90;
+
+  // Sons gravados (pacote opcional): a opção só aparece se os arquivos de som existem neste app.
+  let reais = $state<RealistaId[]>([]);
+  $effect(() => {
+    realistasDisponiveis().then((lista) => (reais = lista));
+  });
 
   // Este hino é o que está tocando (ou pausado)? Se outro hino toca, aqui tudo aparece parado.
   const meu = $derived(reproducao.atual?.numero === hino.numero);
@@ -274,9 +280,11 @@
             <optgroup label={t("grupo.instrumentos")}>
               {#each instrumentosDaVoz(v.nome) as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
             </optgroup>
-            <optgroup label={t("grupo.reais")}>
-              {#each IDS_REALISTAS as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
-            </optgroup>
+            {#if reais.length > 0}
+              <optgroup label={t("grupo.reais")}>
+                {#each reais as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
+              </optgroup>
+            {/if}
           </select>
         </label>
       {/each}

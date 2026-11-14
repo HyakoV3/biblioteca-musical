@@ -31,13 +31,21 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
       descartada (GPL-3.0).
 - [ ] Conferir **na documentação oficial** do Android o que o sistema oferece de MIDI (a pesquisa usou só buscas e
       código-fonte do AOSP; a página oficial não foi lida).
-- [ ] Protótipo com 2 ou 3 instrumentos (smplr + FluidR3_GM, hospedado no app) e comparação às cegas com o som atual.
-      Precisa de **baixar arquivos de som** (pedir permissão, informando origem e tamanho). **(depende do responsável)**
-- [ ] Ler o `LICENSE` do smplr e a licença exata dos conjuntos de amostras antes de adotar.
-- [ ] Se aprovado: instrumentos realistas como opção nos Ajustes, mantendo a síntese atual como padrão leve.
+- [x] **Protótipo** com 3 instrumentos (smplr + FluidR3_GM): órgão, flauta e clarinete gravados como opção por voz.
+      O responsável aprovou: "bem mais real", e o órgão soa como o de igreja da CCB. **Decisão:** a síntese continua
+      sendo o padrão e os sons gravados viram **pacote opcional baixado sob demanda** (detalhes e números na I-07).
+- [ ] Ler o `LICENSE` do repositório do smplr (o pacote no npm declara MIT) e a licença das amostras do Gleitzman.
+- [ ] `tools/preparar-sons.py`: um arquivo por instrumento, cortado à faixa dos hinos e em binário (~1,5 MB cada).
+- [ ] Ajustes, "Sons gravados": lista com tamanhos, baixar, remover; armazenamento no app, uso offline; **órgão
+      primeiro**. O app volta à síntese se o som faltar (já feito no protótipo).
+- [ ] Hospedar os arquivos nós mesmos (depende de o repositório ser público) e carregar do armazenamento do app.
+- [ ] Página de créditos e licenças das amostras (aviso de copyright do FluidR3).
+- [ ] Comparar de ouvido outros órgãos do banco (`reed_organ`, `drawbar_organ`) e decidir o substituto do flugelhorn.
+- [ ] Testar 4 vozes gravadas ao mesmo tempo no celular do responsável (estalos, atraso, memória).
+      **(depende do responsável, com o APK de comparação)**
 
-**Pronto quando:** pelo menos 3 pessoas preferem o novo timbre em teste cego, sem estalos ao tocar 4 vozes, e a
-licença de cada som está registrada.
+**Pronto quando:** o pacote de sons baixa, funciona offline e se remove pelos Ajustes; 4 vozes gravadas tocam no celular
+sem estalos; a licença de cada som está registrada; e o app base não cresceu.
 
 ## Etapa 3 — Partitura no hino (I-08)
 

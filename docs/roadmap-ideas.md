@@ -490,6 +490,46 @@ boa qualidade para apps. A documentação oficial do Android **não foi lida dir
    conjunto de amostras; (b) tamanho por instrumento; (c) 4 vozes ao mesmo tempo no celular do responsável, sem estalos nem
    atraso; (d) funciona offline, com a hospedagem própria; (e) pausar, reagendar (I-10) e o destaque (I-09) seguem certos.
 
+### Resultado do protótipo e decisão (2026-11-14)
+
+**Protótipo:** smplr + FluidR3_GM (licença MIT), com três instrumentos gravados (órgão de igreja, flauta e clarinete)
+como opção por voz. Medido em tempo real: o arquivo carrega do próprio app, as notas agendadas soam na hora certa, o
+volume da voz governa o instrumento e a nota termina na duração pedida. O responsável ouviu: **"ficou bem mais real"**
+e o **órgão soa como o órgão clássico de igreja** que se usa na CCB. Nesse nível, está satisfeito.
+
+**Decisão do responsável:** a **síntese atual continua sendo o padrão** (leve, funciona offline desde o primeiro uso). Os
+sons gravados entram como **pacote opcional, baixado sob demanda** (ou como pacote extra importado). O app só mostra a
+opção quando os arquivos existem e, se um som gravado não carregar, a voz toca na síntese em vez de falhar.
+
+**Números medidos nos arquivos baixados:**
+
+| Medida | Resultado |
+|---|---|
+| Tamanho de um instrumento no formato do Gleitzman (JavaScript com base64) | 2,8 a 3,0 MB |
+| Qualidade do áudio original | mp3 estéreo de ~65 kbps, 3 s por nota, 88 notas |
+| Recodificar (Opus mono) | 48 kbps: **106%** do tamanho (pior); 32 kbps: 78%, com perda de qualidade. **Não compensa** |
+| Cortar as notas que os hinos não usam | Os 5 hinos usam MIDI 39 a 77 (33 a 83 com transposição de ±6): ficam 57 das 88 notas, **~35% menos** |
+| Tamanho de um instrumento cortado, em mp3 binário (sem o invólucro base64) | **~1,5 MB** |
+| Os 19 instrumentos do app, cortados | **~28 MB** (todos); o app base continua em ~6 MB |
+
+Alavanca ainda não medida: usar uma nota a cada duas (o smplr transpõe a vizinha), o que reduziria à metade, mas só se
+decide **de ouvido**.
+
+**Desenho proposto para o pacote de sons (a construir):**
+1. `tools/preparar-sons.py`: gera, a partir do FluidR3_GM, um arquivo por instrumento já cortado e em binário.
+2. **Ajustes, "Sons gravados":** lista de instrumentos com o tamanho de cada um, baixar e remover. Os arquivos ficam na
+   pasta de dados do app e funcionam **offline** depois de baixados. Prioridade: o **órgão** primeiro.
+3. **Hospedagem própria** (Releases ou Pages do repositório, quando ele for público), e não o site do Gleitzman. Antes
+   disso, o APK de teste leva os sons dentro (como já leva o conteúdo) e dá para importar de um arquivo.
+4. Carregar do armazenamento do app (via `Blob`/URL local) em vez do endereço fixo do protótipo.
+5. Página de **créditos e licenças** (aviso de copyright do FluidR3, com a lista de origem das amostras).
+6. O **flugelhorn não existe** no padrão General MIDI: decidir o substituto (trompete, trompa ou manter a síntese).
+7. O responsável não sabe a "configuração" do órgão que a igreja usa. Para achar o mais parecido, comparar de ouvido
+   outros órgãos do banco (`reed_organ`, `drawbar_organ`); cada um é mais um download de ~3 MB (pedir permissão).
+
+**Ainda pendente:** o arquivo `LICENSE` do repositório do smplr (o pacote no npm declara MIT), a licença do pacote de
+amostras do Gleitzman, e tocar 4 vozes gravadas no celular do responsável para ver se há estalos.
+
 ### Caminho inicial (anterior à pesquisa)
 - **SoundFont (`.sf2`) ou amostras gravadas**, tocadas no navegador/WebView com uma biblioteca pronta, em vez de
   construir o nosso próprio tocador de amostras. Candidatas a avaliar: **SpessaSynth**, **smplr**, **WebAudioFont**.

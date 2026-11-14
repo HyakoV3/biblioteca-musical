@@ -123,7 +123,8 @@ export class Sintetizador {
     const reais = await Promise.all(
       vozes.map((_, i) => {
         const pedido = opcoes.instrumentos[i];
-        return pedido && ehRealista(pedido) ? this.real(ctx, pedido, i, this.ganhos[i]) : null;
+        // Se o som gravado não carregar (pacote removido, sem arquivo), a voz toca na síntese padrão.
+        return pedido && ehRealista(pedido) ? this.real(ctx, pedido, i, this.ganhos[i]).catch(() => null) : null;
       }),
     );
     this.inicio = ctx.currentTime + ATRASO_INICIAL;
