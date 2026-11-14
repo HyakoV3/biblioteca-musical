@@ -451,7 +451,46 @@ o timbre é aproximado ("tipo um órgão eletrônico"), principalmente em sopros
 ### O que se deseja
 Timbres que lembrem mais o instrumento de verdade (flauta, clarinete, violino, órgão, sax...).
 
-### Caminho mais provável (a pesquisar antes de decidir)
+### Pesquisa de 2026-11-14 (fontes e o que ficou sem confirmar)
+
+Legenda: **[lido]** = conferido no próprio repositório ou arquivo de licença; **[busca]** = só em resultados de busca
+ou resumos; **[?]** = não confirmado. Nada disto é parecer jurídico.
+
+**Bibliotecas para tocar SoundFont/amostras no navegador**
+
+| Biblioteca | Licença | Agenda notas com hora marcada? | Pontos de atenção |
+|---|---|---|---|
+| **smplr** | MIT **[busca]** (o arquivo `LICENSE` não foi lido: o caminho tentado deu 404) | **Sim [lido]**: `start({ note, velocity, time, duration })`, e `output.volume` muda o volume de um instrumento que já toca | Amostras ficam **online** por padrão (precisa de rede); dá para hospedar as nossas com `baseUrl`/`instrumentUrl` **[busca]**. O conjunto padrão vem do pacote de Benjamin Gleitzman (MusyngKite e FluidR3_GM); a **licença desses conjuntos não está declarada** na página **[?]**. Lê `.sf2` direto; `.sf3` **[?]** |
+| **SpessaSynth** (`spessasynth_lib`) | **Apache-2.0 [lido]**, compatível com um app MIT | **Não vi [lido]**: `noteOn` toca na hora; o agendamento exigiria nosso próprio relógio (jitter) ou usar o sequenciador de MIDI | SF2, **SF3** e DLS **[lido]**. Exige **AudioWorklet** e carregar o SoundFont como `ArrayBuffer` (dá para empacotar no app). Volume por canal (CC7) **[?]**. Tamanho da biblioteca e funcionamento no WebView do Android e do iOS **[?]**: testar no aparelho |
+| **WebAudioFont** | **GPL-3.0 [busca]** | (não avaliado) | Licença **copyleft**: incluí-la obrigaria o app a ser GPL, o que **não combina com a nossa MIT**. O autor diz considerar outra licença sob pedido. **Descartada**, salvo acordo com ele |
+
+**Bancos de som (SoundFonts)**
+
+| Banco | Licença | Tamanho | Instrumentos que o app precisa |
+|---|---|---|---|
+| **MuseScore_General** | **MIT [lido]**, herdada do FluidR3 (Frank Wen), com **avisos de copyright obrigatórios** e uma lista de créditos por preset (alguns de domínio público, CC0 ou sem licença declarada, em instrumentos que não usamos) | SF3 **38 MB**, SF2 206 MB; não há versão pequena nem arquivos por instrumento | Tem órgãos, flauta, clarinete, violino, trompete, sax alto e seção de metais. **Flugelhorn não existe** no padrão (o mais próximo é trompete ou Brass 2) |
+| **GeneralUser GS** | Licença **própria** do autor **[lido]**: uso livre, sem exigir crédito, mas **não diz "redistribuir" explicitamente** nem cita APK; o autor não garante a origem de todas as amostras | SF2 **30,8 MB**; existe uma versão SF3 com menos de um terço do tamanho (tamanho exato **[?]**) | (não conferido) |
+| **FluidR3_GM** | MIT **[busca]** | 141 MB (SF2) | GM completo |
+
+**Android (MIDI nativo) [busca]:** a API `android.media.midi` só conecta **dispositivos** MIDI e **não gera som**. O
+`MediaPlayer` toca `.mid` com o sintetizador **Sonivox**, de banco pequeno e qualidade modesta. Não há um banco GM de
+boa qualidade para apps. A documentação oficial do Android **não foi lida diretamente** nesta pesquisa **[?]**.
+
+### Conclusão provisória (a validar com um protótipo)
+
+1. **Descartar** WebAudioFont (GPL-3.0) e o MIDI nativo do Android.
+2. **Protótipo com o smplr**, usando o conjunto **FluidR3_GM** (licença MIT, a mais simples de cumprir) **hospedado
+   dentro do app**, só com os instrumentos de que precisamos. Motivos: ele **agenda notas com hora marcada**, que é
+   como o nosso sintetizador e a I-10 (reagendar na pausa) já funcionam, e tem volume por instrumento.
+3. **Plano B: SpessaSynth** com um SoundFont **reduzido** a poucos instrumentos (SF3), se o smplr não servir. Exige
+   resolver o agendamento das notas.
+4. **O tamanho decide.** O MuseScore_General inteiro (38 MB) deixaria o APK com ~44 MB; vale reduzir o banco aos
+   ~20 instrumentos do app. Não sei ainda quanto isso rende (**[?]**: medir no protótipo).
+5. **O que o protótipo precisa responder:** (a) o smplr é mesmo MIT (ler o `LICENSE`) e qual a licença exata do
+   conjunto de amostras; (b) tamanho por instrumento; (c) 4 vozes ao mesmo tempo no celular do responsável, sem estalos nem
+   atraso; (d) funciona offline, com a hospedagem própria; (e) pausar, reagendar (I-10) e o destaque (I-09) seguem certos.
+
+### Caminho inicial (anterior à pesquisa)
 - **SoundFont (`.sf2`) ou amostras gravadas**, tocadas no navegador/WebView com uma biblioteca pronta, em vez de
   construir o nosso próprio tocador de amostras. Candidatas a avaliar: **SpessaSynth**, **smplr**, **WebAudioFont**.
 - O banco de sons precisa de **licença livre compatível com MIT** e não pode ir no repositório se for grande: seguiria

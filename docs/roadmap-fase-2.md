@@ -25,10 +25,15 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
 
 ## Etapa 2 — Som mais realista (I-07)
 
-- [ ] Pesquisar bibliotecas de SoundFont/amostras (SpessaSynth, smplr, WebAudioFont): licença, tamanho, desempenho
-      no celular. Registrar a escolha e o motivo antes de construir.
-- [ ] Conferir na documentação do Android o que o sistema oferece de MIDI (a conversa de 2026-11-14 foi de memória).
-- [ ] Protótipo com 2 ou 3 instrumentos e comparação às cegas com o som atual.
+- [x] Pesquisar bibliotecas de SoundFont/amostras (SpessaSynth, smplr, WebAudioFont): licença, tamanho, desempenho
+      no celular. **Feita em 2026-11-14**, registrada na I-07 de `roadmap-ideas.md`, com o que foi lido na fonte e o
+      que ficou sem confirmar. Provisório: smplr + FluidR3_GM (MIT) hospedado no app; plano B, SpessaSynth; WebAudioFont
+      descartada (GPL-3.0).
+- [ ] Conferir **na documentação oficial** do Android o que o sistema oferece de MIDI (a pesquisa usou só buscas e
+      código-fonte do AOSP; a página oficial não foi lida).
+- [ ] Protótipo com 2 ou 3 instrumentos (smplr + FluidR3_GM, hospedado no app) e comparação às cegas com o som atual.
+      Precisa de **baixar arquivos de som** (pedir permissão, informando origem e tamanho). **(depende do responsável)**
+- [ ] Ler o `LICENSE` do smplr e a licença exata dos conjuntos de amostras antes de adotar.
 - [ ] Se aprovado: instrumentos realistas como opção nos Ajustes, mantendo a síntese atual como padrão leve.
 
 **Pronto quando:** pelo menos 3 pessoas preferem o novo timbre em teste cego, sem estalos ao tocar 4 vozes, e a
