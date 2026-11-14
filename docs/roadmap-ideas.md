@@ -551,6 +551,49 @@ música: começa na **Intro**, passa para a **1ª** quando ela começa, depois a
 
 ---
 
+## I-10 — Trocar instrumento, andamento e tom com a música pausada
+
+> **Origem:** observação do responsável ao testar no celular: "quando pausado ele não deixa eu trocar as vozes do
+> sintetizador e ele poderia deixar; só deixa eu trocar quando eu paro".
+
+### Como é hoje
+- **Com a música tocando ou pausada**, ficam travados: o **instrumento de cada voz**, o **andamento**, a
+  **transposição** e o "Restaurar padrão" (`disabled={!parado}` em `Player.svelte`). Para mexer é preciso **parar**,
+  o que volta a música ao começo.
+- **Funcionam ao vivo**, inclusive pausado: o **volume** e o **silenciar** de cada voz.
+
+### O que se deseja
+Poder trocar o **instrumento** (o pedido) com a música **pausada**, e continuar de onde parou. O mesmo valeria para
+andamento e tom, por coerência, se for simples.
+
+### Por que é assim (hipótese a confirmar no código)
+O sintetizador **agenda todas as notas de uma vez**, no começo, já com o timbre escolhido. A pausa só **suspende o
+relógio** do `AudioContext`, então as notas continuam agendadas com o timbre antigo. Volume e silenciar passam por
+um controle de volume por voz (`GainNode`), que dá para mexer a qualquer momento; o timbre, não.
+
+### Caminho provável
+Ao **continuar** depois de uma mudança, **reagendar** as notas a partir da **posição atual** (em batidas) com os
+ajustes novos, em vez de retomar o agendamento antigo:
+- guardar a posição em **batidas**, e não em segundos, para ela valer mesmo se o andamento mudar;
+- `Sintetizador.tocar` ganha um parâmetro "começar em N batidas", que descarta as notas anteriores e corta as que
+  atravessam esse ponto;
+- sem mudança nenhuma, "continuar" segue como hoje (sem reagendar).
+
+### Perguntas em aberto
+1. Trocar o instrumento **tocando**, e não só pausado? Dá para fazer do mesmo jeito (reagendar na hora), mas pode
+   causar um corte curto no som. Começar só pelo pausado, como pedido.
+2. Andamento e tom também liberados na pausa, ou só o instrumento?
+3. O destaque da parte que soa (I-09) precisa continuar certo depois de trocar o andamento: depende da posição em
+   batidas, o que o caminho acima já resolve.
+
+### Critérios de aceitação (propostos)
+- Pausar, trocar o instrumento de uma voz e continuar: a música segue do mesmo ponto, com o novo timbre.
+- Pausar, mudar o andamento e continuar: segue do mesmo ponto musical, no novo andamento.
+- Sem mudança durante a pausa, o som continua idêntico ao de hoje.
+- Teste automatizado da conversão posição em batidas e novo corte das notas.
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
