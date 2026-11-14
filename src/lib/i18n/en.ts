@@ -33,6 +33,7 @@ export const en: Dicionario = {
   "player.instrumento": "{voz} instrument",
   "player.andamento": "Tempo: {bpm} bpm",
   "player.transposicao": "Transposition",
+  "player.redefinir": "Reset voices",
   "player.semitons": "{n} semitones",
   "grupo.orgaos": "Organs",
   "grupo.instrumentos": "Instruments",

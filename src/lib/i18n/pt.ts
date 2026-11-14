@@ -33,6 +33,7 @@ export const pt = {
   "player.instrumento": "Instrumento de {voz}",
   "player.andamento": "Andamento: {bpm} bpm",
   "player.transposicao": "Transposição",
+  "player.redefinir": "Redefinir vozes",
   "player.semitons": "{n} semitons",
   "grupo.orgaos": "Órgãos",
   "grupo.instrumentos": "Instrumentos",

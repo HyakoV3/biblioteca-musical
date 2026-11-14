@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { i18n } from "$lib/i18n/index.svelte";
-  import { ORGAOS, PADRAO, instrumentosDaVoz, tipoDaVoz, type InstrumentoId } from "./instrumentos";
+  import { ORGAOS, instrumentosDaVoz, tipoDaVoz, type InstrumentoId } from "./instrumentos";
+  import { lerVoz, padrao, salvarVozes } from "./preferencias";
   import { Sintetizador, type Voz } from "./sintetizador";
 
   let { vozes, andamentoInicial = 90 }: { vozes: Voz[]; andamentoInicial?: number } = $props();
@@ -13,12 +14,27 @@
   // svelte-ignore state_referenced_locally
   let andamento = $state(andamentoInicial);
   let transposicao = $state(0);
+  // As escolhas de cada voz (instrumento, volume, silenciar) são lembradas no aparelho.
   // svelte-ignore state_referenced_locally
-  let instrumentos = $state<InstrumentoId[]>(vozes.map(() => PADRAO));
-  // svelte-ignore state_referenced_locally
-  let volumes = $state(vozes.map(() => 1));
-  // svelte-ignore state_referenced_locally
-  let mudas = $state(vozes.map(() => false));
+  const salvas = vozes.map((v) => lerVoz(v.nome));
+  let instrumentos = $state<InstrumentoId[]>(salvas.map((p) => p.instrumento));
+  let volumes = $state(salvas.map((p) => p.volume));
+  let mudas = $state(salvas.map((p) => p.muda));
+
+  $effect(() => {
+    salvarVozes(
+      vozes.map((v, i) => ({ nome: v.nome, pref: { instrumento: instrumentos[i], volume: volumes[i], muda: mudas[i] } })),
+    );
+  });
+
+  function redefinir() {
+    const p = padrao();
+    instrumentos = vozes.map(() => p.instrumento);
+    volumes = vozes.map(() => p.volume);
+    mudas = vozes.map(() => p.muda);
+    // Com o hino tocando, o volume e o silêncio voltam na hora; o instrumento vale na próxima vez.
+    vozes.forEach((_, i) => sint.volume(i, p.volume));
+  }
 
   const efetivo = (i: number) => (mudas[i] ? 0 : volumes[i]);
   // Nomes do arquivo como "Soprano"/"Baixo" são traduzidos; outros ("Parte I") ficam como estão.
@@ -91,6 +107,8 @@
     {/each}
   </div>
 
+  <button class="redefinir" onclick={redefinir}>{t("player.redefinir")}</button>
+
   <label>
     {t("player.andamento", { bpm: andamento })}
     <input type="range" min="40" max="160" bind:value={andamento} disabled={tocando} />
@@ -114,6 +132,7 @@
   .instrumento { grid-column: 1 / -1; }
   .muda { min-width: 44px; min-height: 44px; font-size: 1.2rem; border-radius: 10px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
   .muda[aria-pressed="true"] { background: #eee; }
+  .redefinir { min-height: 40px; border-radius: 10px; border: 1px solid #ccc; background: transparent; color: inherit; cursor: pointer; font-size: 0.9rem; }
   .nome.apagada { opacity: 0.45; text-decoration: line-through; }
   label { display: grid; gap: 0.3rem; font-size: 0.95rem; }
   select { min-height: 44px; font-size: 1rem; border-radius: 10px; padding: 0 0.5rem; }
