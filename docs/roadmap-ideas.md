@@ -524,7 +524,9 @@ decide **de ouvido**.
 4. Carregar do armazenamento do app (via `Blob`/URL local) em vez do endereço fixo do protótipo.
 5. Página de **créditos e licenças** (aviso de copyright do FluidR3, com a lista de origem das amostras).
 6. O **flugelhorn não existe** no padrão General MIDI: decidir o substituto (trompete, trompa ou manter a síntese).
-7. O responsável não sabe a "configuração" do órgão que a igreja usa. Para achar o mais parecido, comparar de ouvido
+7. **Comparação feita (2026-11-14):** o responsável achou o **órgão de tirantes (`drawbar_organ`) o mais parecido com o da
+   igreja**, e ele vai na frente da lista. Seu volume estava baixo, e os ganhos por instrumento foram calibrados.
+   Antes disso: o responsável não sabe a "configuração" do órgão que a igreja usa. Para achar o mais parecido, comparar de ouvido
    outros órgãos do banco (`reed_organ`, `drawbar_organ`); cada um é mais um download de ~3 MB (pedir permissão).
 
 **Ainda pendente:** o arquivo `LICENSE` do repositório do smplr (o pacote no npm declara MIT), a licença do pacote de
@@ -678,6 +680,47 @@ ajustes novos, em vez de retomar o agendamento antigo:
 - Pausar, mudar o andamento e continuar: segue do mesmo ponto musical, no novo andamento.
 - Sem mudança durante a pausa, o som continua idêntico ao de hoje.
 - Teste automatizado da conversão posição em batidas e novo corte das notas.
+
+---
+
+## I-11 — Ícones em SVG local (subset), no lugar de emojis e símbolos
+
+> **Origem:** o responsável acha os ícones atuais "zuados" e sugeriu usar o sistema de ícones de outro projeto do responsável
+> (lista de ícones e `icons-subset.json` locais).
+
+### Como é hoje
+Os "ícones" são caracteres de texto e emojis: ▶ ❚❚ ■ ♪ ⚑ 🔊 🔇 ← ✓ + − (cerca de 12 distintos). A aparência depende do
+aparelho e da fonte (no emulador o 🔊 vira um desenho colorido de clip-art) e **os emojis ignoram os temas** (não herdam a
+cor dos tokens, nem a de baixa visão quando existir).
+
+### Como esse projeto faz (referência, lido sem alterar nada)
+- `admin-web/public/icons.js` varre o DOM atrás de `<span class="material-symbols-outlined">nome</span>` e troca por um
+  `<svg>` inline, tirado de `icons-subset.json`.
+- `icons-subset.json` guarda só os ícones usados: 4 temas (`material-symbols-light` padrão, `ic`, `fluent-color`,
+  `withicons-pastel`), uns 100 ícones por tema, 373 KB no total (cerca de 0,9 KB por ícone).
+- Gerado por `admin-web/scripts/build-icons-subset.mjs`, que busca os desenhos no Iconify (precisa de rede, uma vez) e
+  grava o arquivo. Em uso, tudo é local.
+
+### Proposta (pequena)
+1. Componente Svelte `Icone.svelte` (`nome`, `tamanho`) que lê de `src/lib/icones.json`, **um só tema** (sugestão:
+   `material-symbols-light`, o padrão desse projeto) e só os ~12 ícones que usamos (**~11 KB**, contra os 373 KB desse projeto,
+   que carrega 4 temas). `fill="currentColor"`: herda a cor dos tokens (claro, escuro, dourado, baixa visão).
+2. `tools/gerar-icones.mjs`, adaptado do script desse projeto (buscar no Iconify uma vez e gravar o JSON no repositório).
+3. Trocar os glifos: play, pause, stop, música (introdução), bandeira (final), alto-falante ligado e mudo, voltar, ok,
+   mais e menos, e a seta dos cards.
+4. Ícone decorativo com `aria-hidden`; o nome acessível continua no botão (`aria-label`).
+
+### Decisões que faltam
+1. **Qual conjunto de ícones?** O outro projeto do responsável oferece quatro; o responsável quer ver uma prévia (como foi com o dourado).
+2. **Licença do conjunto escolhido**, registrada nos créditos (a página de licenças dos sons da I-07 já precisa existir).
+3. **Reaproveitar o `icons.js` ou fazer um componente Svelte?** Recomendação: componente Svelte com o mesmo subset e o
+   mesmo script de geração, porque o `icons.js` foi feito para HTML sem framework (observa o DOM e troca texto).
+
+### Critérios de aceitação (propostos)
+- Nenhum emoji nem glifo de ícone na interface.
+- Contraste dos ícones conferido (3:1) em todos os temas, por `tools/contraste.py`.
+- Leitor de tela não lê o ícone duas vezes.
+- O APK cresce menos de 30 KB.
 
 ---
 

@@ -10,9 +10,10 @@
  * 0,052 / 0,047 / 0,040 / 0,050 / 0,065. Ganho = volume da síntese ÷ volume do gravado.
  */
 export const REALISTAS = {
+  // O órgão de tirantes vai na frente: foi o que o responsável achou mais parecido com o da igreja.
+  real_orgao_tirantes: { arquivo: "drawbar_organ", ganho: 2.7 },
   real_orgao: { arquivo: "church_organ", ganho: 2.1 },
   real_orgao_palheta: { arquivo: "reed_organ", ganho: 2.3 },
-  real_orgao_tirantes: { arquivo: "drawbar_organ", ganho: 2.7 },
   real_flauta: { arquivo: "flute", ganho: 4.3 },
   real_clarinete: { arquivo: "clarinet", ganho: 1.9 },
 } as const;
