@@ -1,6 +1,8 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
+  import { pushState } from "$app/navigation";
+  import { page } from "$app/state";
   import Player from "$lib/Player.svelte";
   import type { Voz } from "$lib/sintetizador";
 
@@ -21,9 +23,17 @@
   let pacote = $state<Pacote | null>(null);
   let erro = $state("");
   let busca = $state("");
-  let aberto = $state<Hino | null>(null);
   let aviso = $state("");
   let confirmandoRemocao = $state(false);
+
+  // O hino aberto vive no histórico (roteamento raso): assim o botão "voltar" do Android
+  // e o gesto de voltar do iOS fecham o hino em vez de sair do app.
+  const aberto = $derived(pacote?.hinario.hinos.find((h) => h.numero === page.state.hino) ?? null);
+  const abrir = (h: Hino) => {
+    pushState("", { hino: h.numero });
+    window.scrollTo(0, 0);
+  };
+  const voltar = () => history.back();
 
   onMount(async () => {
     try {
@@ -70,9 +80,7 @@
     const todos = pacote?.hinario.hinos ?? [];
     const q = normalizar(busca);
     if (!q) return todos;
-    return todos.filter(
-      (h) => String(h.numero) === q || normalizar(h.titulo).includes(q),
-    );
+    return todos.filter((h) => String(h.numero) === q || normalizar(h.titulo).includes(q));
   });
 </script>
 
@@ -87,7 +95,7 @@
   {:else if !pacote}
     <p>Carregando…</p>
   {:else if aberto}
-    <button class="voltar" onclick={() => (aberto = null)}>← Voltar</button>
+    <button class="voltar" onclick={voltar}>← Voltar</button>
     <article>
       <h2>{aberto.numero}. {aberto.titulo}</h2>
       {#if aberto.tonalidade}<p class="meta">Tonalidade: {aberto.tonalidade}</p>{/if}
@@ -96,7 +104,9 @@
           <Player vozes={aberto.vozes} andamentoInicial={aberto.andamento ?? 90} />
         {/key}
       {/if}
-      {#each aberto.letra as linha}<p>{linha}</p>{:else}<p class="meta">Sem letra neste pacote.</p>{/each}
+      <div class="letra">
+        {#each aberto.letra as linha}<p>{linha}</p>{:else}<p class="meta">Sem letra neste pacote.</p>{/each}
+      </div>
     </article>
   {:else}
     <p class="meta">
@@ -105,6 +115,7 @@
     </p>
     <input
       type="search"
+      inputmode="search"
       placeholder="Buscar por número ou título"
       aria-label="Buscar hino"
       bind:value={busca}
@@ -124,9 +135,9 @@
     <ul>
       {#each hinos as h (h.numero)}
         <li>
-          <button onclick={() => (aberto = h)}>
+          <button onclick={() => abrir(h)}>
             <span class="num">{h.numero}</span>
-            <span>{h.titulo}</span>
+            <span class="titulo">{h.titulo}</span>
             {#if h.tonalidade}<small>{h.tonalidade}</small>{/if}
           </button>
         </li>
@@ -143,34 +154,44 @@
     color: #1d1d1f;
     background: #f6f6f6;
   }
-  .container { max-width: 640px; margin: 0 auto; padding: 1rem; }
+  :global(body) { margin: 0; -webkit-text-size-adjust: 100%; }
+  /* Respeita o recorte da câmera e a barra de gestos (viewport-fit=cover). */
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+      max(1.5rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  }
   h1 { font-size: 1.4rem; margin: 0; }
   .aviso, .meta { color: #666; font-size: 0.9rem; }
-  input {
-    width: 100%; box-sizing: border-box; padding: 0.7rem 0.9rem; margin: 0.5rem 0 1rem;
-    font-size: 1rem; border: 1px solid #ccc; border-radius: 10px;
+  input[type="search"] {
+    width: 100%; box-sizing: border-box; min-height: 48px; padding: 0.7rem 0.9rem; margin: 0.5rem 0 0.8rem;
+    font-size: 1rem; border: 1px solid #ccc; border-radius: 12px;
   }
   .importar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.8rem; }
-  .botao, .secundario {
-    padding: 0.5rem 0.9rem; font-size: 0.9rem; border-radius: 10px; border: 1px solid #ccc;
+  .botao, .secundario, .voltar {
+    display: inline-flex; align-items: center; min-height: 44px; box-sizing: border-box;
+    padding: 0 1rem; font-size: 0.95rem; border-radius: 12px; border: 1px solid #ccc;
     background: #fff; color: inherit; cursor: pointer;
   }
+  .voltar { margin: 0.8rem 0; }
   ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
   li > button {
-    width: 100%; display: flex; align-items: center; gap: 0.8rem; text-align: left;
-    padding: 0.7rem 0.9rem; font-size: 1rem; background: #fff; color: inherit;
-    border: 1px solid #ddd; border-radius: 10px; cursor: pointer;
+    width: 100%; min-height: 52px; display: flex; align-items: center; gap: 0.8rem; text-align: left;
+    padding: 0.5rem 0.9rem; font-size: 1rem; background: #fff; color: inherit;
+    border: 1px solid #ddd; border-radius: 12px; cursor: pointer;
   }
   li > button:hover { border-color: #888; }
-  .num { font-weight: 700; min-width: 2.2rem; }
-  small { margin-left: auto; color: #666; }
-  .voltar { margin: 0.8rem 0; padding: 0.5rem 0.9rem; border-radius: 10px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
-  article p { line-height: 1.6; margin: 0; }
-  article p:empty { min-height: 1em; } /* linha vazia separa as estrofes */
+  .num { font-weight: 700; min-width: 2.4rem; }
+  .titulo { flex: 1; }
+  small { color: #666; }
+  .letra { margin-top: 1rem; }
+  .letra p { line-height: 1.6; margin: 0; font-size: 1.05rem; }
+  .letra p:empty { min-height: 1em; } /* linha vazia separa as estrofes */
   .erro { color: #b00020; }
   @media (prefers-color-scheme: dark) {
     :root { color: #eee; background: #1b1b1d; }
-    input, li > button, .voltar, .botao, .secundario { background: #2a2a2d; color: #eee; border-color: #444; }
+    input[type="search"], li > button, .botao, .secundario, .voltar { background: #2a2a2d; color: #eee; border-color: #444; }
     .aviso, .meta, small { color: #aaa; }
   }
 </style>
