@@ -1,0 +1,62 @@
+/*
+ * Tokens semânticos de cor. Tema claro é o padrão; o escuro vale quando o sistema pede
+ * (prefers-color-scheme) ou quando a pessoa escolhe "Escuro" em Ajustes (data-tema="escuro").
+ * Os dois blocos escuros precisam ter os mesmos valores.
+ *
+ * Contraste: rode `python3 tools/contraste.py` depois de mexer em qualquer cor.
+ *   --borda           divisórias decorativas (não delimita controles)
+ *   --borda-controle  limite de campos, botões, abas e trilhas (mínimo 3:1, WCAG 1.4.11)
+ */
+:root {
+  color-scheme: light dark;
+
+  --fundo: #f7f8fa;
+  --superficie: #ffffff;
+  --texto: #1b2430;
+  --suave: #526173;
+  --borda: #d8dee7;
+  --borda-controle: #738193;
+  --acento: #1768b3;
+  --acento-texto: #ffffff;
+  --perigo: #b42318;
+  --sucesso: #1a7f37;
+  --foco: #1768b3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    color-scheme: dark;
+
+    --fundo: #10151d;
+    --superficie: #1b2330;
+    --texto: #f2f5f9;
+    --suave: #bac6d5;
+    --borda: #374454;
+    --borda-controle: #738295;
+    --acento: #7bbcff;
+    --acento-texto: #10151d;
+    --perigo: #ff928a;
+    --sucesso: #56d364;
+    --foco: #7bbcff;
+  }
+}
+
+:root[data-tema="claro"] {
+  color-scheme: light;
+}
+
+:root[data-tema="escuro"] {
+  color-scheme: dark;
+
+  --fundo: #10151d;
+  --superficie: #1b2330;
+  --texto: #f2f5f9;
+  --suave: #bac6d5;
+  --borda: #374454;
+  --borda-controle: #738295;
+  --acento: #7bbcff;
+  --acento-texto: #10151d;
+  --perigo: #ff928a;
+  --sucesso: #56d364;
+  --foco: #7bbcff;
+}

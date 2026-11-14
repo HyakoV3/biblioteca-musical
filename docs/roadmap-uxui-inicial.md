@@ -75,21 +75,32 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
 - [x] Andamento e transposição como valores numéricos com − e + (andamento de 5 em 5 bpm, de 40 a 160;
       tom de −6 a +6) e botão "Restaurar padrão".
 - [x] Instrumento, volume e silenciar continuam valendo ao vivo (instrumento, andamento e tom só com a música parada).
-- [ ] **Teste no emulador/aparelho** dos critérios abaixo (só foram verificados tipos, build e a lógica de tempo).
+- [x] **Teste no emulador** dos critérios abaixo: validado pelo responsável em 2026-11-14.
 - Aceitação: trocar de aba ou voltar à lista não interrompe a reprodução · miniplayer correto após
   parar/pausar/terminar · pausar e continuar retoma do mesmo ponto · tocar outro hino substitui o atual.
 - Limites conhecidos: alterar andamento, tom ou instrumento exige parar antes (mudar ao vivo exigiria reagendar
   as notas a partir da posição atual); não é possível arrastar o progresso; áudio com a tela apagada não foi
   validado (ver seção 4).
 
-**Etapa 3 — Componentes e tema**
-- [ ] Tokens semânticos; temas Claro, Escuro e Sistema (padrão).
-- [ ] Estados: vazio, carregando, erro, importação concluída, áudio indisponível.
-- [ ] Mixer compacto: ligar/desligar, volume e instrumento como três ações visualmente distintas;
-      instrumentos em seção recolhida.
-- Aceitação: contraste AA verificado em todos os estados · silenciar não depende só de cor.
-- Atenção: na paleta de partida, **as bordas falham** o contraste de componente (1,27:1 no claro e
-  1,59:1 no escuro, meta 3:1). Ajustar antes de adotar.
+**Etapa 3 — Componentes e tema** — *implementada em 2026-11-14; falta validar no aparelho*
+- [x] Tokens semânticos (`src/lib/tema.css`); temas Claro, Escuro e Seguir o sistema (padrão), escolhidos em
+      **Ajustes → Aparência** e lembrados no aparelho; o tema salvo é aplicado antes da primeira pintura.
+- [x] Nenhuma cor fixa nos componentes (conferido por busca no código).
+- [x] Contraste medido por `tools/contraste.py` (15 pares, nos dois temas, todos dentro da meta); o verificador
+      foi testado com cores ruins e reprova como esperado. Tabela em `docs/design-tokens.md`.
+- [x] Bordas: criado `--borda-controle` (3,7:1 a 4,7:1), separado da borda decorativa; resolve a falha da paleta de partida.
+- [x] Estados: carregando (indicador, parado com movimento reduzido), vazio/sem resultado, erro, sucesso e
+      informação (aviso com ícone ✓ ! i, não só cor), sem letra, **sem notas para tocar** e **falha ao iniciar o áudio**.
+- [x] Mixer compacto: por voz, interruptor liga/desliga, volume (com percentual ou "silenciada") e, numa seção
+      **recolhida**, o instrumento. Silenciar aparece por rótulo, texto riscado e interruptor tracejado.
+- [x] Botão principal com cor de acento; foco visível (3 px) em todos os controles.
+- [ ] **Teste no emulador/aparelho** dos critérios abaixo (só foram verificados tipos, build e o contraste dos tokens).
+- Aceitação: contraste AA verificado em todos os estados · silenciar não depende só de cor · trocar o tema em
+  Ajustes muda o app inteiro na hora e a escolha sobrevive ao fechar o app · "Seguir o sistema" acompanha o
+  aparelho · nenhuma tela fica ilegível no escuro.
+- Limites conhecidos: o contraste foi medido nos tokens, não na tela renderizada. **A verificar no aparelho:** se a
+  barra de status e a barra de gestos do Android acompanham o tema escolhido no app (pode ser preciso ajustar o
+  tema nativo do Android, em `src-tauri/gen/android`).
 
 **Etapa 4 — Acessibilidade e internacionalização**
 - [ ] Nome, papel e valor em cada controle (ex.: "Volume do soprano, 80 por cento").

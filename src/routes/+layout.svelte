@@ -1,8 +1,10 @@
 <script lang="ts">
+  import "$lib/tema.css";
   import { onMount } from "svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
   import Miniplayer from "$lib/Miniplayer.svelte";
+  import { aplicarTema, tema } from "$lib/tema.svelte";
 
   let { children } = $props();
 
@@ -13,6 +15,11 @@
   $effect(() => {
     document.documentElement.lang = i18n.idioma;
   });
+
+  // Aplica a aparência escolhida (Sistema, Claro ou Escuro).
+  $effect(() => {
+    aplicarTema(tema.atual);
+  });
 </script>
 
 {@render children()}
@@ -20,27 +27,14 @@
 
 <style>
   :global(:root) {
-    --fundo: #f6f6f6;
-    --superficie: #fff;
-    --texto: #1d1d1f;
-    --suave: #666;
-    --borda: #ccc;
-    --perigo: #b00020;
     font-family: system-ui, sans-serif;
     color: var(--texto);
     background: var(--fundo);
   }
-  @media (prefers-color-scheme: dark) {
-    :global(:root) {
-      --fundo: #1b1b1d;
-      --superficie: #2a2a2d;
-      --texto: #eee;
-      --suave: #aaa;
-      --borda: #444;
-      --perigo: #ff928a;
-    }
-  }
   :global(body) { margin: 0; -webkit-text-size-adjust: 100%; }
+  /* Anel de foco visível para teclado e leitores de tela com navegação por foco. */
+  :global(:focus-visible) { outline: 3px solid var(--foco); outline-offset: 2px; }
+  :global(a) { color: var(--acento); }
   /* Coluna central; respeita o recorte da câmera e a barra de gestos (viewport-fit=cover). */
   :global(.coluna) {
     max-width: 640px; margin: 0 auto; box-sizing: border-box;
@@ -52,11 +46,17 @@
     padding-bottom: calc(var(--altura-miniplayer, 0px) + max(1.5rem, env(safe-area-inset-bottom)));
   }
   :global(.meta) { color: var(--suave); font-size: 0.9rem; }
-  :global(.erro) { color: var(--perigo); }
+  /* Texto só para leitores de tela. */
+  :global(.so-leitor) {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
   :global(.botao) {
     display: inline-flex; align-items: center; justify-content: center; min-height: 48px; box-sizing: border-box;
-    padding: 0 1rem; font-size: 1rem; text-decoration: none; border-radius: 12px; border: 1px solid var(--borda);
-    background: var(--superficie); color: inherit; cursor: pointer;
+    padding: 0 1rem; font-size: 1rem; text-decoration: none; border-radius: 12px;
+    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto); cursor: pointer;
   }
-  :global(.botao.perigo) { color: var(--perigo); }
+  :global(.botao.primario) { background: var(--acento); color: var(--acento-texto); border-color: var(--acento); font-weight: 600; }
+  :global(.botao.perigo) { color: var(--perigo); border-color: var(--perigo); }
+  :global(.botao:disabled) { opacity: 0.5; cursor: not-allowed; }
 </style>

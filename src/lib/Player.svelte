@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Aviso from "./Aviso.svelte";
   import type { Hino } from "./biblioteca.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
   import { ORGAOS, instrumentosDaVoz, tipoDaVoz } from "./instrumentos";
@@ -42,6 +43,11 @@
     estado === "tocando" ? `❚❚ ${t("audio.pausar")}` : estado === "pausado" ? `▶ ${t("audio.continuar")}` : `▶ ${t("audio.tocar")}`,
   );
 
+  // Resumo na seção recolhida: o instrumento comum a todas as vozes, ou "Vários".
+  const resumoInstrumentos = $derived(
+    new Set(cfg.instrumentos).size === 1 ? t(`inst.${cfg.instrumentos[0]}`) : t("player.instrumentos_varios"),
+  );
+
   const aoMudarVoz = (i: number) => reproducao.volumeAoVivo(hino.numero, i);
 
   function redefinirVozes() {
@@ -63,13 +69,18 @@
   const mudarTom = (d: number) =>
     (cfg.transposicao = Math.min(TRANSPOSICAO_MAX, Math.max(-TRANSPOSICAO_MAX, cfg.transposicao + d)));
   const sinal = (n: number) => (n > 0 ? `+${n}` : String(n));
+  const percentual = (v: number) => Math.round(v * 100);
 </script>
 
 <section class="player" aria-label={t("player.titulo")}>
+  {#if reproducao.erro}
+    <Aviso tipo="erro">{t("player.erro_audio")}</Aviso>
+  {/if}
+
   <div class="principal">
-    <button class="tocar" onclick={() => reproducao.alternar(hino)}>{rotuloPrincipal}</button>
+    <button class="botao primario tocar" onclick={() => reproducao.alternar(hino)}>{rotuloPrincipal}</button>
     {#if !parado}
-      <button class="parar" onclick={() => reproducao.parar()}>■ {t("audio.parar")}</button>
+      <button class="botao parar" onclick={() => reproducao.parar()}>■ {t("audio.parar")}</button>
     {/if}
   </div>
 
@@ -130,16 +141,19 @@
       </div>
     </div>
 
-    <button class="secundario" disabled={!parado} onclick={restaurarPadrao}>{t("player.restaurar_padrao")}</button>
+    <button class="botao secundario" disabled={!parado} onclick={restaurarPadrao}>{t("player.restaurar_padrao")}</button>
   </div>
 
+  <!-- Mixer: cada voz tem três controles distintos. Interruptor = liga/desliga a voz;
+       controle deslizante = volume; instrumento fica na seção recolhida abaixo. -->
   <div class="vozes" role="group" aria-label={t("player.vozes")}>
     {#each hino.vozes as v, i}
-      <div class="voz">
+      <div class="voz" class:silenciada={cfg.mudas[i]}>
         <button
-          class="muda"
-          aria-pressed={cfg.mudas[i]}
-          aria-label={cfg.mudas[i] ? t("player.ativar", { voz: nomeVoz(v.nome) }) : t("player.silenciar", { voz: nomeVoz(v.nome) })}
+          class="chave"
+          role="switch"
+          aria-checked={!cfg.mudas[i]}
+          aria-label={t("player.voz_rotulo", { voz: nomeVoz(v.nome) })}
           onclick={() => {
             cfg.mudas[i] = !cfg.mudas[i];
             aoMudarVoz(i);
@@ -147,76 +161,99 @@
         >
           {cfg.mudas[i] ? "🔇" : "🔊"}
         </button>
-        <span class="nome" class:apagada={cfg.mudas[i]}>{nomeVoz(v.nome)}</span>
+        <div class="identidade">
+          <span class="nome">{nomeVoz(v.nome)}</span>
+          <span class="estado-voz">{cfg.mudas[i] ? t("player.silenciada") : `${percentual(cfg.volumes[i])}%`}</span>
+        </div>
         <input
           type="range"
           min="0"
           max="1"
           step="0.05"
           aria-label={t("player.volume", { voz: nomeVoz(v.nome) })}
+          aria-valuetext={t("player.volume_valor", { n: percentual(cfg.volumes[i]) })}
           bind:value={cfg.volumes[i]}
           oninput={() => aoMudarVoz(i)}
         />
-        <select
-          class="instrumento"
-          aria-label={t("player.instrumento", { voz: nomeVoz(v.nome) })}
-          bind:value={cfg.instrumentos[i]}
-          disabled={!parado}
-        >
-          <optgroup label={t("grupo.orgaos")}>
-            {#each ORGAOS as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
-          </optgroup>
-          <optgroup label={t("grupo.instrumentos")}>
-            {#each instrumentosDaVoz(v.nome) as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
-          </optgroup>
-        </select>
       </div>
     {/each}
-    <button class="secundario" onclick={redefinirVozes}>{t("player.redefinir")}</button>
   </div>
+
+  <details class="instrumentos">
+    <summary>
+      <span>{t("player.instrumentos")}</span>
+      <span class="resumo">{resumoInstrumentos}</span>
+    </summary>
+    <div class="lista-instrumentos">
+      {#each hino.vozes as v, i}
+        <label class="inst-linha">
+          <span>{nomeVoz(v.nome)}</span>
+          <select
+            aria-label={t("player.instrumento", { voz: nomeVoz(v.nome) })}
+            bind:value={cfg.instrumentos[i]}
+            disabled={!parado}
+          >
+            <optgroup label={t("grupo.orgaos")}>
+              {#each ORGAOS as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
+            </optgroup>
+            <optgroup label={t("grupo.instrumentos")}>
+              {#each instrumentosDaVoz(v.nome) as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
+            </optgroup>
+          </select>
+        </label>
+      {/each}
+    </div>
+  </details>
+
+  <button class="botao secundario" onclick={redefinirVozes}>{t("player.redefinir")}</button>
 </section>
 
 <style>
   .player { display: grid; gap: 1rem; }
   .principal { display: flex; gap: 0.5rem; }
-  .tocar {
-    flex: 1; min-height: 56px; font-size: 1.15rem; font-weight: 600; border-radius: 12px;
-    border: 1px solid var(--borda); background: var(--superficie); color: inherit; cursor: pointer;
-  }
-  .parar {
-    min-height: 56px; padding: 0 1rem; font-size: 1rem; border-radius: 12px;
-    border: 1px solid var(--borda); background: var(--superficie); color: inherit; cursor: pointer;
-  }
+  .tocar { flex: 1; min-height: 56px; font-size: 1.15rem; }
+  .parar { min-height: 56px; }
   .progresso { height: 8px; border-radius: 4px; background: var(--borda); overflow: hidden; }
-  .preenchido { height: 100%; background: currentColor; }
+  .preenchido { height: 100%; background: var(--acento); }
   .tempos { display: flex; justify-content: space-between; margin-top: 0.3rem; font-size: 0.85rem; color: var(--suave); font-variant-numeric: tabular-nums; }
   .dica { margin: 0; }
+
   .ajustes { display: grid; gap: 0.6rem; }
   .passo-linha { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .rotulo { font-size: 0.95rem; }
   .passo { display: flex; align-items: center; gap: 0.4rem; }
   .passo button {
-    width: 48px; height: 48px; font-size: 1.4rem; border-radius: 12px; line-height: 1;
-    border: 1px solid var(--borda); background: var(--superficie); color: inherit; cursor: pointer;
+    width: 48px; height: 48px; font-size: 1.4rem; border-radius: 12px; line-height: 1; cursor: pointer;
+    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   .passo output { min-width: 6.5rem; text-align: center; font-variant-numeric: tabular-nums; }
-  .vozes { display: grid; gap: 0.8rem; }
-  .voz { display: grid; grid-template-columns: 48px 6rem 1fr; align-items: center; gap: 0.4rem 0.5rem; }
-  .instrumento { grid-column: 1 / -1; }
-  .muda {
-    min-width: 48px; min-height: 48px; font-size: 1.2rem; border-radius: 12px;
-    border: 1px solid var(--borda); background: var(--superficie); color: inherit; cursor: pointer;
+
+  .vozes { display: grid; gap: 0.5rem; }
+  .voz { display: grid; grid-template-columns: 48px 7rem 1fr; align-items: center; gap: 0.5rem; }
+  .chave {
+    min-width: 48px; min-height: 48px; font-size: 1.2rem; border-radius: 12px; cursor: pointer;
+    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
-  .muda[aria-pressed="true"] { opacity: 0.7; }
-  .nome.apagada { opacity: 0.45; text-decoration: line-through; }
+  /* Voz silenciada: rótulo "silenciada", nome riscado e interruptor tracejado (não depende só de cor). */
+  .voz.silenciada .chave { border-style: dashed; opacity: 0.75; }
+  .voz.silenciada .nome { text-decoration: line-through; }
+  .identidade { display: flex; flex-direction: column; min-width: 0; }
+  .nome { font-weight: 600; }
+  .estado-voz { font-size: 0.8rem; color: var(--suave); font-variant-numeric: tabular-nums; }
+  input[type="range"] { width: 100%; min-height: 32px; accent-color: var(--acento); }
+
+  .instrumentos { border: 1px solid var(--borda-controle); border-radius: 12px; background: var(--superficie); }
+  summary {
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 48px;
+    padding: 0 0.9rem; cursor: pointer; font-weight: 600;
+  }
+  .resumo { font-weight: 400; color: var(--suave); font-size: 0.9rem; }
+  .lista-instrumentos { display: grid; gap: 0.6rem; padding: 0.2rem 0.9rem 0.9rem; }
+  .inst-linha { display: grid; grid-template-columns: 7rem 1fr; align-items: center; gap: 0.5rem; }
   select {
     min-height: 48px; font-size: 1rem; border-radius: 12px; padding: 0 0.5rem;
-    border: 1px solid var(--borda); background: var(--superficie); color: inherit;
+    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
-  input[type="range"] { width: 100%; min-height: 32px; }
-  .secundario {
-    min-height: 44px; border-radius: 12px; border: 1px solid var(--borda); background: transparent;
-    color: inherit; cursor: pointer; font-size: 0.95rem;
-  }
+  .secundario { background: transparent; font-size: 0.95rem; min-height: 44px; }
   button:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

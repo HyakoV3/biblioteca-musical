@@ -14,3 +14,9 @@ vite.config.ts.timestamp-*
 !/content/.gitkeep
 /src-tauri/target
 /tools/mscx2json/target
+
+# Worktrees e arquivos locais do Claude Code
+/.claude/
+
+# Python (ferramentas em tools/)
+__pycache__/

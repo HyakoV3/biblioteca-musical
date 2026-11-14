@@ -20,8 +20,6 @@ export const en: Dicionario = {
 
   "player.titulo": "Player",
   "player.vozes": "Voices",
-  "player.silenciar": "Mute {voz}",
-  "player.ativar": "Unmute {voz}",
   "player.volume": "{voz} volume",
   "player.instrumento": "{voz} instrument",
   "player.transposicao": "Transposition",
@@ -91,4 +89,16 @@ export const en: Dicionario = {
   "player.progresso_rotulo": "Playback progress",
   "player.progresso": "{atual} of {total}",
   "mini.regiao": "Now playing",
+
+  "ajustes.aparencia": "Appearance",
+  "tema.sistema": "Follow system",
+  "tema.claro": "Light",
+  "tema.escuro": "Dark",
+  "hino.sem_audio": "This hymn has no notes to play in this package.",
+  "player.voz_rotulo": "{voz} voice",
+  "player.silenciada": "muted",
+  "player.volume_valor": "{n} percent",
+  "player.instrumentos": "Instruments",
+  "player.instrumentos_varios": "Mixed",
+  "player.erro_audio": "Could not start audio on this device. Try again.",
 };

@@ -5,6 +5,13 @@
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>BibliotecaMusical CCB</title>
+    <script>
+      // Aplica o tema salvo antes da primeira pintura (evita piscar). Mantém em sintonia com src/lib/tema.svelte.ts.
+      try {
+        var t = localStorage.getItem("tema");
+        if (t === "claro" || t === "escuro") document.documentElement.dataset.tema = t;
+      } catch (e) {}
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

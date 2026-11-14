@@ -1,0 +1,31 @@
+<script lang="ts">
+  import type { Snippet } from "svelte";
+
+  // Aviso de sucesso, erro ou informação. O tipo aparece por ícone e posição, nunca só por cor.
+  let { tipo = "info", children }: { tipo?: "sucesso" | "erro" | "info"; children: Snippet } = $props();
+  const icones = { sucesso: "✓", erro: "!", info: "i" } as const;
+</script>
+
+<div class={`aviso ${tipo}`} role={tipo === "erro" ? "alert" : "status"}>
+  <span class="icone" aria-hidden="true">{icones[tipo]}</span>
+  <div class="texto">{@render children()}</div>
+</div>
+
+<style>
+  .aviso {
+    display: flex; gap: 0.75rem; align-items: flex-start; margin: 0.8rem 0; padding: 0.8rem 0.9rem;
+    background: var(--superficie); color: var(--texto);
+    border: 1px solid var(--borda-controle); border-left-width: 5px; border-radius: 12px;
+  }
+  .icone {
+    flex: none; width: 1.5rem; height: 1.5rem; display: grid; place-items: center; border-radius: 50%;
+    font-weight: 700; font-size: 0.9rem; line-height: 1;
+  }
+  .texto { flex: 1; min-width: 0; line-height: 1.45; overflow-wrap: anywhere; }
+  .sucesso { border-left-color: var(--sucesso); }
+  .sucesso .icone { background: var(--sucesso); color: var(--superficie); }
+  .erro { border-left-color: var(--perigo); }
+  .erro .icone { background: var(--perigo); color: var(--superficie); }
+  .info { border-left-color: var(--acento); }
+  .info .icone { background: var(--acento); color: var(--acento-texto); }
+</style>

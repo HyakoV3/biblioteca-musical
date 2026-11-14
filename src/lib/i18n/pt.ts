@@ -20,8 +20,6 @@ export const pt = {
 
   "player.titulo": "Player",
   "player.vozes": "Vozes",
-  "player.silenciar": "Silenciar {voz}",
-  "player.ativar": "Ativar {voz}",
   "player.volume": "Volume de {voz}",
   "player.instrumento": "Instrumento de {voz}",
   "player.transposicao": "Transposição",
@@ -91,6 +89,18 @@ export const pt = {
   "player.progresso_rotulo": "Progresso da reprodução",
   "player.progresso": "{atual} de {total}",
   "mini.regiao": "Reprodução em andamento",
+
+  "ajustes.aparencia": "Aparência",
+  "tema.sistema": "Seguir o sistema",
+  "tema.claro": "Claro",
+  "tema.escuro": "Escuro",
+  "hino.sem_audio": "Este hino não tem notas para tocar neste pacote.",
+  "player.voz_rotulo": "Voz {voz}",
+  "player.silenciada": "silenciada",
+  "player.volume_valor": "{n} por cento",
+  "player.instrumentos": "Instrumentos",
+  "player.instrumentos_varios": "Vários",
+  "player.erro_audio": "Não foi possível iniciar o áudio neste aparelho. Tente de novo.",
 };
 
 export type Chave = keyof typeof pt;

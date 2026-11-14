@@ -20,8 +20,6 @@ export const es: Dicionario = {
 
   "player.titulo": "Reproductor",
   "player.vozes": "Voces",
-  "player.silenciar": "Silenciar {voz}",
-  "player.ativar": "Activar {voz}",
   "player.volume": "Volumen de {voz}",
   "player.instrumento": "Instrumento de {voz}",
   "player.transposicao": "Transposición",
@@ -91,4 +89,16 @@ export const es: Dicionario = {
   "player.progresso_rotulo": "Progreso de la reproducción",
   "player.progresso": "{atual} de {total}",
   "mini.regiao": "Reproducción en curso",
+
+  "ajustes.aparencia": "Apariencia",
+  "tema.sistema": "Seguir el sistema",
+  "tema.claro": "Claro",
+  "tema.escuro": "Oscuro",
+  "hino.sem_audio": "Este himno no tiene notas para reproducir en este paquete.",
+  "player.voz_rotulo": "Voz {voz}",
+  "player.silenciada": "silenciada",
+  "player.volume_valor": "{n} por ciento",
+  "player.instrumentos": "Instrumentos",
+  "player.instrumentos_varios": "Varios",
+  "player.erro_audio": "No se pudo iniciar el audio en este dispositivo. Inténtalo de nuevo.",
 };

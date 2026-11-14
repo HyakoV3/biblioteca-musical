@@ -27,6 +27,8 @@ let atual = $state<{ numero: number; titulo: string } | null>(null);
 let estado = $state<Estado>("parado");
 let decorrido = $state(0);
 let duracao = $state(0);
+/** Texto do último erro ao iniciar o áudio (vazio se não houve). */
+let erro = $state("");
 /** Hino cujo painel Ouvir está aberto na tela (o miniplayer some para não duplicar controles). */
 let painelNumero = $state<number | null>(null);
 
@@ -67,6 +69,7 @@ function config(hino: Hino): Config {
 async function tocar(hino: Hino) {
   if (trocando) return;
   trocando = true;
+  erro = "";
   try {
     const c = config(hino);
     pararRelogio();
@@ -80,6 +83,12 @@ async function tocar(hino: Hino) {
     decorrido = 0;
     estado = "tocando";
     iniciarRelogio();
+  } catch (e) {
+    // O áudio não iniciou (ex.: o sistema bloqueou): volta ao estado parado e mostra o aviso.
+    sint.parar();
+    estado = "parado";
+    atual = null;
+    erro = String(e);
   } finally {
     trocando = false;
   }
@@ -147,6 +156,9 @@ export const reproducao = {
   },
   get duracao() {
     return duracao;
+  },
+  get erro() {
+    return erro;
   },
   get painelNumero() {
     return painelNumero;

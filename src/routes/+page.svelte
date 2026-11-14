@@ -1,6 +1,8 @@
 <script lang="ts">
+  import Aviso from "$lib/Aviso.svelte";
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
+  import Estado from "$lib/Estado.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
@@ -22,10 +24,10 @@
 
 <main class="coluna conteudo">
   {#if biblioteca.erro}
-    <p class="erro" role="alert">{t("erro.carregar", { erro: biblioteca.erro })}</p>
+    <Aviso tipo="erro">{t("erro.carregar", { erro: biblioteca.erro })}</Aviso>
     <button class="botao" onclick={() => biblioteca.carregar()}>{t("erro.tentar")}</button>
   {:else if !biblioteca.pacote}
-    <p>{t("carregando")}</p>
+    <Estado tipo="carregando" texto={t("carregando")} />
   {:else}
     <div class="busca">
       <input
@@ -54,8 +56,11 @@
         {/each}
       </ul>
     {:else}
-      <p class="meta" role="status">{t("biblioteca.sem_resultado", { termo: biblioteca.busca })}</p>
-      <button class="botao" onclick={() => (biblioteca.busca = "")}>{t("biblioteca.limpar_busca")}</button>
+      <Estado tipo="vazio" texto={t("biblioteca.sem_resultado", { termo: biblioteca.busca })}>
+        {#snippet acao()}
+          <button class="botao" onclick={() => (biblioteca.busca = "")}>{t("biblioteca.limpar_busca")}</button>
+        {/snippet}
+      </Estado>
     {/if}
 
     <p class="fonte meta">
@@ -72,9 +77,11 @@
   .busca { position: relative; margin-bottom: 0.8rem; }
   input[type="search"] {
     width: 100%; box-sizing: border-box; min-height: 48px; padding: 0.7rem 3rem 0.7rem 0.9rem;
-    font-size: 1rem; color: inherit; background: var(--superficie); border: 1px solid var(--borda); border-radius: 12px;
+    font-size: 1rem; color: var(--texto); background: var(--superficie);
+    border: 1px solid var(--borda-controle); border-radius: 12px;
     -webkit-appearance: none; appearance: none;
   }
+  input[type="search"]::placeholder { color: var(--suave); opacity: 1; }
   input[type="search"]::-webkit-search-cancel-button { display: none; }
   .limpar {
     position: absolute; right: 0; top: 0; width: 48px; height: 48px; font-size: 1.1rem;
@@ -83,12 +90,11 @@
   ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
   li > a {
     min-height: 56px; box-sizing: border-box; display: flex; align-items: center; gap: 0.8rem;
-    padding: 0.5rem 0.9rem; text-decoration: none; color: inherit;
-    background: var(--superficie); border: 1px solid var(--borda); border-radius: 12px;
+    padding: 0.5rem 0.9rem; text-decoration: none; color: var(--texto);
+    background: var(--superficie); border: 1px solid var(--borda-controle); border-radius: 12px;
   }
   .num { font-weight: 700; min-width: 2.4rem; }
   .titulo { flex: 1; }
   small { color: var(--suave); }
   .fonte { margin-top: 1.2rem; }
-  .fonte a { color: inherit; }
 </style>

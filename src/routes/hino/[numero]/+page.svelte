@@ -1,7 +1,9 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import Aviso from "$lib/Aviso.svelte";
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
+  import Estado from "$lib/Estado.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
   import { estrofes } from "$lib/letra";
   import { usarVoltar } from "$lib/navegacao";
@@ -43,15 +45,16 @@
 
 {#if biblioteca.erro}
   <Barra titulo={t("biblioteca.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />
-  <main class="coluna conteudo"><p class="erro" role="alert">{t("erro.carregar", { erro: biblioteca.erro })}</p></main>
+  <main class="coluna conteudo"><Aviso tipo="erro">{t("erro.carregar", { erro: biblioteca.erro })}</Aviso></main>
 {:else if !biblioteca.pacote}
   <Barra titulo={t("biblioteca.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />
-  <main class="coluna conteudo"><p>{t("carregando")}</p></main>
+  <main class="coluna conteudo"><Estado tipo="carregando" texto={t("carregando")} /></main>
 {:else if !hino}
   <Barra titulo={t("biblioteca.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />
   <main class="coluna conteudo">
-    <p role="alert">{t("hino.nao_encontrado")}</p>
-    <a class="botao" href="/">{t("biblioteca.titulo")}</a>
+    <Estado tipo="vazio" texto={t("hino.nao_encontrado")}>
+      {#snippet acao()}<a class="botao" href="/">{t("biblioteca.titulo")}</a>{/snippet}
+    </Estado>
   </main>
 {:else}
   <Barra
@@ -87,13 +90,16 @@
   <main class="coluna conteudo">
     <!-- Os dois painéis ficam montados (só um visível): o som não para ao trocar de aba. -->
     <div role="tabpanel" id="painel-letra" aria-labelledby={temAudio ? "aba-letra" : undefined} hidden={aba !== "letra"}>
+      {#if !temAudio}
+        <Aviso tipo="info">{t("hino.sem_audio")}</Aviso>
+      {/if}
       {#each partes as e}
         <div class="estrofe">
           {#if e.numero !== null}<h2>{t("hino.estrofe", { n: e.numero })}</h2>{/if}
           {#each e.linhas as linha}<p>{linha}</p>{/each}
         </div>
       {:else}
-        <p class="meta">{t("hino.sem_letra")}</p>
+        <Estado tipo="vazio" texto={t("hino.sem_letra")} />
       {/each}
     </div>
 
@@ -108,13 +114,16 @@
 {/if}
 
 <style>
-  .abas-faixa { position: sticky; top: calc(56px + env(safe-area-inset-top)); z-index: 9; background: var(--fundo); border-bottom: 1px solid var(--borda); }
+  .abas-faixa {
+    position: sticky; top: calc(56px + env(safe-area-inset-top)); z-index: 9;
+    background: var(--fundo); border-bottom: 1px solid var(--borda);
+  }
   .abas { display: flex; gap: 0.25rem; }
   [role="tab"] {
     flex: 1; min-height: 48px; font-size: 1rem; background: transparent; color: var(--suave);
     border: 0; border-bottom: 3px solid transparent; cursor: pointer;
   }
-  [role="tab"][aria-selected="true"] { color: var(--texto); font-weight: 600; border-bottom-color: currentColor; }
+  [role="tab"][aria-selected="true"] { color: var(--texto); font-weight: 600; border-bottom-color: var(--acento); }
   .estrofe { margin-bottom: 1.4rem; }
   .estrofe h2 { margin: 0 0 0.3rem; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--suave); }
   .estrofe p { margin: 0; font-size: 1.15rem; line-height: 1.7; }

@@ -53,17 +53,17 @@
 <style>
   .mini {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
-    background: var(--superficie); border-top: 1px solid var(--borda);
+    background: var(--superficie); border-top: 1px solid var(--borda-controle);
     padding-bottom: env(safe-area-inset-bottom);
   }
   .linha { display: flex; align-items: center; gap: 0.5rem; min-height: 64px; }
   .acao {
     flex: none; width: 48px; height: 48px; font-size: 1.2rem; border-radius: 12px;
-    border: 0; background: transparent; color: inherit; cursor: pointer;
+    border: 0; background: transparent; color: var(--texto); cursor: pointer;
   }
-  .info { flex: 1; min-width: 0; display: flex; flex-direction: column; text-decoration: none; color: inherit; }
+  .info { flex: 1; min-width: 0; display: flex; flex-direction: column; text-decoration: none; color: var(--texto); }
   .titulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
   .tempo { font-size: 0.8rem; color: var(--suave); font-variant-numeric: tabular-nums; }
-  .fio { height: 3px; background: var(--borda); }
-  .preenchido { height: 100%; background: currentColor; }
+  .fio { height: 4px; background: var(--borda); }
+  .preenchido { height: 100%; background: var(--acento); }
 </style>
