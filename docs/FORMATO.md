@@ -51,6 +51,19 @@ O tempo de cada versão começa em 0, em batidas. Um hino **com final** tem uma 
 "Terceira vez · final" toca o final sem passar pelas outras). Hino **sem final** tem um só botão de tocar. Um arquivo
 cujo `final` tenha vozes diferentes das de `vozes` é recusado na importação, com uma mensagem que diz o hino e as vozes.
 
+### Introdução
+
+Opcionalmente o hino ganha `introducao`: as notas do **começo da partitura até o marcador `*`**, com as mesmas
+vozes, na mesma ordem e com os mesmos nomes de `vozes`, e o tempo começando em 0. A interface oferece um botão
+**Intro** que a toca sozinha e, em **"Tocar o hino todo"**, toca a introdução antes da 1ª vez. Entre as partes (a
+introdução e cada vez) há uma **pausa de 2 segundos**. Um arquivo cuja `introducao` tenha vozes diferentes das de
+`vozes` é recusado na importação. Sem `introducao`, o botão não aparece.
+
+```json
+{ "numero": 457, "vozes": [{ "nome": "Soprano", "notas": [[0, 1, 64]] }],
+  "introducao": { "vozes": [{ "nome": "Soprano", "notas": [[0, 1, 64]] }] } }
+```
+
 O conversor `mscx2json` gera `final` ao reconhecer, no MuseScore, o padrão: início de repetição, fim de
 repetição junto da 1ª casa de volta, 2ª casa de volta logo depois e um trecho final até o fim. A passada
 normal vai do começo ao fim da 1ª casa; a passada do final vai do começo até antes da 1ª casa, depois a 2ª

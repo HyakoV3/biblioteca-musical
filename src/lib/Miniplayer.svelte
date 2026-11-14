@@ -1,7 +1,7 @@
 <script lang="ts">
   import { i18n } from "$lib/i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
-  import { rotuloDaVez } from "./rotulo-vez";
+  import { rotuloDaParte } from "./rotulo-vez";
   import { formatarTempo, fracao } from "./tempo";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
@@ -11,9 +11,11 @@
   const atual = $derived(reproducao.atual);
   const visivel = $derived(atual !== null && reproducao.painelNumero !== atual.numero);
   const tocando = $derived(reproducao.estado === "tocando");
-  // Em hino com várias vezes, diz qual está tocando ("Terceira vez · final"); o hino todo não precisa de rótulo.
+  // Diz qual parte está tocando ("Introdução", "Terceira vez · final"); o hino todo não precisa de rótulo.
   const parte = $derived(
-    atual && atual.total > 1 && atual.parte !== "tudo" ? rotuloDaVez(atual.parte, atual.final) : "",
+    atual && atual.parte !== "tudo" && (atual.parte === "intro" || atual.total > 1)
+      ? rotuloDaParte(atual.parte, atual.final)
+      : "",
   );
 
   // Reserva espaço no fim das telas para o miniplayer não cobrir o conteúdo. Usa a altura medida

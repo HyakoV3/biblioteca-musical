@@ -5,7 +5,12 @@
 // Hino sem final tem uma só versão para todas as vezes, então a tela mostra um único botão de tocar.
 import type { Nota, Voz } from "./sintetizador";
 
-export type HinoComFinal = { vozes: Voz[]; final?: { vozes: Voz[] } | null };
+export type HinoComFinal = {
+  vozes: Voz[];
+  final?: { vozes: Voz[] } | null;
+  /** Do começo até o marcador "*" (mesmas vozes, na mesma ordem). */
+  introducao?: { vozes: Voz[] } | null;
+};
 
 /** Limite de vezes mostradas (há texto traduzido de "Primeira" a "Oitava"). */
 export const VEZES_MAX = 8;
@@ -36,18 +41,36 @@ export function vozesDaVez(h: HinoComFinal, vez: number, total: number): Voz[] {
   return ehFinal(h, v, total) ? h.final!.vozes : h.vozes;
 }
 
+/** Pausa entre a introdução e a 1ª vez, e entre uma vez e a seguinte, em "Tocar o hino todo". */
+export const PAUSA_ENTRE_PARTES_S = 2;
+
+/** O hino tem introdução utilizável? (mesmas vozes da versão normal, na mesma ordem, com alguma nota) */
+export function temIntroducao(h: HinoComFinal): boolean {
+  const i = h.introducao;
+  return !!i && i.vozes.length === h.vozes.length && h.vozes.length > 0 && i.vozes.some((v) => v.notas.length > 0);
+}
+
+/** As notas da introdução (vazio se o hino não tem). */
+export function vozesDaIntroducao(h: HinoComFinal): Voz[] {
+  return temIntroducao(h) ? h.introducao!.vozes : [];
+}
+
 /**
- * O hino todo, como é cantado: a 1ª vez, a 2ª, ... até a última (o final, se houver), em sequência e sem pausa.
- * É o que toca quando a pessoa não escolhe uma vez em particular.
+ * O hino todo, como é cantado: introdução (se houver), 1ª vez, 2ª, ... até a última (o final, se houver), em
+ * sequência. Entre uma parte e a seguinte entra uma pausa de `pausa` batidas, para dar tempo de respirar.
+ * É o que toca quando a pessoa não escolhe uma parte em particular.
  */
-export function montarTudo(h: HinoComFinal, total: number): Voz[] {
+export function montarTudo(h: HinoComFinal, total: number, pausa = 0): Voz[] {
+  const partes: Voz[][] = [];
+  if (temIntroducao(h)) partes.push(h.introducao!.vozes);
+  for (let vez = 1; vez <= Math.max(1, total); vez++) partes.push(vozesDaVez(h, vez, total));
+  const folga = Number.isFinite(pausa) ? Math.max(0, pausa) : 0;
   return h.vozes.map((voz, i) => {
     const notas: Nota[] = [];
     let desloc = 0;
-    for (let vez = 1; vez <= Math.max(1, total); vez++) {
-      const vozes = vozesDaVez(h, vez, total);
+    for (const vozes of partes) {
       for (const [inicio, dur, midi] of vozes[i].notas) notas.push([inicio + desloc, dur, midi]);
-      desloc += duracaoEmBatidas(vozes);
+      desloc += duracaoEmBatidas(vozes) + folga;
     }
     return { nome: voz.nome, notas };
   });

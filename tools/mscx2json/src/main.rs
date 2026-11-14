@@ -32,6 +32,8 @@ pub struct Hino {
     pub vozes: Vec<Voz>,
     /// Última passada, quando o hino tem final: as mesmas vozes, na mesma ordem.
     pub passada_final: Option<Vec<Voz>>,
+    /// Introdução: do começo da partitura até o marcador `*`, nas mesmas vozes, na mesma ordem.
+    pub introducao: Option<Vec<Voz>>,
     pub letra: Vec<String>,
     pub avisos: Vec<String>,
 }
@@ -149,6 +151,8 @@ struct Estado<'a> {
     /// Sílabas e respirações (instantes) da pauta atual.
     silabas: &'a mut Vec<Silaba>,
     respiracoes: &'a mut Vec<f64>,
+    /// Instantes (em batidas) dos textos de pauta "*", que marcam o fim da introdução.
+    asteriscos: &'a mut Vec<f64>,
 }
 
 fn voz_do(c: Node, est: &Estado) -> usize {
@@ -183,6 +187,13 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                 }
             }
             "Breath" => est.respiracoes.push(*t),
+            // O "*" aparece como texto de pauta (<StaffText><text>) ou como cifra (<Harmony><name>), conforme a partitura.
+            "StaffText" | "Harmony" => {
+                let rotulo = if c.has_tag_name("Harmony") { "name" } else { "text" };
+                if filho(c, rotulo).map(texto_completo).as_deref().map(str::trim) == Some("*") {
+                    est.asteriscos.push(*t);
+                }
+            }
             "endTuplet" => {
                 est.tuplos.pop();
             }
@@ -433,7 +444,12 @@ fn texto_de_estilo(doc: &Document, estilos: &[&str]) -> Vec<String> {
 /// "Parte I..IV" -> vozes do coro, na ordem do hinário.
 pub fn nomes_satb(h: &mut Hino) {
     // As vozes da passada do final precisam ter os mesmos nomes das da passada normal.
-    for v in h.vozes.iter_mut().chain(h.passada_final.iter_mut().flatten()) {
+    for v in h
+        .vozes
+        .iter_mut()
+        .chain(h.passada_final.iter_mut().flatten())
+        .chain(h.introducao.iter_mut().flatten())
+    {
         let novo = match v.nome.as_str() {
             "Parte I" => "Soprano",
             "Parte II" => "Contralto",
@@ -582,6 +598,7 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
     let mut andamento = None;
     let mut estrutura = Estrutura::default();
     let mut plano: Option<Plano> = None;
+    let mut asteriscos: Vec<f64> = vec![];
 
     let pautas = score
         .children()
@@ -636,6 +653,7 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
                     saida: &mut da_pauta,
                     silabas: &mut silabas,
                     respiracoes: &mut respiracoes,
+                    asteriscos: &mut asteriscos,
                 };
                 let mut t = inicio_compasso;
                 percorrer(no, &mut t, &mut est)?;
@@ -719,6 +737,19 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
     }
     let passada_final = (final_ok && !vozes_final.is_empty()).then_some(vozes_final);
 
+    // Introdução: do começo até o primeiro "*" (hipótese a confirmar com o responsável). Sai das vozes já
+    // montadas, então tem as mesmas vozes, na mesma ordem. O "*" fica entre dois acordes, no meio do compasso.
+    let fim_intro = asteriscos.iter().copied().fold(f64::INFINITY, f64::min);
+    let introducao = if fim_intro.is_finite() && fim_intro > 0.0 {
+        let intro = recortar_inicio(&vozes, fim_intro);
+        if intro.is_some() {
+            avisos.push(format!("introdução: do começo até o marcador * ({} batidas)", arredondar(fim_intro)));
+        }
+        intro
+    } else {
+        None
+    };
+
     if vozes.is_empty() {
         return Err("nenhuma nota encontrada".into());
     }
@@ -744,7 +775,26 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
     }
     let autoria = (!nomes.is_empty()).then(|| nomes.join(" · "));
 
-    Ok(Hino { numero: numero_hino, titulo, autoria, andamento, vozes, passada_final, letra, avisos })
+    Ok(Hino { numero: numero_hino, titulo, autoria, andamento, vozes, passada_final, introducao, letra, avisos })
+}
+
+/// Recorta o começo de cada voz, até `ate` batidas: notas que começam antes entram, e as que atravessam o corte
+/// são encurtadas. Devolve `None` se não sobrar nenhuma nota.
+fn recortar_inicio(vozes: &[Voz], ate: f64) -> Option<Vec<Voz>> {
+    const EPS: f64 = 1e-6;
+    let recorte: Vec<Voz> = vozes
+        .iter()
+        .map(|v| Voz {
+            nome: v.nome.clone(),
+            notas: v
+                .notas
+                .iter()
+                .filter(|n| n.inicio < ate - EPS)
+                .map(|n| Evento { inicio: n.inicio, dur: n.dur.min(ate - n.inicio), midi: n.midi })
+                .collect(),
+        })
+        .collect();
+    recorte.iter().any(|v| !v.notas.is_empty()).then_some(recorte)
 }
 
 pub fn para_json(h: &Hino) -> Value {
@@ -763,6 +813,9 @@ pub fn para_json(h: &Hino) -> Value {
     m.insert("vozes".into(), Value::Array(vozes_json(&h.vozes)));
     if let Some(f) = &h.passada_final {
         m.insert("final".into(), json!({ "vozes": vozes_json(f) }));
+    }
+    if let Some(i) = &h.introducao {
+        m.insert("introducao".into(), json!({ "vozes": vozes_json(i) }));
     }
     Value::Object(m)
 }
@@ -1095,6 +1148,7 @@ mod testes {
             titulo: "T".into(),
             autoria: None,
             passada_final: None,
+            introducao: None,
             andamento: None,
             vozes: ["Parte I", "Parte II", "Parte III", "Parte IV", "Outra"]
                 .iter()
@@ -1202,6 +1256,69 @@ mod testes {
         vozes[i].notas.iter().map(|n| (n.inicio, n.dur, n.midi)).collect()
     }
 
+    /// Dois compassos de 4/4; no 2º, uma mínima, o texto de pauta "*" e outra mínima (o "*" cai no meio do compasso).
+    fn hino_com_asterisco() -> String {
+        let marca = "<StaffText><text>*</text></StaffText>";
+        let m1 = comp_marcado("", 60);
+        let m2 = format!(
+            "<Measure><voice>{C44}{}{marca}{}</voice></Measure>",
+            acorde("half", 62),
+            acorde("half", 64)
+        );
+        doc(&parte(1, "S"), &pauta(1, &[m1, m2].concat()))
+    }
+
+    #[test]
+    fn introducao_vai_do_comeco_ate_o_asterisco_no_meio_do_compasso() {
+        let h = converter(&hino_com_asterisco(), 1).unwrap();
+        // O "*" está depois da 1ª mínima do compasso 2: 4 + 2 = 6 batidas.
+        let intro = h.introducao.as_ref().expect("deveria ter introdução");
+        assert_eq!(notas_de(intro, 0), vec![(0.0, 4.0, 60), (4.0, 2.0, 62)]);
+        // A passada normal continua inteira.
+        assert_eq!(notas(&h, 0).len(), 3);
+        assert!(h.avisos.iter().any(|a| a.contains("introdução") && a.contains("6")), "{:?}", h.avisos);
+        let json = para_json(&h);
+        assert_eq!(json["introducao"]["vozes"][0]["notas"], json!([[0.0, 4.0, 60], [4.0, 2.0, 62]]));
+    }
+
+    #[test]
+    fn asterisco_como_cifra_harmony_tambem_vale() {
+        let marca = "<Harmony><name>*</name></Harmony>";
+        let m = format!("<Measure><voice>{C44}{}{marca}{}</voice></Measure>", acorde("half", 62), acorde("half", 64));
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &m)), 1).unwrap();
+        assert_eq!(notas_de(h.introducao.as_ref().expect("deveria ter introdução"), 0), vec![(0.0, 2.0, 62)]);
+    }
+
+    #[test]
+    fn sem_asterisco_nao_ha_introducao() {
+        let h = converter(&hino_com_final(), 1).unwrap();
+        assert!(h.introducao.is_none());
+        assert!(para_json(&h).get("introducao").is_none());
+    }
+
+    #[test]
+    fn recortar_inicio_encurta_a_nota_que_atravessa_o_corte() {
+        let v = |notas: Vec<(f64, f64, u8)>| Voz {
+            nome: "S".into(),
+            notas: notas.into_iter().map(|(inicio, dur, midi)| Evento { inicio, dur, midi }).collect(),
+        };
+        let r = recortar_inicio(&[v(vec![(0.0, 3.0, 60), (2.0, 4.0, 62), (5.0, 1.0, 64)])], 5.0).unwrap();
+        assert_eq!(notas_de(&r, 0), vec![(0.0, 3.0, 60), (2.0, 3.0, 62)]);
+        // sem nenhuma nota antes do corte não há introdução
+        assert!(recortar_inicio(&[v(vec![(6.0, 1.0, 60)])], 5.0).is_none());
+    }
+
+    #[test]
+    fn nomes_satb_tambem_vale_para_a_introducao() {
+        let voz = |n: &str| Voz { nome: n.to_string(), notas: vec![] };
+        let mut h = converter(&hino_com_asterisco(), 1).unwrap();
+        h.vozes = vec![voz("Parte I")];
+        h.introducao = Some(vec![voz("Parte I")]);
+        nomes_satb(&mut h);
+        assert_eq!(h.vozes[0].nome, "Soprano");
+        assert_eq!(h.introducao.unwrap()[0].nome, "Soprano");
+    }
+
     #[test]
     fn reconhece_o_padrao_de_final_e_gera_as_duas_passadas() {
         let h = converter(&hino_com_final(), 1).unwrap();
@@ -1284,6 +1401,7 @@ mod testes {
             titulo: "T".into(),
             autoria: None,
             passada_final: Some(partes()),
+            introducao: Some(partes()),
             andamento: None,
             vozes: partes(),
             letra: vec![],

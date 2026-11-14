@@ -40,10 +40,19 @@ pub struct Hino {
     /// A interface toca (N-1) passadas normais e esta por último.
     #[serde(rename = "final", default, skip_serializing_if = "Option::is_none")]
     pub passada_final: Option<PassadaFinal>,
+    /// Introdução (do começo da partitura até o marcador `*`): as mesmas vozes, na mesma ordem, com o tempo
+    /// começando em 0. A interface a toca sozinha ("Introdução") e antes da 1ª vez em "Tocar o hino todo".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub introducao: Option<Introducao>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PassadaFinal {
+    pub vozes: Vec<Voz>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Introducao {
     pub vozes: Vec<Voz>,
 }
 
@@ -89,6 +98,18 @@ pub fn ler(json: &str) -> Result<Hinario, String> {
                     "hino {}: as vozes do final ({}) não correspondem às da passada normal ({})",
                     hino.numero,
                     final_.join(", "),
+                    normal.join(", ")
+                ));
+            }
+        }
+        if let Some(i) = &hino.introducao {
+            let normal: Vec<&str> = hino.vozes.iter().map(|v| v.nome.as_str()).collect();
+            let intro: Vec<&str> = i.vozes.iter().map(|v| v.nome.as_str()).collect();
+            if normal != intro {
+                return Err(format!(
+                    "hino {}: as vozes da introdução ({}) não correspondem às da passada normal ({})",
+                    hino.numero,
+                    intro.join(", "),
                     normal.join(", ")
                 ));
             }
@@ -210,6 +231,33 @@ mod testes {
         ))
         .unwrap_err();
         assert!(e.contains("Baixo, Soprano"), "{e}");
+    }
+
+    fn json_com_introducao(vozes_intro: &str) -> String {
+        format!(
+            r#"{{"versao":1,"hinario":{{"id":"a","nome":"A"}},"hinos":[{{"numero":1,"titulo":"T",
+            "vozes":[{{"nome":"Soprano","notas":[[0,1,60]]}},{{"nome":"Baixo","notas":[[0,1,48]]}}],
+            "introducao":{{"vozes":{vozes_intro}}}}}]}}"#
+        )
+    }
+
+    #[test]
+    fn introducao_e_lida_volta_na_saida_e_some_quando_nao_ha() {
+        let h = ler(&json_com_introducao(
+            r#"[{"nome":"Soprano","notas":[[0,1,60]]},{"nome":"Baixo","notas":[[0,1,48]]}]"#,
+        ))
+        .unwrap();
+        assert_eq!(h.hinos[0].introducao.as_ref().expect("deveria ter introdução").vozes.len(), 2);
+        assert!(serde_json::to_string(&h.hinos[0]).unwrap().contains(r#""introducao":{"vozes""#));
+        let sem = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T"}]}"#).unwrap();
+        assert!(sem.hinos[0].introducao.is_none());
+        assert!(!serde_json::to_string(&sem.hinos[0]).unwrap().contains("introducao"));
+    }
+
+    #[test]
+    fn introducao_com_vozes_diferentes_das_da_passada_normal_e_recusada() {
+        let e = ler(&json_com_introducao(r#"[{"nome":"Soprano","notas":[[0,1,60]]}]"#)).unwrap_err();
+        assert!(e.contains("hino 1") && e.contains("introdução") && e.contains("não correspondem"), "{e}");
     }
 
     #[test]

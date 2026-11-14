@@ -15,6 +15,8 @@ export type Hino = {
   vozes: Voz[];
   /** Última passada, quando o hino tem final (mesmas vozes, na mesma ordem). */
   final?: { vozes: Voz[] } | null;
+  /** Do começo até o marcador "*" (mesmas vozes, na mesma ordem). */
+  introducao?: { vozes: Voz[] } | null;
 };
 
 export type Pacote = {

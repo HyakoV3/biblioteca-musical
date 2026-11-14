@@ -127,12 +127,14 @@ compasso 19; a última pula essa casa, toca a do compasso 20 e segue para o Fina
   sai com 48 batidas na passada normal e 96 na do final, as quatro vozes terminando juntas.
 - **Formato e Rust:** campo opcional `final` (ver `docs/FORMATO.md`); o importador recusa um `final` cujas vozes
   não correspondam às da passada normal.
-- **Player (aba Ouvir):** controle por **vez**, como o responsável pediu (**não** é um contador de repetições): um
-  botão **"Tocar o hino todo"** (todas as vezes em sequência) e um botão para **cada vez** ("Primeira vez", "Segunda
-  vez", "Terceira vez · final"), que toca só aquela, direto. Só aparecem nos hinos que têm final; os outros têm um só
-  "Tocar". Há uma vez por estrofe da letra (no mínimo 2): no 457, 3 vezes, e o hino todo dá 3:42 a 52 bpm. Progresso e
-  miniplayer mostram a vez que está tocando. (Uma primeira versão tinha um contador "N vezes" e um interruptor; foi
-  trocada por este desenho depois da correção do responsável.)
+- **Player (aba Ouvir):** controle por **parte**, como o responsável pediu (**não** é um contador de repetições): um
+  botão **"Tocar o hino todo"** (introdução e todas as vezes em sequência, com 2 s de pausa entre as partes) e, numa
+  linha de **botões compactos com ícone**, um para a **introdução** ("▶ Intro") e um para **cada vez** ("▶ 1ª",
+  "▶ 2ª", "▶ 3ª ⚑", onde ⚑ marca o final). Cada um toca só aquela parte, direto; o nome completo ("Terceira vez ·
+  final") fica no rótulo de acessibilidade e no miniplayer. Só aparecem nos hinos que têm introdução ou final; os
+  outros têm um só "Tocar". Há uma vez por estrofe da letra (no mínimo 2): no 457, 3 vezes, e o hino todo dura cerca
+  de 4:00 a 52 bpm. (Uma primeira versão tinha um contador "N vezes" e um interruptor; foi trocada depois da
+  correção do responsável.)
 - **Verificado:** testes automatizados do conversor (partitura fictícia com a mesma estrutura do 457 e casos em
   que ele deve se recusar a adivinhar), do Rust e da montagem de passadas, e o JSON real do 457 passando pelo
   importador. **Não foi ouvido:** falta o responsável tocar o hino 457 e conferir se soa como no hinário.
@@ -144,12 +146,15 @@ compasso 19; a última pula essa casa, toca a do compasso 20 e segue para o Fina
   "estrutura não reconhecida" e lê a partitura uma vez. Cada estrutura nova precisa de uma amostra real.
 - Uma nota ligada (ligadura) que atravesse o corte entre passadas não é tratada.
 - A **letra não acompanha a vez** (pergunta 4 abaixo continua em aberto).
-- **Introdução: falta fazer.** O responsável pediu um botão **Introdução** e que "Tocar o hino todo" comece por ela
-  (introdução, 1ª vez, 2ª vez, 3ª vez). Ainda não sei **o que é a introdução nos dados**. Indício: o marcador `*`
-  aparece em todos os cinco hinos de amostra depois de uma quantidade parecida de música (12, 12, 13,5, 13 e 9,5
-  batidas, ou 8 a 13 segundos), o que é compatível com ser o fim da introdução, no começo do hino. Hipótese **não
-  confirmada**: introdução = do começo da partitura até o `*`. Precisa da confirmação do responsável (ver as
-  perguntas no resumo desta data) antes de o conversor passar a gerar a introdução.
+- **Introdução: feita, com uma hipótese a confirmar.** O responsável pediu um botão **Introdução** e que "Tocar o
+  hino todo" comece por ela. O conversor gera o campo `introducao` = do começo da partitura até o marcador `*`
+  (que fica no meio do compasso; o corte é no instante exato, e a nota que atravessa é encurtada). O `*` aparece como
+  texto de pauta (`StaffText`) ou como cifra (`Harmony`), conforme a partitura. Os 5 hinos de amostra ficaram com
+  9 a 15 s de introdução. **A hipótese de que o `*` marca o fim da introdução ainda não foi confirmada** pelo
+  responsável: se for outro trecho, só muda o recorte no conversor.
+- **Pausa entre as partes:** em "Tocar o hino todo" há **2 segundos** entre a introdução e a 1ª vez e entre uma vez e
+  a seguinte (constante `PAUSA_ENTRE_PARTES_S`). Em segundos, e não em batidas, para não variar com o andamento.
+  Poderia virar ajuste (0, 1, 2, 3, 5 s) se os músicos pedirem.
 
 ### Alternativas consideradas (para não reinventar a roda)
 
@@ -430,6 +435,38 @@ sistema. **Não verificado:** se o WebView do Android e o do iOS repassam essa p
 - Escolher o modo muda o app inteiro na hora e a escolha sobrevive ao fechar o app.
 - Com a fonte do sistema no máximo, nada fica cortado.
 - Revisado por pelo menos uma pessoa com baixa visão antes de ser dado como pronto.
+
+---
+
+## I-07 — Sons de instrumentos mais realistas
+
+> **Origem:** pergunta do responsável ("tem como colocar sons mais realistas para os instrumentos?").
+
+### Situação atual
+O som é **síntese aditiva**: cada instrumento é uma `PeriodicWave` (uma receita de harmônicos) com envelope e
+vibrato, gerada no próprio app. Não há gravações nem banco de sons: por isso o app é pequeno e funciona sem rede, mas
+o timbre é aproximado ("tipo um órgão eletrônico"), principalmente em sopros e cordas.
+
+### O que se deseja
+Timbres que lembrem mais o instrumento de verdade (flauta, clarinete, violino, órgão, sax...).
+
+### Caminho mais provável (a pesquisar antes de decidir)
+- **SoundFont (`.sf2`) ou amostras gravadas**, tocadas no navegador/WebView com uma biblioteca pronta, em vez de
+  construir o nosso próprio tocador de amostras. Candidatas a avaliar: **SpessaSynth**, **smplr**, **WebAudioFont**.
+- O banco de sons precisa de **licença livre compatível com MIT** e não pode ir no repositório se for grande: seguiria
+  o mesmo modelo do conteúdo (baixado/importado pelo usuário ou empacotado só no app).
+- Mantém-se a síntese atual como **padrão leve** e opção "sons realistas" nos Ajustes.
+
+### Perguntas em aberto
+1. Qual o limite de tamanho aceitável do app e do download? (bancos de sons completos têm dezenas a centenas de MB;
+   dá para usar só os 8 a 10 instrumentos que o app oferece.)
+2. Precisa funcionar 100% offline? (hoje funciona)
+3. Qual o aparelho mais fraco que precisa rodar? (amostras gastam mais memória)
+
+### Critérios de aceitação (propostos)
+- Pelo menos 3 pessoas preferem o timbre novo ao atual em um teste cego curto.
+- Sem estalos nem atrasos perceptíveis ao tocar 4 vozes ao mesmo tempo no aparelho mais fraco.
+- Licença de cada som registrada em `docs/`.
 
 ---
 

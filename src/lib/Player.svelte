@@ -5,9 +5,9 @@
   import { ORGAOS, instrumentosDaVoz, tipoDaVoz } from "./instrumentos";
   import { padrao, salvarVozes } from "./preferencias";
   import { ANDAMENTO_MAX, ANDAMENTO_MIN, TRANSPOSICAO_MAX, reproducao, vezesDoHino } from "./reproducao.svelte";
-  import { rotuloDaVez } from "./rotulo-vez";
+  import { rotuloCurtoDaVez, rotuloDaParte } from "./rotulo-vez";
   import { formatarTempo, fracao } from "./tempo";
-  import { temFinal } from "./vezes";
+  import { temFinal, temIntroducao } from "./vezes";
 
   let { hino }: { hino: Hino } = $props();
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
@@ -43,17 +43,22 @@
 
   // Hino com final tem várias vezes (a última é a diferente) e botões para cada uma; os outros têm um só "Tocar".
   const comFinalDisponivel = $derived(temFinal(hino));
+  const comIntroducao = $derived(temIntroducao(hino));
+  // Só mostra as partes separadas se há o que separar (introdução ou várias vezes); senão, um único "Tocar".
+  const comPartes = $derived(comFinalDisponivel || comIntroducao);
   const totalVezes = $derived(vezesDoHino(hino));
   const vezes = $derived(Array.from({ length: totalVezes }, (_, i) => i + 1));
 
   // Esta parte (o hino todo ou uma vez) é a que está tocando ou pausada?
-  const ativa = (parte: "tudo" | number) => meu && !parado && reproducao.atual?.parte === parte;
-  const icone = (parte: "tudo" | number) => (ativa(parte) && estado === "tocando" ? "❚❚" : "▶");
+  const ativa = (parte: "tudo" | "intro" | number) => meu && !parado && reproducao.atual?.parte === parte;
+  const icone = (parte: "tudo" | "intro" | number) => (ativa(parte) && estado === "tocando" ? "❚❚" : "▶");
 
-  const rotuloTudo = $derived(comFinalDisponivel ? t("vez.tudo") : t("audio.tocar"));
-  const dicaDaVez = (vez: number) => {
-    const nome = rotuloDaVez(vez, vez === totalVezes);
-    return ativa(vez) ? (estado === "tocando" ? t("vez.pausar", { vez: nome }) : t("vez.continuar", { vez: nome })) : t("vez.tocar", { vez: nome });
+  const rotuloTudo = $derived(comPartes ? t("vez.tudo") : t("audio.tocar"));
+  // Texto completo para leitor de tela (o botão mostra só "1ª", "Intro"...).
+  const dicaDaParte = (parte: "intro" | number) => {
+    const nome = rotuloDaParte(parte, typeof parte === "number" && parte === totalVezes && comFinalDisponivel);
+    if (!ativa(parte)) return t("vez.tocar", { vez: nome });
+    return estado === "tocando" ? t("vez.pausar", { vez: nome }) : t("vez.continuar", { vez: nome });
   };
 
   // Resumo na seção recolhida: o instrumento comum a todas as vozes, ou "Vários".
@@ -93,8 +98,8 @@
   <div class="principal">
     <button
       class="botao tocar"
-      class:primario={ativa("tudo") || !comFinalDisponivel}
-      aria-pressed={comFinalDisponivel ? ativa("tudo") : undefined}
+      class:primario={ativa("tudo") || !comPartes}
+      aria-pressed={comPartes ? ativa("tudo") : undefined}
       onclick={() => reproducao.alternar(hino, "tudo")}
     >
       {icone("tudo")}
@@ -105,23 +110,37 @@
     {/if}
   </div>
 
-  {#if comFinalDisponivel}
-    <!-- Cada botão toca só aquela vez, direto. A última é a diferente (o final). -->
+  {#if comPartes}
+    <!-- Cada botão toca só aquela parte, direto. A última é a diferente (o final). -->
     <div class="vezes" role="group" aria-label={t("vez.grupo")}>
-      {#each vezes as vez}
+      {#if comIntroducao}
         <button
           class="botao vez"
-          class:primario={ativa(vez)}
-          aria-pressed={ativa(vez)}
-          aria-label={dicaDaVez(vez)}
-          onclick={() => reproducao.alternar(hino, vez)}
+          class:primario={ativa("intro")}
+          aria-pressed={ativa("intro")}
+          aria-label={dicaDaParte("intro")}
+          onclick={() => reproducao.alternar(hino, "intro")}
         >
-          <span aria-hidden="true">{icone(vez)}</span>
-          {rotuloDaVez(vez, vez === totalVezes)}
+          <span aria-hidden="true">{icone("intro")}</span>
+          {t("vez.intro_curta")}
         </button>
-      {/each}
+      {/if}
+      {#if comFinalDisponivel}
+        {#each vezes as vez}
+          <button
+            class="botao vez"
+            class:primario={ativa(vez)}
+            aria-pressed={ativa(vez)}
+            aria-label={dicaDaParte(vez)}
+            onclick={() => reproducao.alternar(hino, vez)}
+          >
+            <span aria-hidden="true">{icone(vez)}</span>
+            {rotuloCurtoDaVez(vez)}{#if vez === totalVezes}<span aria-hidden="true"> ⚑</span>{/if}
+          </button>
+        {/each}
+      {/if}
     </div>
-    <p class="meta dica">{t("vez.dica")}</p>
+    <p class="meta dica">{comFinalDisponivel ? t("vez.dica") : t("vez.dica_pausa")}</p>
   {/if}
 
   <div class="progresso-bloco">
@@ -269,9 +288,9 @@
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   .passo output { min-width: 6.5rem; text-align: center; font-variant-numeric: tabular-nums; }
-  /* Uma vez por botão, empilhados (os nomes são longos, como "Terceira vez · final"). A que toca fica em destaque. */
-  .vezes { display: grid; gap: 0.5rem; }
-  .vez { justify-content: flex-start; gap: 0.6rem; min-height: 52px; text-align: left; }
+  /* Botões compactos numa linha ("▶ Intro", "▶ 1ª", "▶ 3ª ⚑"); quebram de linha se faltar espaço. O que toca fica em destaque. */
+  .vezes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .vez { gap: 0.35rem; min-width: 48px; padding: 0 0.8rem; }
 
   .vozes { display: grid; gap: 0.5rem; }
   .voz { display: grid; grid-template-columns: 48px minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }

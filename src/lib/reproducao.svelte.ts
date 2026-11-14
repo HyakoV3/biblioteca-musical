@@ -3,7 +3,7 @@
 import type { Hino } from "./biblioteca.svelte";
 import type { InstrumentoId } from "./instrumentos";
 import { estrofes } from "./letra";
-import { ehFinal, montarTudo, totalDeVezes, vozesDaVez } from "./vezes";
+import { PAUSA_ENTRE_PARTES_S, ehFinal, montarTudo, temIntroducao, totalDeVezes, vozesDaIntroducao, vozesDaVez } from "./vezes";
 import { lerVoz } from "./preferencias";
 import { Sintetizador } from "./sintetizador";
 
@@ -18,8 +18,8 @@ export type Config = {
   mudas: boolean[];
 };
 
-/** O que tocar: o hino todo (1ª vez, 2ª, ... até o final, em sequência) ou uma vez só (1 = primeira). */
-export type Parte = "tudo" | number;
+/** O que tocar: o hino todo (introdução, 1ª vez, 2ª, ... final, com pausas), só a introdução, ou uma vez (1 = primeira). */
+export type Parte = "tudo" | "intro" | number;
 
 /** Quantas vezes o hino tem (1 se não tem final; senão uma por estrofe, a última é o final). */
 export function vezesDoHino(hino: Hino): number {
@@ -84,8 +84,15 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
   try {
     const c = config(hino);
     const total = vezesDoHino(hino);
-    // "tudo" = o hino como é cantado (1ª vez, 2ª, ... final); um número = só aquela vez, direto.
-    const vozes = parte === "tudo" ? montarTudo(hino, total) : vozesDaVez(hino, parte, total);
+    // "tudo" = o hino como é cantado, com uma pausa entre as partes (em segundos, então vale em batidas conforme o
+    // andamento escolhido); "intro" = só a introdução; um número = só aquela vez, direto.
+    const pausa = (PAUSA_ENTRE_PARTES_S * c.andamento) / 60;
+    const vozes =
+      parte === "tudo"
+        ? montarTudo(hino, total, pausa)
+        : parte === "intro" && temIntroducao(hino)
+          ? vozesDaIntroducao(hino)
+          : vozesDaVez(hino, typeof parte === "number" ? parte : 1, total);
     pararRelogio();
     duracao = await sint.tocar(vozes, {
       andamento: c.andamento,
@@ -98,7 +105,7 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
       titulo: hino.titulo,
       parte,
       total,
-      final: parte !== "tudo" && ehFinal(hino, parte, total),
+      final: typeof parte === "number" && ehFinal(hino, parte, total),
     };
     decorrido = 0;
     estado = "tocando";
