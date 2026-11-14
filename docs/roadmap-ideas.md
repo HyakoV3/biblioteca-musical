@@ -80,6 +80,70 @@ O progresso e o miniplayer passariam a considerar a duração total (todas as pa
 
 ---
 
+## I-02 — Variante "pergaminho" nos temas claro e escuro
+
+- **Status:** anotada
+- **Origem:** pedido do responsável, 2026-11-14.
+- **Prioridade:** a definir
+
+### O que se deseja (nas palavras do responsável)
+
+Em cada tema, duas versões:
+
+- **Claro:** o claro normal e uma versão **pergaminho**, mais amarelada.
+- **Escuro:** o escuro normal e uma versão **mais amarelada e ligeiramente mais clara**.
+
+Ou seja, quatro paletas no total.
+
+### Motivação (a confirmar)
+
+Conforto de leitura da letra por períodos longos: fundo amarelado costuma cansar menos a vista do que o
+branco puro ou o azul-marinho frio. Não há medição de conforto no projeto; é preferência do responsável e
+vale testar com quem lê.
+
+### Ideia de comportamento (a validar)
+
+Duas escolhas independentes em **Ajustes → Aparência**, para "Seguir o sistema" continuar funcionando
+com as duas variantes:
+
+1. **Modo:** Seguir o sistema | Claro | Escuro (já existe).
+2. **Estilo:** Normal | Pergaminho (novo).
+
+Combinações: claro normal, claro pergaminho, escuro normal, escuro pergaminho.
+
+### Perguntas em aberto
+
+1. **Onde vale o pergaminho?** No app inteiro ou só na área de leitura da letra (aba Letra)? Aplicar só
+   na letra é mais simples e mais seguro quanto ao contraste dos controles, mas deixa o app com duas
+   "caras".
+2. **O quanto amarelado?** Precisa de amostras para o responsável escolher. O pedido para o escuro é
+   "mais amarelado e ligeiramente mais claro" que o escuro normal; ainda é preciso fixar os valores.
+3. **Nome em cada idioma.** "Pergaminho" tem equivalente natural em espanhol ("Pergamino") e inglês
+   ("Parchment"), mas vale confirmar o tom desejado (pergaminho, sépia, âmbar).
+4. **Os ícones do app** (azul-marinho e dourado) combinam com a variante pergaminho? Não é bloqueio.
+
+### Impacto técnico (hipóteses, não verificadas)
+
+- **Tokens (`src/lib/tema.css`):** hoje há um bloco claro e dois blocos escuros idênticos. A variante
+  entraria como novos conjuntos de valores, por exemplo `data-estilo="pergaminho"` combinado com o modo.
+  Cuidado com a duplicação dos blocos escuros (um por `prefers-color-scheme`, outro por escolha forçada):
+  com o estilo, ficam quatro combinações em vez de dois blocos.
+- **Preferência (`src/lib/tema.svelte.ts` e o script do `src/app.html`):** guardar o estilo além do modo e
+  aplicar antes da primeira pintura, como já é feito com o modo.
+- **Contraste (`tools/contraste.py`):** hoje verifica claro e escuro. Precisa verificar as **quatro**
+  paletas com as mesmas metas (4,5:1 para texto, 3:1 para componentes). O fundo amarelado muda a razão
+  de todos os pares, em especial `--suave`, `--acento` e `--borda-controle`; é provável que alguns valores
+  precisem de ajuste.
+- **Traduções:** novas chaves para "Estilo", "Normal" e "Pergaminho" nos três idiomas.
+
+### Critérios de aceitação (propostos)
+
+- As quatro paletas passam em `tools/contraste.py` com as mesmas metas das paletas atuais.
+- Escolher o estilo muda o app na hora e a escolha sobrevive ao fechar o app.
+- "Seguir o sistema" combinado com "Pergaminho" acompanha o tema claro ou escuro do aparelho.
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown

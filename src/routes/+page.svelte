@@ -18,6 +18,9 @@
   });
 </script>
 
+<!-- O título do documento é o que leitores de tela anunciam a cada troca de tela. -->
+<svelte:head><title>{t("biblioteca.titulo")} · BibliotecaMusical CCB</title></svelte:head>
+
 <Barra titulo={t("biblioteca.titulo")}>
   {#snippet acao()}<a class="botao" href="/ajustes">{t("nav.ajustes")}</a>{/snippet}
 </Barra>
@@ -49,7 +52,10 @@
           <li>
             <a href={`/hino/${h.numero}`}>
               <span class="num">{h.numero}</span>
-              <span class="titulo">{h.titulo}</span>
+              <span class="titulo">
+                <span>{h.titulo}</span>
+                {#if h.autoria}<span class="autoria">{h.autoria}</span>{/if}
+              </span>
               {#if h.tonalidade}<small>{h.tonalidade}</small>{/if}
             </a>
           </li>
@@ -67,7 +73,10 @@
       {#if biblioteca.pacote.exemplo}
         {t("biblioteca.aviso_exemplo")} <a href="/ajustes">{t("nav.ajustes")}</a>
       {:else}
-        {t("biblioteca.fonte", { nome: biblioteca.pacote.hinario.hinario.nome, n: biblioteca.pacote.hinario.hinos.length })}
+        {t("biblioteca.fonte", {
+          nome: biblioteca.pacote.hinario.hinario.nome,
+          total: i18n.tn("plural.hinos", biblioteca.pacote.hinario.hinos.length),
+        })}
       {/if}
     </p>
   {/if}
@@ -94,7 +103,8 @@
     background: var(--superficie); border: 1px solid var(--borda-controle); border-radius: 12px;
   }
   .num { font-weight: 700; min-width: 2.4rem; }
-  .titulo { flex: 1; }
+  .titulo { flex: 1; min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; }
+  .autoria { font-size: 0.85rem; color: var(--suave); }
   small { color: var(--suave); }
   .fonte { margin-top: 1.2rem; }
 </style>

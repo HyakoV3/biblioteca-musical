@@ -96,7 +96,8 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
 - [x] Mixer compacto: por voz, interruptor liga/desliga, volume (com percentual ou "silenciada") e, numa seção
       **recolhida**, o instrumento. Silenciar aparece por rótulo, texto riscado e interruptor tracejado.
 - [x] Botão principal com cor de acento; foco visível (3 px) em todos os controles.
-- [ ] **Teste no emulador/aparelho** dos critérios abaixo (só foram verificados tipos, build e o contraste dos tokens).
+- [x] **Teste no emulador** dos critérios abaixo: validado pelo responsável em 2026-11-14 (o item sobre a barra de
+      status do Android, no fim desta etapa, continua marcado "a verificar").
 - Aceitação: contraste AA verificado em todos os estados · silenciar não depende só de cor · trocar o tema em
   Ajustes muda o app inteiro na hora e a escolha sobrevive ao fechar o app · "Seguir o sistema" acompanha o
   aparelho · nenhuma tela fica ilegível no escuro.
@@ -104,11 +105,33 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
   barra de status e a barra de gestos do Android acompanham o tema escolhido no app (pode ser preciso ajustar o
   tema nativo do Android, em `src-tauri/gen/android`).
 
-**Etapa 4 — Acessibilidade e internacionalização**
-- [ ] Nome, papel e valor em cada controle (ex.: "Volume do soprano, 80 por cento").
-- [ ] Abas com estado anunciado; áreas de toque ≥ 48 dp; fonte ampliada sem corte; movimento reduzido.
-- [ ] Teste com TalkBack no emulador.
-- [ ] Plurais e novas chaves de tradução (abas, Ajustes); separar idioma da interface do idioma do conteúdo.
+**Etapa 4 — Acessibilidade e internacionalização** — *implementada em 2026-11-14; falta validar no aparelho*
+- [x] Nome, papel e valor nos controles (interruptor de voz, volume com "80 por cento", abas, progresso, − e +),
+      todos traduzidos nos três idiomas. Conferido lendo o código; **não** testado com leitor de tela.
+- [x] Abas com estado anunciado, setas e **Home/End**; abas dentro da barra fixa, então a altura se ajusta a fonte
+      ampliada ou título longo (antes dependia de um valor fixo de 56 px).
+- [x] Miniplayer mede a própria altura para não cobrir o conteúdo; textos longos quebram em vez de cortar.
+- [x] Áreas de toque: botão secundário e controle de volume subiram de 44/32 px para 48 (conferido no CSS, não medido
+      no aparelho).
+- [x] Título do documento por tela (é o que o leitor de tela anuncia ao navegar); `lang` em cada opção de idioma.
+- [x] **Plurais** por regra da língua (`Intl.PluralRules`): "1 hino", "2 hinos", "0 semitons" (em português o zero é
+      singular no padrão CLDR, por isso existe a forma `.zero`). Verificador novo: `python3 tools/verificar-traducoes.py`
+      (chaves, parâmetros e `.outros` obrigatório; testado com dicionários quebrados de propósito).
+- [x] **Idioma da interface separado do idioma do conteúdo:** o hinário pode declarar `hinario.idioma`; título e letra
+      são marcados com esse `lang`. O conversor ganhou `--idioma`.
+- [x] Fora do plano original, a pedido do responsável: **título e autoria** dos hinos agora são lidos da partitura
+      (texto de moldura `Title`, `Lyricist` e `Composer`) e mostrados no hino e na lista.
+- [ ] **Teste com TalkBack no emulador/aparelho** (a árvore de acessibilidade lida por `uiautomator` sem TalkBack só
+      expõe o WebView inteiro, então não serve para auditar).
+- [ ] **Fonte ampliada** (Configurações → Acessibilidade → Tamanho da fonte) sem cortes ou sobreposições.
+- [ ] Idiomas da direita para a esquerda (RTL): não tratado; ao incluir um, trocar margens e alinhamentos fixos por
+      propriedades lógicas e testar o espelhamento.
+- Aceitação: nada cortado nem sobreposto com a fonte no máximo · TalkBack anuncia nome, estado e valor de cada
+  controle e o título da tela ao navegar · "1 hino" no singular em português, espanhol e inglês · hino com título
+  e autoria aparece na lista e no cabeçalho.
+- **Esta etapa mexe no Rust** (campos `idioma` e `autoria`): é preciso parar e rodar de novo o `tauri android dev`.
+  Hinários já importados continuam válidos (os campos são opcionais), mas só ganham título e autoria reais se
+  forem **regenerados e importados de novo**.
 
 **Etapa 5 — Polimento**
 - [ ] Ícone e identidade visual (o ícone atual é o padrão do Tauri).

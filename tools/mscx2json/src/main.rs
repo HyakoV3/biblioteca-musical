@@ -26,6 +26,7 @@ pub struct Voz {
 pub struct Hino {
     pub numero: u32,
     pub titulo: String,
+    pub autoria: Option<String>,
     pub andamento: Option<u32>,
     pub vozes: Vec<Voz>,
     pub letra: Vec<String>,
@@ -363,6 +364,30 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> Vec<Stri
     saida
 }
 
+/// Todo o texto dentro de um elemento (inclui trechos com formatação), sem espaços repetidos.
+fn texto_completo(n: Node) -> String {
+    let junto: String = n.descendants().filter(|d| d.is_text()).filter_map(|d| d.text()).collect();
+    junto.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// Textos de moldura (`<Text>` com `<style>` igual a um dos estilos pedidos), na ordem do arquivo.
+fn texto_de_estilo(doc: &Document, estilos: &[&str]) -> Vec<String> {
+    let mut achados: Vec<(usize, String)> = vec![];
+    for n in doc.descendants().filter(|n| n.has_tag_name("Text")) {
+        let Some(estilo) = texto(n, "style") else { continue };
+        let Some(pos) = estilos.iter().position(|e| *e == estilo) else { continue };
+        if let Some(t) = filho(n, "text") {
+            let t = texto_completo(t);
+            if !t.is_empty() {
+                achados.push((pos, t));
+            }
+        }
+    }
+    // Primeiro por ordem dos estilos pedidos (ex.: letrista antes de compositor), mantendo a do arquivo.
+    achados.sort_by_key(|(pos, _)| *pos);
+    achados.into_iter().map(|(_, t)| t).collect()
+}
+
 /// "Parte I..IV" -> vozes do coro, na ordem do hinário.
 pub fn nomes_satb(h: &mut Hino) {
     for v in &mut h.vozes {
@@ -520,22 +545,37 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
         return Err("nenhuma nota encontrada".into());
     }
 
-    let titulo = doc
-        .descendants()
-        .find(|n| n.has_tag_name("metaTag") && n.attribute("name") == Some("workTitle"))
-        .and_then(|n| n.text())
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .map(String::from)
+    // Título: texto de moldura com estilo "Title"; senão o metadado workTitle; senão "Hino N".
+    let titulo = texto_de_estilo(&doc, &["Title"])
+        .into_iter()
+        .next()
+        .or_else(|| {
+            doc.descendants()
+                .find(|n| n.has_tag_name("metaTag") && n.attribute("name") == Some("workTitle"))
+                .map(texto_completo)
+                .filter(|s| !s.is_empty())
+        })
         .unwrap_or_else(|| format!("Hino {numero_hino}"));
 
-    Ok(Hino { numero: numero_hino, titulo, andamento, vozes, letra, avisos })
+    // Autoria: textos de moldura com estilo "Lyricist" e "Composer", sem repetir e na ordem do arquivo.
+    let mut nomes: Vec<String> = vec![];
+    for n in texto_de_estilo(&doc, &["Lyricist", "Composer"]) {
+        if !nomes.contains(&n) {
+            nomes.push(n);
+        }
+    }
+    let autoria = (!nomes.is_empty()).then(|| nomes.join(" · "));
+
+    Ok(Hino { numero: numero_hino, titulo, autoria, andamento, vozes, letra, avisos })
 }
 
 pub fn para_json(h: &Hino) -> Value {
     let mut m = Map::new();
     m.insert("numero".into(), json!(h.numero));
     m.insert("titulo".into(), json!(h.titulo));
+    if let Some(a) = &h.autoria {
+        m.insert("autoria".into(), json!(a));
+    }
     if let Some(a) = h.andamento {
         m.insert("andamento".into(), json!(a));
     }
@@ -558,7 +598,19 @@ pub fn para_json(h: &Hino) -> Value {
     Value::Object(m)
 }
 
-const AJUDA: &str = "Uso: mscx2json [--nomes-originais] --id ID --nome NOME arquivo.mscx|pasta ... > hinario.json\n\
+/// Cabeçalho do hinário; `idioma` (ex.: "pt-BR") só entra se for informado.
+fn cabecalho(id: &str, nome: &str, idioma: Option<&str>) -> Value {
+    let mut m = Map::new();
+    m.insert("id".into(), json!(id));
+    m.insert("nome".into(), json!(nome));
+    if let Some(i) = idioma.filter(|i| !i.trim().is_empty()) {
+        m.insert("idioma".into(), json!(i.trim()));
+    }
+    Value::Object(m)
+}
+
+const AJUDA: &str = "Uso: mscx2json [--nomes-originais] [--idioma pt-BR] --id ID --nome NOME arquivo.mscx|pasta ... > hinario.json\n\
+--idioma declara o idioma do conteúdo (título e letra) no hinário gerado.\n\
 --nomes-originais mantém \"Parte I..IV\" em vez de Soprano/Contralto/Tenor/Baixo.\n\
 Os arquivos devem se chamar hino-<número>.mscx; os demais são ignorados com um aviso.";
 
@@ -569,12 +621,14 @@ fn numero_do_arquivo(p: &Path) -> Option<u32> {
 fn executar(args: Vec<String>) -> Result<(), String> {
     let (mut id, mut nome, mut entradas) = (None, None, vec![]);
     let mut renomear = true;
+    let mut idioma: Option<String> = None;
     let mut it = args.into_iter();
     while let Some(a) = it.next() {
         match a.as_str() {
             "--id" => id = it.next(),
             "--nome" => nome = it.next(),
             "--nomes-originais" => renomear = false,
+            "--idioma" => idioma = it.next(),
             "-h" | "--ajuda" => {
                 println!("{AJUDA}");
                 return Ok(());
@@ -625,7 +679,7 @@ fn executar(args: Vec<String>) -> Result<(), String> {
 
     let saida = json!({
         "versao": 1,
-        "hinario": { "id": id, "nome": nome },
+        "hinario": cabecalho(&id, &nome, idioma.as_deref()),
         "hinos": hinos.iter().map(para_json).collect::<Vec<_>>(),
     });
     println!("{}", serde_json::to_string(&saida).map_err(|e| e.to_string())?);
@@ -856,6 +910,7 @@ mod testes {
         let mut h = Hino {
             numero: 1,
             titulo: "T".into(),
+            autoria: None,
             andamento: None,
             vozes: ["Parte I", "Parte II", "Parte III", "Parte IV", "Outra"]
                 .iter()
@@ -867,6 +922,76 @@ mod testes {
         nomes_satb(&mut h);
         let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
         assert_eq!(nomes, vec!["Soprano", "Contralto", "Tenor", "Baixo", "Outra"]);
+    }
+
+    fn texto_moldura(estilo: &str, t: &str) -> String {
+        format!("<Text><style>{estilo}</style><text>{t}</text></Text>")
+    }
+    /// Documento sem metaTag, só com a moldura informada e uma nota (para testar título e autoria).
+    fn doc_com_moldura(moldura: &str) -> String {
+        let nota = format!("{C44}{}", acorde("whole", 60));
+        format!(
+            r#"<?xml version="1.0"?><museScore version="2.06"><Score><Division>480</Division>{moldura}{}{}</Score></museScore>"#,
+            parte(1, "S"),
+            pauta(1, &compasso(&nota))
+        )
+    }
+
+    #[test]
+    fn titulo_e_autoria_vem_dos_textos_de_moldura() {
+        let moldura = format!(
+            "<VBox>{}{}{}</VBox>",
+            texto_moldura("Title", "Título real"),
+            texto_moldura("Composer", "Fulana de Tal"),
+            texto_moldura("Instrument Name (Part)", "7"),
+        );
+        let h = converter(&doc_com_moldura(&moldura), 7).unwrap();
+        assert_eq!(h.titulo, "Título real");
+        assert_eq!(h.autoria.as_deref(), Some("Fulana de Tal"));
+        assert_eq!(para_json(&h)["autoria"], "Fulana de Tal");
+    }
+
+    #[test]
+    fn sem_moldura_o_titulo_cai_no_metadado_e_depois_em_hino_n() {
+        // doc() traz <metaTag name="workTitle">Título fictício</metaTag>
+        let c = format!("{C44}{}", acorde("whole", 60));
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso(&c))), 1).unwrap();
+        assert_eq!(h.titulo, "Título fictício");
+        assert_eq!(h.autoria, None);
+        assert!(para_json(&h).get("autoria").is_none());
+
+        let h = converter(&doc_com_moldura(""), 5).unwrap();
+        assert_eq!(h.titulo, "Hino 5");
+    }
+
+    #[test]
+    fn autoria_junta_letrista_e_compositor_sem_repetir() {
+        let m = format!(
+            "<VBox>{}{}{}</VBox>",
+            texto_moldura("Composer", "B"),
+            texto_moldura("Lyricist", "A"),
+            texto_moldura("Composer", "B"),
+        );
+        let h = converter(&doc_com_moldura(&m), 1).unwrap();
+        assert_eq!(h.autoria.as_deref(), Some("A · B")); // letrista primeiro, sem repetir
+
+        let m = format!("<VBox>{}{}</VBox>", texto_moldura("Lyricist", "A"), texto_moldura("Composer", "A"));
+        let h = converter(&doc_com_moldura(&m), 1).unwrap();
+        assert_eq!(h.autoria.as_deref(), Some("A")); // mesma pessoa nos dois papéis
+    }
+
+    #[test]
+    fn titulo_com_formatacao_e_espacos_repetidos_sai_limpo() {
+        let m = format!("<VBox>{}</VBox>", texto_moldura("Title", "Canta, <i>ó</i>   Mundo\n  Hoje"));
+        let h = converter(&doc_com_moldura(&m), 1).unwrap();
+        assert_eq!(h.titulo, "Canta, ó Mundo Hoje");
+    }
+
+    #[test]
+    fn cabecalho_so_leva_idioma_quando_informado() {
+        assert_eq!(cabecalho("a", "A", Some("pt-BR")), json!({"id":"a","nome":"A","idioma":"pt-BR"}));
+        assert_eq!(cabecalho("a", "A", None), json!({"id":"a","nome":"A"}));
+        assert_eq!(cabecalho("a", "A", Some("  ")), json!({"id":"a","nome":"A"}));
     }
 
     #[test]

@@ -6,6 +6,7 @@ import type { Voz } from "./sintetizador";
 export type Hino = {
   numero: number;
   titulo: string;
+  autoria?: string | null;
   tonalidade?: string | null;
   letra: string[];
   partitura?: string | null;
@@ -14,7 +15,7 @@ export type Hino = {
 };
 
 export type Pacote = {
-  hinario: { versao: number; hinario: { id: string; nome: string }; hinos: Hino[] };
+  hinario: { versao: number; hinario: { id: string; nome: string; idioma?: string | null }; hinos: Hino[] };
   exemplo: boolean;
 };
 

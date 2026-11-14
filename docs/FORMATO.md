@@ -24,6 +24,17 @@ dados **fictícios**, só para mostrar a estrutura:
 }
 ```
 
+## Campos de identificação
+
+- No cabeçalho `hinario`: `idioma` (opcional) é o **idioma do conteúdo** (título e letra), em código BCP 47
+  (`"pt-BR"`, `"es"`, `"en"`). Ele é independente do idioma da interface. Com ele, a tela marca o título e a
+  letra no idioma certo, e o leitor de tela pronuncia corretamente mesmo com a interface em outra língua.
+  Sem ele, o app não marca o idioma do texto dos hinos.
+- Em cada hino: `autoria` (opcional) é o crédito como aparece na partitura, por exemplo
+  `"Fulana de Tal"`. Aparece sob o título do hino e na lista. O conversor monta esse campo a partir dos
+  textos de moldura com estilo `Lyricist` e `Composer` do MuseScore (letrista primeiro, sem repetir).
+  O `titulo` vem do texto com estilo `Title`.
+
 ## Áudio por síntese
 
 Não há arquivos de áudio. O som é gerado por um sintetizador dentro do app a partir das

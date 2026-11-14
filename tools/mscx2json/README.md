@@ -18,6 +18,10 @@ cargo run --release -- --id meu-hinario --nome "Meu hinário" /pasta/com/hino-1.
   sequência de linhas, com quebra a cada respiração (`<Breath>`), estrofes separadas por linha
   vazia e a primeira linha numerada ("1. ..."). O refrão, quando está guardado na estrofe 1,
   continua nela, como no arquivo.
+- **Título e autoria:** o título vem do texto de moldura com estilo `Title` (se não houver, do metadado
+  `workTitle`, e por último "Hino N"). A autoria junta os textos com estilo `Lyricist` e `Composer`
+  (letrista primeiro, sem repetir). Hinos sem esses textos ficam sem `autoria`.
+- **Idioma do conteúdo:** `--idioma pt-BR` declara o idioma de título e letra no hinário gerado.
 - **Nomes das vozes:** "Parte I", "II", "III" e "IV" viram Soprano, Contralto, Tenor e Baixo.
   Use `--nomes-originais` para manter os nomes do arquivo.
 

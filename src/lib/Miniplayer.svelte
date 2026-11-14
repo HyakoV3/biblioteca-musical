@@ -11,14 +11,16 @@
   const visivel = $derived(atual !== null && reproducao.painelNumero !== atual.numero);
   const tocando = $derived(reproducao.estado === "tocando");
 
-  // Reserva espaço no fim das telas para o miniplayer não cobrir o conteúdo.
+  // Reserva espaço no fim das telas para o miniplayer não cobrir o conteúdo. Usa a altura medida
+  // (cresce com fonte ampliada), em vez de um valor fixo.
+  let altura = $state(0);
   $effect(() => {
-    document.documentElement.style.setProperty("--altura-miniplayer", visivel ? "72px" : "0px");
+    document.documentElement.style.setProperty("--altura-miniplayer", visivel ? `${altura}px` : "0px");
   });
 </script>
 
 {#if visivel && atual}
-  <div class="mini" role="region" aria-label={t("mini.regiao")}>
+  <div class="mini" role="region" aria-label={t("mini.regiao")} bind:clientHeight={altura}>
     <div class="coluna linha">
       <button
         class="acao"
@@ -62,7 +64,7 @@
     border: 0; background: transparent; color: var(--texto); cursor: pointer;
   }
   .info { flex: 1; min-width: 0; display: flex; flex-direction: column; text-decoration: none; color: var(--texto); }
-  .titulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .titulo { overflow-wrap: anywhere; font-weight: 600; }
   .tempo { font-size: 0.8rem; color: var(--suave); font-variant-numeric: tabular-nums; }
   .fio { height: 4px; background: var(--borda); }
   .preenchido { height: 100%; background: var(--acento); }

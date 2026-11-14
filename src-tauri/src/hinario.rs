@@ -11,12 +11,19 @@ const VERSAO_SUPORTADA: u32 = 1;
 pub struct InfoHinario {
     pub id: String,
     pub nome: String,
+    /// Idioma do conteúdo (título e letra), como código BCP 47: "pt-BR", "es", "en".
+    /// Opcional: sem ele, a interface não marca o idioma do texto dos hinos.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub idioma: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Hino {
     pub numero: u32,
     pub titulo: String,
+    /// Crédito como aparece na partitura (letrista e/ou compositor), ex.: "Fulana de Tal".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub autoria: Option<String>,
     #[serde(default)]
     pub tonalidade: Option<String>,
     #[serde(default)]
@@ -141,6 +148,26 @@ mod testes {
         let hino = &h.hinos[0];
         assert!(hino.letra.is_empty() && hino.tonalidade.is_none());
         assert!(hino.vozes.is_empty() && hino.andamento.is_none());
+        assert!(h.hinario.idioma.is_none() && hino.autoria.is_none());
+    }
+
+    #[test]
+    fn autoria_do_hino_e_lida() {
+        let h = ler(
+            r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T","autoria":"Fulana de Tal"}]}"#,
+        )
+        .unwrap();
+        assert_eq!(h.hinos[0].autoria.as_deref(), Some("Fulana de Tal"));
+    }
+
+    #[test]
+    fn idioma_do_conteudo_e_lido_e_nao_aparece_quando_ausente() {
+        let com = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A","idioma":"es"},"hinos":[]}"#).unwrap();
+        assert_eq!(com.hinario.idioma.as_deref(), Some("es"));
+        assert!(serde_json::to_string(&com.hinario).unwrap().contains(r#""idioma":"es""#));
+
+        let sem = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[]}"#).unwrap();
+        assert!(!serde_json::to_string(&sem.hinario).unwrap().contains("idioma"));
     }
 
     #[test]

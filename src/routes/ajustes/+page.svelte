@@ -22,7 +22,10 @@
     try {
       const p = await biblioteca.importar(await arquivo.text());
       reproducao.limpar(); // o conteúdo mudou: para o som e esquece os ajustes dos hinos antigos
-      resultado = { tipo: "sucesso", texto: t("importar.ok", { n: p.hinario.hinos.length, nome: p.hinario.hinario.nome }) };
+      resultado = {
+        tipo: "sucesso",
+        texto: t("importar.ok", { total: i18n.tn("plural.hinos", p.hinario.hinos.length), nome: p.hinario.hinario.nome }),
+      };
     } catch (err) {
       resultado = { tipo: "erro", texto: t("importar.erro", { erro: String(err) }) };
     }
@@ -39,6 +42,8 @@
     }
   }
 </script>
+
+<svelte:head><title>{t("ajustes.titulo")} · BibliotecaMusical CCB</title></svelte:head>
 
 <Barra titulo={t("ajustes.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />
 
@@ -63,7 +68,8 @@
       value={i18n.idioma}
       onchange={(e) => (i18n.idioma = e.currentTarget.value as Idioma)}
     >
-      {#each Object.entries(IDIOMAS) as [id, l]}<option value={id}>{l.nome}</option>{/each}
+      <!-- Cada nome está na própria língua: o lang faz o leitor de tela pronunciar certo. -->
+      {#each Object.entries(IDIOMAS) as [id, l]}<option value={id} lang={id}>{l.nome}</option>{/each}
     </select>
   </section>
 
@@ -74,7 +80,10 @@
         {#if biblioteca.pacote.exemplo}
           {t("biblioteca.aviso_exemplo")}
         {:else}
-          {t("ajustes.fonte_atual", { nome: biblioteca.pacote.hinario.hinario.nome, n: biblioteca.pacote.hinario.hinos.length })}
+          {t("ajustes.fonte_atual", {
+            nome: biblioteca.pacote.hinario.hinario.nome,
+            total: i18n.tn("plural.hinos", biblioteca.pacote.hinario.hinos.length),
+          })}
         {/if}
       </p>
     {/if}

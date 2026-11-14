@@ -1,10 +1,11 @@
 {
   "versao": 1,
-  "hinario": { "id": "exemplo", "nome": "Hinário de exemplo (dados fictícios)" },
+  "hinario": { "id": "exemplo", "nome": "Hinário de exemplo (dados fictícios)", "idioma": "pt-BR" },
   "hinos": [
     {
       "numero": 1,
       "titulo": "Canção de exemplo um",
+      "autoria": "Autor Fictício",
       "tonalidade": "Dó",
       "andamento": 90,
       "letra": ["Linha fictícia número um", "Linha fictícia número dois"],

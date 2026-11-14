@@ -1,13 +1,26 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  // Barra de topo fixa. `rodape` fica dentro do mesmo bloco fixo (ex.: as abas do hino), então a altura
+  // total se ajusta sozinha a fonte ampliada ou a título de duas linhas, sem número mágico.
   let {
     titulo,
     subtitulo,
     voltar,
     rotuloVoltar = "",
     acao,
-  }: { titulo: string; subtitulo?: string; voltar?: () => void; rotuloVoltar?: string; acao?: Snippet } = $props();
+    rodape,
+    lang,
+  }: {
+    titulo: string;
+    subtitulo?: string;
+    voltar?: () => void;
+    rotuloVoltar?: string;
+    acao?: Snippet;
+    rodape?: Snippet;
+    /** Idioma do título quando difere da interface (ex.: título de hino em outra língua). */
+    lang?: string;
+  } = $props();
 </script>
 
 <header class="barra">
@@ -16,11 +29,12 @@
       <button class="voltar" onclick={voltar} aria-label={rotuloVoltar}>←</button>
     {/if}
     <div class="textos">
-      <h1 title={titulo}>{titulo}</h1>
+      <h1 title={titulo} {lang}>{titulo}</h1>
       {#if subtitulo}<p>{subtitulo}</p>{/if}
     </div>
     {#if acao}<div class="acao">{@render acao()}</div>{/if}
   </div>
+  {#if rodape}{@render rodape()}{/if}
 </header>
 
 <style>
@@ -37,10 +51,10 @@
     min-width: 48px; min-height: 48px; margin-left: -0.6rem; font-size: 1.5rem; line-height: 1;
     background: transparent; border: 0; color: inherit; cursor: pointer; border-radius: 12px;
   }
-  .textos { flex: 1; min-width: 0; }
+  .textos { flex: 1; min-width: 0; padding: 0.25rem 0; }
   h1 {
-    margin: 0; font-size: 1.2rem; line-height: 1.25;
-    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    margin: 0; font-size: 1.2rem; line-height: 1.25; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   }
   p { margin: 0; font-size: 0.85rem; color: var(--suave); }
   .acao { flex: none; }

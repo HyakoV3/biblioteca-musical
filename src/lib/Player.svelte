@@ -132,7 +132,9 @@
           disabled={!parado || cfg.transposicao <= -TRANSPOSICAO_MAX}
           onclick={() => mudarTom(-1)}>−</button
         >
-        <output aria-live="polite">{t("player.semitons", { n: sinal(cfg.transposicao) })}</output>
+        <output aria-live="polite">
+          {i18n.tn("plural.semitons", Math.abs(cfg.transposicao), { n: sinal(cfg.transposicao) })}
+        </output>
         <button
           aria-label={t("player.aumentar", { item: t("player.transposicao").toLowerCase() })}
           disabled={!parado || cfg.transposicao >= TRANSPOSICAO_MAX}
@@ -229,7 +231,7 @@
   .passo output { min-width: 6.5rem; text-align: center; font-variant-numeric: tabular-nums; }
 
   .vozes { display: grid; gap: 0.5rem; }
-  .voz { display: grid; grid-template-columns: 48px 7rem 1fr; align-items: center; gap: 0.5rem; }
+  .voz { display: grid; grid-template-columns: 48px minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }
   .chave {
     min-width: 48px; min-height: 48px; font-size: 1.2rem; border-radius: 12px; cursor: pointer;
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
@@ -238,9 +240,9 @@
   .voz.silenciada .chave { border-style: dashed; opacity: 0.75; }
   .voz.silenciada .nome { text-decoration: line-through; }
   .identidade { display: flex; flex-direction: column; min-width: 0; }
-  .nome { font-weight: 600; }
+  .nome { font-weight: 600; overflow-wrap: anywhere; }
   .estado-voz { font-size: 0.8rem; color: var(--suave); font-variant-numeric: tabular-nums; }
-  input[type="range"] { width: 100%; min-height: 32px; accent-color: var(--acento); }
+  input[type="range"] { width: 100%; min-height: 48px; accent-color: var(--acento); }
 
   .instrumentos { border: 1px solid var(--borda-controle); border-radius: 12px; background: var(--superficie); }
   summary {
@@ -249,11 +251,11 @@
   }
   .resumo { font-weight: 400; color: var(--suave); font-size: 0.9rem; }
   .lista-instrumentos { display: grid; gap: 0.6rem; padding: 0.2rem 0.9rem 0.9rem; }
-  .inst-linha { display: grid; grid-template-columns: 7rem 1fr; align-items: center; gap: 0.5rem; }
+  .inst-linha { display: grid; grid-template-columns: minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }
   select {
     min-height: 48px; font-size: 1rem; border-radius: 12px; padding: 0 0.5rem;
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
-  .secundario { background: transparent; font-size: 0.95rem; min-height: 44px; }
+  .secundario { background: transparent; font-size: 0.95rem; }
   button:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

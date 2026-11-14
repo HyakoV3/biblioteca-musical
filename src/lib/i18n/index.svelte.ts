@@ -13,6 +13,19 @@ export const IDIOMAS = {
 export type Idioma = keyof typeof IDIOMAS;
 const CHAVE = "idioma";
 
+/** Base de uma chave plural: "plural.hinos" para as chaves "plural.hinos.um" e "plural.hinos.outros". */
+export type BasePlural = Chave extends infer K ? (K extends `${infer B}.outros` ? B : never) : never;
+
+// Categorias de plural do CLDR -> sufixo da chave. "outros" é a forma de reserva e é obrigatória.
+const SUFIXOS: Record<Intl.LDMLPluralRule, string> = {
+  zero: "zero",
+  one: "um",
+  two: "dois",
+  few: "poucos",
+  many: "muitos",
+  other: "outros",
+};
+
 const ehIdioma = (x: unknown): x is Idioma => typeof x === "string" && x in IDIOMAS;
 
 function inicial(): Idioma {
@@ -24,6 +37,12 @@ function inicial(): Idioma {
   }
   const sistema = (typeof navigator !== "undefined" ? navigator.language : "pt").slice(0, 2).toLowerCase();
   return ehIdioma(sistema) ? sistema : "pt";
+}
+
+function preencher(texto: string, params?: Record<string, string | number>): string {
+  let s = texto;
+  if (params) for (const [k, v] of Object.entries(params)) s = s.replaceAll(`{${k}}`, String(v));
+  return s;
 }
 
 let atual = $state<Idioma>(inicial());
@@ -42,8 +61,18 @@ export const i18n = {
   },
   /** Texto na língua atual; `{nome}` é substituído pelos parâmetros. Falta de chave cai no português. */
   t(chave: Chave, params?: Record<string, string | number>): string {
-    let s: string = IDIOMAS[atual].dic[chave] ?? pt[chave];
-    if (params) for (const [k, v] of Object.entries(params)) s = s.replaceAll(`{${k}}`, String(v));
-    return s;
+    return preencher(IDIOMAS[atual].dic[chave] ?? pt[chave], params);
+  },
+  /**
+   * Texto com plural: escolhe a forma pela regra da língua atual (Intl.PluralRules).
+   * `{n}` recebe o número, a menos que `params` traga outro `n` (ex.: "+2" com sinal).
+   * Ordem de busca: forma exata do plural, depois ".outros", depois o português.
+   */
+  tn(base: BasePlural, n: number, params?: Record<string, string | number>): string {
+    const dic = IDIOMAS[atual].dic as Record<string, string>;
+    const categoria = n === 0 && `${base}.zero` in dic ? "zero" : SUFIXOS[new Intl.PluralRules(atual).select(n)];
+    const texto =
+      dic[`${base}.${categoria}`] ?? dic[`${base}.outros`] ?? (pt as Record<string, string>)[`${base}.outros`];
+    return preencher(texto, { n, ...params });
   },
 };

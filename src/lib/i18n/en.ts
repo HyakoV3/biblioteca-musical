@@ -10,7 +10,7 @@ export const en: Dicionario = {
 
   "importar.botao": "Import hymnal (.json)",
   "importar.remover": "Remove imported content",
-  "importar.ok": "Imported: {n} hymns from “{nome}”.",
+  "importar.ok": "Imported: {total} from “{nome}”.",
   "importar.erro": "Could not import: {erro}",
   "remover.ok": "Imported content removed. Showing the sample package.",
   "remover.erro": "Could not remove: {erro}",
@@ -24,7 +24,6 @@ export const en: Dicionario = {
   "player.instrumento": "{voz} instrument",
   "player.transposicao": "Transposition",
   "player.redefinir": "Reset voices",
-  "player.semitons": "{n} semitones",
   "grupo.orgaos": "Organs",
   "grupo.instrumentos": "Instruments",
 
@@ -57,7 +56,7 @@ export const en: Dicionario = {
   "nav.ajustes": "Settings",
   "biblioteca.titulo": "Library",
   "biblioteca.limpar_busca": "Clear search",
-  "biblioteca.fonte": "Source: {nome} · {n} hymns",
+  "biblioteca.fonte": "Source: {nome} · {total}",
   "biblioteca.aviso_exemplo": "You are viewing a sample package. Import a hymnal in Settings.",
   "biblioteca.sem_resultado": "No hymns for “{termo}”.",
   "erro.tentar": "Try again",
@@ -69,7 +68,7 @@ export const en: Dicionario = {
   "ajustes.titulo": "Settings",
   "ajustes.idioma": "Interface language",
   "ajustes.biblioteca": "Library",
-  "ajustes.fonte_atual": "Current content: {nome} ({n} hymns)",
+  "ajustes.fonte_atual": "Current content: {nome} ({total})",
   "ajustes.sobre": "About",
   "ajustes.remover_titulo": "Remove imported content?",
   "ajustes.remover_texto": "The imported hymns will be deleted from this device and the app will show only the sample package again. You can import again later.",
@@ -101,4 +100,12 @@ export const en: Dicionario = {
   "player.instrumentos": "Instruments",
   "player.instrumentos_varios": "Mixed",
   "player.erro_audio": "Could not start audio on this device. Try again.",
+
+  "plural.hinos.um": "{n} hymn",
+  "plural.hinos.outros": "{n} hymns",
+  "plural.semitons.zero": "{n} semitones",
+  "plural.semitons.um": "{n} semitone",
+  "plural.semitons.outros": "{n} semitones",
+
+  "hino.autoria": "Author: {nome}",
 };

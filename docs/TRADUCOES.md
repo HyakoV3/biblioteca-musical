@@ -15,6 +15,22 @@ O TypeScript (`npm run check`) acusa chave faltando ou sobrando. Os trechos entr
 `{n}`, `{nome}` e `{voz}`, são preenchidos pelo app: mantenha-os no texto traduzido, na posição
 que fizer sentido na sua língua.
 
+## Plurais
+
+Frases com número usam **chaves de plural**: uma chave por forma, com o mesmo prefixo, por exemplo
+`plural.hinos.um` ("{n} hino") e `plural.hinos.outros` ("{n} hinos"). O app escolhe a forma pela regra
+de plural do idioma (`Intl.PluralRules`) e, no código, usa `i18n.tn("plural.hinos", n)`.
+
+Sufixos aceitos: `.zero`, `.um`, `.dois`, `.poucos`, `.muitos` e `.outros`. **`.outros` é obrigatório**
+(é a forma de reserva); as demais só são necessárias se a língua as usar. O verificador de chaves exige
+`.outros` em toda chave plural. Português e inglês só precisam de `.um` e `.outros`; o `.zero` existe para
+"0 semitons", porque no português do CLDR o zero seria tratado como singular.
+
+## Idioma do conteúdo
+
+O idioma da **interface** (esta tradução) é separado do idioma dos **hinos**. Um hinário declara o seu em
+`hinario.idioma` (ver `FORMATO.md`). Títulos e letras nunca são traduzidos automaticamente.
+
 ## O que não é traduzido (ainda)
 
 - **O conteúdo dos hinos** (título e letra) vem do arquivo `hinario.json` e fica na língua em que foi

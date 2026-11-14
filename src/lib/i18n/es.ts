@@ -10,7 +10,7 @@ export const es: Dicionario = {
 
   "importar.botao": "Importar himnario (.json)",
   "importar.remover": "Quitar contenido importado",
-  "importar.ok": "Importado: {n} himnos de “{nome}”.",
+  "importar.ok": "Importado: {total} de “{nome}”.",
   "importar.erro": "No se pudo importar: {erro}",
   "remover.ok": "Contenido importado eliminado. Mostrando el paquete de ejemplo.",
   "remover.erro": "No se pudo eliminar: {erro}",
@@ -24,7 +24,6 @@ export const es: Dicionario = {
   "player.instrumento": "Instrumento de {voz}",
   "player.transposicao": "Transposición",
   "player.redefinir": "Restablecer voces",
-  "player.semitons": "{n} semitonos",
   "grupo.orgaos": "Órganos",
   "grupo.instrumentos": "Instrumentos",
 
@@ -57,7 +56,7 @@ export const es: Dicionario = {
   "nav.ajustes": "Ajustes",
   "biblioteca.titulo": "Biblioteca",
   "biblioteca.limpar_busca": "Borrar búsqueda",
-  "biblioteca.fonte": "Fuente: {nome} · {n} himnos",
+  "biblioteca.fonte": "Fuente: {nome} · {total}",
   "biblioteca.aviso_exemplo": "Estás viendo un paquete de ejemplo. Importa un himnario en Ajustes.",
   "biblioteca.sem_resultado": "Ningún himno para “{termo}”.",
   "erro.tentar": "Intentar de nuevo",
@@ -69,7 +68,7 @@ export const es: Dicionario = {
   "ajustes.titulo": "Ajustes",
   "ajustes.idioma": "Idioma de la interfaz",
   "ajustes.biblioteca": "Biblioteca",
-  "ajustes.fonte_atual": "Contenido actual: {nome} ({n} himnos)",
+  "ajustes.fonte_atual": "Contenido actual: {nome} ({total})",
   "ajustes.sobre": "Acerca de",
   "ajustes.remover_titulo": "¿Quitar el contenido importado?",
   "ajustes.remover_texto": "Los himnos importados se borrarán de este dispositivo y la app volverá a mostrar solo el paquete de ejemplo. Puedes importar de nuevo más tarde.",
@@ -101,4 +100,12 @@ export const es: Dicionario = {
   "player.instrumentos": "Instrumentos",
   "player.instrumentos_varios": "Varios",
   "player.erro_audio": "No se pudo iniciar el audio en este dispositivo. Inténtalo de nuevo.",
+
+  "plural.hinos.um": "{n} himno",
+  "plural.hinos.outros": "{n} himnos",
+  "plural.semitons.zero": "{n} semitonos",
+  "plural.semitons.um": "{n} semitono",
+  "plural.semitons.outros": "{n} semitonos",
+
+  "hino.autoria": "Autoría: {nome}",
 };

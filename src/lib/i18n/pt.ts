@@ -10,7 +10,7 @@ export const pt = {
 
   "importar.botao": "Importar hinário (.json)",
   "importar.remover": "Remover conteúdo importado",
-  "importar.ok": "Importado: {n} hinos de “{nome}”.",
+  "importar.ok": "Importado: {total} de “{nome}”.",
   "importar.erro": "Não foi possível importar: {erro}",
   "remover.ok": "Conteúdo importado removido. Mostrando o pacote de exemplo.",
   "remover.erro": "Não foi possível remover: {erro}",
@@ -24,7 +24,6 @@ export const pt = {
   "player.instrumento": "Instrumento de {voz}",
   "player.transposicao": "Transposição",
   "player.redefinir": "Redefinir vozes",
-  "player.semitons": "{n} semitons",
   "grupo.orgaos": "Órgãos",
   "grupo.instrumentos": "Instrumentos",
 
@@ -57,7 +56,7 @@ export const pt = {
   "nav.ajustes": "Ajustes",
   "biblioteca.titulo": "Biblioteca",
   "biblioteca.limpar_busca": "Limpar busca",
-  "biblioteca.fonte": "Fonte: {nome} · {n} hinos",
+  "biblioteca.fonte": "Fonte: {nome} · {total}",
   "biblioteca.aviso_exemplo": "Você está vendo um pacote de exemplo. Importe um hinário em Ajustes.",
   "biblioteca.sem_resultado": "Nenhum hino para “{termo}”.",
   "erro.tentar": "Tentar de novo",
@@ -69,7 +68,7 @@ export const pt = {
   "ajustes.titulo": "Ajustes",
   "ajustes.idioma": "Idioma da interface",
   "ajustes.biblioteca": "Biblioteca",
-  "ajustes.fonte_atual": "Conteúdo atual: {nome} ({n} hinos)",
+  "ajustes.fonte_atual": "Conteúdo atual: {nome} ({total})",
   "ajustes.sobre": "Sobre",
   "ajustes.remover_titulo": "Remover conteúdo importado?",
   "ajustes.remover_texto": "Os hinos importados serão apagados deste aparelho e o app voltará a mostrar só o pacote de exemplo. Você pode importar de novo depois.",
@@ -101,6 +100,14 @@ export const pt = {
   "player.instrumentos": "Instrumentos",
   "player.instrumentos_varios": "Vários",
   "player.erro_audio": "Não foi possível iniciar o áudio neste aparelho. Tente de novo.",
+
+  "plural.hinos.um": "{n} hino",
+  "plural.hinos.outros": "{n} hinos",
+  "plural.semitons.zero": "{n} semitons",
+  "plural.semitons.um": "{n} semitom",
+  "plural.semitons.outros": "{n} semitons",
+
+  "hino.autoria": "Autoria: {nome}",
 };
 
 export type Chave = keyof typeof pt;
