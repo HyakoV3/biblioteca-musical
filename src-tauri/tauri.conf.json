@@ -12,9 +12,12 @@
   "app": {
     "windows": [
       {
-        "title": "bibliotecamusical-ccb",
-        "width": 800,
-        "height": 600
+        "title": "BibliotecaMusical CCB",
+        "width": 480,
+        "height": 800,
+        "minWidth": 320,
+        "minHeight": 480,
+        "resizable": true
       }
     ],
     "security": {
