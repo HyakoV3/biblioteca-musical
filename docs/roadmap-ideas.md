@@ -13,7 +13,7 @@ Status possíveis: **anotada** · **em análise** · **planejada** · **feita** 
 
 ## I-01 — Tocar o hino com a passada do final
 
-- **Status:** anotada
+- **Status:** **feita (primeira versão)**, a validar no aparelho. Veja "O que foi feito" abaixo.
 - **Origem:** reclamação do responsável, 2026-11-14, sobre o aplicativo de referência (CCB Virtual Plus).
 - **Prioridade:** a definir
 
@@ -118,6 +118,46 @@ Isso bate com o que você vê no hinário? E o `*` do compasso 5, o que ele faz 
 - Hinos sem final continuam tocando como hoje, sem controle extra confuso.
 - Progresso, tempo total e miniplayer refletem todas as passadas.
 
+### O que foi feito (2026-11-14)
+
+O responsável confirmou que a leitura do hino 457 bate com o hinário impresso (passadas 1 e 2 pela casa do
+compasso 19; a última pula essa casa, toca a do compasso 20 e segue para o Final).
+
+- **Conversor:** reconhece o padrão e gera `vozes` (uma passada normal) e `final` (a última passada). O hino 457
+  sai com 48 batidas na passada normal e 96 na do final, as quatro vozes terminando juntas.
+- **Formato e Rust:** campo opcional `final` (ver `docs/FORMATO.md`); o importador recusa um `final` cujas vozes
+  não correspondam às da passada normal.
+- **Player (aba Ouvir):** controle **Passadas** (1 a 8) e interruptor **Terminar com o final**, que só aparece nos
+  hinos que têm final. Padrão: o número de estrofes da letra (no mínimo 2): no 457, 3 passadas = 2 normais + final,
+  3:42 a 52 bpm. Progresso e miniplayer já refletem a duração total. Tudo é travado com a música tocando.
+- **Verificado:** testes automatizados do conversor (partitura fictícia com a mesma estrutura do 457 e casos em
+  que ele deve se recusar a adivinhar), do Rust e da montagem de passadas, e o JSON real do 457 passando pelo
+  importador. **Não foi ouvido:** falta o responsável tocar o hino 457 e conferir se soa como no hinário.
+
+### O que ainda não faz
+
+- Só reconhece **duas casas de volta** seguidas de um trecho final (o padrão do 457). Outros hinos com final podem
+  ser estruturados de outro jeito (ex.: três casas, repetição sem casas, D.C./coda); nesses o conversor avisa
+  "estrutura não reconhecida" e lê a partitura uma vez. Cada estrutura nova precisa de uma amostra real.
+- Uma nota ligada (ligadura) que atravesse o corte entre passadas não é tratada.
+- A **letra não acompanha a passada** (pergunta 4 abaixo continua em aberto).
+- O significado do marcador `*` segue sem confirmação e não é usado.
+
+### Alternativas consideradas (para não reinventar a roda)
+
+Em 2026-11-14, antes de escrever a regra de expansão, procurei soluções prontas:
+
+- **`ms3`** (biblioteca Python de leitura do MuseScore): lê arquivos do MuseScore **3 e 4**; os do autor das transcrições são do
+  **MuseScore 2**, e não achei confirmação de que ela expanda repetições. Também trocaria a linguagem do conversor.
+- **Linha de comando do MuseScore** (`mscore -o ...`): exporta MIDI e MusicXML com as regras oficiais de repetição,
+  mas exige **instalar o MuseScore** em quem converte e o MIDI perde letra, título e nomes das vozes. O fórum do
+  MuseScore também relata casos estranhos nas regras de volta.
+- **`music21`:** não achei nada conclusivo sobre como trata casas de volta.
+
+Decisão: manter uma regra própria, **deliberadamente estreita** (só o padrão confirmado, com testes e aviso para o
+resto). Se aparecerem muitas estruturas diferentes, o caminho consolidado é usar o MuseScore (modo conversor) como
+**referência de teste** para comparar a ordem de execução, em vez de crescer o código próprio.
+
 ---
 
 ## I-02 — Variante "pergaminho" nos temas claro e escuro
@@ -181,6 +221,61 @@ Combinações: claro normal, claro pergaminho, escuro normal, escuro pergaminho.
 - As quatro paletas passam em `tools/contraste.py` com as mesmas metas das paletas atuais.
 - Escolher o estilo muda o app na hora e a escolha sobrevive ao fechar o app.
 - "Seguir o sistema" combinado com "Pergaminho" acompanha o tema claro ou escuro do aparelho.
+
+---
+
+## I-03 — Gravador de áudio para estudo e envio aos instrutores
+
+- **Status:** anotada
+- **Origem:** pedido do responsável, 2026-11-14.
+- **Prioridade:** a definir
+
+### O que se deseja (nas palavras do responsável)
+
+Um **gravador de áudio** para gravar os hinos **enquanto o celular toca** e **enviar os áudios para os instrutores
+pelo WhatsApp**.
+
+### Ideia de comportamento (a validar)
+
+Na aba **Ouvir**, um botão **Gravar** que grava enquanto o hino toca (por exemplo, a pessoa tocando ou cantando junto),
+com **parar**, **ouvir de volta**, **descartar** e **enviar**. Ao enviar, abre a folha de compartilhamento do sistema
+para escolher o WhatsApp e o instrutor; o app não precisa conhecer contatos.
+
+### Perguntas em aberto
+
+1. **O que gravar?** Só o **microfone** (a voz ou o instrumento da pessoa), ou a **mistura** do microfone com o som do
+   hino? Tocar o hino no alto-falante e gravar pelo microfone gera eco e mistura ruim; como o som do hino é gerado dentro
+   do app, dá para **mixar o microfone com a saída do sintetizador direto**, sem passar pelo ar. Isso pede fone de
+   ouvido para a pessoa se ouvir sem eco. Precisa de decisão do responsável.
+2. **Formato do arquivo.** O WhatsApp precisa conseguir tocar o áudio recebido; o formato gerado pelo navegador
+   (por exemplo WebM/Opus) pode não ser aceito, e talvez seja preciso converter (por exemplo para M4A ou OGG/Opus).
+   Não verificado.
+3. **Onde ficam as gravações** e por quanto tempo; apagar depois de enviar?
+4. **Quem grava.** Há jovens e menores entre os músicos: definir o aviso de privacidade (as gravações ficam só no
+   aparelho; o app não envia nada sozinho).
+5. **Iniciar a gravação junto com o hino** ou separado (a pessoa aperta Gravar e depois Tocar)?
+
+### Impacto técnico (hipóteses, não verificadas)
+
+- **Permissão de microfone** no Android (`RECORD_AUDIO`) e no iOS (`NSMicrophoneUsageDescription`). Num WebView, o
+  acesso ao microfone (`getUserMedia`) depende de o aplicativo nativo conceder a permissão; precisa ser testado no
+  Tauri Mobile e pode exigir um plugin ou código nativo.
+- **Gravação:** a API padrão do navegador é `MediaRecorder`. Para mixar microfone e sintetizador, ligar as duas
+  fontes a um `MediaStreamAudioDestinationNode` do mesmo `AudioContext` que o sintetizador já usa
+  (`src/lib/sintetizador.ts`).
+- **Envio:** o caminho consolidado é a **folha de compartilhamento do sistema** (Android `ACTION_SEND` com
+  `FileProvider`; iOS `UIActivityViewController`), em vez de integrar com a API do WhatsApp. Verificar se existe
+  plugin do Tauri 2 para compartilhar arquivos antes de escrever código nativo.
+- **Armazenamento:** arquivos no diretório de dados do app, pela API do Tauri.
+- **Segundo plano:** gravar com a tela apagada não está garantido num WebView (mesma ressalva do áudio em segundo
+  plano na seção 4 do roadmap).
+
+### Critérios de aceitação (propostos)
+
+- Gravar um hino de ponta a ponta, ouvir de volta no app e enviar pelo WhatsApp a um contato de teste, que
+  consegue tocar o áudio.
+- A permissão de microfone é pedida só ao gravar, com explicação, e o app funciona normalmente se for negada.
+- Nenhuma gravação sai do aparelho sem a pessoa escolher enviar.
 
 ---
 

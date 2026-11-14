@@ -34,6 +34,13 @@ uma nota soa, ela é repetida nas demais vozes (uníssono). Se em algum trecho s
 do que o nome da pauta indica, ficam a mais aguda e a mais grave, e o conversor **avisa**
 quantos trechos tiveram notas do meio omitidas.
 
+## Hinos com final (passadas)
+
+Reconhece um único padrão de repetição, confirmado no hino 457: início de repetição → fim de repetição junto
+da 1ª casa de volta → 2ª casa de volta → trecho final. Gera `vozes` (uma passada normal) e `final` (a última
+passada), e avisa "estrutura de repetição reconhecida" com os compassos de cada uma. Veja `docs/FORMATO.md`.
+Qualquer outra estrutura de repetição ou salto é lida **uma vez, em ordem**, com um aviso.
+
 ## Limitações conhecidas
 
 - **Repetições e saltos (ritornelo, D.C., coda) não são expandidos**: o conversor avisa e

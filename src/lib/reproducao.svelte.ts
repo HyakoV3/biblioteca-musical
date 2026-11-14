@@ -2,6 +2,8 @@
 // aba, voltar à lista ou abrir Ajustes, e o miniplayer sempre mostra o estado real.
 import type { Hino } from "./biblioteca.svelte";
 import type { InstrumentoId } from "./instrumentos";
+import { estrofes } from "./letra";
+import { montarPassadas, temFinal } from "./passadas";
 import { lerVoz } from "./preferencias";
 import { Sintetizador } from "./sintetizador";
 
@@ -11,10 +13,25 @@ export type Estado = "parado" | "tocando" | "pausado";
 export type Config = {
   andamento: number;
   transposicao: number;
+  /** Quantas passadas tocar em sequência (com o final ligado, a última é a do final). */
+  passadas: number;
+  /** Terminar com a passada do final (só vale em hinos que têm final). */
+  comFinal: boolean;
   instrumentos: InstrumentoId[];
   volumes: number[];
   mudas: boolean[];
 };
+
+export const PASSADAS_MIN = 1;
+export const PASSADAS_MAX = 8;
+
+/**
+ * Passadas iniciais: sem final, uma; com final, o número de estrofes da letra (no mínimo duas, para o
+ * final vir depois de pelo menos uma passada normal). Ex.: 3 estrofes = 2 passadas normais + o final.
+ */
+export function passadasPadrao(hino: Hino): number {
+  return temFinal(hino) ? Math.min(PASSADAS_MAX, Math.max(2, estrofes(hino.letra).length)) : 1;
+}
 
 export const ANDAMENTO_MIN = 40;
 export const ANDAMENTO_MAX = 160;
@@ -58,6 +75,8 @@ function config(hino: Hino): Config {
   const nova = $state<Config>({
     andamento: hino.andamento ?? 90,
     transposicao: 0,
+    passadas: passadasPadrao(hino),
+    comFinal: temFinal(hino),
     instrumentos: salvas.map((p) => p.instrumento),
     volumes: salvas.map((p) => p.volume),
     mudas: salvas.map((p) => p.muda),
@@ -73,7 +92,7 @@ async function tocar(hino: Hino) {
   try {
     const c = config(hino);
     pararRelogio();
-    duracao = await sint.tocar(hino.vozes, {
+    duracao = await sint.tocar(montarPassadas(hino, c.passadas, c.comFinal), {
       andamento: c.andamento,
       transposicao: c.transposicao,
       instrumentos: [...c.instrumentos],

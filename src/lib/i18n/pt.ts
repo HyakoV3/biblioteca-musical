@@ -108,6 +108,14 @@ export const pt = {
   "plural.semitons.outros": "{n} semitons",
 
   "hino.autoria": "Autoria: {nome}",
+
+  "player.passadas_rotulo": "Passadas",
+  "plural.passadas.um": "{n} passada",
+  "plural.passadas.outros": "{n} passadas",
+  "player.com_final": "Terminar com o final",
+  "player.com_final_dica": "A última passada toca o final do hino.",
+  "estado.ligado": "Ligado",
+  "estado.desligado": "Desligado",
 };
 
 export type Chave = keyof typeof pt;

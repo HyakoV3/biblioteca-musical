@@ -33,8 +33,17 @@ pub struct Hino {
     /// Andamento em batidas por minuto (padrão 90 na interface).
     #[serde(default)]
     pub andamento: Option<u32>,
-    /// Notas de cada voz, tocadas por um sintetizador (não há gravações).
+    /// Notas de cada voz para **uma passada normal** do hino, tocadas por um sintetizador (não há gravações).
     #[serde(default)]
+    pub vozes: Vec<Voz>,
+    /// Última passada, quando o hino termina de forma diferente (o "final"): as mesmas vozes, na mesma ordem.
+    /// A interface toca (N-1) passadas normais e esta por último.
+    #[serde(rename = "final", default, skip_serializing_if = "Option::is_none")]
+    pub passada_final: Option<PassadaFinal>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct PassadaFinal {
     pub vozes: Vec<Voz>,
 }
 
@@ -69,6 +78,21 @@ pub fn ler(json: &str) -> Result<Hinario, String> {
             "versão {} não suportada (esperado {VERSAO_SUPORTADA})",
             h.versao
         ));
+    }
+    // O final precisa ter as mesmas vozes da passada normal, na mesma ordem (a interface as junta por posição).
+    for hino in &h.hinos {
+        if let Some(f) = &hino.passada_final {
+            let normal: Vec<&str> = hino.vozes.iter().map(|v| v.nome.as_str()).collect();
+            let final_: Vec<&str> = f.vozes.iter().map(|v| v.nome.as_str()).collect();
+            if normal != final_ {
+                return Err(format!(
+                    "hino {}: as vozes do final ({}) não correspondem às da passada normal ({})",
+                    hino.numero,
+                    final_.join(", "),
+                    normal.join(", ")
+                ));
+            }
+        }
     }
     Ok(h)
 }
@@ -149,6 +173,43 @@ mod testes {
         assert!(hino.letra.is_empty() && hino.tonalidade.is_none());
         assert!(hino.vozes.is_empty() && hino.andamento.is_none());
         assert!(h.hinario.idioma.is_none() && hino.autoria.is_none());
+    }
+
+    fn json_com_final(vozes_final: &str) -> String {
+        format!(
+            r#"{{"versao":1,"hinario":{{"id":"a","nome":"A"}},"hinos":[{{"numero":457,"titulo":"T",
+            "vozes":[{{"nome":"Soprano","notas":[[0,1,60]]}},{{"nome":"Baixo","notas":[[0,1,48]]}}],
+            "final":{{"vozes":{vozes_final}}}}}]}}"#
+        )
+    }
+
+    #[test]
+    fn passada_final_e_lida_e_volta_com_o_nome_final() {
+        let h = ler(&json_com_final(
+            r#"[{"nome":"Soprano","notas":[[0,1,60],[1,2,62]]},{"nome":"Baixo","notas":[[0,3,48]]}]"#,
+        ))
+        .unwrap();
+        let f = h.hinos[0].passada_final.as_ref().expect("deveria ter final");
+        assert_eq!(f.vozes[0].notas.len(), 2);
+        // ao serializar, a chave continua "final" (e some quando não há final)
+        let saida = serde_json::to_string(&h.hinos[0]).unwrap();
+        assert!(saida.contains(r#""final":{"vozes""#), "{saida}");
+        let sem = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T"}]}"#).unwrap();
+        assert!(sem.hinos[0].passada_final.is_none());
+        assert!(!serde_json::to_string(&sem.hinos[0]).unwrap().contains("final"));
+    }
+
+    #[test]
+    fn final_com_vozes_diferentes_das_da_passada_normal_e_recusado() {
+        // número de vozes diferente
+        let e = ler(&json_com_final(r#"[{"nome":"Soprano","notas":[[0,1,60]]}]"#)).unwrap_err();
+        assert!(e.contains("hino 457") && e.contains("não correspondem"), "{e}");
+        // mesmo número, mas nomes ou ordem diferentes
+        let e = ler(&json_com_final(
+            r#"[{"nome":"Baixo","notas":[[0,1,48]]},{"nome":"Soprano","notas":[[0,1,60]]}]"#,
+        ))
+        .unwrap_err();
+        assert!(e.contains("Baixo, Soprano"), "{e}");
     }
 
     #[test]

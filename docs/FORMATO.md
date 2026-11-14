@@ -24,6 +24,30 @@ dados **fictícios**, só para mostrar a estrutura:
 }
 ```
 
+## Passadas e final
+
+`vozes` traz as notas de **uma passada normal** do hino. Alguns hinos terminam de forma diferente na última
+passada (o **final**). Para esses, o hino ganha um campo opcional `final` com as notas da **última passada
+inteira**, com as mesmas vozes, **na mesma ordem e com os mesmos nomes** de `vozes`:
+
+```json
+{
+  "numero": 457,
+  "vozes": [{ "nome": "Soprano", "notas": [[0, 1, 64]] }],
+  "final": { "vozes": [{ "nome": "Soprano", "notas": [[0, 1, 64], [1, 2, 62]] }] }
+}
+```
+
+O tempo de cada versão começa em 0, em batidas. O app toca *N* passadas em sequência: *N − 1* passadas
+normais seguidas da passada do final (ou *N* normais, se o final estiver desligado). Um arquivo cujo `final`
+tenha vozes diferentes das de `vozes` é recusado na importação, com uma mensagem que diz o hino e as vozes.
+
+O conversor `mscx2json` gera `final` ao reconhecer, no MuseScore, o padrão: início de repetição, fim de
+repetição junto da 1ª casa de volta, 2ª casa de volta logo depois e um trecho final até o fim. A passada
+normal vai do começo ao fim da 1ª casa; a passada do final vai do começo até antes da 1ª casa, depois a 2ª
+casa e o resto. Outras estruturas de repetição **não** são interpretadas: o conversor avisa e lê a partitura
+uma vez, em ordem.
+
 ## Campos de identificação
 
 - No cabeçalho `hinario`: `idioma` (opcional) é o **idioma do conteúdo** (título e letra), em código BCP 47

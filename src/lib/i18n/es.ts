@@ -108,4 +108,12 @@ export const es: Dicionario = {
   "plural.semitons.outros": "{n} semitonos",
 
   "hino.autoria": "Autoría: {nome}",
+
+  "player.passadas_rotulo": "Pasadas",
+  "plural.passadas.um": "{n} pasada",
+  "plural.passadas.outros": "{n} pasadas",
+  "player.com_final": "Terminar con el final",
+  "player.com_final_dica": "La última pasada toca el final del himno.",
+  "estado.ligado": "Activado",
+  "estado.desligado": "Desactivado",
 };

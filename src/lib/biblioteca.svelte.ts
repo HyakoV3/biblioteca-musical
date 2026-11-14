@@ -11,7 +11,10 @@ export type Hino = {
   letra: string[];
   partitura?: string | null;
   andamento?: number | null;
+  /** Uma passada normal do hino. */
   vozes: Voz[];
+  /** Última passada, quando o hino tem final (mesmas vozes, na mesma ordem). */
+  final?: { vozes: Voz[] } | null;
 };
 
 export type Pacote = {

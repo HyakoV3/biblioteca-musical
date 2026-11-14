@@ -3,8 +3,17 @@
   import type { Hino } from "./biblioteca.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
   import { ORGAOS, instrumentosDaVoz, tipoDaVoz } from "./instrumentos";
+  import { temFinal } from "./passadas";
   import { padrao, salvarVozes } from "./preferencias";
-  import { ANDAMENTO_MAX, ANDAMENTO_MIN, TRANSPOSICAO_MAX, reproducao } from "./reproducao.svelte";
+  import {
+    ANDAMENTO_MAX,
+    ANDAMENTO_MIN,
+    PASSADAS_MAX,
+    PASSADAS_MIN,
+    TRANSPOSICAO_MAX,
+    passadasPadrao,
+    reproducao,
+  } from "./reproducao.svelte";
   import { formatarTempo, fracao } from "./tempo";
 
   let { hino }: { hino: Hino } = $props();
@@ -61,7 +70,13 @@
   function restaurarPadrao() {
     cfg.andamento = padraoAndamento;
     cfg.transposicao = 0;
+    cfg.passadas = passadasPadrao(hino);
+    cfg.comFinal = temFinal(hino);
   }
+
+  const comFinalDisponivel = $derived(temFinal(hino));
+  const mudarPassadas = (d: number) =>
+    (cfg.passadas = Math.min(PASSADAS_MAX, Math.max(PASSADAS_MIN, cfg.passadas + d)));
 
   const passoAndamento = 5;
   const mudarAndamento = (d: number) =>
@@ -142,6 +157,41 @@
         >
       </div>
     </div>
+
+    <div class="passo-linha">
+      <span class="rotulo" id="rot-passadas">{t("player.passadas_rotulo")}</span>
+      <div class="passo" role="group" aria-labelledby="rot-passadas">
+        <button
+          aria-label={t("player.diminuir", { item: t("player.passadas_rotulo").toLowerCase() })}
+          disabled={!parado || cfg.passadas <= PASSADAS_MIN}
+          onclick={() => mudarPassadas(-1)}>−</button
+        >
+        <output aria-live="polite">{i18n.tn("plural.passadas", cfg.passadas)}</output>
+        <button
+          aria-label={t("player.aumentar", { item: t("player.passadas_rotulo").toLowerCase() })}
+          disabled={!parado || cfg.passadas >= PASSADAS_MAX}
+          onclick={() => mudarPassadas(1)}>+</button
+        >
+      </div>
+    </div>
+
+    {#if comFinalDisponivel}
+      <div class="passo-linha">
+        <span class="rotulo" id="rot-final">{t("player.com_final")}</span>
+        <button
+          class="chave-final"
+          role="switch"
+          aria-checked={cfg.comFinal}
+          aria-labelledby="rot-final"
+          aria-describedby="dica-final"
+          disabled={!parado}
+          onclick={() => (cfg.comFinal = !cfg.comFinal)}
+        >
+          {cfg.comFinal ? `✓ ${t("estado.ligado")}` : t("estado.desligado")}
+        </button>
+      </div>
+      <p class="meta dica" id="dica-final">{t("player.com_final_dica")}</p>
+    {/if}
 
     <button class="botao secundario" disabled={!parado} onclick={restaurarPadrao}>{t("player.restaurar_padrao")}</button>
   </div>
@@ -229,6 +279,12 @@
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   .passo output { min-width: 6.5rem; text-align: center; font-variant-numeric: tabular-nums; }
+  /* Interruptor "Terminar com o final": o estado vai escrito ("✓ Ligado"/"Desligado"), borda dupla quando ligado. */
+  .chave-final {
+    min-width: 8.5rem; min-height: 48px; padding: 0 0.9rem; font-size: 1rem; border-radius: 12px; cursor: pointer;
+    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+  }
+  .chave-final[aria-checked="true"] { border: 2px solid var(--acento); font-weight: 700; }
 
   .vozes { display: grid; gap: 0.5rem; }
   .voz { display: grid; grid-template-columns: 48px minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }
