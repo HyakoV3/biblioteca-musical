@@ -2,7 +2,9 @@
 // Não usa gravações: tudo é gerado a partir dos eventos de nota do pacote.
 // Pausar suspende o relógio do AudioContext: as notas já agendadas retomam do ponto certo.
 // Para mudar instrumento, andamento ou tom no meio do hino, `tocar` reagenda tudo a partir de uma posição em batidas.
-import { INSTRUMENTOS, PADRAO, type InstrumentoId, type Perfil } from "./instrumentos";
+import { Soundfont } from "smplr";
+import { INSTRUMENTOS, PADRAO, type InstrumentoId, type Perfil, type SinteticoId } from "./instrumentos";
+import { ehRealista, urlDoRealista, type RealistaId } from "./realista";
 
 export type Nota = [inicio: number, duracao: number, midi: number];
 export type Voz = { nome: string; notas: Nota[] };
@@ -48,12 +50,39 @@ export class Sintetizador {
   private mestre: GainNode | null = null;
   private ganhos: GainNode[] = [];
   private fontes: AudioScheduledSourceNode[] = [];
-  private ondas = new Map<InstrumentoId, PeriodicWave>();
+  private ondas = new Map<SinteticoId, PeriodicWave>();
+  /** Instrumentos gravados já carregados, um por (instrumento, voz): as amostras demoram a decodificar e se reaproveitam. */
+  private reais = new Map<string, { inst: ReturnType<typeof Soundfont>; saida: GainNode }>();
+  /** Os gravados que estão soando no agendamento atual (para parar). */
+  private reaisAtivos: ReturnType<typeof Soundfont>[] = [];
   private inicio = 0;
   /** Segundos já "tocados" antes do início do agendamento atual (quando tocar começou no meio do hino). */
   private base = 0;
 
-  private onda(ctx: AudioContext, id: InstrumentoId, perfil: Perfil): PeriodicWave {
+  /**
+   * Instrumento gravado pronto para tocar, ligado ao volume da voz. Cada (instrumento, voz) tem o seu: as amostras
+   * demoram a carregar e ficam guardadas. Se o carregamento falhar, esquece o instrumento para tentar de novo.
+   */
+  private async real(ctx: AudioContext, id: RealistaId, voz: number, destino: GainNode) {
+    const chave = `${id}#${voz}`;
+    let r = this.reais.get(chave);
+    if (!r) {
+      const saida = ctx.createGain();
+      r = { inst: Soundfont(ctx, { instrumentUrl: urlDoRealista(id), destination: saida, volume: 100 }), saida };
+      this.reais.set(chave, r);
+    }
+    try {
+      await r.inst.ready;
+    } catch (e) {
+      this.reais.delete(chave);
+      throw e;
+    }
+    r.saida.disconnect();
+    r.saida.connect(destino);
+    return r.inst;
+  }
+
+  private onda(ctx: AudioContext, id: SinteticoId, perfil: Perfil): PeriodicWave {
     let w = this.ondas.get(id);
     if (!w) {
       w = ctx.createPeriodicWave(new Float32Array(perfil.harmonicos.length), Float32Array.from(perfil.harmonicos));
@@ -90,12 +119,32 @@ export class Sintetizador {
     const seg = 60 / Math.max(opcoes.andamento, 1); // segundos por batida
     const aPartirDe = Math.max(0, partida.aPartirDe ?? 0);
     this.base = aPartirDe * seg;
+    // Instrumentos gravados: carrega antes de marcar o início (a primeira vez demora; depois ficam guardados).
+    const reais = await Promise.all(
+      vozes.map((_, i) => {
+        const pedido = opcoes.instrumentos[i];
+        return pedido && ehRealista(pedido) ? this.real(ctx, pedido, i, this.ganhos[i]) : null;
+      }),
+    );
     this.inicio = ctx.currentTime + ATRASO_INICIAL;
     const inicio = this.inicio;
     let fim = 0;
 
     vozes.forEach((voz, i) => {
-      const id = opcoes.instrumentos[i] && opcoes.instrumentos[i] in INSTRUMENTOS ? opcoes.instrumentos[i] : PADRAO;
+      const real = reais[i];
+      if (real) {
+        // Gravado: o smplr agenda cada nota (início e duração em segundos do relógio do AudioContext).
+        for (const [t, dur, midi] of notasAPartirDe(voz.notas, aPartirDe)) {
+          const ini = inicio + t * seg;
+          const duracao = Math.max(dur * seg, 0.05);
+          real.start({ note: midi + opcoes.transposicao, velocity: 90, time: ini, duration: duracao });
+          fim = Math.max(fim, ini + duracao - inicio);
+        }
+        this.reaisAtivos.push(real);
+        return;
+      }
+      const pedido = opcoes.instrumentos[i];
+      const id: SinteticoId = pedido && pedido in INSTRUMENTOS ? (pedido as SinteticoId) : PADRAO;
       const perfil: Perfil = INSTRUMENTOS[id];
       const onda = this.onda(ctx, id, perfil);
       for (const [t, dur, midi] of notasAPartirDe(voz.notas, aPartirDe)) {
@@ -164,6 +213,14 @@ export class Sintetizador {
       }
     }
     this.fontes = [];
+    for (const inst of this.reaisAtivos) {
+      try {
+        inst.stop();
+      } catch {
+        /* já parado */
+      }
+    }
+    this.reaisAtivos = [];
     this.ganhos = [];
     this.mestre?.disconnect();
     this.mestre = null;

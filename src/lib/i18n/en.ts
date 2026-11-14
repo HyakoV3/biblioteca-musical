@@ -26,6 +26,10 @@ export const en: Dicionario = {
   "player.redefinir": "Reset voices",
   "grupo.orgaos": "Organs",
   "grupo.instrumentos": "Instruments",
+  "inst.real_orgao": "Recorded organ (test)",
+  "inst.real_flauta": "Recorded flute (test)",
+  "inst.real_clarinete": "Recorded clarinet (test)",
+  "grupo.reais": "Recorded sounds (test)",
 
   "voz.soprano": "Soprano",
   "voz.contralto": "Alto",

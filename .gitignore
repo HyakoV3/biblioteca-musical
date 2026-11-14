@@ -15,6 +15,9 @@ vite.config.ts.timestamp-*
 /src-tauri/target
 /tools/mscx2json/target
 
+# Amostras de som (protótipo da I-07, ~3 MB por instrumento): baixar com tools/baixar-sons-teste.sh
+/static/sons/
+
 # Worktrees e arquivos locais do Claude Code
 /.claude/
 

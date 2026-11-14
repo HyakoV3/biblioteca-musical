@@ -3,6 +3,7 @@
 // Tudo é validado ao ler e qualquer falha de armazenamento é ignorada (o app segue com o padrão).
 
 import { INSTRUMENTOS, ORGAOS, PADRAO, instrumentosDaVoz, tipoDaVoz, type InstrumentoId } from "./instrumentos";
+import { IDS_REALISTAS, ehRealista } from "./realista";
 
 export type PrefVoz = { instrumento: InstrumentoId; volume: number; muda: boolean };
 
@@ -28,8 +29,12 @@ export function lerVoz(nome: string): PrefVoz {
   const salvo = lerTudo()[chaveDaVoz(nome)];
   if (!salvo || typeof salvo !== "object") return p;
   const s = salvo as Record<string, unknown>;
-  const permitidos: string[] = [...ORGAOS, ...instrumentosDaVoz(nome)];
-  if (typeof s.instrumento === "string" && s.instrumento in INSTRUMENTOS && permitidos.includes(s.instrumento)) {
+  const permitidos: string[] = [...ORGAOS, ...instrumentosDaVoz(nome), ...IDS_REALISTAS];
+  if (
+    typeof s.instrumento === "string" &&
+    (s.instrumento in INSTRUMENTOS || ehRealista(s.instrumento)) &&
+    permitidos.includes(s.instrumento)
+  ) {
     p.instrumento = s.instrumento as InstrumentoId;
   }
   if (typeof s.volume === "number" && Number.isFinite(s.volume)) p.volume = Math.min(1, Math.max(0, s.volume));

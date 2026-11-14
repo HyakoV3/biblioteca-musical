@@ -1,6 +1,8 @@
 // Catálogo de instrumentos sintetizados (aproximações por síntese aditiva, não gravações).
 // Cada instrumento é descrito por harmônicos, envelope e vibrato opcional.
 
+import type { RealistaId } from "./realista";
+
 export type Perfil = {
   /** Amplitudes dos harmônicos (índice 0 é ignorado). */
   harmonicos: number[];
@@ -38,10 +40,13 @@ export const INSTRUMENTOS = {
   contrabaixo: { harmonicos: [0, 1, 0.5, 0.3, 0.2, 0.1, 0.05], ataque: 0.06, solta: 0.1, nivel: 0.26, vibrato: { hz: 4.5, cents: 6, atraso: 0.3 } },
 } satisfies Record<string, Perfil>;
 
-export type InstrumentoId = keyof typeof INSTRUMENTOS;
+/** Instrumento sintetizado (receita de harmônicos). */
+export type SinteticoId = keyof typeof INSTRUMENTOS;
+/** Qualquer instrumento oferecido: sintetizado ou gravado (protótipo da I-07). */
+export type InstrumentoId = SinteticoId | RealistaId;
 
 export const ORGAOS: InstrumentoId[] = ["orgao_suave", "orgao_principal", "orgao_pleno"];
-export const PADRAO: InstrumentoId = "orgao_principal";
+export const PADRAO: SinteticoId = "orgao_principal";
 
 export type TipoVoz = "soprano" | "contralto" | "tenor" | "baixo";
 

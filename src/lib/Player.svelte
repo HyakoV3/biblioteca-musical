@@ -4,6 +4,7 @@
   import { i18n } from "$lib/i18n/index.svelte";
   import { ORGAOS, instrumentosDaVoz, tipoDaVoz } from "./instrumentos";
   import { padrao, salvarVozes } from "./preferencias";
+  import { IDS_REALISTAS } from "./realista";
   import { ANDAMENTO_MAX, ANDAMENTO_MIN, TRANSPOSICAO_MAX, reproducao, vezesDoHino } from "./reproducao.svelte";
   import { rotuloCurtoDaVez, rotuloDaParte } from "./rotulo-vez";
   import { formatarTempo, fracao } from "./tempo";
@@ -272,6 +273,9 @@
             </optgroup>
             <optgroup label={t("grupo.instrumentos")}>
               {#each instrumentosDaVoz(v.nome) as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
+            </optgroup>
+            <optgroup label={t("grupo.reais")}>
+              {#each IDS_REALISTAS as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
             </optgroup>
           </select>
         </label>

@@ -26,6 +26,10 @@ export const pt = {
   "player.redefinir": "Redefinir vozes",
   "grupo.orgaos": "Órgãos",
   "grupo.instrumentos": "Instrumentos",
+  "inst.real_orgao": "Órgão gravado (teste)",
+  "inst.real_flauta": "Flauta gravada (teste)",
+  "inst.real_clarinete": "Clarinete gravado (teste)",
+  "grupo.reais": "Sons gravados (teste)",
 
   "voz.soprano": "Soprano",
   "voz.contralto": "Contralto",
