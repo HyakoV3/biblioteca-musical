@@ -27,6 +27,8 @@ export const pt = {
   "grupo.orgaos": "Órgãos",
   "grupo.instrumentos": "Instrumentos",
   "inst.real_orgao": "Órgão gravado (teste)",
+  "inst.real_orgao_palheta": "Órgão de palhetas gravado (teste)",
+  "inst.real_orgao_tirantes": "Órgão de tirantes gravado (teste)",
   "inst.real_flauta": "Flauta gravada (teste)",
   "inst.real_clarinete": "Clarinete gravado (teste)",
   "grupo.reais": "Sons gravados (teste)",

@@ -27,6 +27,8 @@ export const es: Dicionario = {
   "grupo.orgaos": "Órganos",
   "grupo.instrumentos": "Instrumentos",
   "inst.real_orgao": "Órgano grabado (prueba)",
+  "inst.real_orgao_palheta": "Armonio grabado (prueba)",
+  "inst.real_orgao_tirantes": "Órgano de tiradores grabado (prueba)",
   "inst.real_flauta": "Flauta grabada (prueba)",
   "inst.real_clarinete": "Clarinete grabado (prueba)",
   "grupo.reais": "Sonidos grabados (prueba)",

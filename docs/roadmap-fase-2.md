@@ -40,7 +40,9 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
       primeiro**. O app volta à síntese se o som faltar (já feito no protótipo).
 - [ ] Hospedar os arquivos nós mesmos (depende de o repositório ser público) e carregar do armazenamento do app.
 - [ ] Página de créditos e licenças das amostras (aviso de copyright do FluidR3).
-- [ ] Comparar de ouvido outros órgãos do banco (`reed_organ`, `drawbar_organ`) e decidir o substituto do flugelhorn.
+- [ ] Comparar de ouvido os órgãos do banco: `church_organ`, `reed_organ` (palhetas) e `drawbar_organ` (tirantes), os
+      três já no APK de comparação (baixados em 2026-11-14, ~3 MB cada). Escolher o mais parecido com o da igreja e
+      decidir o substituto do flugelhorn. **(depende do responsável)**
 - [ ] Testar 4 vozes gravadas ao mesmo tempo no celular do responsável (estalos, atraso, memória).
       **(depende do responsável, com o APK de comparação)**
 

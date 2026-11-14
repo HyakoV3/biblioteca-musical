@@ -5,6 +5,8 @@
 
 export const REALISTAS = {
   real_orgao: { arquivo: "church_organ" },
+  real_orgao_palheta: { arquivo: "reed_organ" },
+  real_orgao_tirantes: { arquivo: "drawbar_organ" },
   real_flauta: { arquivo: "flute" },
   real_clarinete: { arquivo: "clarinet" },
 } as const;
