@@ -13,5 +13,4 @@ vite.config.ts.timestamp-*
 /content/*
 !/content/.gitkeep
 /src-tauri/target
-/src-tauri/gen
 /tools/mscx2json/target
