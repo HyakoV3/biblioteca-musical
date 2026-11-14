@@ -109,11 +109,21 @@ export const en: Dicionario = {
 
   "hino.autoria": "Author: {nome}",
 
-  "player.passadas_rotulo": "Passes",
-  "plural.passadas.um": "{n} pass",
-  "plural.passadas.outros": "{n} passes",
-  "player.com_final": "End with the final",
-  "player.com_final_dica": "The last pass plays the hymn's ending.",
-  "estado.ligado": "On",
-  "estado.desligado": "Off",
+
+
+  "vez.1": "First time",
+  "vez.2": "Second time",
+  "vez.3": "Third time",
+  "vez.4": "Fourth time",
+  "vez.5": "Fifth time",
+  "vez.6": "Sixth time",
+  "vez.7": "Seventh time",
+  "vez.8": "Eighth time",
+  "vez.rotulo_final": "{vez} · final",
+  "vez.grupo": "Play a single time",
+  "vez.tudo": "Play the whole hymn",
+  "vez.tocar": "Play: {vez}",
+  "vez.pausar": "Pause: {vez}",
+  "vez.continuar": "Resume: {vez}",
+  "vez.dica": "The last time is the one that ends differently (the final).",
 };

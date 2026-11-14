@@ -109,13 +109,23 @@ export const pt = {
 
   "hino.autoria": "Autoria: {nome}",
 
-  "player.passadas_rotulo": "Passadas",
-  "plural.passadas.um": "{n} passada",
-  "plural.passadas.outros": "{n} passadas",
-  "player.com_final": "Terminar com o final",
-  "player.com_final_dica": "A última passada toca o final do hino.",
-  "estado.ligado": "Ligado",
-  "estado.desligado": "Desligado",
+
+
+  "vez.1": "Primeira vez",
+  "vez.2": "Segunda vez",
+  "vez.3": "Terceira vez",
+  "vez.4": "Quarta vez",
+  "vez.5": "Quinta vez",
+  "vez.6": "Sexta vez",
+  "vez.7": "Sétima vez",
+  "vez.8": "Oitava vez",
+  "vez.rotulo_final": "{vez} · final",
+  "vez.grupo": "Tocar uma vez só",
+  "vez.tudo": "Tocar o hino todo",
+  "vez.tocar": "Tocar: {vez}",
+  "vez.pausar": "Pausar: {vez}",
+  "vez.continuar": "Continuar: {vez}",
+  "vez.dica": "A última vez é a que termina de forma diferente (o final).",
 };
 
 export type Chave = keyof typeof pt;

@@ -127,9 +127,12 @@ compasso 19; a última pula essa casa, toca a do compasso 20 e segue para o Fina
   sai com 48 batidas na passada normal e 96 na do final, as quatro vozes terminando juntas.
 - **Formato e Rust:** campo opcional `final` (ver `docs/FORMATO.md`); o importador recusa um `final` cujas vozes
   não correspondam às da passada normal.
-- **Player (aba Ouvir):** controle **Passadas** (1 a 8) e interruptor **Terminar com o final**, que só aparece nos
-  hinos que têm final. Padrão: o número de estrofes da letra (no mínimo 2): no 457, 3 passadas = 2 normais + final,
-  3:42 a 52 bpm. Progresso e miniplayer já refletem a duração total. Tudo é travado com a música tocando.
+- **Player (aba Ouvir):** controle por **vez**, como o responsável pediu (**não** é um contador de repetições): um
+  botão **"Tocar o hino todo"** (todas as vezes em sequência) e um botão para **cada vez** ("Primeira vez", "Segunda
+  vez", "Terceira vez · final"), que toca só aquela, direto. Só aparecem nos hinos que têm final; os outros têm um só
+  "Tocar". Há uma vez por estrofe da letra (no mínimo 2): no 457, 3 vezes, e o hino todo dá 3:42 a 52 bpm. Progresso e
+  miniplayer mostram a vez que está tocando. (Uma primeira versão tinha um contador "N vezes" e um interruptor; foi
+  trocada por este desenho depois da correção do responsável.)
 - **Verificado:** testes automatizados do conversor (partitura fictícia com a mesma estrutura do 457 e casos em
   que ele deve se recusar a adivinhar), do Rust e da montagem de passadas, e o JSON real do 457 passando pelo
   importador. **Não foi ouvido:** falta o responsável tocar o hino 457 e conferir se soa como no hinário.
@@ -140,8 +143,13 @@ compasso 19; a última pula essa casa, toca a do compasso 20 e segue para o Fina
   ser estruturados de outro jeito (ex.: três casas, repetição sem casas, D.C./coda); nesses o conversor avisa
   "estrutura não reconhecida" e lê a partitura uma vez. Cada estrutura nova precisa de uma amostra real.
 - Uma nota ligada (ligadura) que atravesse o corte entre passadas não é tratada.
-- A **letra não acompanha a passada** (pergunta 4 abaixo continua em aberto).
-- O significado do marcador `*` segue sem confirmação e não é usado.
+- A **letra não acompanha a vez** (pergunta 4 abaixo continua em aberto).
+- **Introdução: falta fazer.** O responsável pediu um botão **Introdução** e que "Tocar o hino todo" comece por ela
+  (introdução, 1ª vez, 2ª vez, 3ª vez). Ainda não sei **o que é a introdução nos dados**. Indício: o marcador `*`
+  aparece em todos os cinco hinos de amostra depois de uma quantidade parecida de música (12, 12, 13,5, 13 e 9,5
+  batidas, ou 8 a 13 segundos), o que é compatível com ser o fim da introdução, no começo do hino. Hipótese **não
+  confirmada**: introdução = do começo da partitura até o `*`. Precisa da confirmação do responsável (ver as
+  perguntas no resumo desta data) antes de o conversor passar a gerar a introdução.
 
 ### Alternativas consideradas (para não reinventar a roda)
 

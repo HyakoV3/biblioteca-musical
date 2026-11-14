@@ -3,18 +3,11 @@
   import type { Hino } from "./biblioteca.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
   import { ORGAOS, instrumentosDaVoz, tipoDaVoz } from "./instrumentos";
-  import { temFinal } from "./passadas";
   import { padrao, salvarVozes } from "./preferencias";
-  import {
-    ANDAMENTO_MAX,
-    ANDAMENTO_MIN,
-    PASSADAS_MAX,
-    PASSADAS_MIN,
-    TRANSPOSICAO_MAX,
-    passadasPadrao,
-    reproducao,
-  } from "./reproducao.svelte";
+  import { ANDAMENTO_MAX, ANDAMENTO_MIN, TRANSPOSICAO_MAX, reproducao, vezesDoHino } from "./reproducao.svelte";
+  import { rotuloDaVez } from "./rotulo-vez";
   import { formatarTempo, fracao } from "./tempo";
+  import { temFinal } from "./vezes";
 
   let { hino }: { hino: Hino } = $props();
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
@@ -48,9 +41,20 @@
     return tipo ? t(`voz.${tipo}`) : nome;
   };
 
-  const rotuloPrincipal = $derived(
-    estado === "tocando" ? `❚❚ ${t("audio.pausar")}` : estado === "pausado" ? `▶ ${t("audio.continuar")}` : `▶ ${t("audio.tocar")}`,
-  );
+  // Hino com final tem várias vezes (a última é a diferente) e botões para cada uma; os outros têm um só "Tocar".
+  const comFinalDisponivel = $derived(temFinal(hino));
+  const totalVezes = $derived(vezesDoHino(hino));
+  const vezes = $derived(Array.from({ length: totalVezes }, (_, i) => i + 1));
+
+  // Esta parte (o hino todo ou uma vez) é a que está tocando ou pausada?
+  const ativa = (parte: "tudo" | number) => meu && !parado && reproducao.atual?.parte === parte;
+  const icone = (parte: "tudo" | number) => (ativa(parte) && estado === "tocando" ? "❚❚" : "▶");
+
+  const rotuloTudo = $derived(comFinalDisponivel ? t("vez.tudo") : t("audio.tocar"));
+  const dicaDaVez = (vez: number) => {
+    const nome = rotuloDaVez(vez, vez === totalVezes);
+    return ativa(vez) ? (estado === "tocando" ? t("vez.pausar", { vez: nome }) : t("vez.continuar", { vez: nome })) : t("vez.tocar", { vez: nome });
+  };
 
   // Resumo na seção recolhida: o instrumento comum a todas as vozes, ou "Vários".
   const resumoInstrumentos = $derived(
@@ -70,13 +74,7 @@
   function restaurarPadrao() {
     cfg.andamento = padraoAndamento;
     cfg.transposicao = 0;
-    cfg.passadas = passadasPadrao(hino);
-    cfg.comFinal = temFinal(hino);
   }
-
-  const comFinalDisponivel = $derived(temFinal(hino));
-  const mudarPassadas = (d: number) =>
-    (cfg.passadas = Math.min(PASSADAS_MAX, Math.max(PASSADAS_MIN, cfg.passadas + d)));
 
   const passoAndamento = 5;
   const mudarAndamento = (d: number) =>
@@ -93,11 +91,38 @@
   {/if}
 
   <div class="principal">
-    <button class="botao primario tocar" onclick={() => reproducao.alternar(hino)}>{rotuloPrincipal}</button>
+    <button
+      class="botao tocar"
+      class:primario={ativa("tudo") || !comFinalDisponivel}
+      aria-pressed={comFinalDisponivel ? ativa("tudo") : undefined}
+      onclick={() => reproducao.alternar(hino, "tudo")}
+    >
+      {icone("tudo")}
+      {rotuloTudo}
+    </button>
     {#if !parado}
       <button class="botao parar" onclick={() => reproducao.parar()}>■ {t("audio.parar")}</button>
     {/if}
   </div>
+
+  {#if comFinalDisponivel}
+    <!-- Cada botão toca só aquela vez, direto. A última é a diferente (o final). -->
+    <div class="vezes" role="group" aria-label={t("vez.grupo")}>
+      {#each vezes as vez}
+        <button
+          class="botao vez"
+          class:primario={ativa(vez)}
+          aria-pressed={ativa(vez)}
+          aria-label={dicaDaVez(vez)}
+          onclick={() => reproducao.alternar(hino, vez)}
+        >
+          <span aria-hidden="true">{icone(vez)}</span>
+          {rotuloDaVez(vez, vez === totalVezes)}
+        </button>
+      {/each}
+    </div>
+    <p class="meta dica">{t("vez.dica")}</p>
+  {/if}
 
   <div class="progresso-bloco">
     <div
@@ -157,41 +182,6 @@
         >
       </div>
     </div>
-
-    <div class="passo-linha">
-      <span class="rotulo" id="rot-passadas">{t("player.passadas_rotulo")}</span>
-      <div class="passo" role="group" aria-labelledby="rot-passadas">
-        <button
-          aria-label={t("player.diminuir", { item: t("player.passadas_rotulo").toLowerCase() })}
-          disabled={!parado || cfg.passadas <= PASSADAS_MIN}
-          onclick={() => mudarPassadas(-1)}>−</button
-        >
-        <output aria-live="polite">{i18n.tn("plural.passadas", cfg.passadas)}</output>
-        <button
-          aria-label={t("player.aumentar", { item: t("player.passadas_rotulo").toLowerCase() })}
-          disabled={!parado || cfg.passadas >= PASSADAS_MAX}
-          onclick={() => mudarPassadas(1)}>+</button
-        >
-      </div>
-    </div>
-
-    {#if comFinalDisponivel}
-      <div class="passo-linha">
-        <span class="rotulo" id="rot-final">{t("player.com_final")}</span>
-        <button
-          class="chave-final"
-          role="switch"
-          aria-checked={cfg.comFinal}
-          aria-labelledby="rot-final"
-          aria-describedby="dica-final"
-          disabled={!parado}
-          onclick={() => (cfg.comFinal = !cfg.comFinal)}
-        >
-          {cfg.comFinal ? `✓ ${t("estado.ligado")}` : t("estado.desligado")}
-        </button>
-      </div>
-      <p class="meta dica" id="dica-final">{t("player.com_final_dica")}</p>
-    {/if}
 
     <button class="botao secundario" disabled={!parado} onclick={restaurarPadrao}>{t("player.restaurar_padrao")}</button>
   </div>
@@ -279,12 +269,9 @@
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   .passo output { min-width: 6.5rem; text-align: center; font-variant-numeric: tabular-nums; }
-  /* Interruptor "Terminar com o final": o estado vai escrito ("✓ Ligado"/"Desligado"), borda dupla quando ligado. */
-  .chave-final {
-    min-width: 8.5rem; min-height: 48px; padding: 0 0.9rem; font-size: 1rem; border-radius: 12px; cursor: pointer;
-    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
-  }
-  .chave-final[aria-checked="true"] { border: 2px solid var(--acento); font-weight: 700; }
+  /* Uma vez por botão, empilhados (os nomes são longos, como "Terceira vez · final"). A que toca fica em destaque. */
+  .vezes { display: grid; gap: 0.5rem; }
+  .vez { justify-content: flex-start; gap: 0.6rem; min-height: 52px; text-align: left; }
 
   .vozes { display: grid; gap: 0.5rem; }
   .voz { display: grid; grid-template-columns: 48px minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }

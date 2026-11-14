@@ -1,6 +1,7 @@
 <script lang="ts">
   import { i18n } from "$lib/i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
+  import { rotuloDaVez } from "./rotulo-vez";
   import { formatarTempo, fracao } from "./tempo";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
@@ -10,6 +11,10 @@
   const atual = $derived(reproducao.atual);
   const visivel = $derived(atual !== null && reproducao.painelNumero !== atual.numero);
   const tocando = $derived(reproducao.estado === "tocando");
+  // Em hino com várias vezes, diz qual está tocando ("Terceira vez · final"); o hino todo não precisa de rótulo.
+  const parte = $derived(
+    atual && atual.total > 1 && atual.parte !== "tudo" ? rotuloDaVez(atual.parte, atual.final) : "",
+  );
 
   // Reserva espaço no fim das telas para o miniplayer não cobrir o conteúdo. Usa a altura medida
   // (cresce com fonte ampliada), em vez de um valor fixo.
@@ -31,7 +36,9 @@
       </button>
       <a class="info" href={`/hino/${atual.numero}`}>
         <span class="titulo">{atual.numero} · {atual.titulo}</span>
-        <span class="tempo">{formatarTempo(reproducao.decorrido)} / {formatarTempo(reproducao.duracao)}</span>
+        <span class="tempo"
+          >{parte ? `${parte} · ` : ""}{formatarTempo(reproducao.decorrido)} / {formatarTempo(reproducao.duracao)}</span
+        >
       </a>
       <button class="acao" onclick={() => reproducao.parar()} aria-label={t("audio.parar")}>■</button>
     </div>

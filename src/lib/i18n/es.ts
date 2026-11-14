@@ -109,11 +109,21 @@ export const es: Dicionario = {
 
   "hino.autoria": "Autoría: {nome}",
 
-  "player.passadas_rotulo": "Pasadas",
-  "plural.passadas.um": "{n} pasada",
-  "plural.passadas.outros": "{n} pasadas",
-  "player.com_final": "Terminar con el final",
-  "player.com_final_dica": "La última pasada toca el final del himno.",
-  "estado.ligado": "Activado",
-  "estado.desligado": "Desactivado",
+
+
+  "vez.1": "Primera vez",
+  "vez.2": "Segunda vez",
+  "vez.3": "Tercera vez",
+  "vez.4": "Cuarta vez",
+  "vez.5": "Quinta vez",
+  "vez.6": "Sexta vez",
+  "vez.7": "Séptima vez",
+  "vez.8": "Octava vez",
+  "vez.rotulo_final": "{vez} · final",
+  "vez.grupo": "Tocar una sola vez",
+  "vez.tudo": "Tocar el himno completo",
+  "vez.tocar": "Reproducir: {vez}",
+  "vez.pausar": "Pausar: {vez}",
+  "vez.continuar": "Continuar: {vez}",
+  "vez.dica": "La última vez es la que termina distinto (el final).",
 };

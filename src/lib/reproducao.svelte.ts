@@ -3,7 +3,7 @@
 import type { Hino } from "./biblioteca.svelte";
 import type { InstrumentoId } from "./instrumentos";
 import { estrofes } from "./letra";
-import { montarPassadas, temFinal } from "./passadas";
+import { ehFinal, montarTudo, totalDeVezes, vozesDaVez } from "./vezes";
 import { lerVoz } from "./preferencias";
 import { Sintetizador } from "./sintetizador";
 
@@ -13,24 +13,17 @@ export type Estado = "parado" | "tocando" | "pausado";
 export type Config = {
   andamento: number;
   transposicao: number;
-  /** Quantas passadas tocar em sequência (com o final ligado, a última é a do final). */
-  passadas: number;
-  /** Terminar com a passada do final (só vale em hinos que têm final). */
-  comFinal: boolean;
   instrumentos: InstrumentoId[];
   volumes: number[];
   mudas: boolean[];
 };
 
-export const PASSADAS_MIN = 1;
-export const PASSADAS_MAX = 8;
+/** O que tocar: o hino todo (1ª vez, 2ª, ... até o final, em sequência) ou uma vez só (1 = primeira). */
+export type Parte = "tudo" | number;
 
-/**
- * Passadas iniciais: sem final, uma; com final, o número de estrofes da letra (no mínimo duas, para o
- * final vir depois de pelo menos uma passada normal). Ex.: 3 estrofes = 2 passadas normais + o final.
- */
-export function passadasPadrao(hino: Hino): number {
-  return temFinal(hino) ? Math.min(PASSADAS_MAX, Math.max(2, estrofes(hino.letra).length)) : 1;
+/** Quantas vezes o hino tem (1 se não tem final; senão uma por estrofe, a última é o final). */
+export function vezesDoHino(hino: Hino): number {
+  return totalDeVezes(hino, estrofes(hino.letra).length);
 }
 
 export const ANDAMENTO_MIN = 40;
@@ -40,7 +33,8 @@ export const TRANSPOSICAO_MAX = 6;
 const sint = new Sintetizador();
 const configs = new Map<number, Config>();
 
-let atual = $state<{ numero: number; titulo: string } | null>(null);
+/** `total` e `final` só importam em hino com mais de uma vez; `parte` diz o que está tocando. */
+let atual = $state<{ numero: number; titulo: string; parte: Parte; total: number; final: boolean } | null>(null);
 let estado = $state<Estado>("parado");
 let decorrido = $state(0);
 let duracao = $state(0);
@@ -75,8 +69,6 @@ function config(hino: Hino): Config {
   const nova = $state<Config>({
     andamento: hino.andamento ?? 90,
     transposicao: 0,
-    passadas: passadasPadrao(hino),
-    comFinal: temFinal(hino),
     instrumentos: salvas.map((p) => p.instrumento),
     volumes: salvas.map((p) => p.volume),
     mudas: salvas.map((p) => p.muda),
@@ -85,20 +77,29 @@ function config(hino: Hino): Config {
   return nova;
 }
 
-async function tocar(hino: Hino) {
+async function tocar(hino: Hino, parte: Parte = "tudo") {
   if (trocando) return;
   trocando = true;
   erro = "";
   try {
     const c = config(hino);
+    const total = vezesDoHino(hino);
+    // "tudo" = o hino como é cantado (1ª vez, 2ª, ... final); um número = só aquela vez, direto.
+    const vozes = parte === "tudo" ? montarTudo(hino, total) : vozesDaVez(hino, parte, total);
     pararRelogio();
-    duracao = await sint.tocar(montarPassadas(hino, c.passadas, c.comFinal), {
+    duracao = await sint.tocar(vozes, {
       andamento: c.andamento,
       transposicao: c.transposicao,
       instrumentos: [...c.instrumentos],
       volumes: hino.vozes.map((_, i) => efetivo(c, i)),
     });
-    atual = { numero: hino.numero, titulo: hino.titulo };
+    atual = {
+      numero: hino.numero,
+      titulo: hino.titulo,
+      parte,
+      total,
+      final: parte !== "tudo" && ehFinal(hino, parte, total),
+    };
     decorrido = 0;
     estado = "tocando";
     iniciarRelogio();
@@ -137,12 +138,15 @@ function parar() {
   atual = null;
 }
 
-/** Botão principal de um hino: tocar, pausar ou continuar conforme o estado dele. */
-async function alternar(hino: Hino) {
-  if (atual?.numero !== hino.numero) return tocar(hino);
+/**
+ * Botão de uma parte do hino (o hino todo ou uma vez): se é a que está tocando, pausa ou continua;
+ * se é outra, passa a tocar essa, direto.
+ */
+async function alternar(hino: Hino, parte: Parte = "tudo") {
+  if (atual?.numero !== hino.numero || atual.parte !== parte) return tocar(hino, parte);
   if (estado === "tocando") return pausar();
   if (estado === "pausado") return continuar();
-  return tocar(hino);
+  return tocar(hino, parte);
 }
 
 /** Botão do miniplayer: pausar ou continuar o hino que está tocando. */

@@ -26,6 +26,13 @@ dados **fictícios**, só para mostrar a estrutura:
 
 ## Passadas e final
 
+> **Vocabulário.** Na **interface**, cada vez que o hino é tocado do começo ao fim se chama **vez** ("3 vezes",
+> "Terminar com o final"); é o termo natural em português. Nestes documentos e no **código**, usamos **passada** como
+> nome interno **no conversor e no Rust** (`passada_final`), porque "vez" é genérico demais para código de dados. No
+> front-end o módulo se chama `vezes.ts`. Em teoria musical, **volta** é o final alternativo (a "casa de 1ª ou 2ª vez"),
+> e por isso **não** a usamos para outro sentido. A palavra "passada" não é termo musical padrão: é só o nome que
+> demos internamente.
+
 `vozes` traz as notas de **uma passada normal** do hino. Alguns hinos terminam de forma diferente na última
 passada (o **final**). Para esses, o hino ganha um campo opcional `final` com as notas da **última passada
 inteira**, com as mesmas vozes, **na mesma ordem e com os mesmos nomes** de `vozes`:
@@ -38,9 +45,11 @@ inteira**, com as mesmas vozes, **na mesma ordem e com os mesmos nomes** de `voz
 }
 ```
 
-O tempo de cada versão começa em 0, em batidas. O app toca *N* passadas em sequência: *N − 1* passadas
-normais seguidas da passada do final (ou *N* normais, se o final estiver desligado). Um arquivo cujo `final`
-tenha vozes diferentes das de `vozes` é recusado na importação, com uma mensagem que diz o hino e as vozes.
+O tempo de cada versão começa em 0, em batidas. Um hino **com final** tem uma **vez por estrofe da letra** (no mínimo
+2, no máximo 8): a **última vez** usa `final` e as anteriores usam `vozes`. A interface oferece **"Tocar o hino todo"**
+(todas as vezes em sequência, sem pausa) e um botão para **cada vez**, que toca só aquela, direto (por exemplo,
+"Terceira vez · final" toca o final sem passar pelas outras). Hino **sem final** tem um só botão de tocar. Um arquivo
+cujo `final` tenha vozes diferentes das de `vozes` é recusado na importação, com uma mensagem que diz o hino e as vozes.
 
 O conversor `mscx2json` gera `final` ao reconhecer, no MuseScore, o padrão: início de repetição, fim de
 repetição junto da 1ª casa de volta, 2ª casa de volta logo depois e um trecho final até o fim. A passada
