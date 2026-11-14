@@ -1,156 +1,119 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
+  import { onMount } from "svelte";
 
-  let name = $state("");
-  let greetMsg = $state("");
+  type Hino = {
+    numero: number;
+    titulo: string;
+    tonalidade?: string | null;
+    letra: string[];
+    partitura?: string | null;
+    audio?: string | null;
+  };
+  type Pacote = {
+    hinario: { versao: number; hinario: { id: string; nome: string }; hinos: Hino[] };
+    exemplo: boolean;
+  };
 
-  async function greet(event: Event) {
-    event.preventDefault();
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    greetMsg = await invoke("greet", { name });
-  }
+  let pacote = $state<Pacote | null>(null);
+  let erro = $state("");
+  let busca = $state("");
+  let aberto = $state<Hino | null>(null);
+
+  onMount(async () => {
+    try {
+      pacote = await invoke<Pacote>("carregar_hinario");
+    } catch (e) {
+      erro = String(e);
+    }
+  });
+
+  // Busca sem diferenciar maiúsculas/minúsculas nem acentos.
+  const normalizar = (s: string) =>
+    s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+  const hinos = $derived.by(() => {
+    const todos = pacote?.hinario.hinos ?? [];
+    const q = normalizar(busca);
+    if (!q) return todos;
+    return todos.filter(
+      (h) => String(h.numero) === q || normalizar(h.titulo).includes(q),
+    );
+  });
 </script>
 
 <main class="container">
-  <h1>Welcome to Tauri + Svelte</h1>
+  <header>
+    <h1>BibliotecaMusical CCB</h1>
+    <p class="aviso">App não oficial, sem vínculo com a Congregação Cristã no Brasil.</p>
+  </header>
 
-  <div class="row">
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo vite" alt="Vite Logo" />
-    </a>
-    <a href="https://tauri.app" target="_blank">
-      <img src="/tauri.svg" class="logo tauri" alt="Tauri Logo" />
-    </a>
-    <a href="https://svelte.dev" target="_blank">
-      <img src="/svelte.svg" class="logo svelte-kit" alt="SvelteKit Logo" />
-    </a>
-  </div>
-  <p>Click on the Tauri, Vite, and SvelteKit logos to learn more.</p>
-
-  <form class="row" onsubmit={greet}>
-    <input id="greet-input" placeholder="Enter a name..." bind:value={name} />
-    <button type="submit">Greet</button>
-  </form>
-  <p>{greetMsg}</p>
+  {#if erro}
+    <p class="erro" role="alert">Erro ao carregar o hinário: {erro}</p>
+  {:else if !pacote}
+    <p>Carregando…</p>
+  {:else if aberto}
+    <button class="voltar" onclick={() => (aberto = null)}>← Voltar</button>
+    <article>
+      <h2>{aberto.numero}. {aberto.titulo}</h2>
+      {#if aberto.tonalidade}<p class="meta">Tonalidade: {aberto.tonalidade}</p>{/if}
+      {#each aberto.letra as linha}<p>{linha}</p>{:else}<p class="meta">Sem letra neste pacote.</p>{/each}
+    </article>
+  {:else}
+    <p class="meta">
+      {pacote.hinario.hinario.nome}
+      {#if pacote.exemplo}— <strong>pacote de exemplo</strong>{/if}
+    </p>
+    <input
+      type="search"
+      placeholder="Buscar por número ou título"
+      aria-label="Buscar hino"
+      bind:value={busca}
+    />
+    <ul>
+      {#each hinos as h (h.numero)}
+        <li>
+          <button onclick={() => (aberto = h)}>
+            <span class="num">{h.numero}</span>
+            <span>{h.titulo}</span>
+            {#if h.tonalidade}<small>{h.tonalidade}</small>{/if}
+          </button>
+        </li>
+      {:else}
+        <li class="meta">Nenhum hino encontrado.</li>
+      {/each}
+    </ul>
+  {/if}
 </main>
 
 <style>
-.logo.vite:hover {
-  filter: drop-shadow(0 0 2em #747bff);
-}
-
-.logo.svelte-kit:hover {
-  filter: drop-shadow(0 0 2em #ff3e00);
-}
-
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-
-  color: #0f0f0f;
-  background-color: #f6f6f6;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-}
-
-.container {
-  margin: 0;
-  padding-top: 10vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: 0.75s;
-}
-
-.logo.tauri:hover {
-  filter: drop-shadow(0 0 2em #24c8db);
-}
-
-.row {
-  display: flex;
-  justify-content: center;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-
-a:hover {
-  color: #535bf2;
-}
-
-h1 {
-  text-align: center;
-}
-
-input,
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
-}
-
-button {
-  cursor: pointer;
-}
-
-button:hover {
-  border-color: #396cd8;
-}
-button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
-}
-
-input,
-button {
-  outline: none;
-}
-
-#greet-input {
-  margin-right: 5px;
-}
-
-@media (prefers-color-scheme: dark) {
   :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
+    font-family: system-ui, sans-serif;
+    color: #1d1d1f;
+    background: #f6f6f6;
   }
-
-  a:hover {
-    color: #24c8db;
+  .container { max-width: 640px; margin: 0 auto; padding: 1rem; }
+  h1 { font-size: 1.4rem; margin: 0; }
+  .aviso, .meta { color: #666; font-size: 0.9rem; }
+  input {
+    width: 100%; box-sizing: border-box; padding: 0.7rem 0.9rem; margin: 0.5rem 0 1rem;
+    font-size: 1rem; border: 1px solid #ccc; border-radius: 10px;
   }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
+  ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
+  li > button {
+    width: 100%; display: flex; align-items: center; gap: 0.8rem; text-align: left;
+    padding: 0.7rem 0.9rem; font-size: 1rem; background: #fff; color: inherit;
+    border: 1px solid #ddd; border-radius: 10px; cursor: pointer;
   }
-  button:active {
-    background-color: #0f0f0f69;
+  li > button:hover { border-color: #888; }
+  .num { font-weight: 700; min-width: 2.2rem; }
+  small { margin-left: auto; color: #666; }
+  .voltar { margin: 0.8rem 0; padding: 0.5rem 0.9rem; border-radius: 10px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
+  article p { line-height: 1.6; }
+  .erro { color: #b00020; }
+  @media (prefers-color-scheme: dark) {
+    :root { color: #eee; background: #1b1b1d; }
+    input, li > button, .voltar { background: #2a2a2d; color: #eee; border-color: #444; }
+    .aviso, .meta, small { color: #aaa; }
   }
-}
-
 </style>

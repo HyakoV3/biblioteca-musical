@@ -21,3 +21,11 @@ dados **fictícios**, só para mostrar a estrutura:
 ```
 
 `partitura` e `audio` são caminhos relativos opcionais dentro do pacote.
+
+## Onde o app lê
+
+O app procura `hinario.json` em `<pasta de dados do app>/content/` (no Linux:
+`~/.local/share/br.pro.bibliotecamusical.ccb/content/`). Se o arquivo não existir,
+mostra o pacote de exemplo embutido (`src-tauri/exemplo/hinario.json`, dados fictícios).
+Se o arquivo existir mas estiver inválido, o app mostra o erro em vez de esconder com o exemplo.
+Apenas `versao: 1` é suportada.

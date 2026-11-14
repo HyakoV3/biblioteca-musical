@@ -1,0 +1,24 @@
+{
+  "versao": 1,
+  "hinario": { "id": "exemplo", "nome": "Hinário de exemplo (dados fictícios)" },
+  "hinos": [
+    {
+      "numero": 1,
+      "titulo": "Canção de exemplo um",
+      "tonalidade": "Dó",
+      "letra": ["Linha fictícia número um", "Linha fictícia número dois"]
+    },
+    {
+      "numero": 2,
+      "titulo": "Canção de exemplo dois",
+      "tonalidade": "Sol",
+      "letra": ["Outra linha fictícia", "Mais uma linha fictícia"]
+    },
+    {
+      "numero": 3,
+      "titulo": "Ação e coração (teste de acentos)",
+      "tonalidade": "Mi bemol",
+      "letra": ["Texto fictício para testar a busca sem acentos"]
+    }
+  ]
+}
