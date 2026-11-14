@@ -105,6 +105,13 @@ fn liga_fim(nota: Node) -> bool {
     })
 }
 
+/// Um acorde lido da partitura: notas como (midi, termina_ligadura, começa_ligadura).
+struct Acorde {
+    inicio: f64,
+    dur: f64,
+    notas: Vec<(u8, bool, bool)>,
+}
+
 #[derive(Default)]
 struct Trilha {
     notas: Vec<Evento>,
@@ -116,7 +123,22 @@ struct Estado<'a> {
     andamento: Option<u32>,
     tuplos: Vec<f64>,
     compasso: f64,
-    trilha: &'a mut Trilha,
+    /// MuseScore 2: vozes soltas no compasso, separadas por <tick> e <track>.
+    plano: bool,
+    /// Voz de quem está sendo lido (ignorado quando `plano`).
+    voz_base: usize,
+    /// Ticks por semínima (<Division>).
+    divisao: f64,
+    /// Acordes por voz da pauta atual.
+    saida: &'a mut BTreeMap<usize, Vec<Acorde>>,
+}
+
+fn voz_do(c: Node, est: &Estado) -> usize {
+    if est.plano {
+        numero::<usize>(c, "track").map_or(0, |t| t % 4)
+    } else {
+        est.voz_base
+    }
 }
 
 fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
@@ -137,6 +159,11 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                     est.tuplos.pop();
                 }
             }
+            "tick" if est.plano => {
+                if let Some(v) = c.text().and_then(|x| x.trim().parse::<f64>().ok()) {
+                    *t = v / est.divisao;
+                }
+            }
             "endTuplet" => {
                 est.tuplos.pop();
             }
@@ -146,12 +173,17 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                     continue;
                 }
                 let dur = duracao(c, est.compasso)? * est.tuplos.iter().product::<f64>();
+                let mut notas = vec![];
                 for nota in c.children().filter(|n| n.has_tag_name("Note")) {
                     if texto(nota, "play") == Some("0") {
                         continue;
                     }
                     let midi: u8 = numero(nota, "pitch").ok_or("nota sem <pitch> válido")?;
-                    registrar(est.trilha, *t, dur, midi, liga_fim(nota), liga_inicio(nota));
+                    notas.push((midi, liga_fim(nota), liga_inicio(nota)));
+                }
+                if !notas.is_empty() {
+                    let voz = voz_do(c, est);
+                    est.saida.entry(voz).or_default().push(Acorde { inicio: *t, dur, notas });
                 }
                 *t += dur;
             }
@@ -175,6 +207,91 @@ fn registrar(tr: &mut Trilha, inicio: f64, dur: f64, midi: u8, fim_liga: bool, i
     tr.notas.push(Evento { inicio, dur, midi });
     if ini_liga {
         tr.pendentes.push((midi, tr.notas.len() - 1));
+    }
+}
+
+/// Junta as camadas de uma pauta e separa em vozes pela altura das notas que soam juntas:
+/// a mais aguda é a voz 1, a mais grave a última. Se só uma nota soa, ela é repetida nas
+/// demais vozes (uníssono). Uma nota longa continua sendo uma nota só enquanto ficar na
+/// mesma voz. Com `limite`, nos trechos com mais notas que vozes ficam a mais aguda, a mais
+/// grave e (se couberem) as intermediárias mais próximas; devolve também quantos trechos
+/// tiveram notas omitidas.
+fn dividir_em_vozes(camadas: Vec<Vec<Acorde>>, limite: Option<usize>) -> (Vec<Vec<Evento>>, usize) {
+    let mut eventos: Vec<Evento> = vec![];
+    for acordes in camadas {
+        let mut tr = Trilha::default();
+        for a in &acordes {
+            for &(midi, fim, ini) in &a.notas {
+                registrar(&mut tr, a.inicio, a.dur, midi, fim, ini);
+            }
+        }
+        eventos.extend(tr.notas);
+    }
+    let chave = |x: f64| (x * 10000.0).round() as i64;
+    let mut cortes: Vec<i64> = eventos
+        .iter()
+        .flat_map(|e| [chave(e.inicio), chave(e.inicio + e.dur)])
+        .collect();
+    cortes.sort_unstable();
+    cortes.dedup();
+
+    let mut intervalos: Vec<(i64, i64, Vec<usize>)> = vec![];
+    for w in cortes.windows(2) {
+        let (a, b) = (w[0], w[1]);
+        let mut ativos: Vec<usize> = (0..eventos.len())
+            .filter(|&i| chave(eventos[i].inicio) <= a && chave(eventos[i].inicio + eventos[i].dur) >= b)
+            .collect();
+        if ativos.is_empty() {
+            continue;
+        }
+        ativos.sort_by(|&x, &y| eventos[y].midi.cmp(&eventos[x].midi).then(x.cmp(&y)));
+        ativos.dedup_by_key(|i| eventos[*i].midi);
+        intervalos.push((a, b, ativos));
+    }
+
+    let mut max = intervalos.iter().map(|i| i.2.len()).max().unwrap_or(0);
+    let mut omitidos = 0;
+    if let Some(l) = limite.filter(|&l| l > 0 && l < max) {
+        omitidos = intervalos.iter().filter(|i| i.2.len() > l).count();
+        max = l;
+    }
+    let mut saida = vec![];
+    for r in 0..max {
+        let mut evs: Vec<Evento> = vec![];
+        let mut ultimo: Option<(usize, i64)> = None; // (nota de origem, fim)
+        for (a, b, ativos) in &intervalos {
+            let n = ativos.len();
+            let pos = if n > max && max > 1 { (r * (n - 1) + (max - 1) / 2) / (max - 1) } else { r.min(n - 1) };
+            let id = ativos[pos];
+            if matches!(ultimo, Some((i, fim)) if i == id && fim == *a) {
+                let e = evs.last_mut().unwrap();
+                e.dur = *b as f64 / 10000.0 - e.inicio;
+            } else {
+                evs.push(Evento {
+                    inicio: *a as f64 / 10000.0,
+                    dur: (*b - *a) as f64 / 10000.0,
+                    midi: eventos[id].midi,
+                });
+            }
+            ultimo = Some((id, *b));
+        }
+        saida.push(evs);
+    }
+    (saida, omitidos)
+}
+
+fn e_romano(s: &str) -> bool {
+    !s.is_empty() && s.chars().all(|c| matches!(c, 'I' | 'V' | 'X'))
+}
+
+/// "Parte I e II" -> ["Parte I", "Parte II"]: completa o prefixo quando sobra só o numeral.
+fn nome_da_parte(partes: &[&str], i: usize) -> String {
+    let p = partes[i].trim();
+    let prefixo = partes[0].split_whitespace().next().unwrap_or("");
+    if i > 0 && e_romano(p) && prefixo != p {
+        format!("{prefixo} {p}")
+    } else {
+        p.to_string()
     }
 }
 
@@ -205,17 +322,23 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
         }
     }
 
-    let mut trilhas: BTreeMap<(usize, usize), (String, Trilha)> = BTreeMap::new();
+    let divisao: f64 = filho(score, "Division")
+        .and_then(|d| d.text())
+        .and_then(|t| t.trim().parse().ok())
+        .unwrap_or(480.0);
+    let mut vozes: Vec<Voz> = vec![];
+    let mut avisos: Vec<String> = vec![];
     let mut andamento = None;
 
     let pautas = score
         .children()
         .filter(|c| c.has_tag_name("Staff") && c.children().any(|m| m.has_tag_name("Measure")));
-    for (ordem, pauta) in pautas.enumerate() {
+    for pauta in pautas {
         let id = pauta.attribute("id").unwrap_or("?");
         let (nome_parte, pos_pauta, total) = info.get(id).cloned().unwrap_or((String::new(), 1, 1));
         let (mut sig_n, mut sig_d) = (4.0f64, 4.0f64);
         let mut inicio_compasso = 0.0;
+        let mut da_pauta: BTreeMap<usize, Vec<Acorde>> = BTreeMap::new();
 
         for compasso in pauta.children().filter(|c| c.has_tag_name("Measure")) {
             if let Some(ts) = compasso.descendants().find(|n| n.has_tag_name("TimeSig")) {
@@ -228,48 +351,66 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
                 .and_then(fracao)
                 .unwrap_or(sig_n / sig_d * 4.0);
 
-            for (v, voz) in compasso.children().filter(|c| c.has_tag_name("voice")).enumerate() {
-                let nome = {
-                    let base = if nome_parte.is_empty() { format!("Voz {id}") } else { nome_parte.clone() };
-                    let mut n = base;
-                    if total > 1 {
-                        n += &format!(" (pauta {pos_pauta})");
-                    }
-                    if v > 0 {
-                        n += &format!(" - voz {}", v + 1);
-                    }
-                    n
-                };
-                let entrada = trilhas.entry((ordem, v)).or_insert_with(|| (nome, Trilha::default()));
+            // MuseScore 2: as vozes ficam soltas no compasso (<tick>/<track>) e <voice>
+            // traz só as demais. MuseScore 3: todas as vozes ficam em <voice>.
+            let solta = compasso
+                .children()
+                .any(|c| matches!(c.tag_name().name(), "Chord" | "Rest" | "Tuplet"));
+            let mut fontes: Vec<(usize, bool, Node)> = vec![];
+            if solta {
+                fontes.push((0, true, compasso));
+            }
+            let desloc = usize::from(solta);
+            for (k, v) in compasso.children().filter(|c| c.has_tag_name("voice")).enumerate() {
+                fontes.push((k + desloc, false, v));
+            }
+
+            for (voz, plano, no) in fontes {
                 let mut est = Estado {
                     andamento,
                     tuplos: vec![],
                     compasso: comp,
-                    trilha: &mut entrada.1,
+                    plano,
+                    voz_base: voz,
+                    divisao,
+                    saida: &mut da_pauta,
                 };
                 let mut t = inicio_compasso;
-                percorrer(voz, &mut t, &mut est)?;
+                percorrer(no, &mut t, &mut est)?;
                 andamento = est.andamento;
             }
             inicio_compasso += comp;
         }
+
+        let base = if nome_parte.is_empty() { format!("Voz {id}") } else { nome_parte.clone() };
+        let sufixo = if total > 1 { format!(" (pauta {pos_pauta})") } else { String::new() };
+        let partes: Vec<&str> = base.split(" e ").collect();
+        let limite = (partes.len() > 1).then_some(partes.len());
+        let (linhas, omitidos) = dividir_em_vozes(da_pauta.into_values().collect(), limite);
+        if omitidos > 0 {
+            avisos.push(format!(
+                "{base}{sufixo}: {omitidos} trecho(s) com mais notas simultâneas que vozes; notas do meio omitidas"
+            ));
+        }
+        let max = linhas.len();
+        for (r, notas) in linhas.into_iter().enumerate() {
+            let nome = if max == 1 {
+                format!("{base}{sufixo}")
+            } else if partes.len() == max {
+                format!("{}{sufixo}", nome_da_parte(&partes, r))
+            } else {
+                format!("{base}{sufixo} ({})", r + 1)
+            };
+            vozes.push(Voz { nome, notas });
+        }
     }
 
-    let mut avisos = vec![];
     if doc.descendants().any(|n| {
         matches!(n.tag_name().name(), "startRepeat" | "endRepeat" | "Jump" | "Volta")
     }) {
         avisos.push("há repetições/saltos: não foram expandidos (a partitura é lida uma vez, em ordem)".to_string());
     }
 
-    let vozes: Vec<Voz> = trilhas
-        .into_values()
-        .filter(|(_, t)| !t.notas.is_empty())
-        .map(|(nome, mut t)| {
-            t.notas.sort_by(|a, b| a.inicio.total_cmp(&b.inicio).then(a.midi.cmp(&b.midi)));
-            Voz { nome, notas: t.notas }
-        })
-        .collect();
     if vozes.is_empty() {
         return Err("nenhuma nota encontrada".into());
     }
@@ -373,7 +514,7 @@ fn executar(args: Vec<String>) -> Result<(), String> {
         "hinario": { "id": id, "nome": nome },
         "hinos": hinos.iter().map(para_json).collect::<Vec<_>>(),
     });
-    println!("{}", serde_json::to_string_pretty(&saida).map_err(|e| e.to_string())?);
+    println!("{}", serde_json::to_string(&saida).map_err(|e| e.to_string())?);
     Ok(())
 }
 
@@ -483,7 +624,77 @@ mod testes {
         let graca = "<Chord><acciaccatura/><durationType>eighth</durationType><Note><pitch>70</pitch></Note></Chord>";
         let c = format!("{C44}{graca}{ac}");
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso(&c))), 1).unwrap();
-        assert_eq!(notas(&h, 0), vec![(0.0, 2.0, 60), (0.0, 2.0, 64)]);
+        // A nota mais aguda vira a primeira voz, a mais grave a segunda.
+        let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
+        assert_eq!(nomes, vec!["S (1)", "S (2)"]);
+        assert_eq!(notas(&h, 0), vec![(0.0, 2.0, 64)]);
+        assert_eq!(notas(&h, 1), vec![(0.0, 2.0, 60)]);
+    }
+
+    fn compasso_ms2(corpo: &str, extra_voz: &str) -> String {
+        format!("<Measure>{corpo}{extra_voz}</Measure>")
+    }
+
+    #[test]
+    fn musescore_2_voz_solta_no_compasso() {
+        let corpo = format!("{C44}<Tempo><tempo>1</tempo></Tempo>{}{}", acorde("half", 60), acorde("half", 62));
+        let extra = format!("<voice>{}</voice>", acorde("whole", 55));
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&corpo, &extra))), 1).unwrap();
+        assert_eq!(h.andamento, Some(60));
+        let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
+        assert_eq!(nomes, vec!["S (1)", "S (2)"]);
+        assert_eq!(notas(&h, 0), vec![(0.0, 2.0, 60), (2.0, 2.0, 62)]);
+        assert_eq!(notas(&h, 1), vec![(0.0, 4.0, 55)]); // nota longa continua uma só
+    }
+
+    #[test]
+    fn musescore_2_vozes_soltas_com_tick_e_track() {
+        // Voz 1: duas mínimas. Depois <tick>0 e a voz 2 (track 1): semibreve.
+        // Em seguida <tick>960 (batida 2) e a voz 3 (track 2): mínima.
+        let corpo = format!(
+            "{C44}{}{}<tick>0</tick><Chord><track>1</track><durationType>whole</durationType><Note><pitch>55</pitch></Note></Chord>\
+             <tick>960</tick><Chord><track>2</track><durationType>half</durationType><Note><pitch>48</pitch></Note></Chord>",
+            acorde("half", 60), acorde("half", 62)
+        );
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&corpo, ""))), 1).unwrap();
+        let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
+        assert_eq!(nomes, vec!["S (1)", "S (2)", "S (3)"]);
+        assert_eq!(notas(&h, 0), vec![(0.0, 2.0, 60), (2.0, 2.0, 62)]);
+        assert_eq!(notas(&h, 1), vec![(0.0, 4.0, 55)]);
+        // Entre 0 e 2 só soam duas notas: a 3ª voz repete a última (uníssono).
+        assert_eq!(notas(&h, 2), vec![(0.0, 2.0, 55), (2.0, 2.0, 48)]);
+    }
+
+    #[test]
+    fn limita_vozes_ao_nome_da_pauta_e_avisa() {
+        let tres = "<Chord><durationType>whole</durationType><Note><pitch>60</pitch></Note><Note><pitch>64</pitch></Note><Note><pitch>67</pitch></Note></Chord>";
+        let c = format!("{C44}{tres}");
+        let h = converter(&doc(&parte(1, "Parte I e II"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap();
+        let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
+        assert_eq!(nomes, vec!["Parte I", "Parte II"]);
+        assert_eq!(notas(&h, 0), vec![(0.0, 4.0, 67)]); // mais aguda
+        assert_eq!(notas(&h, 1), vec![(0.0, 4.0, 60)]); // mais grave
+        assert!(h.avisos.iter().any(|a| a.contains("notas do meio omitidas")), "{:?}", h.avisos);
+    }
+
+    #[test]
+    fn nomes_de_partes() {
+        assert_eq!(nome_da_parte(&["Parte I", "II"], 1), "Parte II");
+        assert_eq!(nome_da_parte(&["Parte III", "IV"], 1), "Parte IV");
+        assert_eq!(nome_da_parte(&["Soprano", "Contralto"], 1), "Contralto");
+    }
+
+    #[test]
+    fn parte_i_e_ii_vira_duas_vozes_com_unissono() {
+        let duas = |a: u8, b: u8| {
+            format!("<Chord><durationType>half</durationType><Note><pitch>{b}</pitch></Note><Note><pitch>{a}</pitch></Note></Chord>")
+        };
+        let c = format!("{C44}{}{}", duas(60, 67), acorde("half", 65)); // 2º acorde: uníssono
+        let h = converter(&doc(&parte(1, "Parte I e II"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap();
+        let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
+        assert_eq!(nomes, vec!["Parte I", "Parte II"]);
+        assert_eq!(notas(&h, 0), vec![(0.0, 2.0, 67), (2.0, 2.0, 65)]);
+        assert_eq!(notas(&h, 1), vec![(0.0, 2.0, 60), (2.0, 2.0, 65)]);
     }
 
     #[test]
@@ -495,7 +706,9 @@ mod testes {
         let s2 = pauta(2, &compasso(&format!("{C44}{}", acorde("whole", 48))));
         let h = converter(&doc(&partes, &(s1 + &s2)), 1).unwrap();
         let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
-        assert_eq!(nomes, vec!["Soprano", "Soprano - voz 2", "Baixo"]);
+        assert_eq!(nomes, vec!["Soprano (1)", "Soprano (2)", "Baixo"]);
+        assert_eq!(notas(&h, 0), vec![(0.0, 4.0, 72)]);
+        assert_eq!(notas(&h, 1), vec![(0.0, 4.0, 60)]);
         assert_eq!(notas(&h, 2), vec![(0.0, 4.0, 48)]);
     }
 

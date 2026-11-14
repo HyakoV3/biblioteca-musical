@@ -9,18 +9,30 @@ cargo run --release -- --id meu-hinario --nome "Meu hinário" /pasta/com/hino-1.
 ```
 
 - Os arquivos devem se chamar `hino-<número>.mscx` (os demais são ignorados com aviso).
-- Tempo em batidas (semínima = 1), notas em MIDI, uma voz por pauta/voz do MuseScore.
-- Suporta pontos, pausas, anacruse, ligaduras, quiálteras, acordes e várias pautas/vozes.
-  Apojaturas são ignoradas.
-- Dinâmica, letra e tonalidade **não** são extraídas.
+- Tempo em batidas (semínima = 1), notas em MIDI. A saída é JSON compacto.
+- Entende o `.mscx` do **MuseScore 2** (vozes soltas no compasso, com `<tick>`/`<track>`) e a
+  estrutura do MuseScore 3 (`<voice>`).
+- Suporta pontos, pausas, anacruse, ligaduras, quiálteras, acordes e várias pautas.
+  Apojaturas são ignoradas. Dinâmica, letra e tonalidade **não** são extraídas.
+
+## Como as vozes são formadas
+
+Cada pauta vira uma ou mais vozes **pela altura das notas que soam juntas** (as camadas e
+vozes internas do MuseScore são juntadas): a mais aguda é a voz 1 e a mais grave a última.
+Se uma pauta se chama "Parte I e II", as vozes saem como "Parte I" e "Parte II". Quando só
+uma nota soa, ela é repetida nas demais vozes (uníssono). Se em algum trecho soarem mais notas
+do que o nome da pauta indica, ficam a mais aguda e a mais grave, e o conversor **avisa**
+quantos trechos tiveram notas do meio omitidas.
 
 ## Limitações conhecidas
 
 - **Repetições e saltos (ritornelo, D.C., coda) não são expandidos**: o conversor avisa e
   lê a partitura uma vez, em ordem.
-- Entende o formato `.mscx` do MuseScore 3. Foi testado apenas com partituras fictícias
-  escritas à mão; arquivos reais, principalmente do MuseScore 4, podem exigir ajustes
-  (em especial a marcação de ligaduras).
+- A leitura de ligaduras foi escrita para a marcação do MuseScore 3; a amostra real testada
+  (MuseScore 2) não tinha ligaduras de nota, então esse caso ainda não foi validado com
+  arquivo real.
+- A separação em vozes é uma aproximação por altura: se as vozes se cruzam, uma nota longa pode
+  trocar de voz.
 - Arquivos compactados `.mscz` precisam ser exportados como `.mscx` (Arquivo → Salvar como…).
 
 ## Direitos autorais
