@@ -129,12 +129,13 @@ compasso 19; a última pula essa casa, toca a do compasso 20 e segue para o Fina
   não correspondam às da passada normal.
 - **Player (aba Ouvir):** controle por **parte**, como o responsável pediu (**não** é um contador de repetições): um
   botão **"Tocar o hino todo"** (introdução e todas as vezes em sequência, com 2 s de pausa entre as partes) e, numa
-  linha de **botões compactos com ícone**, um para a **introdução** ("▶ Intro") e um para **cada vez** ("▶ 1ª",
-  "▶ 2ª", "▶ 3ª ⚑", onde ⚑ marca o final). Cada um toca só aquela parte, direto; o nome completo ("Terceira vez ·
-  final") fica no rótulo de acessibilidade e no miniplayer. Só aparecem nos hinos que têm introdução ou final; os
-  outros têm um só "Tocar". Há uma vez por estrofe da letra (no mínimo 2): no 457, 3 vezes, e o hino todo dura cerca
-  de 4:00 a 52 bpm. (Uma primeira versão tinha um contador "N vezes" e um interruptor; foi trocada depois da
-  correção do responsável.)
+  linha de **botões compactos com ícone que dividem a linha inteira**, um para a **introdução** ("▶ Intro") e um para
+  **cada vez** ("▶ 1ª", "▶ 2ª", "▶ 3ª ⚑", onde ⚑ marca o final). Cada um toca só aquela parte, direto; o nome completo
+  ("Terceira vez · final") fica no rótulo de acessibilidade e no miniplayer. **Todos os hinos** têm uma vez por
+  estrofe da letra (no mínimo 2 com final): o hino 1 tem 4 vezes e o 457 tem 3. Com uma só vez e sem introdução há um
+  só "Tocar". (Uma primeira versão tinha um contador "N vezes" e um interruptor; foi trocada depois da correção do
+  responsável. Depois, os botões de vez só apareciam nos hinos com final; o responsável preferiu em todos, para o
+  destaque da I-09 funcionar em qualquer hino.)
 - **Verificado:** testes automatizados do conversor (partitura fictícia com a mesma estrutura do 457 e casos em
   que ele deve se recusar a adivinhar), do Rust e da montagem de passadas, e o JSON real do 457 passando pelo
   importador. **Não foi ouvido:** falta o responsável tocar o hino 457 e conferir se soa como no hinário.
@@ -513,6 +514,13 @@ de compasso, acidentes, ligaduras, cifras e casas de volta. Reconstruir isso ser
 ---
 
 ## I-09 — Mostrar em "Tocar o hino todo" em que parte da música se está
+
+> **Situação: feita** (decisão do responsável: botões de vez em todos os hinos). O destaque dourado anda de Intro
+> para 1ª, 2ª... conforme o tempo decorrido (`parteTocando` no store, `partesDoTudo` e `parteNaBatida` em
+> `vezes.ts`, com testes). **Escolhas feitas, fáceis de trocar:** na pausa de 2 s vale a parte que acabou de terminar
+> (muda quando a próxima começa); o ícone **♪** marca a parte que soa dentro do hino todo (sinal que não depende só
+> da cor) e o botão ganha `aria-current`; **sem aviso falado** de mudança de parte, para não competir com o áudio.
+> Falta ver no aparelho.
 
 > **Origem:** sugestão do responsável: quando toca o hino todo, o botão da parte que está tocando muda de cor, e a
 > cor passa de um botão para o seguinte (Intro, depois 1ª, 2ª...), "para o músico saber onde está dentro da música".

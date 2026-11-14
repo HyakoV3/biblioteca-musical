@@ -45,11 +45,14 @@ inteira**, com as mesmas vozes, **na mesma ordem e com os mesmos nomes** de `voz
 }
 ```
 
-O tempo de cada versão começa em 0, em batidas. Um hino **com final** tem uma **vez por estrofe da letra** (no mínimo
-2, no máximo 8): a **última vez** usa `final` e as anteriores usam `vozes`. A interface oferece **"Tocar o hino todo"**
-(todas as vezes em sequência, sem pausa) e um botão para **cada vez**, que toca só aquela, direto (por exemplo,
-"Terceira vez · final" toca o final sem passar pelas outras). Hino **sem final** tem um só botão de tocar. Um arquivo
-cujo `final` tenha vozes diferentes das de `vozes` é recusado na importação, com uma mensagem que diz o hino e as vozes.
+O tempo de cada versão começa em 0, em batidas. Todo hino tem uma **vez por estrofe da letra**
+(no máximo 8; sem letra ou com uma estrofe, uma só). Num hino **com final**, a **última vez** usa `final` (e há no
+mínimo 2 vezes); as anteriores, e todas as vezes de um hino sem final, usam `vozes`. A interface oferece **"Tocar o
+hino todo"** (a introdução e todas as vezes em sequência, com 2 s de pausa entre as partes) e um botão para **cada
+vez**, que toca só aquela, direto (por exemplo, "3ª ⚑" toca o final sem passar pelas outras). Enquanto o hino todo
+toca, o botão da parte que está soando fica em destaque. Com uma só vez e sem introdução há um só botão de tocar.
+Um arquivo cujo `final` tenha vozes diferentes das de `vozes` é recusado na importação, com uma mensagem que diz o hino
+e as vozes.
 
 ### Introdução
 

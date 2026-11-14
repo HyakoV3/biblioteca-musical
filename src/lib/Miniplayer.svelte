@@ -11,12 +11,12 @@
   const atual = $derived(reproducao.atual);
   const visivel = $derived(atual !== null && reproducao.painelNumero !== atual.numero);
   const tocando = $derived(reproducao.estado === "tocando");
-  // Diz qual parte está tocando ("Introdução", "Terceira vez · final"); o hino todo não precisa de rótulo.
-  const parte = $derived(
-    atual && atual.parte !== "tudo" && (atual.parte === "intro" || atual.total > 1)
-      ? rotuloDaParte(atual.parte, atual.final)
-      : "",
-  );
+  // Diz qual parte está soando ("Introdução", "Terceira vez · final"), também dentro do "hino todo".
+  const parte = $derived.by(() => {
+    const p = reproducao.parteTocando;
+    if (!atual || p === null || (p !== "intro" && atual.total <= 1)) return "";
+    return rotuloDaParte(p, atual.comFinal && p === atual.total);
+  });
 
   // Reserva espaço no fim das telas para o miniplayer não cobrir o conteúdo. Usa a altura medida
   // (cresce com fonte ampliada), em vez de um valor fixo.

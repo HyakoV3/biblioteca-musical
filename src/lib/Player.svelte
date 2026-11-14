@@ -41,17 +41,22 @@
     return tipo ? t(`voz.${tipo}`) : nome;
   };
 
-  // Hino com final tem várias vezes (a última é a diferente) e botões para cada uma; os outros têm um só "Tocar".
+  // Um botão por vez (uma por estrofe da letra; a última é a diferente, se o hino tem final) e um para a introdução.
   const comFinalDisponivel = $derived(temFinal(hino));
   const comIntroducao = $derived(temIntroducao(hino));
-  // Só mostra as partes separadas se há o que separar (introdução ou várias vezes); senão, um único "Tocar".
-  const comPartes = $derived(comFinalDisponivel || comIntroducao);
   const totalVezes = $derived(vezesDoHino(hino));
   const vezes = $derived(Array.from({ length: totalVezes }, (_, i) => i + 1));
+  // Só mostra as partes separadas se há o que separar (introdução ou mais de uma vez); senão, um único "Tocar".
+  const comPartes = $derived(totalVezes > 1 || comIntroducao);
 
-  // Esta parte (o hino todo ou uma vez) é a que está tocando ou pausada?
-  const ativa = (parte: "tudo" | "intro" | number) => meu && !parado && reproducao.atual?.parte === parte;
-  const icone = (parte: "tudo" | "intro" | number) => (ativa(parte) && estado === "tocando" ? "❚❚" : "▶");
+  type Alvo = "tudo" | "intro" | number;
+  // Esta parte foi pedida sozinha e está tocando ou pausada? (Só ela pausa e continua ao ser tocada de novo.)
+  const ativa = (parte: Alvo) => meu && !parado && reproducao.atual?.parte === parte;
+  // Esta é a parte da música que está soando agora (em "hino todo" o destaque anda de uma para a outra).
+  const destacada = (parte: "intro" | number) => meu && !parado && reproducao.parteTocando === parte;
+  // ❚❚ tocando sozinha · ▶ pronta para tocar · ♪ soando dentro do hino todo (sinal que não depende só da cor).
+  const icone = (parte: Alvo) =>
+    ativa(parte) && estado === "tocando" ? "❚❚" : parte !== "tudo" && destacada(parte) && !ativa(parte) ? "♪" : "▶";
 
   const rotuloTudo = $derived(comPartes ? t("vez.tudo") : t("audio.tocar"));
   // Texto completo para leitor de tela (o botão mostra só "1ª", "Intro"...).
@@ -111,13 +116,14 @@
   </div>
 
   {#if comPartes}
-    <!-- Cada botão toca só aquela parte, direto. A última é a diferente (o final). -->
+    <!-- Cada botão toca só aquela parte, direto. Em "hino todo" o dourado acompanha a parte que está soando. -->
     <div class="vezes" role="group" aria-label={t("vez.grupo")}>
       {#if comIntroducao}
         <button
           class="botao vez"
-          class:tocando={ativa("intro")}
+          class:tocando={destacada("intro")}
           aria-pressed={ativa("intro")}
+          aria-current={destacada("intro") ? "true" : undefined}
           aria-label={dicaDaParte("intro")}
           onclick={() => reproducao.alternar(hino, "intro")}
         >
@@ -125,17 +131,18 @@
           {t("vez.intro_curta")}
         </button>
       {/if}
-      {#if comFinalDisponivel}
+      {#if totalVezes > 1}
         {#each vezes as vez}
           <button
             class="botao vez"
-            class:tocando={ativa(vez)}
+            class:tocando={destacada(vez)}
             aria-pressed={ativa(vez)}
+            aria-current={destacada(vez) ? "true" : undefined}
             aria-label={dicaDaParte(vez)}
             onclick={() => reproducao.alternar(hino, vez)}
           >
             <span aria-hidden="true">{icone(vez)}</span>
-            {rotuloCurtoDaVez(vez)}{#if vez === totalVezes}<span class="flag" aria-hidden="true"> ⚑</span>{/if}
+            {rotuloCurtoDaVez(vez)}{#if comFinalDisponivel && vez === totalVezes}<span class="flag" aria-hidden="true"> ⚑</span>{/if}
           </button>
         {/each}
       {/if}

@@ -3,7 +3,19 @@
 import type { Hino } from "./biblioteca.svelte";
 import type { InstrumentoId } from "./instrumentos";
 import { estrofes } from "./letra";
-import { PAUSA_ENTRE_PARTES_S, ehFinal, montarTudo, temIntroducao, totalDeVezes, vozesDaIntroducao, vozesDaVez } from "./vezes";
+import {
+  PAUSA_ENTRE_PARTES_S,
+  ehFinal,
+  montarTudo,
+  parteNaBatida,
+  partesDoTudo,
+  temFinal,
+  temIntroducao,
+  totalDeVezes,
+  vozesDaIntroducao,
+  vozesDaVez,
+  type ParteDoTudo,
+} from "./vezes";
 import { lerVoz } from "./preferencias";
 import { Sintetizador } from "./sintetizador";
 
@@ -33,8 +45,22 @@ export const TRANSPOSICAO_MAX = 6;
 const sint = new Sintetizador();
 const configs = new Map<number, Config>();
 
-/** `total` e `final` só importam em hino com mais de uma vez; `parte` diz o que está tocando. */
-let atual = $state<{ numero: number; titulo: string; parte: Parte; total: number; final: boolean } | null>(null);
+/**
+ * O que está tocando. `parte` é o que foi pedido; em "tudo", `marcos` diz onde cada parte começa e termina (em
+ * batidas, com as pausas) e `andamento` converte o tempo decorrido em batidas. `comFinal` diz se a última vez
+ * é o final; `final` diz se a parte tocada sozinha é o final.
+ */
+type Tocando = {
+  numero: number;
+  titulo: string;
+  parte: Parte;
+  total: number;
+  comFinal: boolean;
+  final: boolean;
+  andamento: number;
+  marcos: Pick<ParteDoTudo, "parte" | "inicio" | "fim">[];
+};
+let atual = $state<Tocando | null>(null);
 let estado = $state<Estado>("parado");
 let decorrido = $state(0);
 let duracao = $state(0);
@@ -87,6 +113,7 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
     // "tudo" = o hino como é cantado, com uma pausa entre as partes (em segundos, então vale em batidas conforme o
     // andamento escolhido); "intro" = só a introdução; um número = só aquela vez, direto.
     const pausa = (PAUSA_ENTRE_PARTES_S * c.andamento) / 60;
+    const partes = partesDoTudo(hino, total, pausa);
     const vozes =
       parte === "tudo"
         ? montarTudo(hino, total, pausa)
@@ -105,7 +132,10 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
       titulo: hino.titulo,
       parte,
       total,
+      comFinal: temFinal(hino),
       final: typeof parte === "number" && ehFinal(hino, parte, total),
+      andamento: c.andamento,
+      marcos: partes.map(({ parte: p, inicio, fim }) => ({ parte: p, inicio, fim })),
     };
     decorrido = 0;
     estado = "tocando";
@@ -183,6 +213,15 @@ export const reproducao = {
   },
   get decorrido() {
     return decorrido;
+  },
+  /**
+   * Qual parte está tocando agora ("intro" ou o número da vez). Em "tudo" acompanha a música; na pausa entre duas
+   * partes vale a que acabou de terminar. Nulo se não há nada tocando ou pausado.
+   */
+  get parteTocando(): "intro" | number | null {
+    if (!atual || estado === "parado") return null;
+    if (atual.parte !== "tudo") return atual.parte;
+    return parteNaBatida(atual.marcos, (decorrido * atual.andamento) / 60);
   },
   get duracao() {
     return duracao;

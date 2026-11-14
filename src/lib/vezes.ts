@@ -2,7 +2,8 @@
 //
 // Num hino com final, a ÚLTIMA vez é a diferente (o final) e as anteriores usam a versão normal.
 // Cada vez é tocada sozinha: "Terceira vez" toca direto a terceira, sem passar pelas outras.
-// Hino sem final tem uma só versão para todas as vezes, então a tela mostra um único botão de tocar.
+// Hino sem final tem a mesma música em todas as vezes (uma por estrofe), mas o hino todo ainda as repete,
+// para o músico saber em que vez está.
 import type { Nota, Voz } from "./sintetizador";
 
 export type HinoComFinal = {
@@ -21,13 +22,13 @@ export function temFinal(h: HinoComFinal): boolean {
 }
 
 /**
- * Quantas vezes o hino tem. Sem final, 1. Com final, o número de estrofes da letra, no mínimo 2 (para a última,
- * o final, vir depois de ao menos uma vez normal) e no máximo VEZES_MAX. Ex.: 3 estrofes = 1ª, 2ª e 3ª (final).
+ * Quantas vezes o hino tem: uma por estrofe da letra, no máximo VEZES_MAX. Com final, no mínimo 2 (para a última,
+ * o final, vir depois de ao menos uma vez normal). Sem letra ou com uma estrofe, 1.
+ * Ex.: 3 estrofes com final = 1ª, 2ª e 3ª (final); 4 estrofes sem final = 4 vezes iguais.
  */
 export function totalDeVezes(h: HinoComFinal, estrofes: number): number {
-  if (!temFinal(h)) return 1;
   const n = Number.isFinite(estrofes) ? Math.floor(estrofes) : 0;
-  return Math.min(VEZES_MAX, Math.max(2, n));
+  return Math.min(VEZES_MAX, Math.max(temFinal(h) ? 2 : 1, n));
 }
 
 /** Esta vez (1 = primeira) é a do final? Só a última de um hino que tem final. */
@@ -55,25 +56,54 @@ export function vozesDaIntroducao(h: HinoComFinal): Voz[] {
   return temIntroducao(h) ? h.introducao!.vozes : [];
 }
 
+/** Uma parte do "hino todo": a introdução ou uma vez, com o trecho que ocupa (em batidas, já com as pausas). */
+export type ParteDoTudo = { parte: "intro" | number; inicio: number; fim: number; vozes: Voz[] };
+
 /**
- * O hino todo, como é cantado: introdução (se houver), 1ª vez, 2ª, ... até a última (o final, se houver), em
- * sequência. Entre uma parte e a seguinte entra uma pausa de `pausa` batidas, para dar tempo de respirar.
+ * As partes de "Tocar o hino todo", na ordem: introdução (se houver), 1ª vez, 2ª, ... até a última (o final, se
+ * houver). Entre uma parte e a seguinte entra uma pausa de `pausa` batidas, para dar tempo de respirar.
+ */
+export function partesDoTudo(h: HinoComFinal, total: number, pausa = 0): ParteDoTudo[] {
+  const folga = Number.isFinite(pausa) ? Math.max(0, pausa) : 0;
+  const brutas: { parte: "intro" | number; vozes: Voz[] }[] = [];
+  if (temIntroducao(h)) brutas.push({ parte: "intro", vozes: h.introducao!.vozes });
+  for (let vez = 1; vez <= Math.max(1, total); vez++) brutas.push({ parte: vez, vozes: vozesDaVez(h, vez, total) });
+  let desloc = 0;
+  return brutas.map(({ parte, vozes }) => {
+    const inicio = desloc;
+    const fim = inicio + duracaoEmBatidas(vozes);
+    desloc = fim + folga;
+    return { parte, inicio, fim, vozes };
+  });
+}
+
+/**
+ * O hino todo, como é cantado: as partes de `partesDoTudo` em sequência, cada voz com as notas de todas elas.
  * É o que toca quando a pessoa não escolhe uma parte em particular.
  */
 export function montarTudo(h: HinoComFinal, total: number, pausa = 0): Voz[] {
-  const partes: Voz[][] = [];
-  if (temIntroducao(h)) partes.push(h.introducao!.vozes);
-  for (let vez = 1; vez <= Math.max(1, total); vez++) partes.push(vozesDaVez(h, vez, total));
-  const folga = Number.isFinite(pausa) ? Math.max(0, pausa) : 0;
+  const partes = partesDoTudo(h, total, pausa);
   return h.vozes.map((voz, i) => {
     const notas: Nota[] = [];
-    let desloc = 0;
-    for (const vozes of partes) {
-      for (const [inicio, dur, midi] of vozes[i].notas) notas.push([inicio + desloc, dur, midi]);
-      desloc += duracaoEmBatidas(vozes) + folga;
+    for (const { inicio, vozes } of partes) {
+      for (const [ini, dur, midi] of vozes[i].notas) notas.push([ini + inicio, dur, midi]);
     }
     return { nome: voz.nome, notas };
   });
+}
+
+/**
+ * Qual parte está tocando no instante `batida` do hino todo. Na pausa entre duas partes vale a que acabou de
+ * terminar (muda quando a próxima começa). Antes do início ou sem partes, devolve a primeira.
+ */
+export function parteNaBatida(partes: Pick<ParteDoTudo, "parte" | "inicio">[], batida: number): "intro" | number | null {
+  if (partes.length === 0) return null;
+  let atual = partes[0].parte;
+  for (const p of partes) {
+    if (batida >= p.inicio) atual = p.parte;
+    else break;
+  }
+  return atual;
 }
 
 /** Fim da última nota entre todas as vozes, em batidas. */
