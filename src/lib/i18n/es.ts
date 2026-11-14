@@ -2,24 +2,19 @@ import type { Dicionario } from "./pt";
 
 export const es: Dicionario = {
   "app.aviso": "App no oficial, sin vínculo con la Congregación Cristiana en Brasil.",
-  "app.idioma": "Idioma",
   carregando: "Cargando…",
   "erro.carregar": "Error al cargar el himnario: {erro}",
 
-  "lista.exemplo": "paquete de ejemplo",
   "lista.buscar": "Buscar por número o título",
   "lista.buscar_aria": "Buscar himno",
-  "lista.vazio": "No se encontró ningún himno.",
 
   "importar.botao": "Importar himnario (.json)",
   "importar.remover": "Quitar contenido importado",
-  "importar.confirmar": "Confirmar eliminación",
   "importar.ok": "Importado: {n} himnos de “{nome}”.",
   "importar.erro": "No se pudo importar: {erro}",
   "remover.ok": "Contenido importado eliminado. Mostrando el paquete de ejemplo.",
   "remover.erro": "No se pudo eliminar: {erro}",
 
-  "hino.voltar": "← Volver",
   "hino.tonalidade": "Tonalidad: {tom}",
   "hino.sem_letra": "Sin letra en este paquete.",
 
@@ -62,4 +57,27 @@ export const es: Dicionario = {
   "inst.bombardino": "Bombardino",
   "inst.fagote": "Fagot",
   "inst.contrabaixo": "Contrabajo",
+
+  "nav.voltar": "Volver",
+  "nav.ajustes": "Ajustes",
+  "biblioteca.titulo": "Biblioteca",
+  "biblioteca.limpar_busca": "Borrar búsqueda",
+  "biblioteca.fonte": "Fuente: {nome} · {n} himnos",
+  "biblioteca.aviso_exemplo": "Estás viendo un paquete de ejemplo. Importa un himnario en Ajustes.",
+  "biblioteca.sem_resultado": "Ningún himno para “{termo}”.",
+  "erro.tentar": "Intentar de nuevo",
+  "hino.abas": "Secciones del himno",
+  "hino.aba_letra": "Letra",
+  "hino.aba_ouvir": "Escuchar",
+  "hino.nao_encontrado": "Himno no encontrado.",
+  "hino.estrofe": "Estrofa {n}",
+  "ajustes.titulo": "Ajustes",
+  "ajustes.idioma": "Idioma de la interfaz",
+  "ajustes.biblioteca": "Biblioteca",
+  "ajustes.fonte_atual": "Contenido actual: {nome} ({n} himnos)",
+  "ajustes.sobre": "Acerca de",
+  "ajustes.remover_titulo": "¿Quitar el contenido importado?",
+  "ajustes.remover_texto": "Los himnos importados se borrarán de este dispositivo y la app volverá a mostrar solo el paquete de ejemplo. Puedes importar de nuevo más tarde.",
+  "ajustes.cancelar": "Cancelar",
+  "ajustes.confirmar_remocao": "Quitar",
 };

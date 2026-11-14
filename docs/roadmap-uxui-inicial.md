@@ -52,13 +52,18 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
 
 ### Etapas
 
-**Etapa 1 — Navegação e separação das funções** (sem mexer em cores)
-- [ ] Barra de topo de uma linha; Biblioteca enxuta (busca + lista).
-- [ ] Tela **Ajustes** com idioma, importar e remover (confirmação contextual ao remover).
-- [ ] Detalhe do hino com abas **Letra** e **Ouvir**; aba Letra sem nenhum controle de áudio.
-- [ ] Voltar preserva busca e posição da lista.
+**Etapa 1 — Navegação e separação das funções** (sem mexer em cores) — *implementada em 2026-11-14; falta validar no aparelho*
+- [x] Barra de topo de uma linha; Biblioteca enxuta (busca com botão limpar + lista).
+- [x] Tela **Ajustes** com idioma, importar e remover (confirmação explicando o impacto) e Sobre.
+- [x] Detalhe do hino (rota `/hino/<número>`) com abas **Letra** e **Ouvir**; aba Letra sem nenhum controle de áudio.
+- [x] Voltar preserva busca e posição da lista (estado da biblioteca compartilhado entre telas).
+- [x] Estrofes com rótulo "Estrofe N" (o número sai do verso; sem mudar o formato dos dados).
+- [x] Abas acessíveis (papéis tablist/tab/tabpanel, estado selecionado, setas do teclado).
+- [x] Os dois painéis ficam montados: trocar de aba não interrompe o som (sair do hino ainda interrompe; etapa 2).
+- [ ] **Teste no emulador/aparelho** dos critérios abaixo (só foram verificados tipos, build e o parser de estrofes).
 - Aceitação: da tela inicial à letra em no máximo 2 toques · nenhuma ação destrutiva na tela inicial ·
-  o botão voltar do Android continua fechando o hino e não o app.
+  o botão voltar do Android continua fechando o hino e não o app · voltar da letra devolve a lista com a
+  busca e a posição de rolagem.
 
 **Etapa 2 — Player global e miniplayer**
 - [ ] Sintetizador em módulo único (hoje morre ao sair da tela do hino).

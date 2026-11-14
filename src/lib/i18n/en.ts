@@ -2,24 +2,19 @@ import type { Dicionario } from "./pt";
 
 export const en: Dicionario = {
   "app.aviso": "Unofficial app, not affiliated with the Christian Congregation in Brazil.",
-  "app.idioma": "Language",
   carregando: "Loading…",
   "erro.carregar": "Error loading the hymnal: {erro}",
 
-  "lista.exemplo": "sample package",
   "lista.buscar": "Search by number or title",
   "lista.buscar_aria": "Search hymn",
-  "lista.vazio": "No hymns found.",
 
   "importar.botao": "Import hymnal (.json)",
   "importar.remover": "Remove imported content",
-  "importar.confirmar": "Confirm removal",
   "importar.ok": "Imported: {n} hymns from “{nome}”.",
   "importar.erro": "Could not import: {erro}",
   "remover.ok": "Imported content removed. Showing the sample package.",
   "remover.erro": "Could not remove: {erro}",
 
-  "hino.voltar": "← Back",
   "hino.tonalidade": "Key: {tom}",
   "hino.sem_letra": "No lyrics in this package.",
 
@@ -62,4 +57,27 @@ export const en: Dicionario = {
   "inst.bombardino": "Euphonium",
   "inst.fagote": "Bassoon",
   "inst.contrabaixo": "Double bass",
+
+  "nav.voltar": "Back",
+  "nav.ajustes": "Settings",
+  "biblioteca.titulo": "Library",
+  "biblioteca.limpar_busca": "Clear search",
+  "biblioteca.fonte": "Source: {nome} · {n} hymns",
+  "biblioteca.aviso_exemplo": "You are viewing a sample package. Import a hymnal in Settings.",
+  "biblioteca.sem_resultado": "No hymns for “{termo}”.",
+  "erro.tentar": "Try again",
+  "hino.abas": "Hymn sections",
+  "hino.aba_letra": "Lyrics",
+  "hino.aba_ouvir": "Listen",
+  "hino.nao_encontrado": "Hymn not found.",
+  "hino.estrofe": "Verse {n}",
+  "ajustes.titulo": "Settings",
+  "ajustes.idioma": "Interface language",
+  "ajustes.biblioteca": "Library",
+  "ajustes.fonte_atual": "Current content: {nome} ({n} hymns)",
+  "ajustes.sobre": "About",
+  "ajustes.remover_titulo": "Remove imported content?",
+  "ajustes.remover_texto": "The imported hymns will be deleted from this device and the app will show only the sample package again. You can import again later.",
+  "ajustes.cancelar": "Cancel",
+  "ajustes.confirmar_remocao": "Remove",
 };

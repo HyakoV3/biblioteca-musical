@@ -2,24 +2,19 @@
 // (o TypeScript acusa chave faltando). Veja docs/TRADUCOES.md.
 export const pt = {
   "app.aviso": "App não oficial, sem vínculo com a Congregação Cristã no Brasil.",
-  "app.idioma": "Idioma",
   carregando: "Carregando…",
   "erro.carregar": "Erro ao carregar o hinário: {erro}",
 
-  "lista.exemplo": "pacote de exemplo",
   "lista.buscar": "Buscar por número ou título",
   "lista.buscar_aria": "Buscar hino",
-  "lista.vazio": "Nenhum hino encontrado.",
 
   "importar.botao": "Importar hinário (.json)",
   "importar.remover": "Remover conteúdo importado",
-  "importar.confirmar": "Confirmar remoção",
   "importar.ok": "Importado: {n} hinos de “{nome}”.",
   "importar.erro": "Não foi possível importar: {erro}",
   "remover.ok": "Conteúdo importado removido. Mostrando o pacote de exemplo.",
   "remover.erro": "Não foi possível remover: {erro}",
 
-  "hino.voltar": "← Voltar",
   "hino.tonalidade": "Tonalidade: {tom}",
   "hino.sem_letra": "Sem letra neste pacote.",
 
@@ -62,6 +57,29 @@ export const pt = {
   "inst.bombardino": "Bombardino",
   "inst.fagote": "Fagote",
   "inst.contrabaixo": "Contrabaixo",
+
+  "nav.voltar": "Voltar",
+  "nav.ajustes": "Ajustes",
+  "biblioteca.titulo": "Biblioteca",
+  "biblioteca.limpar_busca": "Limpar busca",
+  "biblioteca.fonte": "Fonte: {nome} · {n} hinos",
+  "biblioteca.aviso_exemplo": "Você está vendo um pacote de exemplo. Importe um hinário em Ajustes.",
+  "biblioteca.sem_resultado": "Nenhum hino para “{termo}”.",
+  "erro.tentar": "Tentar de novo",
+  "hino.abas": "Seções do hino",
+  "hino.aba_letra": "Letra",
+  "hino.aba_ouvir": "Ouvir",
+  "hino.nao_encontrado": "Hino não encontrado.",
+  "hino.estrofe": "Estrofe {n}",
+  "ajustes.titulo": "Ajustes",
+  "ajustes.idioma": "Idioma da interface",
+  "ajustes.biblioteca": "Biblioteca",
+  "ajustes.fonte_atual": "Conteúdo atual: {nome} ({n} hinos)",
+  "ajustes.sobre": "Sobre",
+  "ajustes.remover_titulo": "Remover conteúdo importado?",
+  "ajustes.remover_texto": "Os hinos importados serão apagados deste aparelho e o app voltará a mostrar só o pacote de exemplo. Você pode importar de novo depois.",
+  "ajustes.cancelar": "Cancelar",
+  "ajustes.confirmar_remocao": "Remover",
 };
 
 export type Chave = keyof typeof pt;
