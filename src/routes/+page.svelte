@@ -22,6 +22,8 @@
   let erro = $state("");
   let busca = $state("");
   let aberto = $state<Hino | null>(null);
+  let aviso = $state("");
+  let confirmandoRemocao = $state(false);
 
   onMount(async () => {
     try {
@@ -30,6 +32,35 @@
       erro = String(e);
     }
   });
+
+  async function importar(e: Event) {
+    const input = e.currentTarget as HTMLInputElement;
+    const arquivo = input.files?.[0];
+    input.value = ""; // permite escolher o mesmo arquivo de novo
+    if (!arquivo) return;
+    aviso = "";
+    try {
+      pacote = await invoke<Pacote>("importar_hinario", { json: await arquivo.text() });
+      busca = "";
+      aviso = `Importado: ${pacote.hinario.hinos.length} hinos de "${pacote.hinario.hinario.nome}".`;
+    } catch (err) {
+      aviso = `Não foi possível importar: ${err}`;
+    }
+  }
+
+  async function removerConteudo() {
+    if (!confirmandoRemocao) {
+      confirmandoRemocao = true;
+      return;
+    }
+    confirmandoRemocao = false;
+    try {
+      pacote = await invoke<Pacote>("remover_conteudo");
+      aviso = "Conteúdo importado removido. Mostrando o pacote de exemplo.";
+    } catch (err) {
+      aviso = `Não foi possível remover: ${err}`;
+    }
+  }
 
   // Busca sem diferenciar maiúsculas/minúsculas nem acentos.
   const normalizar = (s: string) =>
@@ -78,6 +109,18 @@
       aria-label="Buscar hino"
       bind:value={busca}
     />
+    <div class="importar">
+      <label class="botao">
+        Importar hinário (.json)
+        <input type="file" accept=".json,application/json" onchange={importar} hidden />
+      </label>
+      {#if !pacote.exemplo}
+        <button class="secundario" onclick={removerConteudo}>
+          {confirmandoRemocao ? "Confirmar remoção" : "Remover conteúdo importado"}
+        </button>
+      {/if}
+    </div>
+    {#if aviso}<p class="meta" role="status">{aviso}</p>{/if}
     <ul>
       {#each hinos as h (h.numero)}
         <li>
@@ -107,6 +150,11 @@
     width: 100%; box-sizing: border-box; padding: 0.7rem 0.9rem; margin: 0.5rem 0 1rem;
     font-size: 1rem; border: 1px solid #ccc; border-radius: 10px;
   }
+  .importar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.8rem; }
+  .botao, .secundario {
+    padding: 0.5rem 0.9rem; font-size: 0.9rem; border-radius: 10px; border: 1px solid #ccc;
+    background: #fff; color: inherit; cursor: pointer;
+  }
   ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
   li > button {
     width: 100%; display: flex; align-items: center; gap: 0.8rem; text-align: left;
@@ -121,7 +169,7 @@
   .erro { color: #b00020; }
   @media (prefers-color-scheme: dark) {
     :root { color: #eee; background: #1b1b1d; }
-    input, li > button, .voltar { background: #2a2a2d; color: #eee; border-color: #444; }
+    input, li > button, .voltar, .botao, .secundario { background: #2a2a2d; color: #eee; border-color: #444; }
     .aviso, .meta, small { color: #aaa; }
   }
 </style>

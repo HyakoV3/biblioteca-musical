@@ -36,6 +36,14 @@ O player permite silenciar vozes, mudar o andamento e transpor em semitons.
 `partitura` é um caminho relativo opcional dentro do pacote. Todos os campos além de
 `numero` e `titulo` são opcionais.
 
+## Importar
+
+Na tela inicial, o botão **Importar hinário (.json)** escolhe o arquivo. O app valida
+(versão, ao menos um hino, números de hino sem repetição, limite de 20 MB) e só então grava em
+`content/hinario.json`, de forma atômica: um arquivo inválido nunca substitui o conteúdo atual.
+**Remover conteúdo importado** apaga o arquivo e volta ao pacote de exemplo.
+Por enquanto só o `hinario.json` é importado; arquivos de partitura ainda não.
+
 ## Onde o app lê
 
 O app procura `hinario.json` em `<pasta de dados do app>/content/` (no Linux:

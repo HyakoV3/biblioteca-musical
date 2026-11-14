@@ -80,6 +80,40 @@ pub fn carregar(dir: Option<&Path>) -> Result<Pacote, String> {
     Ok(Pacote { hinario: ler(EXEMPLO)?, exemplo: true })
 }
 
+const LIMITE_BYTES: usize = 20 * 1024 * 1024;
+
+/// Valida e grava o JSON como `<dir>/hinario.json`. A gravação é atômica
+/// (arquivo temporário + rename): um arquivo inválido nunca substitui o atual.
+pub fn importar(dir: &Path, json: &str) -> Result<Pacote, String> {
+    if json.len() > LIMITE_BYTES {
+        return Err("arquivo grande demais (limite de 20 MB)".into());
+    }
+    let h = ler(json)?;
+    if h.hinos.is_empty() {
+        return Err("o hinário não tem nenhum hino".into());
+    }
+    let mut numeros: Vec<u32> = h.hinos.iter().map(|x| x.numero).collect();
+    numeros.sort_unstable();
+    if let Some(par) = numeros.windows(2).find(|p| p[0] == p[1]) {
+        return Err(format!("número de hino repetido: {}", par[0]));
+    }
+    std::fs::create_dir_all(dir)
+        .map_err(|e| format!("não foi possível criar {}: {e}", dir.display()))?;
+    let tmp = dir.join("hinario.json.tmp");
+    std::fs::write(&tmp, json).map_err(|e| format!("erro ao gravar: {e}"))?;
+    std::fs::rename(&tmp, dir.join("hinario.json")).map_err(|e| format!("erro ao gravar: {e}"))?;
+    Ok(Pacote { hinario: h, exemplo: false })
+}
+
+/// Remove o conteúdo importado; o app volta a mostrar o pacote de exemplo.
+pub fn remover(dir: &Path) -> Result<Pacote, String> {
+    let arquivo = dir.join("hinario.json");
+    if arquivo.is_file() {
+        std::fs::remove_file(&arquivo).map_err(|e| format!("erro ao remover: {e}"))?;
+    }
+    carregar(Some(dir))
+}
+
 #[cfg(test)]
 mod testes {
     use super::*;
@@ -128,5 +162,53 @@ mod testes {
         std::fs::write(dir.join("hinario.json"), "{ quebrado").unwrap();
         assert!(carregar(Some(&dir)).is_err());
         std::fs::remove_dir_all(&dir).ok();
+    }
+
+    fn dir_teste(nome: &str) -> std::path::PathBuf {
+        let d = std::env::temp_dir().join(format!("bmccb_{nome}_{}", std::process::id()));
+        std::fs::remove_dir_all(&d).ok();
+        d
+    }
+
+    const VALIDO: &str = r#"{"versao":1,"hinario":{"id":"x","nome":"X"},"hinos":[{"numero":1,"titulo":"A"},{"numero":2,"titulo":"B"}]}"#;
+
+    #[test]
+    fn importar_grava_e_carregar_le() {
+        let d = dir_teste("ok");
+        let p = importar(&d, VALIDO).unwrap();
+        assert!(!p.exemplo && p.hinario.hinos.len() == 2);
+        let lido = carregar(Some(&d)).unwrap();
+        assert!(!lido.exemplo && lido.hinario.hinario.id == "x");
+        assert!(!d.join("hinario.json.tmp").exists());
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn importar_invalido_nao_substitui_o_atual() {
+        let d = dir_teste("inv");
+        importar(&d, VALIDO).unwrap();
+        assert!(importar(&d, "{ quebrado").is_err());
+        assert!(importar(&d, r#"{"versao":2,"hinario":{"id":"a","nome":"A"},"hinos":[]}"#).is_err());
+        assert_eq!(carregar(Some(&d)).unwrap().hinario.hinario.id, "x");
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn importar_rejeita_vazio_e_numero_repetido() {
+        let d = dir_teste("val");
+        let vazio = r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[]}"#;
+        assert!(importar(&d, vazio).unwrap_err().contains("nenhum hino"));
+        let rep = r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":5,"titulo":"A"},{"numero":5,"titulo":"B"}]}"#;
+        assert!(importar(&d, rep).unwrap_err().contains("repetido: 5"));
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn remover_volta_ao_exemplo() {
+        let d = dir_teste("rem");
+        importar(&d, VALIDO).unwrap();
+        assert!(remover(&d).unwrap().exemplo);
+        assert!(remover(&d).unwrap().exemplo); // idempotente
+        std::fs::remove_dir_all(&d).ok();
     }
 }
