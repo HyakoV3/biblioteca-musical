@@ -22,6 +22,8 @@
   const meu = $derived(reproducao.atual?.numero === hino.numero);
   const estado = $derived(meu ? reproducao.estado : "parado");
   const parado = $derived(estado === "parado");
+  // Andamento, tom e instrumentos mudam parado ou pausado (ao continuar, o som é reagendado); tocando, não.
+  const editavel = $derived(estado !== "tocando");
   const decorrido = $derived(meu ? reproducao.decorrido : 0);
   const duracao = $derived(meu ? reproducao.duracao : 0);
 
@@ -171,7 +173,9 @@
   </div>
 
   {#if !parado}
-    <p class="meta dica" role="status">{t("player.parar_para_alterar")}</p>
+    <p class="meta dica" role="status">
+      {estado === "tocando" ? t("player.parar_para_alterar") : t("player.mudancas_ao_continuar")}
+    </p>
   {/if}
 
   <div class="ajustes">
@@ -180,13 +184,13 @@
       <div class="passo" role="group" aria-labelledby="rot-andamento">
         <button
           aria-label={t("player.diminuir", { item: t("player.andamento_rotulo").toLowerCase() })}
-          disabled={!parado || cfg.andamento <= ANDAMENTO_MIN}
+          disabled={!editavel || cfg.andamento <= ANDAMENTO_MIN}
           onclick={() => mudarAndamento(-1)}>−</button
         >
         <output aria-live="polite">{t("player.bpm", { n: cfg.andamento })}</output>
         <button
           aria-label={t("player.aumentar", { item: t("player.andamento_rotulo").toLowerCase() })}
-          disabled={!parado || cfg.andamento >= ANDAMENTO_MAX}
+          disabled={!editavel || cfg.andamento >= ANDAMENTO_MAX}
           onclick={() => mudarAndamento(1)}>+</button
         >
       </div>
@@ -197,7 +201,7 @@
       <div class="passo" role="group" aria-labelledby="rot-tom">
         <button
           aria-label={t("player.diminuir", { item: t("player.transposicao").toLowerCase() })}
-          disabled={!parado || cfg.transposicao <= -TRANSPOSICAO_MAX}
+          disabled={!editavel || cfg.transposicao <= -TRANSPOSICAO_MAX}
           onclick={() => mudarTom(-1)}>−</button
         >
         <output aria-live="polite">
@@ -205,13 +209,13 @@
         </output>
         <button
           aria-label={t("player.aumentar", { item: t("player.transposicao").toLowerCase() })}
-          disabled={!parado || cfg.transposicao >= TRANSPOSICAO_MAX}
+          disabled={!editavel || cfg.transposicao >= TRANSPOSICAO_MAX}
           onclick={() => mudarTom(1)}>+</button
         >
       </div>
     </div>
 
-    <button class="botao secundario" disabled={!parado} onclick={restaurarPadrao}>{t("player.restaurar_padrao")}</button>
+    <button class="botao secundario" disabled={!editavel} onclick={restaurarPadrao}>{t("player.restaurar_padrao")}</button>
   </div>
 
   <!-- Mixer: cada voz tem três controles distintos. Interruptor = liga/desliga a voz;
@@ -261,7 +265,7 @@
           <select
             aria-label={t("player.instrumento", { voz: nomeVoz(v.nome) })}
             bind:value={cfg.instrumentos[i]}
-            disabled={!parado}
+            disabled={!editavel}
           >
             <optgroup label={t("grupo.orgaos")}>
               {#each ORGAOS as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}

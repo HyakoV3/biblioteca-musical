@@ -17,7 +17,7 @@ import {
   type ParteDoTudo,
 } from "./vezes";
 import { lerVoz } from "./preferencias";
-import { Sintetizador } from "./sintetizador";
+import { Sintetizador, type Voz } from "./sintetizador";
 
 export type Estado = "parado" | "tocando" | "pausado";
 
@@ -68,6 +68,19 @@ let duracao = $state(0);
 let erro = $state("");
 /** Hino cujo painel Ouvir está aberto na tela (o miniplayer some para não duplicar controles). */
 let painelNumero = $state<number | null>(null);
+
+/**
+ * O que o som que está agendado usa: as vozes montadas (em batidas) e os ajustes do momento em que ele foi agendado.
+ * Com a música pausada, se os ajustes mudarem, "continuar" reagenda a partir da posição atual (ver `continuar`).
+ */
+type Agendado = { vozes: Voz[]; andamento: number; transposicao: number; instrumentos: string[] };
+let agendado: Agendado | null = null;
+
+const mudou = (c: Config, a: Agendado) =>
+  c.andamento !== a.andamento ||
+  c.transposicao !== a.transposicao ||
+  c.instrumentos.length !== a.instrumentos.length ||
+  c.instrumentos.some((id, i) => id !== a.instrumentos[i]);
 
 let relogio: ReturnType<typeof setInterval> | null = null;
 let trocando = false;
@@ -137,6 +150,12 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
       andamento: c.andamento,
       marcos: partes.map(({ parte: p, inicio, fim }) => ({ parte: p, inicio, fim })),
     };
+    agendado = {
+      vozes,
+      andamento: c.andamento,
+      transposicao: c.transposicao,
+      instrumentos: [...c.instrumentos],
+    };
     decorrido = 0;
     estado = "tocando";
     iniciarRelogio();
@@ -161,6 +180,40 @@ async function pausar() {
 
 async function continuar() {
   if (estado !== "pausado" || trocando) return;
+  const c = atual ? configs.get(atual.numero) : undefined;
+  if (atual && c && agendado && mudou(c, agendado)) {
+    // Instrumento, andamento ou tom mudaram na pausa: reagenda de onde parou, com os ajustes novos. A posição vai
+    // em batidas (não em segundos), para valer mesmo que o andamento tenha mudado.
+    trocando = true;
+    try {
+      const batida = (decorrido * agendado.andamento) / 60;
+      duracao = await sint.tocar(
+        agendado.vozes,
+        {
+          andamento: c.andamento,
+          transposicao: c.transposicao,
+          instrumentos: [...c.instrumentos],
+          volumes: agendado.vozes.map((_, i) => efetivo(c, i)),
+        },
+        { aPartirDe: batida, pausado: true },
+      );
+      agendado = {
+        vozes: agendado.vozes,
+        andamento: c.andamento,
+        transposicao: c.transposicao,
+        instrumentos: [...c.instrumentos],
+      };
+      atual.andamento = c.andamento; // os marcos das partes estão em batidas; o andamento novo os converte
+      decorrido = sint.decorrido();
+    } catch (e) {
+      sint.parar();
+      parar();
+      erro = String(e);
+      trocando = false;
+      return;
+    }
+    trocando = false;
+  }
   await sint.continuar();
   estado = "tocando";
   iniciarRelogio();
@@ -173,6 +226,7 @@ function parar() {
   decorrido = 0;
   duracao = 0;
   atual = null;
+  agendado = null;
 }
 
 /**

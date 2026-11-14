@@ -6,6 +6,7 @@ Este documento é a referência de prioridades. Atualize-o ao concluir uma etapa
 Legenda: `[x]` feito · `[ ]` a fazer · **(a validar)** decisão ainda não confirmada pelo responsável.
 
 Ideias e pedidos que ainda não entraram no plano: [`roadmap-ideas.md`](roadmap-ideas.md).
+A fase 1 (UX) está **concluída**; a continuação está em [`roadmap-fase-2.md`](roadmap-fase-2.md).
 
 ---
 

@@ -24,7 +24,8 @@ O código foi escrito do zero (clean room): nenhum código ou arquivo de outros 
 - Interface em português, espanhol e inglês, pronta para novos idiomas
   ([`docs/TRADUCOES.md`](docs/TRADUCOES.md)).
 
-Prioridades e próximas etapas: [`docs/roadmap-uxui-inicial.md`](docs/roadmap-uxui-inicial.md).
+Prioridades e próximas etapas: [`docs/roadmap-fase-2.md`](docs/roadmap-fase-2.md) (fase atual) e
+[`docs/roadmap-uxui-inicial.md`](docs/roadmap-uxui-inicial.md) (fase 1, concluída).
 Ideias para o futuro: [`docs/roadmap-ideas.md`](docs/roadmap-ideas.md).
 
 ## Desenvolvimento

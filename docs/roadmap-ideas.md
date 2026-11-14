@@ -553,6 +553,14 @@ música: começa na **Intro**, passa para a **1ª** quando ela começa, depois a
 
 ## I-10 — Trocar instrumento, andamento e tom com a música pausada
 
+> **Situação: feita** (2026-11-14), liberando **instrumento, andamento e tom** na pausa (a recomendação do
+> assistente, que o responsável aprovou ao seguir o plano). Ao **continuar**, se algo mudou, `continuar()` em
+> `reproducao.svelte.ts` reagenda as notas a partir da posição em batidas (`Sintetizador.tocar(..., { aPartirDe,
+> pausado })` e `notasAPartirDe`), testado com um `AudioContext` falso. **Tocando**, os controles continuam
+> travados (pergunta 1 abaixo, ficou para depois). **Detalhe conhecido:** em "Tocar o hino todo", a pausa de 2 s
+> entre as partes é contada em batidas no momento em que a música começa; se o andamento mudar na pausa, as
+> pausas seguintes passam a durar um pouco mais ou menos que 2 s. Falta ver no aparelho.
+
 > **Origem:** observação do responsável ao testar no celular: "quando pausado ele não deixa eu trocar as vozes do
 > sintetizador e ele poderia deixar; só deixa eu trocar quando eu paro".
 

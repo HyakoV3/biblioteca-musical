@@ -1,6 +1,7 @@
 // Sintetizador simples com Web Audio: toca notas (MIDI) de várias vozes.
 // Não usa gravações: tudo é gerado a partir dos eventos de nota do pacote.
 // Pausar suspende o relógio do AudioContext: as notas já agendadas retomam do ponto certo.
+// Para mudar instrumento, andamento ou tom no meio do hino, `tocar` reagenda tudo a partir de uma posição em batidas.
 import { INSTRUMENTOS, PADRAO, type InstrumentoId, type Perfil } from "./instrumentos";
 
 export type Nota = [inicio: number, duracao: number, midi: number];
@@ -15,6 +16,30 @@ export type Opcoes = {
 
 export const frequencia = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
 
+/**
+ * As notas que ainda soam a partir de `batida`, com o tempo recontado desde esse ponto: as que terminaram antes
+ * somem, as que atravessam o ponto começam em 0 com a duração que sobra, as demais só andam para trás.
+ */
+export function notasAPartirDe(notas: Nota[], batida: number): Nota[] {
+  const ap = Number.isFinite(batida) ? Math.max(0, batida) : 0;
+  if (ap === 0) return notas;
+  const saida: Nota[] = [];
+  for (const [inicio, dur, midi] of notas) {
+    const fim = inicio + dur;
+    if (fim <= ap + 1e-9) continue;
+    saida.push(inicio >= ap ? [inicio - ap, dur, midi] : [0, fim - ap, midi]);
+  }
+  return saida;
+}
+
+/** Como `tocar` deve começar. */
+export type Partida = {
+  /** Posição, em batidas, de onde tocar (0 = do começo). */
+  aPartirDe?: number;
+  /** O relógio está suspenso (pausa): agenda sem retomar; quem chamou retoma depois com `continuar()`. */
+  pausado?: boolean;
+};
+
 /** Antecedência do início, em segundos, para dar tempo de agendar todas as notas. */
 const ATRASO_INICIAL = 0.1;
 
@@ -25,6 +50,8 @@ export class Sintetizador {
   private fontes: AudioScheduledSourceNode[] = [];
   private ondas = new Map<InstrumentoId, PeriodicWave>();
   private inicio = 0;
+  /** Segundos já "tocados" antes do início do agendamento atual (quando tocar começou no meio do hino). */
+  private base = 0;
 
   private onda(ctx: AudioContext, id: InstrumentoId, perfil: Perfil): PeriodicWave {
     let w = this.ondas.get(id);
@@ -35,12 +62,15 @@ export class Sintetizador {
     return w;
   }
 
-  /** Agenda e começa a tocar. Devolve a duração total em segundos. */
-  async tocar(vozes: Voz[], opcoes: Opcoes): Promise<number> {
+  /**
+   * Agenda e começa a tocar. Devolve a duração total do hino em segundos, no andamento pedido (contando também o
+   * que ficou para trás quando `aPartirDe` não é 0, para o tempo decorrido e a duração continuarem na mesma régua).
+   */
+  async tocar(vozes: Voz[], opcoes: Opcoes, partida: Partida = {}): Promise<number> {
     this.parar();
     this.ctx ??= new AudioContext();
     // Em iOS/WebView o áudio só inicia após um gesto do usuário (clique em "Tocar").
-    await this.ctx.resume();
+    if (!partida.pausado) await this.ctx.resume();
     const ctx = this.ctx;
 
     // Compressor no fim da cadeia: várias vozes somadas não estouram o volume.
@@ -58,6 +88,8 @@ export class Sintetizador {
     });
 
     const seg = 60 / Math.max(opcoes.andamento, 1); // segundos por batida
+    const aPartirDe = Math.max(0, partida.aPartirDe ?? 0);
+    this.base = aPartirDe * seg;
     this.inicio = ctx.currentTime + ATRASO_INICIAL;
     const inicio = this.inicio;
     let fim = 0;
@@ -66,7 +98,7 @@ export class Sintetizador {
       const id = opcoes.instrumentos[i] && opcoes.instrumentos[i] in INSTRUMENTOS ? opcoes.instrumentos[i] : PADRAO;
       const perfil: Perfil = INSTRUMENTOS[id];
       const onda = this.onda(ctx, id, perfil);
-      for (const [t, dur, midi] of voz.notas) {
+      for (const [t, dur, midi] of notasAPartirDe(voz.notas, aPartirDe)) {
         const osc = ctx.createOscillator();
         const env = ctx.createGain();
         osc.setPeriodicWave(onda);
@@ -101,12 +133,12 @@ export class Sintetizador {
       }
     });
 
-    return fim;
+    return this.base + fim;
   }
 
-  /** Segundos tocados desde o início (congela durante a pausa). */
+  /** Segundos tocados desde o início do hino (congela durante a pausa). */
   decorrido(): number {
-    return this.ctx ? Math.max(0, this.ctx.currentTime - this.inicio) : 0;
+    return this.ctx ? this.base + Math.max(0, this.ctx.currentTime - this.inicio) : 0;
   }
 
   async pausar() {
