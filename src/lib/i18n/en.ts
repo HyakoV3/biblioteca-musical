@@ -105,6 +105,8 @@ export const en: Dicionario = {
   "player.silenciada": "muted",
   "player.volume_valor": "{n} percent",
   "player.instrumentos": "Instruments",
+  "player.cartao_ajustes": "Tempo and key",
+  "player.duracao_tudo": "Whole hymn: {tempo}",
   "player.instrumentos_varios": "Mixed",
   "player.erro_audio": "Could not start audio on this device. Try again.",
 
@@ -138,10 +140,8 @@ export const en: Dicionario = {
   "vez.curta.6": "6th",
   "vez.curta.7": "7th",
   "vez.curta.8": "8th",
-  "vez.dica_pausa": "The whole hymn has a 2-second pause between parts.",
   "vez.intro": "Introduction",
   "vez.intro_curta": "Intro",
   "vez.tudo": "Play the whole hymn",
   "vez.grupo": "Play only one part",
-  "vez.dica": "The last time ends differently (the final). The whole hymn has a 2-second pause between parts.",
 };

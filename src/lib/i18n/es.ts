@@ -105,6 +105,8 @@ export const es: Dicionario = {
   "player.silenciada": "silenciada",
   "player.volume_valor": "{n} por ciento",
   "player.instrumentos": "Instrumentos",
+  "player.cartao_ajustes": "Tempo y tono",
+  "player.duracao_tudo": "Himno completo: {tempo}",
   "player.instrumentos_varios": "Varios",
   "player.erro_audio": "No se pudo iniciar el audio en este dispositivo. Inténtalo de nuevo.",
 
@@ -138,10 +140,8 @@ export const es: Dicionario = {
   "vez.curta.6": "6.ª",
   "vez.curta.7": "7.ª",
   "vez.curta.8": "8.ª",
-  "vez.dica_pausa": "Entre las partes del himno completo hay una pausa de 2 segundos.",
   "vez.intro": "Introducción",
   "vez.intro_curta": "Intro",
   "vez.tudo": "Tocar el himno completo",
   "vez.grupo": "Tocar solo una parte",
-  "vez.dica": "La última vez termina distinto (el final). En el himno completo hay una pausa de 2 segundos entre las partes.",
 };

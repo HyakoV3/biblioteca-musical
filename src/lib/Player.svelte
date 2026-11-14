@@ -3,12 +3,12 @@
   import type { Hino } from "./biblioteca.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
   import { ORGAOS, instrumentosDaVoz, tipoDaVoz } from "./instrumentos";
-  import { padrao, salvarVozes } from "./preferencias";
+  import { lerCartoes, padrao, salvarCartoes, salvarVozes } from "./preferencias";
   import { realistasDisponiveis, type RealistaId } from "./realista";
   import { ANDAMENTO_MAX, ANDAMENTO_MIN, TRANSPOSICAO_MAX, reproducao, vezesDoHino } from "./reproducao.svelte";
   import { rotuloCurtoDaVez, rotuloDaParte } from "./rotulo-vez";
   import { formatarTempo, fracao } from "./tempo";
-  import { temFinal, temIntroducao } from "./vezes";
+  import { PAUSA_ENTRE_PARTES_S, partesDoTudo, temFinal, temIntroducao } from "./vezes";
 
   let { hino }: { hino: Hino } = $props();
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
@@ -102,6 +102,24 @@
     (cfg.transposicao = Math.min(TRANSPOSICAO_MAX, Math.max(-TRANSPOSICAO_MAX, cfg.transposicao + d)));
   const sinal = (n: number) => (n > 0 ? `+${n}` : String(n));
   const percentual = (v: number) => Math.round(v * 100);
+
+  // Cards recolhíveis: o que está aberto fica lembrado no aparelho. O card "Tocar" é fixo (sem ele, com a música
+  // tocando, não haveria como pausar daqui).
+  const cartoes = $state(lerCartoes());
+  $effect(() => {
+    salvarCartoes({ ajustes: cartoes.ajustes, vozes: cartoes.vozes, instrumentos: cartoes.instrumentos });
+  });
+
+  // Duração prevista do "hino todo" (introdução, vezes e pausas) no andamento escolhido.
+  const duracaoPrevista = $derived.by(() => {
+    const pausa = (PAUSA_ENTRE_PARTES_S * cfg.andamento) / 60;
+    const fim = partesDoTudo(hino, totalVezes, pausa).at(-1)?.fim ?? 0;
+    return (fim * 60) / Math.max(cfg.andamento, 1);
+  });
+  const resumoAjustes = $derived(
+    `${t("player.bpm", { n: cfg.andamento })} · ${i18n.tn("plural.semitons", Math.abs(cfg.transposicao), { n: sinal(cfg.transposicao) })}`,
+  );
+  const resumoVozes = $derived(`🔊 ${cfg.mudas.filter((m) => !m).length}/${hino.vozes.length}`);
 </script>
 
 <section class="player" aria-label={t("player.titulo")}>
@@ -109,162 +127,187 @@
     <Aviso tipo="erro">{t("player.erro_audio")}</Aviso>
   {/if}
 
-  <div class="principal">
-    <button
-      class="botao tocar primario"
-      aria-pressed={comPartes ? ativa("tudo") : undefined}
-      onclick={() => reproducao.alternar(hino, "tudo")}
-    >
-      {icone("tudo")}
-      {rotuloTudo}
-    </button>
-    {#if !parado}
-      <button class="botao parar" onclick={() => reproducao.parar()}>■ {t("audio.parar")}</button>
-    {/if}
-  </div>
-
-  {#if comPartes}
-    <!-- Cada botão toca só aquela parte, direto. Em "hino todo" o dourado acompanha a parte que está soando. -->
-    <div class="vezes" role="group" aria-label={t("vez.grupo")}>
-      {#if comIntroducao}
+  <!-- Card 1: tocar, vezes e duração. Fixo. -->
+  <section class="cartao" aria-labelledby="tit-tocar">
+    <div class="cabecalho">
+      <span id="tit-tocar">{t("audio.tocar")}</span>
+      <span class="resumo">{t("player.duracao_tudo", { tempo: formatarTempo(duracaoPrevista) })}</span>
+    </div>
+    <div class="corpo">
+      <div class="principal">
         <button
-          class="botao vez"
-          class:tocando={destacada("intro")}
-          aria-pressed={ativa("intro")}
-          aria-current={destacada("intro") ? "true" : undefined}
-          aria-label={dicaDaParte("intro")}
-          onclick={() => reproducao.alternar(hino, "intro")}
+          class="botao tocar primario"
+          aria-pressed={comPartes ? ativa("tudo") : undefined}
+          onclick={() => reproducao.alternar(hino, "tudo")}
         >
-          <span aria-hidden="true">{icone("intro")}</span>
-          {t("vez.intro_curta")}
+          {icone("tudo")}
+          {rotuloTudo}
         </button>
-      {/if}
-      {#if totalVezes > 1}
-        {#each vezes as vez}
-          <button
-            class="botao vez"
-            class:tocando={destacada(vez)}
-            aria-pressed={ativa(vez)}
-            aria-current={destacada(vez) ? "true" : undefined}
-            aria-label={dicaDaParte(vez)}
-            onclick={() => reproducao.alternar(hino, vez)}
-          >
-            <span aria-hidden="true">{icone(vez)}</span>
-            {rotuloCurtoDaVez(vez)}{#if comFinalDisponivel && vez === totalVezes}<span class="flag" aria-hidden="true"> ⚑</span>{/if}
-          </button>
-        {/each}
-      {/if}
-    </div>
-    <p class="meta dica">
-      {#if comFinalDisponivel}<span class="flag" aria-hidden="true">⚑</span> {/if}{comFinalDisponivel ? t("vez.dica") : t("vez.dica_pausa")}
-    </p>
-  {/if}
-
-  <div class="progresso-bloco">
-    <div
-      class="progresso"
-      role="progressbar"
-      aria-label={t("player.progresso_rotulo")}
-      aria-valuemin="0"
-      aria-valuemax={Math.round(duracao)}
-      aria-valuenow={Math.round(decorrido)}
-      aria-valuetext={t("player.progresso", { atual: formatarTempo(decorrido), total: formatarTempo(duracao) })}
-    >
-      <div class="preenchido" style:width={`${fracao(decorrido, duracao) * 100}%`}></div>
-    </div>
-    <div class="tempos" aria-hidden="true">
-      <span>{formatarTempo(decorrido)}</span>
-      <span>{duracao > 0 ? formatarTempo(duracao) : ""}</span>
-    </div>
-  </div>
-
-  {#if !parado}
-    <p class="meta dica" role="status">
-      {estado === "tocando" ? t("player.parar_para_alterar") : t("player.mudancas_ao_continuar")}
-    </p>
-  {/if}
-
-  <div class="ajustes">
-    <div class="passo-linha">
-      <span class="rotulo" id="rot-andamento">{t("player.andamento_rotulo")}</span>
-      <div class="passo" role="group" aria-labelledby="rot-andamento">
-        <button
-          aria-label={t("player.diminuir", { item: t("player.andamento_rotulo").toLowerCase() })}
-          disabled={!editavel || cfg.andamento <= ANDAMENTO_MIN}
-          onclick={() => mudarAndamento(-1)}>−</button
-        >
-        <output aria-live="polite">{t("player.bpm", { n: cfg.andamento })}</output>
-        <button
-          aria-label={t("player.aumentar", { item: t("player.andamento_rotulo").toLowerCase() })}
-          disabled={!editavel || cfg.andamento >= ANDAMENTO_MAX}
-          onclick={() => mudarAndamento(1)}>+</button
-        >
+        {#if !parado}
+          <button class="botao parar" onclick={() => reproducao.parar()}>■ {t("audio.parar")}</button>
+        {/if}
       </div>
-    </div>
 
-    <div class="passo-linha">
-      <span class="rotulo" id="rot-tom">{t("player.transposicao")}</span>
-      <div class="passo" role="group" aria-labelledby="rot-tom">
-        <button
-          aria-label={t("player.diminuir", { item: t("player.transposicao").toLowerCase() })}
-          disabled={!editavel || cfg.transposicao <= -TRANSPOSICAO_MAX}
-          onclick={() => mudarTom(-1)}>−</button
-        >
-        <output aria-live="polite">
-          {i18n.tn("plural.semitons", Math.abs(cfg.transposicao), { n: sinal(cfg.transposicao) })}
-        </output>
-        <button
-          aria-label={t("player.aumentar", { item: t("player.transposicao").toLowerCase() })}
-          disabled={!editavel || cfg.transposicao >= TRANSPOSICAO_MAX}
-          onclick={() => mudarTom(1)}>+</button
-        >
-      </div>
-    </div>
-
-    <button class="botao secundario" disabled={!editavel} onclick={restaurarPadrao}>{t("player.restaurar_padrao")}</button>
-  </div>
-
-  <!-- Mixer: cada voz tem três controles distintos. Interruptor = liga/desliga a voz;
-       controle deslizante = volume; instrumento fica na seção recolhida abaixo. -->
-  <div class="vozes" role="group" aria-label={t("player.vozes")}>
-    {#each hino.vozes as v, i}
-      <div class="voz" class:silenciada={cfg.mudas[i]}>
-        <button
-          class="chave"
-          role="switch"
-          aria-checked={!cfg.mudas[i]}
-          aria-label={t("player.voz_rotulo", { voz: nomeVoz(v.nome) })}
-          onclick={() => {
-            cfg.mudas[i] = !cfg.mudas[i];
-            aoMudarVoz(i);
-          }}
-        >
-          {cfg.mudas[i] ? "🔇" : "🔊"}
-        </button>
-        <div class="identidade">
-          <span class="nome">{nomeVoz(v.nome)}</span>
-          <span class="estado-voz">{cfg.mudas[i] ? t("player.silenciada") : `${percentual(cfg.volumes[i])}%`}</span>
+      {#if comPartes}
+        <!-- Cada botão toca só aquela parte, direto. Em "hino todo" o dourado acompanha a parte que está soando. -->
+        <div class="vezes" role="group" aria-label={t("vez.grupo")}>
+          {#if comIntroducao}
+            <button
+              class="botao vez"
+              class:tocando={destacada("intro")}
+              aria-pressed={ativa("intro")}
+              aria-current={destacada("intro") ? "true" : undefined}
+              aria-label={dicaDaParte("intro")}
+              onclick={() => reproducao.alternar(hino, "intro")}
+            >
+              <span aria-hidden="true">{icone("intro")}</span>
+              {t("vez.intro_curta")}
+            </button>
+          {/if}
+          {#if totalVezes > 1}
+            {#each vezes as vez}
+              <button
+                class="botao vez"
+                class:tocando={destacada(vez)}
+                aria-pressed={ativa(vez)}
+                aria-current={destacada(vez) ? "true" : undefined}
+                aria-label={dicaDaParte(vez)}
+                onclick={() => reproducao.alternar(hino, vez)}
+              >
+                <span aria-hidden="true">{icone(vez)}</span>
+                {rotuloCurtoDaVez(vez)}{#if comFinalDisponivel && vez === totalVezes}<span class="flag" aria-hidden="true"> ⚑</span>{/if}
+              </button>
+            {/each}
+          {/if}
         </div>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          aria-label={t("player.volume", { voz: nomeVoz(v.nome) })}
-          aria-valuetext={t("player.volume_valor", { n: percentual(cfg.volumes[i]) })}
-          bind:value={cfg.volumes[i]}
-          oninput={() => aoMudarVoz(i)}
-        />
-      </div>
-    {/each}
-  </div>
+      {/if}
 
-  <details class="instrumentos">
+      <div class="progresso-bloco">
+        <div
+          class="progresso"
+          role="progressbar"
+          aria-label={t("player.progresso_rotulo")}
+          aria-valuemin="0"
+          aria-valuemax={Math.round(duracao)}
+          aria-valuenow={Math.round(decorrido)}
+          aria-valuetext={t("player.progresso", { atual: formatarTempo(decorrido), total: formatarTempo(duracao) })}
+        >
+          <div class="preenchido" style:width={`${fracao(decorrido, duracao) * 100}%`}></div>
+        </div>
+        <div class="tempos" aria-hidden="true">
+          <span>{formatarTempo(decorrido)}</span>
+          <span>{duracao > 0 ? formatarTempo(duracao) : ""}</span>
+        </div>
+      </div>
+
+      {#if !parado}
+        <p class="meta dica" role="status">
+          {estado === "tocando" ? t("player.parar_para_alterar") : t("player.mudancas_ao_continuar")}
+        </p>
+      {/if}
+    </div>
+  </section>
+
+  <!-- Card 2: andamento e transposição. -->
+  <details class="cartao" bind:open={cartoes.ajustes}>
+    <summary>
+      <span>{t("player.cartao_ajustes")}</span>
+      <span class="resumo">{resumoAjustes}</span>
+    </summary>
+    <div class="corpo">
+      <div class="passo-linha">
+        <span class="rotulo" id="rot-andamento">{t("player.andamento_rotulo")}</span>
+        <div class="passo" role="group" aria-labelledby="rot-andamento">
+          <button
+            aria-label={t("player.diminuir", { item: t("player.andamento_rotulo").toLowerCase() })}
+            disabled={!editavel || cfg.andamento <= ANDAMENTO_MIN}
+            onclick={() => mudarAndamento(-1)}>−</button
+          >
+          <output aria-live="polite">{t("player.bpm", { n: cfg.andamento })}</output>
+          <button
+            aria-label={t("player.aumentar", { item: t("player.andamento_rotulo").toLowerCase() })}
+            disabled={!editavel || cfg.andamento >= ANDAMENTO_MAX}
+            onclick={() => mudarAndamento(1)}>+</button
+          >
+        </div>
+      </div>
+
+      <div class="passo-linha">
+        <span class="rotulo" id="rot-tom">{t("player.transposicao")}</span>
+        <div class="passo" role="group" aria-labelledby="rot-tom">
+          <button
+            aria-label={t("player.diminuir", { item: t("player.transposicao").toLowerCase() })}
+            disabled={!editavel || cfg.transposicao <= -TRANSPOSICAO_MAX}
+            onclick={() => mudarTom(-1)}>−</button
+          >
+          <output aria-live="polite">
+            {i18n.tn("plural.semitons", Math.abs(cfg.transposicao), { n: sinal(cfg.transposicao) })}
+          </output>
+          <button
+            aria-label={t("player.aumentar", { item: t("player.transposicao").toLowerCase() })}
+            disabled={!editavel || cfg.transposicao >= TRANSPOSICAO_MAX}
+            onclick={() => mudarTom(1)}>+</button
+          >
+        </div>
+      </div>
+
+      <button class="botao secundario" disabled={!editavel} onclick={restaurarPadrao}>{t("player.restaurar_padrao")}</button>
+    </div>
+  </details>
+
+  <!-- Card 3: vozes. Mixer: cada voz tem dois controles distintos. Interruptor = liga/desliga a voz;
+       controle deslizante = volume. O instrumento fica no card seguinte. -->
+  <details class="cartao" bind:open={cartoes.vozes}>
+    <summary>
+      <span>{t("player.vozes")}</span>
+      <span class="resumo">{resumoVozes}</span>
+    </summary>
+    <div class="corpo">
+      <div class="vozes" role="group" aria-label={t("player.vozes")}>
+        {#each hino.vozes as v, i}
+          <div class="voz" class:silenciada={cfg.mudas[i]}>
+            <button
+              class="chave"
+              role="switch"
+              aria-checked={!cfg.mudas[i]}
+              aria-label={t("player.voz_rotulo", { voz: nomeVoz(v.nome) })}
+              onclick={() => {
+                cfg.mudas[i] = !cfg.mudas[i];
+                aoMudarVoz(i);
+              }}
+            >
+              {cfg.mudas[i] ? "🔇" : "🔊"}
+            </button>
+            <div class="identidade">
+              <span class="nome">{nomeVoz(v.nome)}</span>
+              <span class="estado-voz">{cfg.mudas[i] ? t("player.silenciada") : `${percentual(cfg.volumes[i])}%`}</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              aria-label={t("player.volume", { voz: nomeVoz(v.nome) })}
+              aria-valuetext={t("player.volume_valor", { n: percentual(cfg.volumes[i]) })}
+              bind:value={cfg.volumes[i]}
+              oninput={() => aoMudarVoz(i)}
+            />
+          </div>
+        {/each}
+      </div>
+
+      <!-- Redefine também os instrumentos, que só mudam parado ou pausado (como "Restaurar padrão"). -->
+      <button class="botao secundario" disabled={!editavel} onclick={redefinirVozes}>{t("player.redefinir")}</button>
+    </div>
+  </details>
+
+  <!-- Card 4: instrumentos de cada voz. -->
+  <details class="cartao" bind:open={cartoes.instrumentos}>
     <summary>
       <span>{t("player.instrumentos")}</span>
       <span class="resumo">{resumoInstrumentos}</span>
     </summary>
-    <div class="lista-instrumentos">
+    <div class="corpo">
       {#each hino.vozes as v, i}
         <label class="inst-linha">
           <span>{nomeVoz(v.nome)}</span>
@@ -289,9 +332,6 @@
       {/each}
     </div>
   </details>
-
-  <!-- Redefine também os instrumentos, que só mudam parado ou pausado (como "Restaurar padrão"). -->
-  <button class="botao secundario" disabled={!editavel} onclick={redefinirVozes}>{t("player.redefinir")}</button>
 </section>
 
 <style>
@@ -304,7 +344,6 @@
   .tempos { display: flex; justify-content: space-between; margin-top: 0.3rem; font-size: 0.85rem; color: var(--suave); font-variant-numeric: tabular-nums; }
   .dica { margin: 0; }
 
-  .ajustes { display: grid; gap: 0.6rem; }
   .passo-linha { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .rotulo { font-size: 0.95rem; }
   .passo { display: flex; align-items: center; gap: 0.4rem; }
@@ -318,7 +357,6 @@
   /* Cada botão ocupa uma fatia igual da linha (flex: 1 1 0). Com muitas vezes (até 8 + Intro), quebram de linha e
      cada linha também se reparte por inteiro. */
   .vez { flex: 1 1 0; gap: 0.35rem; min-width: 48px; padding: 0 0.4rem; }
-  .dica .flag { margin-inline-end: 0.3em; }
 
   .vozes { display: grid; gap: 0.5rem; }
   .voz { display: grid; grid-template-columns: 48px minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }
@@ -334,13 +372,15 @@
   .estado-voz { font-size: 0.8rem; color: var(--suave); font-variant-numeric: tabular-nums; }
   input[type="range"] { width: 100%; min-height: 48px; accent-color: var(--acento); }
 
-  .instrumentos { border: 1px solid var(--borda-controle); border-radius: 12px; background: var(--superficie); }
-  summary {
+  /* Cards: o primeiro (Tocar) é fixo; os outros abrem e fecham. Um resumo na linha de cima mostra o estado fechado. */
+  .cartao { border: 1px solid var(--borda-controle); border-radius: 12px; background: var(--superficie); }
+  summary, .cabecalho {
     display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 48px;
-    padding: 0 0.9rem; cursor: pointer; font-weight: 600;
+    padding: 0 0.9rem; font-weight: 600;
   }
-  .resumo { font-weight: 400; color: var(--suave); font-size: 0.9rem; }
-  .lista-instrumentos { display: grid; gap: 0.6rem; padding: 0.2rem 0.9rem 0.9rem; }
+  summary { cursor: pointer; }
+  .resumo { font-weight: 400; color: var(--suave); font-size: 0.9rem; text-align: end; }
+  .corpo { display: grid; gap: 0.8rem; padding: 0.2rem 0.9rem 0.9rem; }
   /* minmax(0, 1fr) + largura limitada: sem isso, o nome mais longo ("Órgão de palhetas gravado (teste)") alarga o
      seletor e ele passa da borda do painel. */
   .inst-linha { display: grid; grid-template-columns: minmax(5.5rem, 8rem) minmax(0, 1fr); align-items: center; gap: 0.5rem; }

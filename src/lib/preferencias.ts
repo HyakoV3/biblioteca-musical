@@ -42,6 +42,36 @@ export function lerVoz(nome: string): PrefVoz {
   return p;
 }
 
+/** Quais cards do player ficam abertos. O card "Tocar" é fixo e não entra aqui. */
+export type Cartoes = { ajustes: boolean; vozes: boolean; instrumentos: boolean };
+
+const CHAVE_CARTOES = "prefs.cartoes";
+
+/** Padrão: só as vozes (volume e silenciar, que se usa tocando) ficam abertas. */
+export const cartoesPadrao = (): Cartoes => ({ ajustes: false, vozes: true, instrumentos: false });
+
+export function lerCartoes(): Cartoes {
+  const p = cartoesPadrao();
+  try {
+    const bruto = localStorage.getItem(CHAVE_CARTOES);
+    const o = bruto ? JSON.parse(bruto) : null;
+    if (o && typeof o === "object" && !Array.isArray(o)) {
+      for (const k of Object.keys(p) as (keyof Cartoes)[]) if (typeof o[k] === "boolean") p[k] = o[k];
+    }
+  } catch {
+    /* sem armazenamento ou JSON inválido: vale o padrão */
+  }
+  return p;
+}
+
+export function salvarCartoes(c: Cartoes) {
+  try {
+    localStorage.setItem(CHAVE_CARTOES, JSON.stringify(c));
+  } catch {
+    /* sem armazenamento: vale só nesta sessão */
+  }
+}
+
 /** Salva as preferências de várias vozes de uma vez (uma gravação). */
 export function salvarVozes(lista: { nome: string; pref: PrefVoz }[]) {
   try {

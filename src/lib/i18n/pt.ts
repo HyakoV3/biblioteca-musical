@@ -105,6 +105,8 @@ export const pt = {
   "player.silenciada": "silenciada",
   "player.volume_valor": "{n} por cento",
   "player.instrumentos": "Instrumentos",
+  "player.cartao_ajustes": "Andamento e tom",
+  "player.duracao_tudo": "Hino todo: {tempo}",
   "player.instrumentos_varios": "Vários",
   "player.erro_audio": "Não foi possível iniciar o áudio neste aparelho. Tente de novo.",
 
@@ -138,12 +140,10 @@ export const pt = {
   "vez.curta.6": "6ª",
   "vez.curta.7": "7ª",
   "vez.curta.8": "8ª",
-  "vez.dica_pausa": "Entre as partes do hino todo há uma pausa de 2 segundos.",
   "vez.intro": "Introdução",
   "vez.intro_curta": "Intro",
   "vez.tudo": "Tocar o hino todo",
   "vez.grupo": "Tocar só uma parte",
-  "vez.dica": "A última vez termina de forma diferente (o final). No hino todo há uma pausa de 2 segundos entre as partes.",
 };
 
 export type Chave = keyof typeof pt;
