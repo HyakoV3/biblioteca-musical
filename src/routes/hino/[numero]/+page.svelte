@@ -6,6 +6,7 @@
   import { estrofes } from "$lib/letra";
   import { usarVoltar } from "$lib/navegacao";
   import Player from "$lib/Player.svelte";
+  import { reproducao } from "$lib/reproducao.svelte";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const voltar = usarVoltar();
@@ -21,6 +22,14 @@
   // Ao abrir um hino: Ouvir primeiro (se houver notas para tocar); sem notas, só existe a Letra.
   $effect(() => {
     aba = hino && hino.vozes.length > 0 ? "ouvir" : "letra";
+  });
+
+  // Avisa o miniplayer quando o painel Ouvir deste hino está na tela (ele some para não duplicar controles).
+  $effect(() => {
+    reproducao.painelNumero = aba === "ouvir" && temAudio && hino ? hino.numero : null;
+    return () => {
+      reproducao.painelNumero = null;
+    };
   });
 
   // Setas esquerda/direita trocam de aba (padrão de abas acessíveis).
@@ -91,7 +100,7 @@
     {#if temAudio}
       <div role="tabpanel" id="painel-ouvir" aria-labelledby="aba-ouvir" hidden={aba !== "ouvir"}>
         {#key hino.numero}
-          <Player vozes={hino.vozes} andamentoInicial={hino.andamento ?? 90} />
+          <Player {hino} />
         {/key}
       </div>
     {/if}

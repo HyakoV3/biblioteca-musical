@@ -61,16 +61,26 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
 - [x] Estrofes com rótulo "Estrofe N" (o número sai do verso; sem mudar o formato dos dados).
 - [x] Abas acessíveis (papéis tablist/tab/tabpanel, estado selecionado, setas do teclado).
 - [x] Os dois painéis ficam montados: trocar de aba não interrompe o som (sair do hino ainda interrompe; etapa 2).
-- [ ] **Teste no emulador/aparelho** dos critérios abaixo (só foram verificados tipos, build e o parser de estrofes).
+- [x] **Teste no emulador** dos critérios abaixo: validado pelo responsável em 2026-11-14.
 - Aceitação: da tela inicial à letra em no máximo 2 toques · nenhuma ação destrutiva na tela inicial ·
   o botão voltar do Android continua fechando o hino e não o app · voltar da letra devolve a lista com a
   busca e a posição de rolagem.
 
-**Etapa 2 — Player global e miniplayer**
-- [ ] Sintetizador em módulo único (hoje morre ao sair da tela do hino).
-- [ ] Pausar/retomar; miniplayer refletindo o estado real; progresso sem arrastar.
-- [ ] Andamento e tom como valores numéricos com − e +; "Restaurar padrão".
-- Aceitação: trocar de aba ou voltar à lista não interrompe a reprodução · miniplayer correto após parar/pausar.
+**Etapa 2 — Player global e miniplayer** — *implementada em 2026-11-14; falta validar no aparelho*
+- [x] Sintetizador em módulo único (`reproducao.svelte.ts`): a música continua ao trocar de aba, voltar à
+      lista ou abrir Ajustes.
+- [x] Pausar/continuar (suspende o relógio do áudio), parar, e progresso (tempo decorrido/total, sem arrastar).
+- [x] Miniplayer global (play/pause, título que leva ao hino, parar, barra de progresso). Some quando o painel
+      Ouvir do próprio hino está aberto, para não duplicar controles.
+- [x] Andamento e transposição como valores numéricos com − e + (andamento de 5 em 5 bpm, de 40 a 160;
+      tom de −6 a +6) e botão "Restaurar padrão".
+- [x] Instrumento, volume e silenciar continuam valendo ao vivo (instrumento, andamento e tom só com a música parada).
+- [ ] **Teste no emulador/aparelho** dos critérios abaixo (só foram verificados tipos, build e a lógica de tempo).
+- Aceitação: trocar de aba ou voltar à lista não interrompe a reprodução · miniplayer correto após
+  parar/pausar/terminar · pausar e continuar retoma do mesmo ponto · tocar outro hino substitui o atual.
+- Limites conhecidos: alterar andamento, tom ou instrumento exige parar antes (mudar ao vivo exigiria reagendar
+  as notas a partir da posição atual); não é possível arrastar o progresso; áudio com a tela apagada não foi
+  validado (ver seção 4).
 
 **Etapa 3 — Componentes e tema**
 - [ ] Tokens semânticos; temas Claro, Escuro e Sistema (padrão).

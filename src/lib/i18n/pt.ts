@@ -19,14 +19,11 @@ export const pt = {
   "hino.sem_letra": "Sem letra neste pacote.",
 
   "player.titulo": "Player",
-  "player.tocar": "▶ Tocar",
-  "player.parar": "■ Parar",
   "player.vozes": "Vozes",
   "player.silenciar": "Silenciar {voz}",
   "player.ativar": "Ativar {voz}",
   "player.volume": "Volume de {voz}",
   "player.instrumento": "Instrumento de {voz}",
-  "player.andamento": "Andamento: {bpm} bpm",
   "player.transposicao": "Transposição",
   "player.redefinir": "Redefinir vozes",
   "player.semitons": "{n} semitons",
@@ -80,6 +77,20 @@ export const pt = {
   "ajustes.remover_texto": "Os hinos importados serão apagados deste aparelho e o app voltará a mostrar só o pacote de exemplo. Você pode importar de novo depois.",
   "ajustes.cancelar": "Cancelar",
   "ajustes.confirmar_remocao": "Remover",
+
+  "audio.tocar": "Tocar",
+  "audio.pausar": "Pausar",
+  "audio.continuar": "Continuar",
+  "audio.parar": "Parar",
+  "player.andamento_rotulo": "Andamento",
+  "player.bpm": "{n} bpm",
+  "player.diminuir": "Diminuir {item}",
+  "player.aumentar": "Aumentar {item}",
+  "player.restaurar_padrao": "Restaurar padrão",
+  "player.parar_para_alterar": "Pare a reprodução para alterar andamento, tom e instrumentos.",
+  "player.progresso_rotulo": "Progresso da reprodução",
+  "player.progresso": "{atual} de {total}",
+  "mini.regiao": "Reprodução em andamento",
 };
 
 export type Chave = keyof typeof pt;

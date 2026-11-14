@@ -1,100 +1,167 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import type { Hino } from "./biblioteca.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
-  import { ORGAOS, instrumentosDaVoz, tipoDaVoz, type InstrumentoId } from "./instrumentos";
-  import { lerVoz, padrao, salvarVozes } from "./preferencias";
-  import { Sintetizador, type Voz } from "./sintetizador";
+  import { ORGAOS, instrumentosDaVoz, tipoDaVoz } from "./instrumentos";
+  import { padrao, salvarVozes } from "./preferencias";
+  import { ANDAMENTO_MAX, ANDAMENTO_MIN, TRANSPOSICAO_MAX, reproducao } from "./reproducao.svelte";
+  import { formatarTempo, fracao } from "./tempo";
 
-  let { vozes, andamentoInicial = 90 }: { vozes: Voz[]; andamentoInicial?: number } = $props();
+  let { hino }: { hino: Hino } = $props();
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
 
-  const sint = new Sintetizador();
-  let tocando = $state(false);
-  // Valores iniciais: o pai recria o player a cada hino com {#key}.
+  // O pai recria este componente a cada hino com {#key}; os ajustes vivem no módulo de reprodução.
   // svelte-ignore state_referenced_locally
-  let andamento = $state(andamentoInicial);
-  let transposicao = $state(0);
-  // As escolhas de cada voz (instrumento, volume, silenciar) são lembradas no aparelho.
+  const cfg = reproducao.config(hino);
   // svelte-ignore state_referenced_locally
-  const salvas = vozes.map((v) => lerVoz(v.nome));
-  let instrumentos = $state<InstrumentoId[]>(salvas.map((p) => p.instrumento));
-  let volumes = $state(salvas.map((p) => p.volume));
-  let mudas = $state(salvas.map((p) => p.muda));
+  const padraoAndamento = hino.andamento ?? 90;
 
+  // Este hino é o que está tocando (ou pausado)? Se outro hino toca, aqui tudo aparece parado.
+  const meu = $derived(reproducao.atual?.numero === hino.numero);
+  const estado = $derived(meu ? reproducao.estado : "parado");
+  const parado = $derived(estado === "parado");
+  const decorrido = $derived(meu ? reproducao.decorrido : 0);
+  const duracao = $derived(meu ? reproducao.duracao : 0);
+
+  // Instrumento, volume e silenciar de cada voz são lembrados no aparelho.
   $effect(() => {
     salvarVozes(
-      vozes.map((v, i) => ({ nome: v.nome, pref: { instrumento: instrumentos[i], volume: volumes[i], muda: mudas[i] } })),
+      hino.vozes.map((v, i) => ({
+        nome: v.nome,
+        pref: { instrumento: cfg.instrumentos[i], volume: cfg.volumes[i], muda: cfg.mudas[i] },
+      })),
     );
   });
 
-  function redefinir() {
-    const p = padrao();
-    instrumentos = vozes.map(() => p.instrumento);
-    volumes = vozes.map(() => p.volume);
-    mudas = vozes.map(() => p.muda);
-    // Com o hino tocando, o volume e o silêncio voltam na hora; o instrumento vale na próxima vez.
-    vozes.forEach((_, i) => sint.volume(i, p.volume));
-  }
-
-  const efetivo = (i: number) => (mudas[i] ? 0 : volumes[i]);
   // Nomes do arquivo como "Soprano"/"Baixo" são traduzidos; outros ("Parte I") ficam como estão.
   const nomeVoz = (nome: string) => {
     const tipo = tipoDaVoz(nome);
     return tipo ? t(`voz.${tipo}`) : nome;
   };
 
-  async function alternar() {
-    if (tocando) {
-      sint.parar();
-      tocando = false;
-      return;
-    }
-    tocando = true;
-    await sint.tocar(
-      vozes,
-      { andamento, transposicao, instrumentos: [...instrumentos], volumes: vozes.map((_, i) => efetivo(i)) },
-      () => (tocando = false),
-    );
+  const rotuloPrincipal = $derived(
+    estado === "tocando" ? `❚❚ ${t("audio.pausar")}` : estado === "pausado" ? `▶ ${t("audio.continuar")}` : `▶ ${t("audio.tocar")}`,
+  );
+
+  const aoMudarVoz = (i: number) => reproducao.volumeAoVivo(hino.numero, i);
+
+  function redefinirVozes() {
+    const p = padrao();
+    cfg.instrumentos = hino.vozes.map(() => p.instrumento);
+    cfg.volumes = hino.vozes.map(() => p.volume);
+    cfg.mudas = hino.vozes.map(() => p.muda);
+    hino.vozes.forEach((_, i) => aoMudarVoz(i));
   }
 
-  // Volume e silenciar valem ao vivo, durante a execução.
-  const aoMudarVoz = (i: number) => sint.volume(i, efetivo(i));
+  function restaurarPadrao() {
+    cfg.andamento = padraoAndamento;
+    cfg.transposicao = 0;
+  }
 
-  onDestroy(() => sint.parar());
+  const passoAndamento = 5;
+  const mudarAndamento = (d: number) =>
+    (cfg.andamento = Math.min(ANDAMENTO_MAX, Math.max(ANDAMENTO_MIN, cfg.andamento + d * passoAndamento)));
+  const mudarTom = (d: number) =>
+    (cfg.transposicao = Math.min(TRANSPOSICAO_MAX, Math.max(-TRANSPOSICAO_MAX, cfg.transposicao + d)));
+  const sinal = (n: number) => (n > 0 ? `+${n}` : String(n));
 </script>
 
 <section class="player" aria-label={t("player.titulo")}>
-  <button class="tocar" onclick={alternar}>{tocando ? t("player.parar") : t("player.tocar")}</button>
+  <div class="principal">
+    <button class="tocar" onclick={() => reproducao.alternar(hino)}>{rotuloPrincipal}</button>
+    {#if !parado}
+      <button class="parar" onclick={() => reproducao.parar()}>■ {t("audio.parar")}</button>
+    {/if}
+  </div>
+
+  <div class="progresso-bloco">
+    <div
+      class="progresso"
+      role="progressbar"
+      aria-label={t("player.progresso_rotulo")}
+      aria-valuemin="0"
+      aria-valuemax={Math.round(duracao)}
+      aria-valuenow={Math.round(decorrido)}
+      aria-valuetext={t("player.progresso", { atual: formatarTempo(decorrido), total: formatarTempo(duracao) })}
+    >
+      <div class="preenchido" style:width={`${fracao(decorrido, duracao) * 100}%`}></div>
+    </div>
+    <div class="tempos" aria-hidden="true">
+      <span>{formatarTempo(decorrido)}</span>
+      <span>{duracao > 0 ? formatarTempo(duracao) : ""}</span>
+    </div>
+  </div>
+
+  {#if !parado}
+    <p class="meta dica" role="status">{t("player.parar_para_alterar")}</p>
+  {/if}
+
+  <div class="ajustes">
+    <div class="passo-linha">
+      <span class="rotulo" id="rot-andamento">{t("player.andamento_rotulo")}</span>
+      <div class="passo" role="group" aria-labelledby="rot-andamento">
+        <button
+          aria-label={t("player.diminuir", { item: t("player.andamento_rotulo").toLowerCase() })}
+          disabled={!parado || cfg.andamento <= ANDAMENTO_MIN}
+          onclick={() => mudarAndamento(-1)}>−</button
+        >
+        <output aria-live="polite">{t("player.bpm", { n: cfg.andamento })}</output>
+        <button
+          aria-label={t("player.aumentar", { item: t("player.andamento_rotulo").toLowerCase() })}
+          disabled={!parado || cfg.andamento >= ANDAMENTO_MAX}
+          onclick={() => mudarAndamento(1)}>+</button
+        >
+      </div>
+    </div>
+
+    <div class="passo-linha">
+      <span class="rotulo" id="rot-tom">{t("player.transposicao")}</span>
+      <div class="passo" role="group" aria-labelledby="rot-tom">
+        <button
+          aria-label={t("player.diminuir", { item: t("player.transposicao").toLowerCase() })}
+          disabled={!parado || cfg.transposicao <= -TRANSPOSICAO_MAX}
+          onclick={() => mudarTom(-1)}>−</button
+        >
+        <output aria-live="polite">{t("player.semitons", { n: sinal(cfg.transposicao) })}</output>
+        <button
+          aria-label={t("player.aumentar", { item: t("player.transposicao").toLowerCase() })}
+          disabled={!parado || cfg.transposicao >= TRANSPOSICAO_MAX}
+          onclick={() => mudarTom(1)}>+</button
+        >
+      </div>
+    </div>
+
+    <button class="secundario" disabled={!parado} onclick={restaurarPadrao}>{t("player.restaurar_padrao")}</button>
+  </div>
 
   <div class="vozes" role="group" aria-label={t("player.vozes")}>
-    {#each vozes as v, i}
+    {#each hino.vozes as v, i}
       <div class="voz">
         <button
           class="muda"
-          aria-pressed={mudas[i]}
-          aria-label={mudas[i] ? t("player.ativar", { voz: nomeVoz(v.nome) }) : t("player.silenciar", { voz: nomeVoz(v.nome) })}
+          aria-pressed={cfg.mudas[i]}
+          aria-label={cfg.mudas[i] ? t("player.ativar", { voz: nomeVoz(v.nome) }) : t("player.silenciar", { voz: nomeVoz(v.nome) })}
           onclick={() => {
-            mudas[i] = !mudas[i];
+            cfg.mudas[i] = !cfg.mudas[i];
             aoMudarVoz(i);
           }}
         >
-          {mudas[i] ? "🔇" : "🔊"}
+          {cfg.mudas[i] ? "🔇" : "🔊"}
         </button>
-        <span class="nome" class:apagada={mudas[i]}>{nomeVoz(v.nome)}</span>
+        <span class="nome" class:apagada={cfg.mudas[i]}>{nomeVoz(v.nome)}</span>
         <input
           type="range"
           min="0"
           max="1"
           step="0.05"
           aria-label={t("player.volume", { voz: nomeVoz(v.nome) })}
-          bind:value={volumes[i]}
+          bind:value={cfg.volumes[i]}
           oninput={() => aoMudarVoz(i)}
         />
         <select
           class="instrumento"
           aria-label={t("player.instrumento", { voz: nomeVoz(v.nome) })}
-          bind:value={instrumentos[i]}
-          disabled={tocando}
+          bind:value={cfg.instrumentos[i]}
+          disabled={!parado}
         >
           <optgroup label={t("grupo.orgaos")}>
             {#each ORGAOS as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
@@ -105,41 +172,51 @@
         </select>
       </div>
     {/each}
+    <button class="secundario" onclick={redefinirVozes}>{t("player.redefinir")}</button>
   </div>
-
-  <button class="redefinir" onclick={redefinir}>{t("player.redefinir")}</button>
-
-  <label>
-    {t("player.andamento", { bpm: andamento })}
-    <input type="range" min="40" max="160" bind:value={andamento} disabled={tocando} />
-  </label>
-
-  <label>
-    {t("player.transposicao")}
-    <select bind:value={transposicao} disabled={tocando}>
-      {#each Array.from({ length: 13 }, (_, i) => i - 6) as s}
-        <option value={s}>{t("player.semitons", { n: s > 0 ? `+${s}` : s })}</option>
-      {/each}
-    </select>
-  </label>
 </section>
 
 <style>
-  .player { display: grid; gap: 0.9rem; margin: 1rem 0; padding: 0.9rem; border: 1px solid #ddd; border-radius: 12px; }
-  .tocar { min-height: 52px; font-size: 1.1rem; font-weight: 600; border-radius: 12px; border: 1px solid #888; background: #fff; color: inherit; cursor: pointer; }
-  .vozes { display: grid; gap: 0.8rem; }
-  .voz { display: grid; grid-template-columns: 44px 6rem 1fr; align-items: center; gap: 0.4rem 0.5rem; }
-  .instrumento { grid-column: 1 / -1; }
-  .muda { min-width: 44px; min-height: 44px; font-size: 1.2rem; border-radius: 10px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
-  .muda[aria-pressed="true"] { background: #eee; }
-  .redefinir { min-height: 40px; border-radius: 10px; border: 1px solid #ccc; background: transparent; color: inherit; cursor: pointer; font-size: 0.9rem; }
-  .nome.apagada { opacity: 0.45; text-decoration: line-through; }
-  label { display: grid; gap: 0.3rem; font-size: 0.95rem; }
-  select { min-height: 44px; font-size: 1rem; border-radius: 10px; padding: 0 0.5rem; }
-  input[type="range"] { width: 100%; min-height: 32px; }
-  @media (prefers-color-scheme: dark) {
-    .player { border-color: #444; }
-    .tocar, .muda { background: #2a2a2d; color: inherit; border-color: #555; }
-    .muda[aria-pressed="true"] { background: #3a3a3d; }
+  .player { display: grid; gap: 1rem; }
+  .principal { display: flex; gap: 0.5rem; }
+  .tocar {
+    flex: 1; min-height: 56px; font-size: 1.15rem; font-weight: 600; border-radius: 12px;
+    border: 1px solid var(--borda); background: var(--superficie); color: inherit; cursor: pointer;
   }
+  .parar {
+    min-height: 56px; padding: 0 1rem; font-size: 1rem; border-radius: 12px;
+    border: 1px solid var(--borda); background: var(--superficie); color: inherit; cursor: pointer;
+  }
+  .progresso { height: 8px; border-radius: 4px; background: var(--borda); overflow: hidden; }
+  .preenchido { height: 100%; background: currentColor; }
+  .tempos { display: flex; justify-content: space-between; margin-top: 0.3rem; font-size: 0.85rem; color: var(--suave); font-variant-numeric: tabular-nums; }
+  .dica { margin: 0; }
+  .ajustes { display: grid; gap: 0.6rem; }
+  .passo-linha { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .rotulo { font-size: 0.95rem; }
+  .passo { display: flex; align-items: center; gap: 0.4rem; }
+  .passo button {
+    width: 48px; height: 48px; font-size: 1.4rem; border-radius: 12px; line-height: 1;
+    border: 1px solid var(--borda); background: var(--superficie); color: inherit; cursor: pointer;
+  }
+  .passo output { min-width: 6.5rem; text-align: center; font-variant-numeric: tabular-nums; }
+  .vozes { display: grid; gap: 0.8rem; }
+  .voz { display: grid; grid-template-columns: 48px 6rem 1fr; align-items: center; gap: 0.4rem 0.5rem; }
+  .instrumento { grid-column: 1 / -1; }
+  .muda {
+    min-width: 48px; min-height: 48px; font-size: 1.2rem; border-radius: 12px;
+    border: 1px solid var(--borda); background: var(--superficie); color: inherit; cursor: pointer;
+  }
+  .muda[aria-pressed="true"] { opacity: 0.7; }
+  .nome.apagada { opacity: 0.45; text-decoration: line-through; }
+  select {
+    min-height: 48px; font-size: 1rem; border-radius: 12px; padding: 0 0.5rem;
+    border: 1px solid var(--borda); background: var(--superficie); color: inherit;
+  }
+  input[type="range"] { width: 100%; min-height: 32px; }
+  .secundario {
+    min-height: 44px; border-radius: 12px; border: 1px solid var(--borda); background: transparent;
+    color: inherit; cursor: pointer; font-size: 0.95rem;
+  }
+  button:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

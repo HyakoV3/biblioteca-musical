@@ -1,5 +1,6 @@
 // Sintetizador simples com Web Audio: toca notas (MIDI) de várias vozes.
 // Não usa gravações: tudo é gerado a partir dos eventos de nota do pacote.
+// Pausar suspende o relógio do AudioContext: as notas já agendadas retomam do ponto certo.
 import { INSTRUMENTOS, PADRAO, type InstrumentoId, type Perfil } from "./instrumentos";
 
 export type Nota = [inicio: number, duracao: number, midi: number];
@@ -14,15 +15,16 @@ export type Opcoes = {
 
 export const frequencia = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
 
+/** Antecedência do início, em segundos, para dar tempo de agendar todas as notas. */
+const ATRASO_INICIAL = 0.1;
+
 export class Sintetizador {
   private ctx: AudioContext | null = null;
   private mestre: GainNode | null = null;
   private ganhos: GainNode[] = [];
   private fontes: AudioScheduledSourceNode[] = [];
   private ondas = new Map<InstrumentoId, PeriodicWave>();
-  private temporizador: ReturnType<typeof setTimeout> | null = null;
-
-  tocando = false;
+  private inicio = 0;
 
   private onda(ctx: AudioContext, id: InstrumentoId, perfil: Perfil): PeriodicWave {
     let w = this.ondas.get(id);
@@ -33,7 +35,8 @@ export class Sintetizador {
     return w;
   }
 
-  async tocar(vozes: Voz[], opcoes: Opcoes, aoTerminar: () => void) {
+  /** Agenda e começa a tocar. Devolve a duração total em segundos. */
+  async tocar(vozes: Voz[], opcoes: Opcoes): Promise<number> {
     this.parar();
     this.ctx ??= new AudioContext();
     // Em iOS/WebView o áudio só inicia após um gesto do usuário (clique em "Tocar").
@@ -55,7 +58,8 @@ export class Sintetizador {
     });
 
     const seg = 60 / Math.max(opcoes.andamento, 1); // segundos por batida
-    const inicio = ctx.currentTime + 0.1;
+    this.inicio = ctx.currentTime + ATRASO_INICIAL;
+    const inicio = this.inicio;
     let fim = 0;
 
     vozes.forEach((voz, i) => {
@@ -97,11 +101,20 @@ export class Sintetizador {
       }
     });
 
-    this.tocando = true;
-    this.temporizador = setTimeout(() => {
-      this.tocando = false;
-      aoTerminar();
-    }, (fim + 0.3) * 1000);
+    return fim;
+  }
+
+  /** Segundos tocados desde o início (congela durante a pausa). */
+  decorrido(): number {
+    return this.ctx ? Math.max(0, this.ctx.currentTime - this.inicio) : 0;
+  }
+
+  async pausar() {
+    await this.ctx?.suspend();
+  }
+
+  async continuar() {
+    await this.ctx?.resume();
   }
 
   /** Ajusta o volume de uma voz enquanto toca (0 silencia). */
@@ -111,8 +124,6 @@ export class Sintetizador {
   }
 
   parar() {
-    if (this.temporizador) clearTimeout(this.temporizador);
-    this.temporizador = null;
     for (const o of this.fontes) {
       try {
         o.stop();
@@ -124,6 +135,5 @@ export class Sintetizador {
     this.ganhos = [];
     this.mestre?.disconnect();
     this.mestre = null;
-    this.tocando = false;
   }
 }

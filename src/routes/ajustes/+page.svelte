@@ -3,6 +3,7 @@
   import { biblioteca } from "$lib/biblioteca.svelte";
   import { IDIOMAS, i18n, type Idioma } from "$lib/i18n/index.svelte";
   import { usarVoltar } from "$lib/navegacao";
+  import { reproducao } from "$lib/reproducao.svelte";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const voltar = usarVoltar();
@@ -18,6 +19,7 @@
     aviso = "";
     try {
       const p = await biblioteca.importar(await arquivo.text());
+      reproducao.limpar(); // o conteúdo mudou: para o som e esquece os ajustes dos hinos antigos
       aviso = t("importar.ok", { n: p.hinario.hinos.length, nome: p.hinario.hinario.nome });
     } catch (err) {
       aviso = t("importar.erro", { erro: String(err) });
@@ -28,6 +30,7 @@
     confirmando = false;
     try {
       await biblioteca.remover();
+      reproducao.limpar();
       aviso = t("remover.ok");
     } catch (err) {
       aviso = t("remover.erro", { erro: String(err) });

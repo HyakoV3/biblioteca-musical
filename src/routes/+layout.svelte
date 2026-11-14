@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
+  import Miniplayer from "$lib/Miniplayer.svelte";
 
   let { children } = $props();
 
@@ -15,6 +16,7 @@
 </script>
 
 {@render children()}
+<Miniplayer />
 
 <style>
   :global(:root) {
@@ -44,7 +46,11 @@
     max-width: 640px; margin: 0 auto; box-sizing: border-box;
     padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));
   }
-  :global(.conteudo) { padding-top: 1rem; padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+  :global(.conteudo) {
+    padding-top: 1rem;
+    /* --altura-miniplayer é definida pelo miniplayer quando ele está visível. */
+    padding-bottom: calc(var(--altura-miniplayer, 0px) + max(1.5rem, env(safe-area-inset-bottom)));
+  }
   :global(.meta) { color: var(--suave); font-size: 0.9rem; }
   :global(.erro) { color: var(--perigo); }
   :global(.botao) {
