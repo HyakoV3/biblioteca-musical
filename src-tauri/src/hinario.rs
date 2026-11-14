@@ -6,6 +6,9 @@ use std::path::Path;
 
 const EXEMPLO: &str = include_str!("../exemplo/hinario.json");
 const VERSAO_SUPORTADA: u32 = 1;
+/// Conteúdo opcional levado dentro do binário por `BMCCB_PACOTE` na hora do build (ver build.rs). Vazio no
+/// build comum. Não vai para o Git: o repositório só traz o pacote de exemplo fictício.
+const INCLUSO: &str = include_str!(concat!(env!("OUT_DIR"), "/pacote_incluso.json"));
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct InfoHinario {
@@ -122,6 +125,7 @@ pub fn ler(json: &str) -> Result<Hinario, String> {
 /// Se existir mas estiver inválido, devolve o erro (não esconde com o exemplo).
 pub fn carregar(dir: Option<&Path>) -> Result<Pacote, String> {
     if let Some(dir) = dir {
+        semear(dir, INCLUSO)?;
         let arquivo = dir.join("hinario.json");
         if arquivo.is_file() {
             let texto = std::fs::read_to_string(&arquivo)
@@ -130,6 +134,37 @@ pub fn carregar(dir: Option<&Path>) -> Result<Pacote, String> {
         }
     }
     Ok(Pacote { hinario: ler(EXEMPLO)?, exemplo: true })
+}
+
+/// Impressão digital simples (FNV-1a de 64 bits + tamanho) para saber se o conteúdo incluso mudou.
+fn impressao(texto: &str) -> String {
+    let mut h: u64 = 0xcbf29ce484222325;
+    for b in texto.bytes() {
+        h ^= u64::from(b);
+        h = h.wrapping_mul(0x100000001b3);
+    }
+    format!("{h:016x}-{}", texto.len())
+}
+
+/// Grava o conteúdo incluso no app como se a pessoa o tivesse importado, uma vez por versão do conteúdo:
+///  - sem conteúdo incluso, não faz nada;
+///  - se esta versão já foi aplicada (marca `.incluso`), não repete, mesmo que a pessoa tenha removido o conteúdo;
+///  - se já existe um hinário e nunca houve marca, é uma importação da própria pessoa: não é sobrescrita.
+fn semear(dir: &Path, incluso: &str) -> Result<(), String> {
+    if incluso.trim().is_empty() {
+        return Ok(());
+    }
+    let marca = dir.join(".incluso");
+    let atual = std::fs::read_to_string(&marca).ok();
+    let nova = impressao(incluso);
+    if atual.as_deref().map(str::trim) == Some(nova.as_str()) {
+        return Ok(());
+    }
+    if atual.is_none() && dir.join("hinario.json").is_file() {
+        return Ok(());
+    }
+    importar(dir, incluso)?;
+    std::fs::write(&marca, &nova).map_err(|e| format!("erro ao gravar {}: {e}", marca.display()))
 }
 
 const LIMITE_BYTES: usize = 20 * 1024 * 1024;
@@ -337,6 +372,55 @@ mod testes {
         let rep = r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":5,"titulo":"A"},{"numero":5,"titulo":"B"}]}"#;
         assert!(importar(&d, rep).unwrap_err().contains("repetido: 5"));
         std::fs::remove_dir_all(&d).ok();
+    }
+
+    const OUTRO: &str = r#"{"versao":1,"hinario":{"id":"y","nome":"Y"},"hinos":[{"numero":9,"titulo":"Z"}]}"#;
+
+    #[test]
+    fn semear_sem_conteudo_incluso_nao_faz_nada() {
+        let d = dir_teste("sem0");
+        semear(&d, "").unwrap();
+        assert!(!d.exists());
+        assert!(carregar(Some(&d)).unwrap().exemplo);
+    }
+
+    #[test]
+    fn semear_grava_como_importado_e_so_uma_vez() {
+        let d = dir_teste("sem1");
+        semear(&d, VALIDO).unwrap();
+        let p = carregar(Some(&d)).unwrap();
+        assert!(!p.exemplo && p.hinario.hinario.id == "x");
+        // a pessoa remove o conteúdo: continua removido (a mesma versão não é reaplicada)
+        remover(&d).unwrap();
+        semear(&d, VALIDO).unwrap();
+        assert!(!d.join("hinario.json").exists());
+        assert!(carregar(Some(&d)).unwrap().exemplo);
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn semear_versao_nova_do_conteudo_substitui() {
+        let d = dir_teste("sem2");
+        semear(&d, VALIDO).unwrap();
+        semear(&d, OUTRO).unwrap();
+        assert_eq!(carregar(Some(&d)).unwrap().hinario.hinario.id, "y");
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn semear_nao_sobrescreve_importacao_da_propria_pessoa() {
+        let d = dir_teste("sem3");
+        importar(&d, OUTRO).unwrap(); // importou antes de existir marca
+        semear(&d, VALIDO).unwrap();
+        assert_eq!(carregar(Some(&d)).unwrap().hinario.hinario.id, "y");
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn semear_com_conteudo_incluso_invalido_da_erro() {
+        let d = dir_teste("sem4");
+        assert!(semear(&d, "{ quebrado").is_err());
+        assert!(!d.join(".incluso").exists());
     }
 
     #[test]

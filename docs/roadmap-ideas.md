@@ -512,6 +512,37 @@ de compasso, acidentes, ligaduras, cifras e casas de volta. Reconstruir isso ser
 
 ---
 
+## I-09 — Mostrar em "Tocar o hino todo" em que parte da música se está
+
+> **Origem:** sugestão do responsável: quando toca o hino todo, o botão da parte que está tocando muda de cor, e a
+> cor passa de um botão para o seguinte (Intro, depois 1ª, 2ª...), "para o músico saber onde está dentro da música".
+
+### O que se deseja
+Em **"Tocar o hino todo"**, o destaque dourado (hoje só aparece quando se toca uma parte sozinha) acompanha a
+música: começa na **Intro**, passa para a **1ª** quando ela começa, depois a **2ª**, e assim por diante até o final.
+
+### Impacto técnico (hipóteses)
+- `montarTudo` já sabe onde cada parte começa e termina (a duração de cada uma mais a pausa de 2 s). Basta devolver
+  também a lista de **limites em batidas**, e a tela comparar o tempo decorrido com ela.
+- O tempo decorrido já existe no store (`decorrido`), e a conversão para batidas usa o andamento escolhido.
+- A pausa entre partes pode ficar com o destaque da parte que acabou, ou sem destaque; decidir ao olhar.
+- Acessibilidade: o destaque não pode depender só de cor (já há o ícone ❚❚ e `aria-pressed`). Avisar a mudança de
+  parte para leitor de tela de forma discreta (região `aria-live="polite"`), ou deixar sem aviso para não atrapalhar
+  o áudio.
+- Combina com o cursor da partitura da **I-08**: as duas dependem de saber o instante de cada parte.
+
+### Perguntas em aberto
+1. Na pausa de 2 s, o destaque some, fica na parte anterior ou já passa para a seguinte?
+2. Avisar a mudança de parte para leitor de tela, ou só visual?
+
+### Critérios de aceitação (propostos)
+- No 457, tocando o hino todo, o destaque vai de Intro para 1ª, 2ª e 3ª ⚑ nos instantes certos (conferido por
+  teste com o tempo de cada parte).
+- Pausar e continuar mantêm o destaque correto; parar tira o destaque.
+- Com "reduzir movimento" ligado, a troca de cor continua sem animação.
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
