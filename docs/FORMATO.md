@@ -33,6 +33,9 @@ notas de cada voz. Cada nota é `[inicio, duracao, midi]`:
 - `midi` é o número da nota MIDI (60 = Dó central, 69 = Lá 440 Hz).
 
 O player permite silenciar vozes, mudar o andamento e transpor em semitons.
+`letra` é uma lista de linhas. Uma linha vazia (`""`) separa as estrofes, e a primeira linha
+de cada estrofe pode começar com o número ("1. ..."). O app mostra as linhas como estão.
+
 `partitura` é um caminho relativo opcional dentro do pacote. Todos os campos além de
 `numero` e `titulo` são opcionais.
 

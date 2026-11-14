@@ -220,4 +220,17 @@ mod testes {
         assert_eq!(h.hinos[0].andamento, Some(80));
         assert_eq!(h.hinos[0].vozes[0].notas[0], Nota(0.0, 1.0, 72));
     }
+
+    /// Valida um arquivo real (não versionado): BMCCB_AMOSTRA=caminho cargo test -- --ignored
+    #[test]
+    #[ignore = "defina BMCCB_AMOSTRA=caminho/para/hinario.json"]
+    fn arquivo_real_de_amostra_e_aceito() {
+        let caminho = std::env::var("BMCCB_AMOSTRA").expect("defina BMCCB_AMOSTRA");
+        let texto = std::fs::read_to_string(caminho).unwrap();
+        let d = dir_teste("amostra");
+        let p = importar(&d, &texto).unwrap();
+        println!("{} hinos aceitos", p.hinario.hinos.len());
+        assert!(p.hinario.hinos.iter().all(|h| !h.vozes.is_empty()));
+        std::fs::remove_dir_all(&d).ok();
+    }
 }

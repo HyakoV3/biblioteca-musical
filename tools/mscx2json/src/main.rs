@@ -28,6 +28,7 @@ pub struct Hino {
     pub titulo: String,
     pub andamento: Option<u32>,
     pub vozes: Vec<Voz>,
+    pub letra: Vec<String>,
     pub avisos: Vec<String>,
 }
 
@@ -280,6 +281,82 @@ fn dividir_em_vozes(camadas: Vec<Vec<Acorde>>, limite: Option<usize>) -> (Vec<Ve
     (saida, omitidos)
 }
 
+/// Extrai a letra da primeira pauta que tiver `<Lyrics>`. Cada estrofe (`<no>`, 0 = primeira)
+/// vira uma sequência de linhas; uma nova linha começa depois de cada respiração (`<Breath>`).
+/// Estrofes são separadas por uma linha vazia e a primeira linha de cada uma leva "N. ".
+fn extrair_letra(score: Node) -> Vec<String> {
+    let pauta = score
+        .children()
+        .filter(|c| c.has_tag_name("Staff") && c.children().any(|m| m.has_tag_name("Measure")))
+        .find(|p| p.descendants().any(|n| n.has_tag_name("Lyrics")));
+    let Some(pauta) = pauta else { return vec![] };
+
+    struct Estrofe {
+        linhas: Vec<String>,
+        espaco: bool,
+        quebra_vista: usize,
+    }
+    let mut estrofes: BTreeMap<u32, Estrofe> = BTreeMap::new();
+    let mut quebras = 0usize;
+
+    for n in pauta.descendants() {
+        match n.tag_name().name() {
+            "Breath" => quebras += 1,
+            "Chord" => {
+                for l in n.children().filter(|c| c.has_tag_name("Lyrics")) {
+                    let texto_sil = l.children().find(|c| c.has_tag_name("text")).and_then(|t| t.text());
+                    let Some(sil) = texto_sil.map(str::trim).filter(|t| !t.is_empty()) else { continue };
+                    let verso: u32 = numero(l, "no").unwrap_or(0);
+                    let e = estrofes.entry(verso).or_insert_with(|| Estrofe {
+                        linhas: vec![String::new()],
+                        espaco: false,
+                        quebra_vista: 0,
+                    });
+                    if quebras > e.quebra_vista {
+                        e.quebra_vista = quebras;
+                        if !e.linhas.last().is_some_and(|l| l.is_empty()) {
+                            e.linhas.push(String::new());
+                            e.espaco = false;
+                        }
+                    }
+                    let linha = e.linhas.last_mut().unwrap();
+                    if e.espaco && !linha.is_empty() {
+                        linha.push(' ');
+                    }
+                    linha.push_str(sil);
+                    e.espaco = !matches!(texto(l, "syllabic"), Some("begin" | "middle"));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let mut saida = vec![];
+    for (verso, e) in estrofes {
+        if !saida.is_empty() {
+            saida.push(String::new());
+        }
+        for (i, l) in e.linhas.into_iter().filter(|l| !l.is_empty()).enumerate() {
+            saida.push(if i == 0 { format!("{}. {l}", verso + 1) } else { l });
+        }
+    }
+    saida
+}
+
+/// "Parte I..IV" -> vozes do coro, na ordem do hinário.
+pub fn nomes_satb(h: &mut Hino) {
+    for v in &mut h.vozes {
+        let novo = match v.nome.as_str() {
+            "Parte I" => "Soprano",
+            "Parte II" => "Contralto",
+            "Parte III" => "Tenor",
+            "Parte IV" => "Baixo",
+            _ => continue,
+        };
+        v.nome = novo.to_string();
+    }
+}
+
 fn e_romano(s: &str) -> bool {
     !s.is_empty() && s.chars().all(|c| matches!(c, 'I' | 'V' | 'X'))
 }
@@ -424,7 +501,8 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
         .map(String::from)
         .unwrap_or_else(|| format!("Hino {numero_hino}"));
 
-    Ok(Hino { numero: numero_hino, titulo, andamento, vozes, avisos })
+    let letra = extrair_letra(score);
+    Ok(Hino { numero: numero_hino, titulo, andamento, vozes, letra, avisos })
 }
 
 pub fn para_json(h: &Hino) -> Value {
@@ -446,11 +524,15 @@ pub fn para_json(h: &Hino) -> Value {
             json!({ "nome": v.nome, "notas": notas })
         })
         .collect();
+    if !h.letra.is_empty() {
+        m.insert("letra".into(), json!(h.letra));
+    }
     m.insert("vozes".into(), Value::Array(vozes));
     Value::Object(m)
 }
 
-const AJUDA: &str = "Uso: mscx2json --id ID --nome NOME arquivo.mscx|pasta ... > hinario.json\n\
+const AJUDA: &str = "Uso: mscx2json [--nomes-originais] --id ID --nome NOME arquivo.mscx|pasta ... > hinario.json\n\
+--nomes-originais mantém \"Parte I..IV\" em vez de Soprano/Contralto/Tenor/Baixo.\n\
 Os arquivos devem se chamar hino-<número>.mscx; os demais são ignorados com um aviso.";
 
 fn numero_do_arquivo(p: &Path) -> Option<u32> {
@@ -459,11 +541,13 @@ fn numero_do_arquivo(p: &Path) -> Option<u32> {
 
 fn executar(args: Vec<String>) -> Result<(), String> {
     let (mut id, mut nome, mut entradas) = (None, None, vec![]);
+    let mut renomear = true;
     let mut it = args.into_iter();
     while let Some(a) = it.next() {
         match a.as_str() {
             "--id" => id = it.next(),
             "--nome" => nome = it.next(),
+            "--nomes-originais" => renomear = false,
             "-h" | "--ajuda" => {
                 println!("{AJUDA}");
                 return Ok(());
@@ -498,7 +582,10 @@ fn executar(args: Vec<String>) -> Result<(), String> {
             continue;
         };
         let xml = std::fs::read_to_string(&arq).map_err(|e| format!("{}: {e}", arq.display()))?;
-        let h = converter(&xml, n).map_err(|e| format!("{}: {e}", arq.display()))?;
+        let mut h = converter(&xml, n).map_err(|e| format!("{}: {e}", arq.display()))?;
+        if renomear {
+            nomes_satb(&mut h);
+        }
         for a in &h.avisos {
             eprintln!("aviso: {}: {a}", arq.display());
         }
@@ -675,6 +762,55 @@ mod testes {
         assert_eq!(notas(&h, 0), vec![(0.0, 4.0, 67)]); // mais aguda
         assert_eq!(notas(&h, 1), vec![(0.0, 4.0, 60)]); // mais grave
         assert!(h.avisos.iter().any(|a| a.contains("notas do meio omitidas")), "{:?}", h.avisos);
+    }
+
+    #[test]
+    fn letra_por_estrofe_com_silabas_e_quebra_na_respiracao() {
+        let ac = |sil: &[(&str, Option<u32>, &str)], pitch: u8| {
+            let ls: String = sil
+                .iter()
+                .map(|(sy, no, t)| {
+                    let no = no.map(|n| format!("<no>{n}</no>")).unwrap_or_default();
+                    let sy = if sy.is_empty() { String::new() } else { format!("<syllabic>{sy}</syllabic>") };
+                    format!("<Lyrics>{no}{sy}<text>{t}</text></Lyrics>")
+                })
+                .collect();
+            format!("<Chord><durationType>quarter</durationType>{ls}<Note><pitch>{pitch}</pitch></Note></Chord>")
+        };
+        let c = format!(
+            "{C44}{}{}<Breath/>{}",
+            ac(&[("begin", None, "ba"), ("", Some(1), "la")], 60),
+            ac(&[("end", None, "la"), ("", Some(1), "lá")], 62),
+            ac(&[("", None, "um"), ("", Some(1), "dois")], 64),
+        );
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap();
+        assert_eq!(h.letra, vec!["1. bala", "um", "", "2. la lá", "dois"]);
+        assert!(para_json(&h)["letra"].is_array());
+    }
+
+    #[test]
+    fn sem_letra_nao_gera_campo() {
+        let c = format!("{C44}{}", acorde("whole", 60));
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso(&c))), 1).unwrap();
+        assert!(h.letra.is_empty() && para_json(&h).get("letra").is_none());
+    }
+
+    #[test]
+    fn renomeia_partes_para_vozes_do_coro() {
+        let mut h = Hino {
+            numero: 1,
+            titulo: "T".into(),
+            andamento: None,
+            vozes: ["Parte I", "Parte II", "Parte III", "Parte IV", "Outra"]
+                .iter()
+                .map(|n| Voz { nome: n.to_string(), notas: vec![] })
+                .collect(),
+            letra: vec![],
+            avisos: vec![],
+        };
+        nomes_satb(&mut h);
+        let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
+        assert_eq!(nomes, vec!["Soprano", "Contralto", "Tenor", "Baixo", "Outra"]);
     }
 
     #[test]

@@ -165,7 +165,8 @@
   .num { font-weight: 700; min-width: 2.2rem; }
   small { margin-left: auto; color: #666; }
   .voltar { margin: 0.8rem 0; padding: 0.5rem 0.9rem; border-radius: 10px; border: 1px solid #ccc; background: #fff; cursor: pointer; }
-  article p { line-height: 1.6; }
+  article p { line-height: 1.6; margin: 0; }
+  article p:empty { min-height: 1em; } /* linha vazia separa as estrofes */
   .erro { color: #b00020; }
   @media (prefers-color-scheme: dark) {
     :root { color: #eee; background: #1b1b1d; }

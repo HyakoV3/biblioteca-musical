@@ -13,7 +13,13 @@ cargo run --release -- --id meu-hinario --nome "Meu hinário" /pasta/com/hino-1.
 - Entende o `.mscx` do **MuseScore 2** (vozes soltas no compasso, com `<tick>`/`<track>`) e a
   estrutura do MuseScore 3 (`<voice>`).
 - Suporta pontos, pausas, anacruse, ligaduras, quiálteras, acordes e várias pautas.
-  Apojaturas são ignoradas. Dinâmica, letra e tonalidade **não** são extraídas.
+  Apojaturas são ignoradas. Dinâmica e tonalidade **não** são extraídas.
+- **Letra:** lida da primeira pauta que tiver `<Lyrics>`. Cada estrofe (`<no>`) vira uma
+  sequência de linhas, com quebra a cada respiração (`<Breath>`), estrofes separadas por linha
+  vazia e a primeira linha numerada ("1. ..."). O refrão, quando está guardado na estrofe 1,
+  continua nela, como no arquivo.
+- **Nomes das vozes:** "Parte I", "II", "III" e "IV" viram Soprano, Contralto, Tenor e Baixo.
+  Use `--nomes-originais` para manter os nomes do arquivo.
 
 ## Como as vozes são formadas
 
