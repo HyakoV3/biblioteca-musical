@@ -41,10 +41,30 @@ O progresso e o miniplayer passariam a considerar a duração total (todas as pa
 
 ### Perguntas em aberto
 
-1. **Como o final está representado nos dados?** Nos 4 hinos de amostra (1, 276, 283 e 398) **não há marcas de
-   repetição, volta ou salto** (ritornelo, volta 1/2, coda, D.C./D.S.), então não sabemos com certeza como um
-   hino com final aparece nos arquivos do MuseScore. Precisamos de pelo menos um hino que o responsável
-   confirme ter final.
+1. **Como o final está representado nos dados?** Nos hinos de amostra 1, 276, 283 e 398 **não há marcas de
+   repetição, volta ou salto** (ritornelo, volta 1/2, coda, D.C./D.S.). O **hino 457** é o primeiro com final e
+   tem tudo isso; está descrito logo abaixo.
+
+   **Como o responsável reconhece a diferença no hinário impresso (2026-11-14):** pelas **casas de volta
+   numeradas 1., 2. e 3.**; em alguns hinos a última, em vez de "3.", vem escrita **"Final"**.
+
+   **Amostra com final: hino 457** (baixado em 2026-11-14 a pedido do responsável; 6/8,
+   38 compassos, 3 estrofes, sem coro, andamento 52). O que **está no arquivo** (fato, lido do XML do MuseScore 2):
+
+   | Compasso | Marca no arquivo |
+   |---|---|
+   | 1 | início de repetição; compasso incompleto de 1/8 (anacruse) |
+   | 5 | texto `*` |
+   | 19 | **fim de repetição** (valor 2) e uma **casa de volta** com `endings = 2` |
+   | 20 | outra **casa de volta**, `endings = 3`, e **barra dupla** |
+   | 21 | texto **"Final"** e outro compasso incompleto de 1/8 (anacruse do final) |
+   | 38 | barra final |
+
+   **Leitura provável (hipótese, não confirmada):** do compasso 1 ao 19 está o corpo, repetido nas passadas
+   normais; o compasso 19 é a casa das passadas intermediárias e o 20 é a casa da **última** passada ("3."),
+   que segue direto para o **Final** (compassos 21 a 38). O conversor atual lê tudo uma vez, em ordem, e por
+   isso toca o hino 457 com 98,5 batidas, **passando pelas duas casas de volta seguidas**, o que está errado
+   musicalmente. Falta confirmar com o responsável **o que cada passada toca** (ver a pergunta A abaixo).
 
    **Observação nos arquivos (verificada em 2026-11-14):** todos os quatro hinos têm um marcador de texto
    **`*`**, mas a posição **varia** (uma versão anterior deste texto dizia "sempre no compasso 5", o que a
@@ -62,8 +82,17 @@ O progresso e o miniplayer passariam a considerar a duração total (todas as pa
    passada do final (nos hinos sem coro, a metade do hino). São só 4 hinos, então o padrão pode ser
    coincidência. Faltam respostas do responsável: o que o `*` significa no hinário impresso, e se na última
    passada dos hinos 1 e 276 a música termina nele.
-2. **O final é um trecho a mais no fim da partitura, ou uma volta alternativa (volta 1/2) que substitui o
-   fim da passada?** Muda como o conversor precisa tratar.
+2. **O final é um trecho a mais no fim da partitura, ou uma volta alternativa que substitui o fim da
+   passada?** No hino 457 parece ser **os dois**: uma casa de volta para a última passada (compasso 20) seguida
+   de um trecho próprio rotulado "Final" (compassos 21 a 38). Muda como o conversor precisa tratar.
+
+**Pergunta A (para o responsável): o que cada passada do hino 457 toca?** Minha leitura, para você corrigir:
+- Passada 1: compassos 1 a 18 e a casa do compasso 19; volta ao início.
+- Passada 2: igual à 1.
+- Passada 3 (a última): compassos 1 a 18, **pula o 19**, toca o 20 e segue para o **Final** (21 a 38).
+Isso bate com o que você vê no hinário? E o `*` do compasso 5, o que ele faz nesse hino?
+
+**Pergunta B: a "Passada" corresponde a uma estrofe?** O hino 457 tem 3 estrofes e 3 passadas; é sempre assim?
 3. **O número de passadas é sempre igual ao de estrofes?** Há hinos com refrão, em que a estrofe 1
    inclui o refrão (como nos hinos 283 e 398), e outros sem.
 4. **A letra deve acompanhar a passada?** Ex.: ao tocar duas passadas, mostrar a estrofe correspondente.
