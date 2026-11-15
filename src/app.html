@@ -10,6 +10,9 @@
       try {
         var t = localStorage.getItem("tema");
         if (t === "claro" || t === "escuro") document.documentElement.dataset.tema = t;
+        // Estilos de cor (lista em src/lib/estilos.ts; o "normal" não leva atributo).
+        var e = localStorage.getItem("estilo");
+        if (e === "pergaminho" || e === "marinho") document.documentElement.dataset.estilo = e;
       } catch (e) {}
     </script>
     %sveltekit.head%

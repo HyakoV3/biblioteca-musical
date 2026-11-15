@@ -10,7 +10,7 @@
   import { IDIOMAS, i18n, type Idioma } from "$lib/i18n/index.svelte";
   import { usarVoltar } from "$lib/navegacao";
   import { reproducao } from "$lib/reproducao.svelte";
-  import { TEMAS, tema } from "$lib/tema.svelte";
+  import { ESTILOS, TEMAS, estilo, tema } from "$lib/tema.svelte";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const voltar = usarVoltar();
@@ -64,12 +64,25 @@
 <main class="coluna conteudo">
   <section>
     <h2>{t("ajustes.aparencia")}</h2>
+    <!-- Duas escolhas que se combinam: o modo (claro ou escuro) e o estilo de cor. O rótulo visível fica fora do
+         leitor de tela (o nome do grupo vem da legenda escondida), para não ser lido duas vezes. -->
+    <p class="rotulo-grupo" aria-hidden="true">{t("ajustes.modo")}</p>
     <fieldset class="segmentos">
-      <legend class="so-leitor">{t("ajustes.aparencia")}</legend>
+      <legend class="so-leitor">{t("ajustes.modo")}</legend>
       {#each TEMAS as id}
         <label class:ativo={tema.atual === id}>
           <input type="radio" name="tema" value={id} checked={tema.atual === id} onchange={() => (tema.atual = id)} />
           <span class="opcao-tema">{#if tema.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`tema.${id}`)}</span>
+        </label>
+      {/each}
+    </fieldset>
+    <p class="rotulo-grupo" aria-hidden="true">{t("ajustes.estilo")}</p>
+    <fieldset class="segmentos">
+      <legend class="so-leitor">{t("ajustes.estilo")}</legend>
+      {#each ESTILOS as id}
+        <label class:ativo={estilo.atual === id}>
+          <input type="radio" name="estilo" value={id} checked={estilo.atual === id} onchange={() => (estilo.atual = id)} />
+          <span class="opcao-tema">{#if estilo.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`estilo.${id}`)}</span>
         </label>
       {/each}
     </fieldset>
@@ -220,6 +233,8 @@
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   /* Aparência: três opções lado a lado; a escolhida tem "✓", negrito e borda de acento (não só cor). */
+  .rotulo-grupo { margin: 0.9rem 0 0.35rem; font-size: 0.9rem; color: var(--suave); }
+  .rotulo-grupo:first-of-type { margin-top: 0.4rem; }
   .segmentos { display: flex; gap: 0.4rem; margin: 0; padding: 0; border: 0; }
   .segmentos label { position: relative; flex: 1; }
   .segmentos input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }

@@ -29,6 +29,8 @@ O código foi escrito do zero: nenhum código ou arquivo de outros aplicativos f
   instrumentos gravados (FluidR3, licença MIT), conferido por SHA-256 e usado offline depois. O pacote não está no
   repositório nem no app. Detalhes em [`docs/pacote-de-sons.md`](docs/pacote-de-sons.md).
 - **Letra** com as estrofes, em abas na parte de baixo da tela (ao lado, com o celular deitado).
+- **Aparência:** modo automático, claro ou escuro, combinado com três estilos de cor (Normal, Pergaminho e Marinho e
+  ouro), com contraste conferido ([`docs/design-tokens.md`](docs/design-tokens.md)).
 - Interface em português, espanhol e inglês, pronta para novos idiomas ([`docs/TRADUCOES.md`](docs/TRADUCOES.md)).
 - Acessibilidade: alvos de toque de 48 px, contraste conferido, respeito a "reduzir movimento".
 

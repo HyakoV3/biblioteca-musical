@@ -3,6 +3,11 @@
  * (prefers-color-scheme) ou quando a pessoa escolhe "Escuro" em Ajustes (data-tema="escuro").
  * Os dois blocos escuros precisam ter os mesmos valores.
  *
+ * Estilos (data-estilo no <html>, escolhidos em Ajustes): o "normal" é o :root abaixo; "pergaminho" (claro bege/marfim e
+ * escuro quente e mais claro) e "marinho" (azul-marinho e dourado do ícone) trazem paleta própria, clara e escura.
+ * Cada estilo repete os mesmos três blocos do normal (claro, escuro do sistema, escuro escolhido) e a ordem importa:
+ * o escuro do estilo tem seletor mais específico, então vence o claro do estilo quando o modo é escuro.
+ *
  * Contraste: rode `python3 tools/contraste.py` depois de mexer em qualquer cor.
  *   --borda           divisórias decorativas (não delimita controles)
  *   --borda-controle  limite de campos, botões, abas e trilhas (mínimo 3:1, WCAG 1.4.11)
@@ -70,5 +75,127 @@
   --foco: #7bbcff;
   --ouro: #f8b000;
   --ouro-sobre: #10151d;
+  --ouro-linha: #f8b000;
+}
+
+/* ---------------------------------------------------------------------------------------------------------------- */
+/* Estilo "pergaminho": claro em bege, papiro e marfim; escuro quente (marrom), mais claro que o escuro normal.        */
+/* Ações em tons de âmbar e terra; o dourado do ícone continua só para "onde estou na música".                        */
+/* ---------------------------------------------------------------------------------------------------------------- */
+:root[data-estilo="pergaminho"] {
+  --fundo: #f5eedb;
+  --superficie: #fffaeb;
+  --texto: #2b1a08;
+  --suave: #5a4326;
+  --borda: #e0d3b4;
+  --borda-controle: #8a744b;
+  --acento: #8a3f0a;
+  --acento-texto: #fffaeb;
+  --perigo: #a3201a;
+  --sucesso: #1d6a35;
+  --foco: #8a3f0a;
+  --ouro: #f8b000;
+  --ouro-sobre: #1f1300;
+  --ouro-linha: #8a5800;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-estilo="pergaminho"]:not([data-tema="claro"]) {
+    color-scheme: dark;
+
+    --fundo: #2b261f;
+    --superficie: #373028;
+    --texto: #f6eedd;
+    --suave: #d2c6b0;
+    --borda: #4b4235;
+    --borda-controle: #94866f;
+    --acento: #f2b27a;
+    --acento-texto: #2b261f;
+    --perigo: #ff9a8f;
+    --sucesso: #6fd183;
+    --foco: #f2b27a;
+    --ouro: #f8b000;
+    --ouro-sobre: #1f1300;
+    --ouro-linha: #f8b000;
+  }
+}
+
+:root[data-estilo="pergaminho"][data-tema="escuro"] {
+  color-scheme: dark;
+
+  --fundo: #2b261f;
+  --superficie: #373028;
+  --texto: #f6eedd;
+  --suave: #d2c6b0;
+  --borda: #4b4235;
+  --borda-controle: #94866f;
+  --acento: #f2b27a;
+  --acento-texto: #2b261f;
+  --perigo: #ff9a8f;
+  --sucesso: #6fd183;
+  --foco: #f2b27a;
+  --ouro: #f8b000;
+  --ouro-sobre: #1f1300;
+  --ouro-linha: #f8b000;
+}
+
+/* ---------------------------------------------------------------------------------------------------------------- */
+/* Estilo "marinho": o azul-marinho e o dourado do ícone. As ações ficam em azul (marinho no claro, azul claro no      */
+/* escuro); o dourado fica só para "onde estou na música", como nos outros estilos.                                   */
+/* ---------------------------------------------------------------------------------------------------------------- */
+:root[data-estilo="marinho"] {
+  --fundo: #e9eef7;
+  --superficie: #ffffff;
+  --texto: #0b1d3f;
+  --suave: #44577a;
+  --borda: #cdd7e8;
+  --borda-controle: #6b7da0;
+  --acento: #173f7a;
+  --acento-texto: #ffffff;
+  --perigo: #b3261e;
+  --sucesso: #1b7a3a;
+  --foco: #173f7a;
+  --ouro: #f8b000;
+  --ouro-sobre: #0b1d3f;
+  --ouro-linha: #8a5800;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-estilo="marinho"]:not([data-tema="claro"]) {
+    color-scheme: dark;
+
+    --fundo: #041a3b;
+    --superficie: #0b2a56;
+    --texto: #eef3fb;
+    --suave: #b8c8e2;
+    --borda: #1d4175;
+    --borda-controle: #7390bd;
+    --acento: #8fbaf7;
+    --acento-texto: #041a3b;
+    --perigo: #ff9a92;
+    --sucesso: #62d67a;
+    --foco: #8fbaf7;
+    --ouro: #f8b000;
+    --ouro-sobre: #041a3b;
+    --ouro-linha: #f8b000;
+  }
+}
+
+:root[data-estilo="marinho"][data-tema="escuro"] {
+  color-scheme: dark;
+
+  --fundo: #041a3b;
+  --superficie: #0b2a56;
+  --texto: #eef3fb;
+  --suave: #b8c8e2;
+  --borda: #1d4175;
+  --borda-controle: #7390bd;
+  --acento: #8fbaf7;
+  --acento-texto: #041a3b;
+  --perigo: #ff9a92;
+  --sucesso: #62d67a;
+  --foco: #8fbaf7;
+  --ouro: #f8b000;
+  --ouro-sobre: #041a3b;
   --ouro-linha: #f8b000;
 }
