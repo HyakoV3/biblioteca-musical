@@ -255,19 +255,33 @@ Na aba **Ouvir**, um botão **Gravar** que grava enquanto o hino toca (por exemp
 com **parar**, **ouvir de volta**, **descartar** e **enviar**. Ao enviar, abre a folha de compartilhamento do sistema
 para escolher o WhatsApp e o instrutor; o app não precisa conhecer contatos.
 
+**Com fone ou sem fone (ideia do responsável, 2026-11-14):** o app percebe se há **fone de ouvido conectado**.
+- **Sem fone:** o app **só grava** o microfone. Não toca o hino, porque o som do alto-falante entraria no microfone
+  (eco e mistura ruim).
+- **Com fone:** o app **toca o hino no ouvido da pessoa** e **grava no mesmo celular**, na mesma hora. A pessoa toca ou
+  canta acompanhando a música, e o microfone não capta o hino.
+
 ### Perguntas em aberto
 
-1. **O que gravar?** Só o **microfone** (a voz ou o instrumento da pessoa), ou a **mistura** do microfone com o som do
-   hino? Tocar o hino no alto-falante e gravar pelo microfone gera eco e mistura ruim; como o som do hino é gerado dentro
-   do app, dá para **mixar o microfone com a saída do sintetizador direto**, sem passar pelo ar. Isso pede fone de
-   ouvido para a pessoa se ouvir sem eco. Precisa de decisão do responsável.
+1. **O que gravar?** Com a ideia acima, o hino no fone não vaza para o microfone, então a gravação pode levar **só a
+   voz ou o instrumento da pessoa**. Falta decidir se, **com fone**, o arquivo enviado deve levar também **o hino
+   misturado** (como o som do hino é gerado dentro do app, dá para mixar o microfone com a saída do sintetizador direto,
+   sem passar pelo ar) ou só o microfone. O instrutor talvez prefira ouvir os dois juntos. Precisa de decisão do
+   responsável.
+   **Cuidado com fone Bluetooth:** ele atrasa o som em 100 a 300 ms, e a pessoa tocaria **atrasada** em relação ao
+   hino que está gravado junto. Medir o atraso e compensar, ou avisar que o fone com fio é melhor (a I-13 tem a mesma
+   questão).
 2. **Formato do arquivo.** O WhatsApp precisa conseguir tocar o áudio recebido; o formato gerado pelo navegador
    (por exemplo WebM/Opus) pode não ser aceito, e talvez seja preciso converter (por exemplo para M4A ou OGG/Opus).
    Não verificado.
 3. **Onde ficam as gravações** e por quanto tempo; apagar depois de enviar?
 4. **Quem grava.** Há jovens e menores entre os músicos: definir o aviso de privacidade (as gravações ficam só no
    aparelho; o app não envia nada sozinho).
-5. **Iniciar a gravação junto com o hino** ou separado (a pessoa aperta Gravar e depois Tocar)?
+5. **Iniciar a gravação junto com o hino** ou separado (a pessoa aperta Gravar e depois Tocar)? Sem fone não há hino
+   tocando, então só vale a segunda forma.
+6. **Como saber que há fone?** O navegador não diz com segurança: `enumerateDevices()` lista as saídas e o evento
+   `devicechange` avisa das trocas, mas num WebView pode ser preciso código nativo (no Android, `AudioManager`).
+   Não verificado. Ver também a I-13, que precisa da mesma detecção.
 
 ### Impacto técnico (hipóteses, não verificadas)
 
@@ -804,6 +818,70 @@ estrofe da vez); na **partitura**, o compasso ou a nota atual, com a página rol
   a música dentro de meio compasso.
 - Pausar, continuar e trocar o andamento na pausa mantêm o destaque certo.
 - Hino sem sincronia continua mostrando a letra normalmente, sem erro.
+
+---
+
+## I-13 — Afinador: dar o tom e mostrar se a nota está baixa ou alta
+
+- **Status:** anotada
+- **Origem:** pedido do responsável, 2026-11-14.
+- **Prioridade:** a definir
+
+### O que se deseja (nas palavras do responsável)
+
+Um **afinador** que **dá o tom** e, se a pessoa estiver de **fone de ouvido**, oferece **escutar o som** do instrumento
+ou da voz e mostrar se está **baixo ou alto**, num **medidor (gauge) parecido com o de um acelerador**, com o ponteiro
+indo para baixo ou para cima da nota certa.
+
+### Ideia de comportamento (a validar)
+
+Duas funções na mesma tela:
+
+1. **Dar o tom.** O app toca uma nota de referência: o **lá** (padrão 440 Hz) ou uma nota escolhida. Para o músico de
+   hinário, a nota mais útil é a **tonalidade do hino** (o campo `tonalidade` já existe no hino), então a tela pode
+   oferecer "dar o tom do hino". Sai pelo mesmo sintetizador do app, com os timbres que já existem.
+2. **Ouvir e medir** (só **com fone**). O app escuta o microfone, descobre a nota e mostra **quantos cents** ela está
+   acima ou abaixo (1 semitom = 100 cents), num **ponteiro** que vai de "baixo" a "alto" passando pelo centro
+   ("afinado"). O ponteiro não pode depender só de cor: leva também o número em cents e a palavra ("baixo", "alto",
+   "afinado"), e respeita "reduzir movimento".
+
+**Por que o fone:** se o app toca a nota de referência no alto-falante e escuta ao mesmo tempo, o microfone capta a
+própria nota de referência e confunde a medição. Com fone, a pessoa **ouve a referência no ouvido** e o microfone capta
+**só o instrumento**. Sem fone, o app oferece uma função por vez (dar o tom **ou** escutar). É a mesma ideia do
+gravador (I-03).
+
+### Perguntas em aberto
+
+1. **Instrumentos que transpõem** (trompete e clarinete em si bemol, sax em mi bemol, trompa em fá): mostrar a nota
+   **tocada** (a que o músico lê) ou a **real**? O app já transpõe os hinos em semitons, então talvez haja
+   uma opção "instrumento" que ajuste a leitura.
+2. **Afinação de referência** configurável (440 ou 442 Hz), e **temperamento** igual (o usual).
+3. **Voz cantada** também, ou só instrumentos? A voz oscila mais e o ponteiro precisa de suavização.
+4. **Onde fica:** um atalho na aba Ouvir, uma tela própria ou dentro de Ajustes?
+
+### Impacto técnico (hipóteses, não verificadas)
+
+- **Detecção de altura (pitch):** algoritmos conhecidos são a autocorrelação, o **YIN** e o **McLeod (MPM)**. Antes de
+  escrever qualquer coisa, **pesquisar bibliotecas** que já fazem isso no navegador (por exemplo `pitchy`, de MPM, e
+  `pitchfinder`, de YIN), conferindo licença, tamanho e desempenho no celular, como foi feito com os sons.
+- **Microfone:** `getUserMedia` e a permissão `RECORD_AUDIO`, com o mesmo teste no Tauri Mobile da I-03. A permissão é
+  pedida só ao usar a escuta, com explicação, e o app funciona normalmente se for negada (dar o tom não precisa dela).
+- **Detecção de fone:** o mesmo problema da I-03 (pergunta 6): `enumerateDevices()` e `devicechange`, ou código nativo.
+- **Fone Bluetooth:** o atraso (100 a 300 ms) não atrapalha medir a nota, mas **a referência chega atrasada** ao ouvido.
+  Para afinar não importa, para o gravador importa.
+- **Baixa latência:** o ponteiro precisa reagir em poucas dezenas de milissegundos; ler o áudio com `AudioWorklet`, e
+  não com temporizadores, para ele não ficar "pulando".
+- **Ruído e harmônicos:** metais e saxofones têm harmônicos fortes que confundem algoritmos simples; testar com
+  instrumentos reais no celular do responsável.
+
+### Critérios de aceitação (propostos)
+
+- O app toca o lá 440 Hz e a tonalidade de um hino de amostra, com o timbre escolhido.
+- Com um tom puro de 440 Hz vindo de outra fonte, o medidor marca "afinado" (±5 cents); a 20 cents abaixo ou acima,
+  marca "baixo" ou "alto" com o número certo.
+- Sem fone, o app não tenta tocar e escutar ao mesmo tempo e diz por quê.
+- Sem a permissão de microfone, dar o tom continua funcionando.
+- O medidor se entende sem cor (número e palavra) e com "reduzir movimento".
 
 ---
 

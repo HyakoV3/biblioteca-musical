@@ -98,5 +98,7 @@ sem ir para o Git.
 
 ## Ideias sem etapa ainda
 
-Entram conforme o retorno dos testes: gravador de áudio (I-03), variante "pergaminho" (I-02), modo de baixa visão
-(I-06), correção de letras (I-05).
+Entram conforme o retorno dos testes: gravador de áudio (I-03, com fone toca o hino no ouvido e grava; sem fone só
+grava), afinador (I-13, dá o tom e mostra num medidor se a nota está baixa ou alta), variante "pergaminho" (I-02),
+modo de baixa visão (I-06), correção de letras (I-05). Gravador e afinador dividem a detecção de fone e a permissão de
+microfone: convém decidir os dois juntos.
