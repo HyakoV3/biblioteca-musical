@@ -22,9 +22,10 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
       de cargo. Quatro tarefas: **App** (`npm run check`, `npm test` e os verificadores de tradução, movimento e
       contraste); **Conversor** (`cargo test` em `tools/mscx2json`); **Leitor** (`cargo test --lib` em `src-tauri`, com as
       bibliotecas do Tauri instaladas no Ubuntu 24.04); **Karaokê num Chrome de verdade** (`npm run test:e2e`).
-- [ ] **Limpeza do Rust para ligar mais verificações no CI.** Hoje `cargo fmt --check` e `cargo clippy -- -D warnings`
-      **falham** no conversor (formatação do `main.rs` e duas sugestões do clippy sobre `if` que podem ser juntados),
-      então ficaram de fora do CI para ele não nascer vermelho. Formatar e corrigir num PR à parte, e depois ligar os dois.
+- [x] **Limpeza do Rust e verificações no CI** (2026-11-15). O conversor e o `src-tauri` foram formatados (`cargo fmt`), as
+      duas sugestões do clippy sobre `if` juntáveis foram aplicadas, e o CI agora roda `cargo fmt --check` e
+      `cargo clippy --all-targets -- -D warnings` nos dois. Se uma versão nova do Rust trouxer um aviso novo do clippy, o CI
+      vermelho é esperado: corrija o aviso (ou, se for falso positivo, silencie-o no ponto exato com `#[allow(...)]`).
 - [ ] Se o teste de ponta a ponta ficar lento ou instável, restringi-lo à `main` e ao disparo manual.
 - [ ] **APK no GitHub, sob demanda e em release (tag `v*`):** rascunho em
       [`release-e-apk-no-github.md`](release-e-apk-no-github.md), para revisar antes de construir.

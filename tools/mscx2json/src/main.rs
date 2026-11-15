@@ -73,7 +73,8 @@ struct Marca {
 }
 
 fn filho<'a, 'i>(n: Node<'a, 'i>, nome: &str) -> Option<Node<'a, 'i>> {
-    n.children().find(|c| c.is_element() && c.tag_name().name() == nome)
+    n.children()
+        .find(|c| c.is_element() && c.tag_name().name() == nome)
 }
 
 fn texto<'a, 'i>(n: Node<'a, 'i>, nome: &str) -> Option<&'a str> {
@@ -120,7 +121,8 @@ fn duracao(n: Node, compasso: f64) -> Result<f64, String> {
 fn e_apojatura(chord: Node) -> bool {
     chord.children().any(|c| {
         let nome = c.tag_name().name();
-        c.is_element() && (nome.starts_with("grace") || nome == "acciaccatura" || nome == "appoggiatura")
+        c.is_element()
+            && (nome.starts_with("grace") || nome == "acciaccatura" || nome == "appoggiatura")
     })
 }
 
@@ -210,7 +212,9 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                 let real: f64 = numero(c, "actualNotes").unwrap_or(3.0);
                 est.tuplos.push(normal / real);
                 // Formato aninhado: os acordes ficam dentro de <Tuplet>.
-                if c.children().any(|x| x.has_tag_name("Chord") || x.has_tag_name("Rest")) {
+                if c.children()
+                    .any(|x| x.has_tag_name("Chord") || x.has_tag_name("Rest"))
+                {
                     percorrer(c, t, est)?;
                     est.tuplos.pop();
                 }
@@ -223,8 +227,17 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
             "Breath" => est.respiracoes.push(*t),
             // O "*" aparece como texto de pauta (<StaffText><text>) ou como cifra (<Harmony><name>), conforme a partitura.
             "StaffText" | "Harmony" => {
-                let rotulo = if c.has_tag_name("Harmony") { "name" } else { "text" };
-                if filho(c, rotulo).map(texto_completo).as_deref().map(str::trim) == Some("*") {
+                let rotulo = if c.has_tag_name("Harmony") {
+                    "name"
+                } else {
+                    "text"
+                };
+                if filho(c, rotulo)
+                    .map(texto_completo)
+                    .as_deref()
+                    .map(str::trim)
+                    == Some("*")
+                {
                     est.asteriscos.push(*t);
                 }
             }
@@ -247,7 +260,9 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                 }
                 let voz = voz_do(c, est);
                 for l in c.children().filter(|x| x.has_tag_name("Lyrics")) {
-                    let sil = filho(l, "text").map(texto_completo).filter(|t| !t.is_empty());
+                    let sil = filho(l, "text")
+                        .map(texto_completo)
+                        .filter(|t| !t.is_empty());
                     if let Some(sil) = sil {
                         est.silabas.push(Silaba {
                             t: *t,
@@ -259,7 +274,11 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                     }
                 }
                 if !notas.is_empty() {
-                    est.saida.entry(voz).or_default().push(Acorde { inicio: *t, dur, notas });
+                    est.saida.entry(voz).or_default().push(Acorde {
+                        inicio: *t,
+                        dur,
+                        notas,
+                    });
                 }
                 *t += dur;
             }
@@ -270,15 +289,13 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
 }
 
 fn registrar(tr: &mut Trilha, inicio: f64, dur: f64, midi: u8, fim_liga: bool, ini_liga: bool) {
-    if fim_liga {
-        if let Some(i) = tr.pendentes.iter().position(|(m, _)| *m == midi) {
-            let (_, idx) = tr.pendentes.remove(i);
-            tr.notas[idx].dur += dur;
-            if ini_liga {
-                tr.pendentes.push((midi, idx));
-            }
-            return;
+    if fim_liga && let Some(i) = tr.pendentes.iter().position(|(m, _)| *m == midi) {
+        let (_, idx) = tr.pendentes.remove(i);
+        tr.notas[idx].dur += dur;
+        if ini_liga {
+            tr.pendentes.push((midi, idx));
         }
+        return;
     }
     tr.notas.push(Evento { inicio, dur, midi });
     if ini_liga {
@@ -315,7 +332,9 @@ fn dividir_em_vozes(camadas: Vec<Vec<Acorde>>, limite: Option<usize>) -> (Vec<Ve
     for w in cortes.windows(2) {
         let (a, b) = (w[0], w[1]);
         let mut ativos: Vec<usize> = (0..eventos.len())
-            .filter(|&i| chave(eventos[i].inicio) <= a && chave(eventos[i].inicio + eventos[i].dur) >= b)
+            .filter(|&i| {
+                chave(eventos[i].inicio) <= a && chave(eventos[i].inicio + eventos[i].dur) >= b
+            })
             .collect();
         if ativos.is_empty() {
             continue;
@@ -337,7 +356,11 @@ fn dividir_em_vozes(camadas: Vec<Vec<Acorde>>, limite: Option<usize>) -> (Vec<Ve
         let mut ultimo: Option<(usize, i64)> = None; // (nota de origem, fim)
         for (a, b, ativos) in &intervalos {
             let n = ativos.len();
-            let pos = if n > max && max > 1 { (r * (n - 1) + (max - 1) / 2) / (max - 1) } else { r.min(n - 1) };
+            let pos = if n > max && max > 1 {
+                (r * (n - 1) + (max - 1) / 2) / (max - 1)
+            } else {
+                r.min(n - 1)
+            };
             let id = ativos[pos];
             if matches!(ultimo, Some((i, fim)) if i == id && fim == *a) {
                 let e = evs.last_mut().unwrap();
@@ -388,7 +411,10 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<Str
         });
         // Só é duplicata a MESMA sílaba, no mesmo instante, vinda de OUTRA camada. Duas sílabas diferentes no
         // mesmo instante (ou na mesma camada) são texto de verdade e ficam.
-        if (sil.t - e.ultimo_t).abs() < EPS && sil.voz != e.ultima_voz && sil.texto == e.ultimo_texto {
+        if (sil.t - e.ultimo_t).abs() < EPS
+            && sil.voz != e.ultima_voz
+            && sil.texto == e.ultimo_texto
+        {
             continue;
         }
         e.ultimo_t = sil.t;
@@ -396,7 +422,11 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<Str
         e.ultima_voz = sil.voz;
         // O autor às vezes escreve o número da estrofe dentro da primeira sílaba ("1. Pa"): o app já numera.
         let primeira = e.linhas.iter().all(|l| l.is_empty());
-        let texto = if primeira { sem_numero_inicial(&sil.texto) } else { sil.texto.as_str() };
+        let texto = if primeira {
+            sem_numero_inicial(&sil.texto)
+        } else {
+            sil.texto.as_str()
+        };
         if texto.is_empty() {
             continue;
         }
@@ -418,7 +448,13 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<Str
         // Posições em unidades UTF-16: é como o JavaScript do app indexa o texto.
         let de = linha.encode_utf16().count();
         linha.push_str(texto);
-        marcas.push(Marca { verso: sil.verso, linha: indice, de, ate: de + texto.encode_utf16().count(), t: sil.t });
+        marcas.push(Marca {
+            verso: sil.verso,
+            linha: indice,
+            de,
+            ate: de + texto.encode_utf16().count(),
+            t: sil.t,
+        });
         e.espaco = !sil.continua;
     }
 
@@ -428,7 +464,11 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<Str
             saida.push(String::new());
         }
         for (i, l) in e.linhas.into_iter().filter(|l| !l.is_empty()).enumerate() {
-            saida.push(if i == 0 { format!("{}. {l}", verso + 1) } else { l });
+            saida.push(if i == 0 {
+                format!("{}. {l}", verso + 1)
+            } else {
+                l
+            });
         }
     }
     (saida, marcas)
@@ -450,7 +490,11 @@ fn instante_na_passada(t: f64, segmentos: &[(usize, usize)], inicios: &[f64]) ->
 
 /// Agrupa as marcas por estrofe e linha, com o tempo na régua da passada. Estrofes sem nenhum trecho nessa passada
 /// ficam de fora; linhas sem trecho ficam vazias (o índice continua o da letra).
-fn estrofes_da_passada(marcas: &[Marca], segmentos: &[(usize, usize)], inicios: &[f64]) -> Vec<EstrofeSinc> {
+fn estrofes_da_passada(
+    marcas: &[Marca],
+    segmentos: &[(usize, usize)],
+    inicios: &[f64],
+) -> Vec<EstrofeSinc> {
     let mut linhas_por_verso: BTreeMap<u32, usize> = BTreeMap::new();
     for m in marcas {
         let n = linhas_por_verso.entry(m.verso).or_insert(0);
@@ -467,7 +511,10 @@ fn estrofes_da_passada(marcas: &[Marca], segmentos: &[(usize, usize)], inicios: 
             }
         }
         if algum {
-            saida.push(EstrofeSinc { estrofe: verso + 1, linhas });
+            saida.push(EstrofeSinc {
+                estrofe: verso + 1,
+                linhas,
+            });
         }
     }
     saida
@@ -486,7 +533,10 @@ fn texto_completo(n: Node) -> String {
                 continue; // nome do símbolo, não é texto
             }
             s.push_str(d.text().unwrap_or(""));
-        } else if d.has_tag_name("sym") && d.text().is_some_and(|t| t.trim().starts_with("lyricsElision")) {
+        } else if d.has_tag_name("sym")
+            && d.text()
+                .is_some_and(|t| t.trim().starts_with("lyricsElision"))
+        {
             s.push(' ');
         }
     }
@@ -507,8 +557,12 @@ fn sem_numero_inicial(s: &str) -> &str {
 fn texto_de_estilo(doc: &Document, estilos: &[&str]) -> Vec<String> {
     let mut achados: Vec<(usize, String)> = vec![];
     for n in doc.descendants().filter(|n| n.has_tag_name("Text")) {
-        let Some(estilo) = texto(n, "style") else { continue };
-        let Some(pos) = estilos.iter().position(|e| *e == estilo) else { continue };
+        let Some(estilo) = texto(n, "style") else {
+            continue;
+        };
+        let Some(pos) = estilos.iter().position(|e| *e == estilo) else {
+            continue;
+        };
         if let Some(t) = filho(n, "text") {
             let t = texto_completo(t);
             if !t.is_empty() {
@@ -579,11 +633,15 @@ fn registrar_marcas(est: &mut Estrutura, compasso: Node, ci: usize) {
             "endRepeat" => est.fim_repeticao = Some(ci),
             "Volta" => {
                 est.voltas.push((ci, None));
-                est.ids_volta.push(n.attribute("id").unwrap_or("").to_string());
+                est.ids_volta
+                    .push(n.attribute("id").unwrap_or("").to_string());
             }
             // O colchete da volta termina no começo do compasso onde aparece o seu endSpanner.
             "endSpanner" => {
-                if let Some(i) = n.attribute("id").and_then(|id| est.ids_volta.iter().position(|v| v == id)) {
+                if let Some(i) = n
+                    .attribute("id")
+                    .and_then(|id| est.ids_volta.iter().position(|v| v == id))
+                {
                     est.voltas[i].1 = Some(ci);
                 }
             }
@@ -632,7 +690,10 @@ fn selecionar(acordes: &[Acorde], inicios: &[f64], segmentos: &[(usize, usize)])
     let mut acumulado = 0.0;
     for &(de, ate) in segmentos {
         let (t0, t1) = (inicios[de], inicios[ate]);
-        for a in acordes.iter().filter(|a| a.inicio >= t0 - EPS && a.inicio < t1 - EPS) {
+        for a in acordes
+            .iter()
+            .filter(|a| a.inicio >= t0 - EPS && a.inicio < t1 - EPS)
+        {
             let mut novo = a.clone();
             novo.inicio = a.inicio - t0 + acumulado;
             novo.dur = a.dur.min(t1 - a.inicio);
@@ -658,7 +719,10 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
             .or_else(|| filho(parte, "Instrument").and_then(|i| texto(i, "longName")))
             .unwrap_or("")
             .to_string();
-        let pautas: Vec<_> = parte.children().filter(|c| c.has_tag_name("Staff")).collect();
+        let pautas: Vec<_> = parte
+            .children()
+            .filter(|c| c.has_tag_name("Staff"))
+            .collect();
         for (i, p) in pautas.iter().enumerate() {
             if let Some(id) = p.attribute("id") {
                 info.insert(id, (nome.clone(), i + 1, pautas.len()));
@@ -693,16 +757,20 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
         let mut silabas: Vec<Silaba> = vec![];
         let mut respiracoes: Vec<f64> = vec![];
 
-        for (ci, compasso) in pauta.children().filter(|c| c.has_tag_name("Measure")).enumerate() {
+        for (ci, compasso) in pauta
+            .children()
+            .filter(|c| c.has_tag_name("Measure"))
+            .enumerate()
+        {
             // A estrutura de repetição é lida só da primeira pauta (as outras repetem as mesmas marcas).
             if idx_pauta == 0 {
                 estrutura.inicios.push(inicio_compasso);
                 registrar_marcas(&mut estrutura, compasso, ci);
             }
-            if let Some(ts) = compasso.descendants().find(|n| n.has_tag_name("TimeSig")) {
-                if let (Some(n), Some(d)) = (numero::<f64>(ts, "sigN"), numero::<f64>(ts, "sigD")) {
-                    (sig_n, sig_d) = (n, d);
-                }
+            if let Some(ts) = compasso.descendants().find(|n| n.has_tag_name("TimeSig"))
+                && let (Some(n), Some(d)) = (numero::<f64>(ts, "sigN"), numero::<f64>(ts, "sigD"))
+            {
+                (sig_n, sig_d) = (n, d);
             }
             let comp = compasso
                 .attribute("len")
@@ -719,7 +787,11 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
                 fontes.push((0, true, compasso));
             }
             let desloc = usize::from(solta);
-            for (k, v) in compasso.children().filter(|c| c.has_tag_name("voice")).enumerate() {
+            for (k, v) in compasso
+                .children()
+                .filter(|c| c.has_tag_name("voice"))
+                .enumerate()
+            {
                 fontes.push((k + desloc, false, v));
             }
 
@@ -751,16 +823,32 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
         if letra.is_empty() && !silabas.is_empty() {
             (letra, marcas) = montar_letra(silabas, respiracoes);
         }
-        let base = if nome_parte.is_empty() { format!("Voz {id}") } else { nome_parte.clone() };
-        let sufixo = if total > 1 { format!(" (pauta {pos_pauta})") } else { String::new() };
+        let base = if nome_parte.is_empty() {
+            format!("Voz {id}")
+        } else {
+            nome_parte.clone()
+        };
+        let sufixo = if total > 1 {
+            format!(" (pauta {pos_pauta})")
+        } else {
+            String::new()
+        };
         let partes: Vec<&str> = base.split(" e ").collect();
         let limite = (partes.len() > 1).then_some(partes.len());
         let camadas: Vec<Vec<Acorde>> = da_pauta.into_values().collect();
         // Com o padrão de final reconhecido, geramos as notas da passada normal e as da passada do final.
         let (normal, final_) = match &plano {
             Some(p) => (
-                camadas.iter().map(|c| selecionar(c, &estrutura.inicios, &p.normal)).collect::<Vec<_>>(),
-                Some(camadas.iter().map(|c| selecionar(c, &estrutura.inicios, &p.final_)).collect::<Vec<_>>()),
+                camadas
+                    .iter()
+                    .map(|c| selecionar(c, &estrutura.inicios, &p.normal))
+                    .collect::<Vec<_>>(),
+                Some(
+                    camadas
+                        .iter()
+                        .map(|c| selecionar(c, &estrutura.inicios, &p.final_))
+                        .collect::<Vec<_>>(),
+                ),
             ),
             None => (camadas, None),
         };
@@ -782,7 +870,10 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
         }
         let max = linhas.len();
         for (r, notas) in linhas.into_iter().enumerate() {
-            vozes.push(Voz { nome: nome_da_voz(r, max), notas });
+            vozes.push(Voz {
+                nome: nome_da_voz(r, max),
+                notas,
+            });
         }
 
         if let Some(fc) = final_ {
@@ -794,7 +885,10 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
             }
             if linhas_f.len() == max {
                 for (r, notas) in linhas_f.into_iter().enumerate() {
-                    vozes_final.push(Voz { nome: nome_da_voz(r, max), notas });
+                    vozes_final.push(Voz {
+                        nome: nome_da_voz(r, max),
+                        notas,
+                    });
                 }
             } else {
                 // As vozes do final precisam corresponder uma a uma às da passada normal.
@@ -808,9 +902,15 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
     }
 
     if let Some(p) = &plano {
-        avisos.push(format!("estrutura de repetição reconhecida: {}", p.descricao));
+        avisos.push(format!(
+            "estrutura de repetição reconhecida: {}",
+            p.descricao
+        ));
     } else if doc.descendants().any(|n| {
-        matches!(n.tag_name().name(), "startRepeat" | "endRepeat" | "Jump" | "Volta")
+        matches!(
+            n.tag_name().name(),
+            "startRepeat" | "endRepeat" | "Jump" | "Volta"
+        )
     }) {
         avisos.push(
             "há repetições/saltos numa estrutura não reconhecida: a partitura é lida uma vez, em ordem".to_string(),
@@ -831,7 +931,10 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
             .filter(|_| passada_final.is_some())
             .map(|p| estrofes_da_passada(&marcas, &p.final_, &estrutura.inicios))
             .filter(|f| !f.is_empty());
-        (!normal.is_empty()).then_some(Sincronia { normal, passada_final: final_ })
+        (!normal.is_empty()).then_some(Sincronia {
+            normal,
+            passada_final: final_,
+        })
     };
 
     // Introdução: do começo até o primeiro "*" (hipótese a confirmar com o responsável). Sai das vozes já
@@ -840,7 +943,10 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
     let introducao = if fim_intro.is_finite() && fim_intro > 0.0 {
         let intro = recortar_inicio(&vozes, fim_intro);
         if intro.is_some() {
-            avisos.push(format!("introdução: do começo até o marcador * ({} batidas)", arredondar(fim_intro)));
+            avisos.push(format!(
+                "introdução: do começo até o marcador * ({} batidas)",
+                arredondar(fim_intro)
+            ));
         }
         intro
     } else {
@@ -872,7 +978,18 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
     }
     let autoria = (!nomes.is_empty()).then(|| nomes.join(" · "));
 
-    Ok(Hino { numero: numero_hino, titulo, autoria, andamento, vozes, passada_final, introducao, letra, sincronia, avisos })
+    Ok(Hino {
+        numero: numero_hino,
+        titulo,
+        autoria,
+        andamento,
+        vozes,
+        passada_final,
+        introducao,
+        letra,
+        sincronia,
+        avisos,
+    })
 }
 
 /// Recorta o começo de cada voz, até `ate` batidas: notas que começam antes entram, e as que atravessam o corte
@@ -887,11 +1004,18 @@ fn recortar_inicio(vozes: &[Voz], ate: f64) -> Option<Vec<Voz>> {
                 .notas
                 .iter()
                 .filter(|n| n.inicio < ate - EPS)
-                .map(|n| Evento { inicio: n.inicio, dur: n.dur.min(ate - n.inicio), midi: n.midi })
+                .map(|n| Evento {
+                    inicio: n.inicio,
+                    dur: n.dur.min(ate - n.inicio),
+                    midi: n.midi,
+                })
                 .collect(),
         })
         .collect();
-    recorte.iter().any(|v| !v.notas.is_empty()).then_some(recorte)
+    recorte
+        .iter()
+        .any(|v| !v.notas.is_empty())
+        .then_some(recorte)
 }
 
 pub fn para_json(h: &Hino) -> Value {
@@ -1007,7 +1131,10 @@ fn executar(args: Vec<String>) -> Result<(), String> {
     let mut hinos: Vec<Hino> = vec![];
     for arq in arquivos {
         let Some(n) = numero_do_arquivo(&arq) else {
-            eprintln!("aviso: {} ignorado (nome fora do padrão hino-<número>.mscx)", arq.display());
+            eprintln!(
+                "aviso: {} ignorado (nome fora do padrão hino-<número>.mscx)",
+                arq.display()
+            );
             continue;
         };
         let xml = std::fs::read_to_string(&arq).map_err(|e| format!("{}: {e}", arq.display()))?;
@@ -1030,7 +1157,10 @@ fn executar(args: Vec<String>) -> Result<(), String> {
         "hinario": cabecalho(&id, &nome, idioma.as_deref()),
         "hinos": hinos.iter().map(para_json).collect::<Vec<_>>(),
     });
-    println!("{}", serde_json::to_string(&saida).map_err(|e| e.to_string())?);
+    println!(
+        "{}",
+        serde_json::to_string(&saida).map_err(|e| e.to_string())?
+    );
     Ok(())
 }
 
@@ -1055,7 +1185,9 @@ mod testes {
         )
     }
     fn acorde(tipo: &str, pitch: u8) -> String {
-        format!("<Chord><durationType>{tipo}</durationType><Note><pitch>{pitch}</pitch></Note></Chord>")
+        format!(
+            "<Chord><durationType>{tipo}</durationType><Note><pitch>{pitch}</pitch></Note></Chord>"
+        )
     }
     fn pauta(id: u32, compassos: &str) -> String {
         format!(r#"<Staff id="{id}">{compassos}</Staff>"#)
@@ -1066,19 +1198,37 @@ mod testes {
     const C44: &str = "<TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig>";
 
     fn notas(h: &Hino, voz: usize) -> Vec<(f64, f64, u8)> {
-        h.vozes[voz].notas.iter().map(|n| (n.inicio, n.dur, n.midi)).collect()
+        h.vozes[voz]
+            .notas
+            .iter()
+            .map(|n| (n.inicio, n.dur, n.midi))
+            .collect()
     }
 
     #[test]
     fn notas_simples_titulo_e_andamento() {
         let corpo = format!(
             "{C44}<Tempo><tempo>1.5</tempo></Tempo>{}{}{}{}",
-            acorde("quarter", 72), acorde("quarter", 74), acorde("quarter", 76), acorde("quarter", 77)
+            acorde("quarter", 72),
+            acorde("quarter", 74),
+            acorde("quarter", 76),
+            acorde("quarter", 77)
         );
         let h = converter(&doc(&parte(1, "Soprano"), &pauta(1, &compasso(&corpo))), 7).unwrap();
-        assert_eq!((h.numero, h.titulo.as_str(), h.andamento), (7, "Título fictício", Some(90)));
+        assert_eq!(
+            (h.numero, h.titulo.as_str(), h.andamento),
+            (7, "Título fictício", Some(90))
+        );
         assert_eq!(h.vozes[0].nome, "Soprano");
-        assert_eq!(notas(&h, 0), vec![(0.0, 1.0, 72), (1.0, 1.0, 74), (2.0, 1.0, 76), (3.0, 1.0, 77)]);
+        assert_eq!(
+            notas(&h, 0),
+            vec![
+                (0.0, 1.0, 72),
+                (1.0, 1.0, 74),
+                (2.0, 1.0, 76),
+                (3.0, 1.0, 77)
+            ]
+        );
     }
 
     #[test]
@@ -1088,21 +1238,37 @@ mod testes {
             acorde("eighth", 62)
         );
         let c2 = acorde("whole", 64);
-        let h = converter(&doc(&parte(1, "S"), &pauta(1, &(compasso(&c1) + &compasso(&c2)))), 1).unwrap();
-        assert_eq!(notas(&h, 0), vec![(0.0, 1.5, 60), (1.5, 0.5, 62), (4.0, 4.0, 64)]);
+        let h = converter(
+            &doc(&parte(1, "S"), &pauta(1, &(compasso(&c1) + &compasso(&c2)))),
+            1,
+        )
+        .unwrap();
+        assert_eq!(
+            notas(&h, 0),
+            vec![(0.0, 1.5, 60), (1.5, 0.5, 62), (4.0, 4.0, 64)]
+        );
     }
 
     #[test]
     fn pausa_de_compasso_inteiro_usa_o_tamanho_do_compasso() {
-        let c1 = format!("{C44}<Rest><durationType>measure</durationType><duration>4/4</duration></Rest>");
+        let c1 = format!(
+            "{C44}<Rest><durationType>measure</durationType><duration>4/4</duration></Rest>"
+        );
         let c2 = acorde("quarter", 60);
-        let h = converter(&doc(&parte(1, "S"), &pauta(1, &(compasso(&c1) + &compasso(&c2)))), 1).unwrap();
+        let h = converter(
+            &doc(&parte(1, "S"), &pauta(1, &(compasso(&c1) + &compasso(&c2)))),
+            1,
+        )
+        .unwrap();
         assert_eq!(notas(&h, 0), vec![(4.0, 1.0, 60)]);
     }
 
     #[test]
     fn anacruse_com_len() {
-        let c1 = format!(r#"<Measure len="1/4"><voice>{C44}{}</voice></Measure>"#, acorde("quarter", 60));
+        let c1 = format!(
+            r#"<Measure len="1/4"><voice>{C44}{}</voice></Measure>"#,
+            acorde("quarter", 60)
+        );
         let c2 = compasso(&acorde("whole", 62));
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &(c1 + &c2))), 1).unwrap();
         assert_eq!(notas(&h, 0), vec![(0.0, 1.0, 60), (1.0, 4.0, 62)]);
@@ -1111,7 +1277,12 @@ mod testes {
     #[test]
     fn tercina_estilo_marcador_e_aninhado() {
         let tupla = "<Tuplet><normalNotes>2</normalNotes><actualNotes>3</actualNotes></Tuplet>";
-        let tres = format!("{}{}{}", acorde("eighth", 60), acorde("eighth", 62), acorde("eighth", 64));
+        let tres = format!(
+            "{}{}{}",
+            acorde("eighth", 60),
+            acorde("eighth", 62),
+            acorde("eighth", 64)
+        );
         let plano = format!("{C44}{tupla}{tres}<endTuplet/>{}", acorde("quarter", 65));
         let aninhado = format!(
             "{C44}<Tuplet><normalNotes>2</normalNotes><actualNotes>3</actualNotes>{tres}</Tuplet>{}",
@@ -1121,7 +1292,10 @@ mod testes {
             let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso(&corpo))), 1).unwrap();
             let n = notas(&h, 0);
             assert!((n[1].0 - 1.0 / 3.0).abs() < 1e-3 && (n[1].1 - 1.0 / 3.0).abs() < 1e-3);
-            assert!((n[3].0 - 1.0).abs() < 1e-3, "a nota depois da tercina começa em 1: {n:?}");
+            assert!(
+                (n[3].0 - 1.0).abs() < 1e-3,
+                "a nota depois da tercina começa em 1: {n:?}"
+            );
         }
     }
 
@@ -1153,9 +1327,17 @@ mod testes {
 
     #[test]
     fn musescore_2_voz_solta_no_compasso() {
-        let corpo = format!("{C44}<Tempo><tempo>1</tempo></Tempo>{}{}", acorde("half", 60), acorde("half", 62));
+        let corpo = format!(
+            "{C44}<Tempo><tempo>1</tempo></Tempo>{}{}",
+            acorde("half", 60),
+            acorde("half", 62)
+        );
         let extra = format!("<voice>{}</voice>", acorde("whole", 55));
-        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&corpo, &extra))), 1).unwrap();
+        let h = converter(
+            &doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&corpo, &extra))),
+            1,
+        )
+        .unwrap();
         assert_eq!(h.andamento, Some(60));
         let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
         assert_eq!(nomes, vec!["S (1)", "S (2)"]);
@@ -1170,9 +1352,14 @@ mod testes {
         let corpo = format!(
             "{C44}{}{}<tick>0</tick><Chord><track>1</track><durationType>whole</durationType><Note><pitch>55</pitch></Note></Chord>\
              <tick>960</tick><Chord><track>2</track><durationType>half</durationType><Note><pitch>48</pitch></Note></Chord>",
-            acorde("half", 60), acorde("half", 62)
+            acorde("half", 60),
+            acorde("half", 62)
         );
-        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&corpo, ""))), 1).unwrap();
+        let h = converter(
+            &doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&corpo, ""))),
+            1,
+        )
+        .unwrap();
         let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
         assert_eq!(nomes, vec!["S (1)", "S (2)", "S (3)"]);
         assert_eq!(notas(&h, 0), vec![(0.0, 2.0, 60), (2.0, 2.0, 62)]);
@@ -1185,12 +1372,22 @@ mod testes {
     fn limita_vozes_ao_nome_da_pauta_e_avisa() {
         let tres = "<Chord><durationType>whole</durationType><Note><pitch>60</pitch></Note><Note><pitch>64</pitch></Note><Note><pitch>67</pitch></Note></Chord>";
         let c = format!("{C44}{tres}");
-        let h = converter(&doc(&parte(1, "Parte I e II"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap();
+        let h = converter(
+            &doc(&parte(1, "Parte I e II"), &pauta(1, &compasso_ms2(&c, ""))),
+            1,
+        )
+        .unwrap();
         let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
         assert_eq!(nomes, vec!["Parte I", "Parte II"]);
         assert_eq!(notas(&h, 0), vec![(0.0, 4.0, 67)]); // mais aguda
         assert_eq!(notas(&h, 1), vec![(0.0, 4.0, 60)]); // mais grave
-        assert!(h.avisos.iter().any(|a| a.contains("notas do meio omitidas")), "{:?}", h.avisos);
+        assert!(
+            h.avisos
+                .iter()
+                .any(|a| a.contains("notas do meio omitidas")),
+            "{:?}",
+            h.avisos
+        );
     }
 
     #[test]
@@ -1200,11 +1397,17 @@ mod testes {
                 .iter()
                 .map(|(sy, no, t)| {
                     let no = no.map(|n| format!("<no>{n}</no>")).unwrap_or_default();
-                    let sy = if sy.is_empty() { String::new() } else { format!("<syllabic>{sy}</syllabic>") };
+                    let sy = if sy.is_empty() {
+                        String::new()
+                    } else {
+                        format!("<syllabic>{sy}</syllabic>")
+                    };
                     format!("<Lyrics>{no}{sy}<text>{t}</text></Lyrics>")
                 })
                 .collect();
-            format!("<Chord><durationType>quarter</durationType>{ls}<Note><pitch>{pitch}</pitch></Note></Chord>")
+            format!(
+                "<Chord><durationType>quarter</durationType>{ls}<Note><pitch>{pitch}</pitch></Note></Chord>"
+            )
         };
         let c = format!(
             "{C44}{}{}<Breath/>{}",
@@ -1223,7 +1426,10 @@ mod testes {
         // e "b" (t=1): no arquivo vêm DEPOIS de "c", mas no tempo vêm antes.
         let l = |t: &str| format!("<Lyrics><text>{t}</text></Lyrics>");
         let ch = |t: &str, p: u8, extra: &str| {
-            format!("<Chord>{extra}<durationType>quarter</durationType>{}<Note><pitch>{p}</pitch></Note></Chord>", l(t))
+            format!(
+                "<Chord>{extra}<durationType>quarter</durationType>{}<Note><pitch>{p}</pitch></Note></Chord>",
+                l(t)
+            )
         };
         let c = format!(
             "{C44}<Rest><durationType>half</durationType></Rest>{}<tick>0</tick>{}{}",
@@ -1239,9 +1445,16 @@ mod testes {
     fn letra_duplicada_em_duas_camadas_vale_uma_vez() {
         let l = |t: &str| format!("<Lyrics><text>{t}</text></Lyrics>");
         let ch = |t: &str, p: u8, extra: &str| {
-            format!("<Chord>{extra}<durationType>quarter</durationType>{}<Note><pitch>{p}</pitch></Note></Chord>", l(t))
+            format!(
+                "<Chord>{extra}<durationType>quarter</durationType>{}<Note><pitch>{p}</pitch></Note></Chord>",
+                l(t)
+            )
         };
-        let c = format!("{C44}{}<tick>0</tick>{}", ch("la", 60, ""), ch("la", 55, "<track>1</track>"));
+        let c = format!(
+            "{C44}{}<tick>0</tick>{}",
+            ch("la", 60, ""),
+            ch("la", 55, "<track>1</track>")
+        );
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap();
         assert_eq!(h.letra, vec!["1. la"]);
     }
@@ -1261,11 +1474,17 @@ mod testes {
                 .iter()
                 .map(|(sy, no, t)| {
                     let no = no.map(|n| format!("<no>{n}</no>")).unwrap_or_default();
-                    let sy = if sy.is_empty() { String::new() } else { format!("<syllabic>{sy}</syllabic>") };
+                    let sy = if sy.is_empty() {
+                        String::new()
+                    } else {
+                        format!("<syllabic>{sy}</syllabic>")
+                    };
                     format!("<Lyrics>{no}{sy}<text>{t}</text></Lyrics>")
                 })
                 .collect();
-            format!("<Chord><durationType>quarter</durationType>{ls}<Note><pitch>{pitch}</pitch></Note></Chord>")
+            format!(
+                "<Chord><durationType>quarter</durationType>{ls}<Note><pitch>{pitch}</pitch></Note></Chord>"
+            )
         };
         let c = format!(
             "{C44}{}{}<Breath/>{}",
@@ -1279,10 +1498,16 @@ mod testes {
         assert!(s.passada_final.is_none());
         // Estrofe 1: "bala" (ba=0..2 em t0, la=2..4 em t1) e "um" na linha seguinte (t2).
         assert_eq!(s.normal[0].estrofe, 1);
-        assert_eq!(s.normal[0].linhas, vec![vec![(0.0, 0, 2), (1.0, 2, 4)], vec![(2.0, 0, 2)]]);
+        assert_eq!(
+            s.normal[0].linhas,
+            vec![vec![(0.0, 0, 2), (1.0, 2, 4)], vec![(2.0, 0, 2)]]
+        );
         // Estrofe 2: "la lá" (a posição do "lá" conta o espaço: 3..5) e "dois".
         assert_eq!(s.normal[1].estrofe, 2);
-        assert_eq!(s.normal[1].linhas, vec![vec![(0.0, 0, 2), (1.0, 3, 5)], vec![(2.0, 0, 4)]]);
+        assert_eq!(
+            s.normal[1].linhas,
+            vec![vec![(0.0, 0, 2), (1.0, 3, 5)], vec![(2.0, 0, 4)]]
+        );
     }
 
     #[test]
@@ -1291,8 +1516,16 @@ mod testes {
         let medidas = [
             comp_com_silaba("<startRepeat/>", 60, "a"),
             comp_com_silaba("", 62, "b"),
-            comp_com_silaba(r#"<endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta>"#, 64, "c"),
-            comp_com_silaba(r#"<endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta>"#, 65, "d"),
+            comp_com_silaba(
+                r#"<endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta>"#,
+                64,
+                "c",
+            ),
+            comp_com_silaba(
+                r#"<endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta>"#,
+                65,
+                "d",
+            ),
             comp_com_silaba(r#"<endSpanner id="2"/>"#, 67, "e"),
             comp_com_silaba("", 69, "f"),
         ]
@@ -1301,12 +1534,21 @@ mod testes {
         assert_eq!(h.letra, vec!["1. a b c d e f"]);
         let s = h.sincronia.expect("deveria ter sincronia");
         // Passada normal: só a, b, c (compassos 1 a 3), nos tempos da partitura.
-        assert_eq!(s.normal[0].linhas, vec![vec![(0.0, 0, 1), (4.0, 2, 3), (8.0, 4, 5)]]);
+        assert_eq!(
+            s.normal[0].linhas,
+            vec![vec![(0.0, 0, 1), (4.0, 2, 3), (8.0, 4, 5)]]
+        );
         // Passada do final: "c" (1ª casa) não toca; d, e, f entram no lugar dele, colados, na régua das notas do final.
         let f = s.passada_final.expect("deveria ter sincronia do final");
         assert_eq!(
             f[0].linhas,
-            vec![vec![(0.0, 0, 1), (4.0, 2, 3), (8.0, 6, 7), (12.0, 8, 9), (16.0, 10, 11)]]
+            vec![vec![
+                (0.0, 0, 1),
+                (4.0, 2, 3),
+                (8.0, 6, 7),
+                (12.0, 8, 9),
+                (16.0, 10, 11)
+            ]]
         );
         // Confere com as notas do final: o "d" cai na nota de 8 batidas (pitch 65), como a sílaba.
         let nf = h.passada_final.as_ref().unwrap();
@@ -1319,8 +1561,14 @@ mod testes {
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap();
         let j = para_json(&h);
         assert_eq!(j["sincronia"]["normal"][0]["estrofe"], 1);
-        assert_eq!(j["sincronia"]["normal"][0]["linhas"][0], json!([[0.0, 0, 2], [4.0, 3, 5]]));
-        assert!(j["sincronia"].get("final").is_none(), "sem final, sem sincronia do final");
+        assert_eq!(
+            j["sincronia"]["normal"][0]["linhas"][0],
+            json!([[0.0, 0, 2], [4.0, 3, 5]])
+        );
+        assert!(
+            j["sincronia"].get("final").is_none(),
+            "sem final, sem sincronia do final"
+        );
 
         let c = format!("{C44}{}", acorde("whole", 60));
         let sem = converter(&doc(&parte(1, "S"), &pauta(1, &compasso(&c))), 1).unwrap();
@@ -1345,7 +1593,10 @@ mod testes {
             andamento: None,
             vozes: ["Parte I", "Parte II", "Parte III", "Parte IV", "Outra"]
                 .iter()
-                .map(|n| Voz { nome: n.to_string(), notas: vec![] })
+                .map(|n| Voz {
+                    nome: n.to_string(),
+                    notas: vec![],
+                })
                 .collect(),
             letra: vec![],
             sincronia: None,
@@ -1353,7 +1604,10 @@ mod testes {
         };
         nomes_satb(&mut h);
         let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
-        assert_eq!(nomes, vec!["Soprano", "Contralto", "Tenor", "Baixo", "Outra"]);
+        assert_eq!(
+            nomes,
+            vec!["Soprano", "Contralto", "Tenor", "Baixo", "Outra"]
+        );
     }
 
     fn texto_moldura(estilo: &str, t: &str) -> String {
@@ -1407,28 +1661,44 @@ mod testes {
         let h = converter(&doc_com_moldura(&m), 1).unwrap();
         assert_eq!(h.autoria.as_deref(), Some("A · B")); // letrista primeiro, sem repetir
 
-        let m = format!("<VBox>{}{}</VBox>", texto_moldura("Lyricist", "A"), texto_moldura("Composer", "A"));
+        let m = format!(
+            "<VBox>{}{}</VBox>",
+            texto_moldura("Lyricist", "A"),
+            texto_moldura("Composer", "A")
+        );
         let h = converter(&doc_com_moldura(&m), 1).unwrap();
         assert_eq!(h.autoria.as_deref(), Some("A")); // mesma pessoa nos dois papéis
     }
 
     #[test]
     fn titulo_com_formatacao_e_espacos_repetidos_sai_limpo() {
-        let m = format!("<VBox>{}</VBox>", texto_moldura("Title", "Canta, <i>ó</i>   Mundo\n  Hoje"));
+        let m = format!(
+            "<VBox>{}</VBox>",
+            texto_moldura("Title", "Canta, <i>ó</i>   Mundo\n  Hoje")
+        );
         let h = converter(&doc_com_moldura(&m), 1).unwrap();
         assert_eq!(h.titulo, "Canta, ó Mundo Hoje");
     }
 
     #[test]
     fn cabecalho_so_leva_idioma_quando_informado() {
-        assert_eq!(cabecalho("a", "A", Some("pt-BR")), json!({"id":"a","nome":"A","idioma":"pt-BR"}));
+        assert_eq!(
+            cabecalho("a", "A", Some("pt-BR")),
+            json!({"id":"a","nome":"A","idioma":"pt-BR"})
+        );
         assert_eq!(cabecalho("a", "A", None), json!({"id":"a","nome":"A"}));
-        assert_eq!(cabecalho("a", "A", Some("  ")), json!({"id":"a","nome":"A"}));
+        assert_eq!(
+            cabecalho("a", "A", Some("  ")),
+            json!({"id":"a","nome":"A"})
+        );
     }
 
     /// Compasso de uma semibreve em 4/4 (4 batidas) com marcas extras de repetição/volta.
     fn comp_marcado(extra: &str, pitch: u8) -> String {
-        format!("<Measure>{extra}<voice>{C44}{}</voice></Measure>", acorde("whole", pitch))
+        format!(
+            "<Measure>{extra}<voice>{C44}{}</voice></Measure>",
+            acorde("whole", pitch)
+        )
     }
 
     /// Mesma estrutura do hino 457: repetição do compasso 1, fim de repetição + 1ª casa no 3, 2ª casa no 4
@@ -1437,8 +1707,14 @@ mod testes {
         let medidas = [
             comp_marcado("<startRepeat/>", 60),
             comp_marcado("", 62),
-            comp_marcado(r#"<endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta>"#, 64),
-            comp_marcado(r#"<endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta>"#, 65),
+            comp_marcado(
+                r#"<endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta>"#,
+                64,
+            ),
+            comp_marcado(
+                r#"<endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta>"#,
+                65,
+            ),
             comp_marcado(r#"<endSpanner id="2"/>"#, 67),
             comp_marcado("", 69),
         ]
@@ -1447,7 +1723,11 @@ mod testes {
     }
 
     fn notas_de(vozes: &[Voz], i: usize) -> Vec<(f64, f64, u8)> {
-        vozes[i].notas.iter().map(|n| (n.inicio, n.dur, n.midi)).collect()
+        vozes[i]
+            .notas
+            .iter()
+            .map(|n| (n.inicio, n.dur, n.midi))
+            .collect()
     }
 
     /// Dois compassos de 4/4; no 2º, uma mínima, o texto de pauta "*" e outra mínima (o "*" cai no meio do compasso).
@@ -1470,17 +1750,33 @@ mod testes {
         assert_eq!(notas_de(intro, 0), vec![(0.0, 4.0, 60), (4.0, 2.0, 62)]);
         // A passada normal continua inteira.
         assert_eq!(notas(&h, 0).len(), 3);
-        assert!(h.avisos.iter().any(|a| a.contains("introdução") && a.contains("6")), "{:?}", h.avisos);
+        assert!(
+            h.avisos
+                .iter()
+                .any(|a| a.contains("introdução") && a.contains("6")),
+            "{:?}",
+            h.avisos
+        );
         let json = para_json(&h);
-        assert_eq!(json["introducao"]["vozes"][0]["notas"], json!([[0.0, 4.0, 60], [4.0, 2.0, 62]]));
+        assert_eq!(
+            json["introducao"]["vozes"][0]["notas"],
+            json!([[0.0, 4.0, 60], [4.0, 2.0, 62]])
+        );
     }
 
     #[test]
     fn asterisco_como_cifra_harmony_tambem_vale() {
         let marca = "<Harmony><name>*</name></Harmony>";
-        let m = format!("<Measure><voice>{C44}{}{marca}{}</voice></Measure>", acorde("half", 62), acorde("half", 64));
+        let m = format!(
+            "<Measure><voice>{C44}{}{marca}{}</voice></Measure>",
+            acorde("half", 62),
+            acorde("half", 64)
+        );
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &m)), 1).unwrap();
-        assert_eq!(notas_de(h.introducao.as_ref().expect("deveria ter introdução"), 0), vec![(0.0, 2.0, 62)]);
+        assert_eq!(
+            notas_de(h.introducao.as_ref().expect("deveria ter introdução"), 0),
+            vec![(0.0, 2.0, 62)]
+        );
     }
 
     #[test]
@@ -1494,9 +1790,16 @@ mod testes {
     fn recortar_inicio_encurta_a_nota_que_atravessa_o_corte() {
         let v = |notas: Vec<(f64, f64, u8)>| Voz {
             nome: "S".into(),
-            notas: notas.into_iter().map(|(inicio, dur, midi)| Evento { inicio, dur, midi }).collect(),
+            notas: notas
+                .into_iter()
+                .map(|(inicio, dur, midi)| Evento { inicio, dur, midi })
+                .collect(),
         };
-        let r = recortar_inicio(&[v(vec![(0.0, 3.0, 60), (2.0, 4.0, 62), (5.0, 1.0, 64)])], 5.0).unwrap();
+        let r = recortar_inicio(
+            &[v(vec![(0.0, 3.0, 60), (2.0, 4.0, 62), (5.0, 1.0, 64)])],
+            5.0,
+        )
+        .unwrap();
         assert_eq!(notas_de(&r, 0), vec![(0.0, 3.0, 60), (2.0, 3.0, 62)]);
         // sem nenhuma nota antes do corte não há introdução
         assert!(recortar_inicio(&[v(vec![(6.0, 1.0, 60)])], 5.0).is_none());
@@ -1504,7 +1807,10 @@ mod testes {
 
     #[test]
     fn nomes_satb_tambem_vale_para_a_introducao() {
-        let voz = |n: &str| Voz { nome: n.to_string(), notas: vec![] };
+        let voz = |n: &str| Voz {
+            nome: n.to_string(),
+            notas: vec![],
+        };
         let mut h = converter(&hino_com_asterisco(), 1).unwrap();
         h.vozes = vec![voz("Parte I")];
         h.introducao = Some(vec![voz("Parte I")]);
@@ -1517,15 +1823,33 @@ mod testes {
     fn reconhece_o_padrao_de_final_e_gera_as_duas_passadas() {
         let h = converter(&hino_com_final(), 1).unwrap();
         // Passada normal: compassos 1 a 3 (até o fim da 1ª casa).
-        assert_eq!(notas(&h, 0), vec![(0.0, 4.0, 60), (4.0, 4.0, 62), (8.0, 4.0, 64)]);
+        assert_eq!(
+            notas(&h, 0),
+            vec![(0.0, 4.0, 60), (4.0, 4.0, 62), (8.0, 4.0, 64)]
+        );
         // Passada do final: 1 e 2, pula a 1ª casa (3), toca a 2ª casa (4) e o trecho final (5 e 6),
         // sem buracos no tempo.
-        let f = h.passada_final.as_ref().expect("deveria ter passada do final");
+        let f = h
+            .passada_final
+            .as_ref()
+            .expect("deveria ter passada do final");
         assert_eq!(
             notas_de(f, 0),
-            vec![(0.0, 4.0, 60), (4.0, 4.0, 62), (8.0, 4.0, 65), (12.0, 4.0, 67), (16.0, 4.0, 69)]
+            vec![
+                (0.0, 4.0, 60),
+                (4.0, 4.0, 62),
+                (8.0, 4.0, 65),
+                (12.0, 4.0, 67),
+                (16.0, 4.0, 69)
+            ]
         );
-        assert!(h.avisos.iter().any(|a| a.contains("estrutura de repetição reconhecida")), "{:?}", h.avisos);
+        assert!(
+            h.avisos
+                .iter()
+                .any(|a| a.contains("estrutura de repetição reconhecida")),
+            "{:?}",
+            h.avisos
+        );
         assert!(!h.avisos.iter().any(|a| a.contains("não reconhecida")));
     }
 
@@ -1558,7 +1882,11 @@ mod testes {
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap();
         assert!(h.passada_final.is_none());
         assert_eq!(notas(&h, 0).len(), 3); // lido uma vez, em ordem
-        assert!(h.avisos.iter().any(|a| a.contains("não reconhecida")), "{:?}", h.avisos);
+        assert!(
+            h.avisos.iter().any(|a| a.contains("não reconhecida")),
+            "{:?}",
+            h.avisos
+        );
 
         // Três casas de volta também não é o padrão confirmado.
         let tres = [
@@ -1574,7 +1902,11 @@ mod testes {
 
     #[test]
     fn selecionar_recorta_e_cola_sem_buracos_e_limita_a_duracao() {
-        let a = |inicio: f64, dur: f64| Acorde { inicio, dur, notas: vec![(60, false, false)] };
+        let a = |inicio: f64, dur: f64| Acorde {
+            inicio,
+            dur,
+            notas: vec![(60, false, false)],
+        };
         // compassos de 4 batidas: [0,4) [4,8) [8,12)
         let inicios = [0.0, 4.0, 8.0, 12.0];
         // uma nota que começa no compasso 2 e dura 6 batidas (passa do fim do segmento)
@@ -1588,8 +1920,18 @@ mod testes {
 
     #[test]
     fn renomear_vozes_vale_tambem_para_a_passada_do_final() {
-        let voz = |n: &str| Voz { nome: n.to_string(), notas: vec![] };
-        let partes = || vec![voz("Parte I"), voz("Parte II"), voz("Parte III"), voz("Parte IV")];
+        let voz = |n: &str| Voz {
+            nome: n.to_string(),
+            notas: vec![],
+        };
+        let partes = || {
+            vec![
+                voz("Parte I"),
+                voz("Parte II"),
+                voz("Parte III"),
+                voz("Parte IV"),
+            ]
+        };
         let mut h = Hino {
             numero: 1,
             titulo: "T".into(),
@@ -1604,22 +1946,38 @@ mod testes {
         };
         nomes_satb(&mut h);
         let normal: Vec<_> = h.vozes.iter().map(|v| v.nome.clone()).collect();
-        let final_: Vec<_> = h.passada_final.unwrap().iter().map(|v| v.nome.clone()).collect();
+        let final_: Vec<_> = h
+            .passada_final
+            .unwrap()
+            .iter()
+            .map(|v| v.nome.clone())
+            .collect();
         assert_eq!(normal, vec!["Soprano", "Contralto", "Tenor", "Baixo"]);
-        assert_eq!(final_, normal, "as vozes do final devem ter os mesmos nomes, na mesma ordem");
+        assert_eq!(
+            final_, normal,
+            "as vozes do final devem ter os mesmos nomes, na mesma ordem"
+        );
     }
 
     /// Sílaba como no MuseScore 2; `texto_xml` pode ter formatação interna (ex.: `<sym>`).
     fn sil(sy: &str, texto_xml: &str) -> String {
-        let sy = if sy.is_empty() { String::new() } else { format!("<syllabic>{sy}</syllabic>") };
+        let sy = if sy.is_empty() {
+            String::new()
+        } else {
+            format!("<syllabic>{sy}</syllabic>")
+        };
         format!("<Lyrics>{sy}<text>{texto_xml}</text></Lyrics>")
     }
     fn acorde_letra(pitch: u8, letras: &str) -> String {
-        format!("<Chord><durationType>quarter</durationType>{letras}<Note><pitch>{pitch}</pitch></Note></Chord>")
+        format!(
+            "<Chord><durationType>quarter</durationType>{letras}<Note><pitch>{pitch}</pitch></Note></Chord>"
+        )
     }
     fn letra_de(chords: &[String]) -> Vec<String> {
         let c = format!("{C44}{}", chords.concat());
-        converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap().letra
+        converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&c, ""))), 1)
+            .unwrap()
+            .letra
     }
 
     #[test]
@@ -1664,7 +2022,10 @@ mod testes {
     fn so_o_nome_de_simbolo_comum_e_ignorado_e_o_titulo_tambem_entende_elisao() {
         let m = format!(
             "<VBox>{}</VBox>",
-            texto_moldura("Title", "a<sym>lyricsElisionWide</sym>b e c<sym>fermataAbove</sym>d")
+            texto_moldura(
+                "Title",
+                "a<sym>lyricsElisionWide</sym>b e c<sym>fermataAbove</sym>d"
+            )
         );
         let h = converter(&doc_com_moldura(&m), 1).unwrap();
         assert_eq!(h.titulo, "a b e cd"); // elisão vira espaço; outro símbolo some sem deixar o nome
@@ -1690,10 +2051,16 @@ mod testes {
     #[test]
     fn parte_i_e_ii_vira_duas_vozes_com_unissono() {
         let duas = |a: u8, b: u8| {
-            format!("<Chord><durationType>half</durationType><Note><pitch>{b}</pitch></Note><Note><pitch>{a}</pitch></Note></Chord>")
+            format!(
+                "<Chord><durationType>half</durationType><Note><pitch>{b}</pitch></Note><Note><pitch>{a}</pitch></Note></Chord>"
+            )
         };
         let c = format!("{C44}{}{}", duas(60, 67), acorde("half", 65)); // 2º acorde: uníssono
-        let h = converter(&doc(&parte(1, "Parte I e II"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap();
+        let h = converter(
+            &doc(&parte(1, "Parte I e II"), &pauta(1, &compasso_ms2(&c, ""))),
+            1,
+        )
+        .unwrap();
         let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
         assert_eq!(nomes, vec!["Parte I", "Parte II"]);
         assert_eq!(notas(&h, 0), vec![(0.0, 2.0, 67), (2.0, 2.0, 65)]);
@@ -1705,7 +2072,10 @@ mod testes {
         let partes = parte(1, "Soprano") + &parte(2, "Baixo");
         let v1 = acorde("whole", 72);
         let v2 = acorde("whole", 60);
-        let s1 = pauta(1, &format!("<Measure><voice>{C44}{v1}</voice><voice>{v2}</voice></Measure>"));
+        let s1 = pauta(
+            1,
+            &format!("<Measure><voice>{C44}{v1}</voice><voice>{v2}</voice></Measure>"),
+        );
         let s2 = pauta(2, &compasso(&format!("{C44}{}", acorde("whole", 48))));
         let h = converter(&doc(&partes, &(s1 + &s2)), 1).unwrap();
         let nomes: Vec<_> = h.vozes.iter().map(|v| v.nome.as_str()).collect();
@@ -1717,12 +2087,23 @@ mod testes {
 
     #[test]
     fn avisa_sobre_repeticoes_e_rejeita_arquivo_errado() {
-        let c = format!("<Measure><startRepeat/><voice>{C44}{}</voice></Measure>", acorde("whole", 60));
+        let c = format!(
+            "<Measure><startRepeat/><voice>{C44}{}</voice></Measure>",
+            acorde("whole", 60)
+        );
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &c)), 1).unwrap();
         assert!(h.avisos[0].contains("repetições"));
         assert!(converter("<x/>", 1).unwrap_err().contains("falta <Score>"));
-        assert!(converter("{ não é xml", 1).unwrap_err().contains("XML inválido"));
-        assert!(converter(&doc("", &pauta(1, &compasso(C44))), 1).unwrap_err().contains("nenhuma nota"));
+        assert!(
+            converter("{ não é xml", 1)
+                .unwrap_err()
+                .contains("XML inválido")
+        );
+        assert!(
+            converter(&doc("", &pauta(1, &compasso(C44))), 1)
+                .unwrap_err()
+                .contains("nenhuma nota")
+        );
     }
 
     #[test]
