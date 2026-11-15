@@ -29,7 +29,8 @@ export const REALISTAS = {
   // que a própria nota, energia grave que o ouvido e o alto-falante do celular quase não reproduzem. Medido com
   // `tools/analisar-timbres.py --niveis` (2026-11-15): ele era o mais baixo dos 16, 8,6 dB abaixo da mediana no ouvido
   // (curva A) e 9,8 dB no celular; +8,6 dB o põe na mediana do ouvido, com pico de 0,62.
-  real_orgao_tirantes: { arquivo: "drawbar_organ", ganho: 7.1, grupo: "orgao", vozes: TODAS, sintetico: "orgao_principal" },
+  // Ganho 9,5 (era 7,1): no teste do APK 008 o responsável ainda o achou mais baixo que os outros. +2,5 dB, pico de uma voz ~0,83.
+  real_orgao_tirantes: { arquivo: "drawbar_organ", ganho: 9.5, grupo: "orgao", vozes: TODAS, sintetico: "orgao_principal" },
   real_flauta: { arquivo: "flute", ganho: 3.95, grupo: "madeiras", vozes: ["soprano"] },
   real_flauta_doce: { arquivo: "recorder", ganho: 3.8, grupo: "madeiras", vozes: ["soprano"], sintetico: "flauta_doce" },
   real_clarinete: { arquivo: "clarinet", ganho: 1.65, grupo: "madeiras", vozes: ["soprano"], sintetico: "clarinete" },
