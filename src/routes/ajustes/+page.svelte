@@ -12,6 +12,7 @@
   import { reproducao } from "$lib/reproducao.svelte";
   import { ESTILOS, TEMAS, estilo, tema } from "$lib/tema.svelte";
   import { CREDITOS, textoDaLicenca } from "$lib/licencas";
+  import { traduzirErro } from "$lib/erros";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const voltar = usarVoltar();
@@ -44,7 +45,7 @@
         texto: t("importar.ok", { total: i18n.tn("plural.hinos", p.hinario.hinos.length), nome: p.hinario.hinario.nome }),
       };
     } catch (err) {
-      resultado = { tipo: "erro", texto: t("importar.erro", { erro: String(err) }) };
+      resultado = { tipo: "erro", texto: t("importar.erro", { erro: traduzirErro(String(err), t) }) };
     }
   }
 

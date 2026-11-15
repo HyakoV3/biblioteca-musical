@@ -6,6 +6,7 @@
   import { biblioteca } from "$lib/biblioteca.svelte";
   import Estado from "$lib/Estado.svelte";
   import Icone from "$lib/Icone.svelte";
+  import { traduzirErro } from "$lib/erros";
   import { i18n } from "$lib/i18n/index.svelte";
   import { estrofes } from "$lib/letra";
   import { marcaEm, marcasDaVez, sincroniaCombina, type Marca } from "$lib/karaoke";
@@ -161,7 +162,7 @@
 
 {#if biblioteca.erro}
   <Barra titulo={t("biblioteca.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />
-  <main class="coluna conteudo"><Aviso tipo="erro">{t("erro.carregar", { erro: biblioteca.erro })}</Aviso></main>
+  <main class="coluna conteudo"><Aviso tipo="erro">{t("erro.carregar", { erro: traduzirErro(biblioteca.erro, t) })}</Aviso></main>
 {:else if !biblioteca.pacote}
   <Barra titulo={t("biblioteca.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />
   <main class="coluna conteudo"><Estado tipo="carregando" texto={t("carregando")} /></main>

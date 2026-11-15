@@ -86,7 +86,7 @@ sem ir para o Git.
       conteúdo continua fora do Git). CI/CD, proteções e revisão de código: [`roadmap-pendencias.md`](roadmap-pendencias.md).
 - [ ] Avaliar **iOS** (o CI compila em máquina macOS do GitHub, mas instalar em iPhone ou publicar exige o Apple
       Developer Program) ou uma **versão web instalável (PWA)**.
-- [ ] Mensagens de erro da importação traduzidas pela interface (hoje vêm do Rust em português).
+- [x] Mensagens de erro da importação traduzidas pela interface (códigos do Rust + `src/lib/erros.ts`; ver `docs/TRADUCOES.md`).
 - [ ] Áudio com a tela apagada no celular: validar antes de prometer (primeiro teste no celular do responsável pendente).
 
 **Pronto quando:** um APK assinado com chave própria pode ser baixado, e o código está público sem conteúdo de hinos.
