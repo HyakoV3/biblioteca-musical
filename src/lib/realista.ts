@@ -1,48 +1,67 @@
-// PROTÓTIPO da I-07: instrumentos "gravados" (amostras do banco FluidR3_GM, licença MIT) tocados com a biblioteca
-// smplr, em vez da síntese. Só três instrumentos, para comparar o som com o atual. Os arquivos ficam em
-// static/sons/FluidR3_GM/ (fora do Git; ver docs/roadmap-ideas.md, I-07) e vêm do repositório
-// midi-js-soundfonts, de Benjamin Gleitzman.
+// Catálogo dos instrumentos "gravados" (I-07): amostras do banco FluidR3_GM (licença MIT) tocadas com a biblioteca smplr,
+// no lugar da síntese. São um pacote OPCIONAL, baixado em Ajustes (docs/pacote-de-sons.md): os arquivos ficam no
+// armazenamento do aparelho (src/lib/sons/armazenamento.ts) e só aparecem para escolha depois de baixados.
+import type { SinteticoId, TipoVoz } from "./instrumentos";
 
-/**
- * `ganho`: multiplicador de volume que iguala o som gravado ao da síntese equivalente. As amostras do banco vêm bem
- * mais baixas que a síntese. Medido em 2026-11-14 (RMS de três notas, com a mesma cadeia de áudio): órgãos contra o
- * "orgao_principal" (0,109), flauta contra "flauta_doce" (0,216) e clarinete contra "clarinete" (0,125); gravados:
- * 0,052 / 0,047 / 0,040 / 0,050 / 0,065. Ganho = volume da síntese ÷ volume do gravado.
- */
+/** Grupo de download: cada um é uma pasta compartilhada própria no servidor (um zip por link). */
+export type GrupoId = "orgao" | "madeiras" | "metais" | "cordas";
+
+type Entrada = {
+  /** Nome do instrumento no banco: o arquivo é `<arquivo>-mp3.js`. */
+  arquivo: string;
+  /**
+   * Multiplicador de volume que iguala o som gravado ao da síntese equivalente (medido em 2026-11-15: RMS de três notas na
+   * faixa da voz, mesma cadeia de áudio; ganho = volume da síntese ÷ volume do gravado). As amostras vêm mais baixas.
+   */
+  ganho: number;
+  grupo: GrupoId;
+  /** Vozes do coro para as quais o instrumento é oferecido (a mesma divisão dos sintetizados). */
+  vozes: readonly TipoVoz[];
+  /** O instrumento sintetizado equivalente (o alternador Sintetizado/Gravado troca de modo mantendo o instrumento). */
+  sintetico?: SinteticoId;
+};
+
+const TODAS: readonly TipoVoz[] = ["soprano", "contralto", "tenor", "baixo"];
+
 export const REALISTAS = {
-  // O órgão de tirantes vai na frente: foi o que o responsável achou mais parecido com o da igreja.
-  real_orgao_tirantes: { arquivo: "drawbar_organ", ganho: 2.7 },
-  real_orgao: { arquivo: "church_organ", ganho: 2.1 },
-  real_orgao_palheta: { arquivo: "reed_organ", ganho: 2.3 },
-  real_flauta: { arquivo: "flute", ganho: 4.3 },
-  real_clarinete: { arquivo: "clarinet", ganho: 1.9 },
-} as const;
+  // O órgão de tirantes foi o escolhido como o mais parecido com o da igreja.
+  real_orgao_tirantes: { arquivo: "drawbar_organ", ganho: 2.65, grupo: "orgao", vozes: TODAS, sintetico: "orgao_principal" },
+  real_flauta: { arquivo: "flute", ganho: 3.95, grupo: "madeiras", vozes: ["soprano"] },
+  real_flauta_doce: { arquivo: "recorder", ganho: 3.8, grupo: "madeiras", vozes: ["soprano"], sintetico: "flauta_doce" },
+  real_clarinete: { arquivo: "clarinet", ganho: 1.65, grupo: "madeiras", vozes: ["soprano"], sintetico: "clarinete" },
+  real_oboe: { arquivo: "oboe", ganho: 1.14, grupo: "madeiras", vozes: ["contralto"], sintetico: "oboe" },
+  real_sax_alto: { arquivo: "alto_sax", ganho: 1.27, grupo: "madeiras", vozes: ["contralto"], sintetico: "sax_alto" },
+  real_sax_tenor: { arquivo: "tenor_sax", ganho: 1.66, grupo: "madeiras", vozes: ["tenor"], sintetico: "sax_tenor" },
+  real_fagote: { arquivo: "bassoon", ganho: 1.44, grupo: "madeiras", vozes: ["baixo"], sintetico: "fagote" },
+  real_trompete: { arquivo: "trumpet", ganho: 0.99, grupo: "metais", vozes: ["soprano"], sintetico: "trompete" },
+  real_trompa: { arquivo: "french_horn", ganho: 2.87, grupo: "metais", vozes: ["tenor"], sintetico: "trompa" },
+  real_trombone: { arquivo: "trombone", ganho: 0.91, grupo: "metais", vozes: ["tenor"], sintetico: "trombone" },
+  real_tuba: { arquivo: "tuba", ganho: 2.28, grupo: "metais", vozes: ["baixo"], sintetico: "tuba" },
+  real_violino: { arquivo: "violin", ganho: 1.19, grupo: "cordas", vozes: ["soprano"], sintetico: "violino" },
+  real_viola: { arquivo: "viola", ganho: 2.07, grupo: "cordas", vozes: ["contralto"], sintetico: "viola" },
+  real_violoncelo: { arquivo: "cello", ganho: 1.78, grupo: "cordas", vozes: ["tenor"], sintetico: "violoncelo" },
+  real_contrabaixo: { arquivo: "contrabass", ganho: 4.87, grupo: "cordas", vozes: ["baixo"], sintetico: "contrabaixo" },
+} as const satisfies Record<string, Entrada>;
 
 export type RealistaId = keyof typeof REALISTAS;
 export const IDS_REALISTAS = Object.keys(REALISTAS) as RealistaId[];
 
 export const ehRealista = (id: string): id is RealistaId => Object.hasOwn(REALISTAS, id);
 
-/** Endereço do arquivo de amostras, dentro do próprio app (funciona sem rede). */
-export const urlDoRealista = (id: RealistaId) => `/sons/FluidR3_GM/${REALISTAS[id].arquivo}-mp3.js`;
+/** Nome do arquivo de amostras do instrumento (também é a chave dele no armazenamento e no manifesto). */
+export const arquivoDoRealista = (id: RealistaId): string => `${REALISTAS[id].arquivo}-mp3.js`;
 
-let verificados: Promise<RealistaId[]> | null = null;
+/** Endereço virtual do instrumento no armazenamento do app (nunca é buscado na rede). */
+export const urlDoRealista = (id: RealistaId): string => `/sons/${arquivoDoRealista(id)}`;
 
-/**
- * Quais instrumentos gravados existem neste app: só os que têm o arquivo de amostras. Sem o pacote de sons, a lista
- * vem vazia e a tela nem mostra a opção. Um endereço que não existe cai no `index.html` do app (SPA), então não basta
- * a resposta ser "ok": o tipo do conteúdo não pode ser HTML.
- */
-export function realistasDisponiveis(): Promise<RealistaId[]> {
-  verificados ??= Promise.all(
-    IDS_REALISTAS.map(async (id) => {
-      try {
-        const r = await fetch(urlDoRealista(id), { method: "HEAD" });
-        return r.ok && !(r.headers.get("content-type") ?? "").includes("text/html") ? id : null;
-      } catch {
-        return null;
-      }
-    }),
-  ).then((lista) => lista.filter((id): id is RealistaId => id !== null));
-  return verificados;
-}
+/** Os instrumentos gravados oferecidos para uma voz (tipo desconhecido, como "Parte I", recebe todos). */
+export const realistasDaVoz = (tipo: TipoVoz | null): RealistaId[] =>
+  IDS_REALISTAS.filter((id) => tipo === null || (REALISTAS[id].vozes as readonly TipoVoz[]).includes(tipo));
+
+/** O gravado equivalente a um sintetizado, se houver. */
+export const gravadoEquivalente = (sintetico: string): RealistaId | null =>
+  IDS_REALISTAS.find((id) => (REALISTAS[id] as { sintetico?: string }).sintetico === sintetico) ?? null;
+
+/** O sintetizado equivalente a um gravado, se houver. */
+export const sinteticoEquivalente = (id: RealistaId): SinteticoId | null =>
+  (REALISTAS[id] as { sintetico?: SinteticoId }).sintetico ?? null;

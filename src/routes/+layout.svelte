@@ -5,12 +5,16 @@
   import { biblioteca } from "$lib/biblioteca.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
   import Miniplayer from "$lib/Miniplayer.svelte";
+  import { sons } from "$lib/sons/pacotes.svelte";
   import { aplicarTema, tema } from "$lib/tema.svelte";
 
   let { children } = $props();
 
   // O conteúdo é carregado uma vez, para todas as telas.
-  onMount(() => biblioteca.carregar());
+  onMount(() => {
+    biblioteca.carregar();
+    sons.atualizar(); // quais sons gravados já estão instalados
+  });
 
   // Mantém o atributo lang do documento em sintonia com o idioma escolhido.
   $effect(() => {

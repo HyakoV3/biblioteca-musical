@@ -23,7 +23,7 @@
 <!-- O título do documento é o que leitores de tela anunciam a cada troca de tela. -->
 <svelte:head><title>{t("biblioteca.titulo")} · Biblioteca Musical CCB</title></svelte:head>
 
-<Barra titulo={t("biblioteca.titulo")}>
+<Barra titulo={t("app.nome_curto")} logo="/favicon.png">
   {#snippet acao()}
     <!-- Botão só de ícone (engrenagem); o nome "Ajustes" vai no rótulo de acessibilidade e na dica. -->
     <a class="botao botao-icone" href="/ajustes" aria-label={t("nav.ajustes")} title={t("nav.ajustes")}>

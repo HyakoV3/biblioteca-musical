@@ -16,7 +16,7 @@ O código deste projeto é MIT (`LICENSE`). Alguns materiais de terceiros acompa
 - **Biblioteca que toca as amostras:** `smplr` (o pacote no npm declara MIT).
 - **Pendente:** ler o `LICENSE` do repositório do `smplr` e a licença exata do pacote de amostras do Gleitzman; o texto
   completo do aviso de copyright do FluidR3 vai neste arquivo quando o pacote de sons for distribuído. Os arquivos de som
-  ficam fora do Git (`static/sons/`).
+  ficam fora do Git (`sons-fonte/`).
 
 ## Conteúdo dos hinos
 

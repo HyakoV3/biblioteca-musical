@@ -2,9 +2,10 @@
   import Aviso from "./Aviso.svelte";
   import type { Hino } from "./biblioteca.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
-  import { ORGAOS, instrumentosDaVoz, tipoDaVoz } from "./instrumentos";
+  import { ORGAOS, PADRAO, instrumentosDaVoz, tipoDaVoz, type TipoVoz } from "./instrumentos";
   import { lerCartoes, padrao, salvarCartoes, salvarVozes } from "./preferencias";
-  import { realistasDisponiveis, type RealistaId } from "./realista";
+  import { ehRealista, gravadoEquivalente, realistasDaVoz, sinteticoEquivalente } from "./realista";
+  import { sons } from "./sons/pacotes.svelte";
   import { ANDAMENTO_MAX, ANDAMENTO_MIN, TRANSPOSICAO_MAX, reproducao, vezesDoHino } from "./reproducao.svelte";
   import Icone from "./Icone.svelte";
   import type { IconeNome } from "./icones";
@@ -21,11 +22,6 @@
   // svelte-ignore state_referenced_locally
   const padraoAndamento = hino.andamento ?? 90;
 
-  // Sons gravados (pacote opcional): a opção só aparece se os arquivos de som existem neste app.
-  let reais = $state<RealistaId[]>([]);
-  $effect(() => {
-    realistasDisponiveis().then((lista) => (reais = lista));
-  });
 
   // Este hino é o que está tocando (ou pausado)? Se outro hino toca, aqui tudo aparece parado.
   const meu = $derived(reproducao.atual?.numero === hino.numero);
@@ -76,6 +72,27 @@
     if (!ativa(parte)) return t("vez.tocar", { vez: nome });
     return estado === "tocando" ? t("vez.pausar", { vez: nome }) : t("vez.continuar", { vez: nome });
   };
+
+  // Sons gravados (pacote opcional): só aparecem os que já foram baixados e servem à voz. O alternador troca o modo da
+  // voz mantendo o instrumento quando há equivalente (flauta doce sintetizada <-> flauta doce gravada).
+  const gravadosDaVoz = (tipo: TipoVoz | null) => realistasDaVoz(tipo).filter((id) => sons.instalado(id));
+  function mudarModo(i: number, tipo: TipoVoz | null, gravado: boolean) {
+    const atual = cfg.instrumentos[i];
+    if (gravado) {
+      const lista = gravadosDaVoz(tipo);
+      const par = gravadoEquivalente(atual);
+      cfg.instrumentos[i] = par && lista.includes(par) ? par : (lista[0] ?? atual);
+    } else {
+      cfg.instrumentos[i] = ehRealista(atual) ? (sinteticoEquivalente(atual) ?? PADRAO) : atual;
+    }
+  }
+  // Um instrumento gravado que não está (mais) instalado, por exemplo depois de remover o pacote, volta ao sintetizado.
+  $effect(() => {
+    if (!sons.carregado || !editavel) return;
+    cfg.instrumentos.forEach((id, i) => {
+      if (ehRealista(id) && !sons.instalado(id)) cfg.instrumentos[i] = sinteticoEquivalente(id) ?? PADRAO;
+    });
+  });
 
   // Resumo na seção recolhida: o instrumento comum a todas as vozes, ou "Vários".
   const resumoInstrumentos = $derived(
@@ -317,26 +334,53 @@
     </summary>
     <div class="corpo">
       {#each hino.vozes as v, i}
-        <label class="inst-linha">
-          <span>{nomeVoz(v.nome)}</span>
-          <select
-            aria-label={t("player.instrumento", { voz: nomeVoz(v.nome) })}
-            bind:value={cfg.instrumentos[i]}
-            disabled={!editavel}
-          >
-            <optgroup label={t("grupo.orgaos")}>
-              {#each ORGAOS as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
-            </optgroup>
-            <optgroup label={t("grupo.instrumentos")}>
-              {#each instrumentosDaVoz(v.nome) as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
-            </optgroup>
-            {#if reais.length > 0}
-              <optgroup label={t("grupo.reais")}>
-                {#each reais as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
-              </optgroup>
+        {@const tipo = tipoDaVoz(v.nome)}
+        {@const gravados = gravadosDaVoz(tipo)}
+        {@const modoGravado = ehRealista(cfg.instrumentos[i])}
+        <div class="inst-linha">
+          <span id={`inst-voz-${i}`}>{nomeVoz(v.nome)}</span>
+          <div class="inst-controles">
+            <!-- Com algum som gravado instalado, cada voz escolhe o modo; a lista abaixo mostra só o que é do modo. -->
+            {#if gravados.length > 0 || modoGravado}
+              <div class="alternador" role="group" aria-labelledby={`inst-voz-${i}`}>
+                <button
+                  type="button"
+                  class="alt"
+                  aria-pressed={!modoGravado}
+                  disabled={!editavel}
+                  onclick={() => mudarModo(i, tipo, false)}
+                >
+                  {#if !modoGravado}<Icone nome="ok" tamanho={16} />{/if}{t("som.sintetizado")}
+                </button>
+                <button
+                  type="button"
+                  class="alt"
+                  aria-pressed={modoGravado}
+                  disabled={!editavel}
+                  onclick={() => mudarModo(i, tipo, true)}
+                >
+                  {#if modoGravado}<Icone nome="ok" tamanho={16} />{/if}{t("som.gravado")}
+                </button>
+              </div>
             {/if}
-          </select>
-        </label>
+            <select
+              aria-label={t("player.instrumento", { voz: nomeVoz(v.nome) })}
+              bind:value={cfg.instrumentos[i]}
+              disabled={!editavel}
+            >
+              {#if modoGravado}
+                {#each gravados as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
+              {:else}
+                <optgroup label={t("grupo.orgaos")}>
+                  {#each ORGAOS as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
+                </optgroup>
+                <optgroup label={t("grupo.instrumentos")}>
+                  {#each instrumentosDaVoz(v.nome) as id}<option value={id}>{t(`inst.${id}`)}</option>{/each}
+                </optgroup>
+              {/if}
+            </select>
+          </div>
+        </div>
       {/each}
 
       <button class="botao secundario" disabled={!editavel} onclick={redefinirInstrumentos}>
@@ -400,6 +444,16 @@
   /* minmax(0, 1fr) + largura limitada: sem isso, o nome mais longo ("Órgão de palhetas gravado (teste)") alarga o
      seletor e ele passa da borda do painel. */
   .inst-linha { display: grid; grid-template-columns: minmax(5.5rem, 8rem) minmax(0, 1fr); align-items: center; gap: 0.5rem; }
+  .inst-controles { display: grid; gap: 0.4rem; min-width: 0; }
+  /* Alternador Sintetizado | Gravado: o escolhido leva ✓ e negrito, além da cor. */
+  .alternador { display: flex; border: 1px solid var(--borda-controle); border-radius: 12px; overflow: hidden; }
+  .alt {
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; min-height: 44px;
+    padding: 0 0.4rem; font-size: 0.95rem; border: 0; background: var(--superficie); color: var(--texto); cursor: pointer;
+  }
+  .alt + .alt { border-left: 1px solid var(--borda-controle); }
+  .alt[aria-pressed="true"] { background: var(--acento); color: var(--acento-texto); font-weight: 700; }
+  .alt:disabled { opacity: 0.5; cursor: not-allowed; }
   select {
     width: 100%; min-width: 0; max-width: 100%; text-overflow: ellipsis;
     min-height: 48px; font-size: 1rem; border-radius: 12px; padding: 0 0.5rem;

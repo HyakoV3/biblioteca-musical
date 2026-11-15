@@ -2,7 +2,7 @@
 """Prepara o pacote de sons gravados (I-07): um arquivo por instrumento, cortado à faixa de notas que os hinos usam.
 
 Uso (a partir da raiz do projeto, depois de `sh tools/baixar-sons-teste.sh`):
-    python3 tools/preparar-sons.py                       # lê static/sons/FluidR3_GM, grava em dist-sons/
+    python3 tools/preparar-sons.py                       # lê sons-fonte/FluidR3_GM, grava em dist-sons/
     python3 tools/preparar-sons.py --faixa 30 86         # outra faixa de notas MIDI (padrão: 30 a 86)
     python3 tools/preparar-sons.py --instrumentos drawbar_organ flute clarinet --pacote sons-001 --saida ~/Downloads/sons-001
 
@@ -25,7 +25,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 NOMES = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
-ENTRADA_PADRAO = RAIZ / "static" / "sons" / "FluidR3_GM"
+ENTRADA_PADRAO = RAIZ / "sons-fonte" / "FluidR3_GM"
 SAIDA_PADRAO = RAIZ / "dist-sons"
 
 

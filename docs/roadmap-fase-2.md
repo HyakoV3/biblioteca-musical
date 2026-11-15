@@ -41,8 +41,8 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
 - [x] `tools/preparar-sons.py`: um arquivo por instrumento, cortado à faixa dos hinos (30 a 86), no mesmo formato que o
       smplr já lê (sem carregador novo), mais `manifesto.json` com o SHA-256 de cada um. Medido: **órgão de tirantes
       1,64 MB** (era 2,55); os outros 1,93 a 1,95 MB; os cinco juntos 9,4 MB. Saída em `dist-sons/` (fora do Git).
-- [ ] Ajustes, "Sons gravados": lista com tamanhos, baixar, remover; armazenamento no app, uso offline; **órgão
-      primeiro**. O app volta à síntese se o som faltar (já feito no protótipo).
+- [x] Ajustes, "Sons gravados": lista com tamanhos, baixar, remover; armazenamento no app, uso offline; alternador
+      Sintetizado | Gravado por voz. **Implementado na 0.3.0, falta testar em aparelho** (`docs/pacote-de-sons.md`).
 - [ ] Hospedar os arquivos nós mesmos (depende de o repositório ser público) e carregar do armazenamento do app.
 - [ ] Página de créditos e licenças das amostras (aviso de copyright do FluidR3).
 - [ ] Comparar de ouvido os órgãos do banco: `church_organ`, `reed_organ` (palhetas) e `drawbar_organ` (tirantes), os

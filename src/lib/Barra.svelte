@@ -7,6 +7,7 @@
   let {
     titulo,
     subtitulo,
+    logo,
     voltar,
     rotuloVoltar = "",
     acao,
@@ -15,6 +16,8 @@
   }: {
     titulo: string;
     subtitulo?: string;
+    /** Endereço de uma imagem de marca, mostrada antes do título (tela inicial). Decorativa: o nome fica no título. */
+    logo?: string;
     voltar?: () => void;
     rotuloVoltar?: string;
     acao?: Snippet;
@@ -29,6 +32,7 @@
     {#if voltar}
       <button class="voltar" onclick={voltar} aria-label={rotuloVoltar}><Icone nome="voltar" tamanho={24} /></button>
     {/if}
+    {#if logo}<img class="logo" src={logo} alt="" width="32" height="32" />{/if}
     <div class="textos">
       <h1 title={titulo} {lang}>{titulo}</h1>
       {#if subtitulo}<p>{subtitulo}</p>{/if}
@@ -52,6 +56,7 @@
     min-width: 48px; min-height: 48px; margin-left: -0.6rem; font-size: 1.5rem; line-height: 1;
     background: transparent; border: 0; color: inherit; cursor: pointer; border-radius: 12px;
   }
+  .logo { flex: none; width: 32px; height: 32px; border-radius: 8px; }
   .textos { flex: 1; min-width: 0; padding: 0.25rem 0; }
   h1 {
     margin: 0; font-size: 1.2rem; line-height: 1.25; overflow-wrap: anywhere;

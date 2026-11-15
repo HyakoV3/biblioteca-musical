@@ -5,6 +5,7 @@
 import { Soundfont } from "smplr";
 import { INSTRUMENTOS, PADRAO, type InstrumentoId, type Perfil, type SinteticoId } from "./instrumentos";
 import { REALISTAS, ehRealista, urlDoRealista, type RealistaId } from "./realista";
+import { armazenamentoDoSmplr } from "./sons/armazenamento";
 
 export type Nota = [inicio: number, duracao: number, midi: number];
 export type Voz = { nome: string; notas: Nota[] };
@@ -69,7 +70,7 @@ export class Sintetizador {
     if (!r) {
       const saida = ctx.createGain();
       saida.gain.value = REALISTAS[id].ganho; // iguala o volume ao da síntese equivalente
-      r = { inst: Soundfont(ctx, { instrumentUrl: urlDoRealista(id), destination: saida, volume: 100 }), saida };
+      r = { inst: Soundfont(ctx, { instrumentUrl: urlDoRealista(id), storage: armazenamentoDoSmplr, destination: saida, volume: 100 }), saida };
       this.reais.set(chave, r);
     }
     try {

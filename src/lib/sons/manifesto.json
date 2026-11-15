@@ -1,0 +1,107 @@
+{
+ "versao": 1,
+ "pacotes": [
+  {
+   "id": "todos",
+   "url": "https://fb.hm.hv2.xyz/public/api/resources/download?hash=dsy-5NWsnjIUU9zY1Yrt5w",
+   "arquivos": [
+    {
+     "instrumento": "drawbar_organ",
+     "arquivo": "drawbar_organ-mp3.js",
+     "bytes": 1636113,
+     "sha256": "b280ab03b189f39ebf98ab5150cc9795ac5ee60b9f789f3634669978d1a5c748"
+    },
+    {
+     "instrumento": "alto_sax",
+     "arquivo": "alto_sax-mp3.js",
+     "bytes": 1913044,
+     "sha256": "46242526aec2fd643f946ab78a794b28629044c2673f4279c3caa40e11d27ff8"
+    },
+    {
+     "instrumento": "bassoon",
+     "arquivo": "bassoon-mp3.js",
+     "bytes": 1913043,
+     "sha256": "12c15ef09f3c80f91fe1b31ec7e35e832bd8e93db9f96d286cabbc43c92613c6"
+    },
+    {
+     "instrumento": "clarinet",
+     "arquivo": "clarinet-mp3.js",
+     "bytes": 1933320,
+     "sha256": "d11e429eb34cbe4a0a511ccb118c45a50e2fdc6906fb2fa2041eafc912350361"
+    },
+    {
+     "instrumento": "flute",
+     "arquivo": "flute-mp3.js",
+     "bytes": 1941149,
+     "sha256": "d5062871eea6ec69f970540a2cde651d4daab93a569ce375d6345effc68da5ce"
+    },
+    {
+     "instrumento": "oboe",
+     "arquivo": "oboe-mp3.js",
+     "bytes": 1946076,
+     "sha256": "25ac7e78ea954460e0049c21f12192996e6f104aa4e698965c8db401bcb99b9e"
+    },
+    {
+     "instrumento": "recorder",
+     "arquivo": "recorder-mp3.js",
+     "bytes": 1660440,
+     "sha256": "c1555030819950a5a3be85d256eaa335b1fd4c244f6091cb11c3e4f68280337e"
+    },
+    {
+     "instrumento": "tenor_sax",
+     "arquivo": "tenor_sax-mp3.js",
+     "bytes": 1946605,
+     "sha256": "b227b1008058101907c08ba9882621a86afb81a72ffda0023fddbdd8dbd6d719"
+    },
+    {
+     "instrumento": "french_horn",
+     "arquivo": "french_horn-mp3.js",
+     "bytes": 1946607,
+     "sha256": "2a9cc59f706a02afdd08ae165889da63f007002f0e5dd9acfd0214db75a48365"
+    },
+    {
+     "instrumento": "trombone",
+     "arquivo": "trombone-mp3.js",
+     "bytes": 1814088,
+     "sha256": "3d8825cbe8b9a9b3f116b3a2d9011bc07a39738459f45ac61725007123fc9c1d"
+    },
+    {
+     "instrumento": "trumpet",
+     "arquivo": "trumpet-mp3.js",
+     "bytes": 1926959,
+     "sha256": "8195abeb91ae83950face9b107534696c3ab6dca93149087479cd652882a256d"
+    },
+    {
+     "instrumento": "tuba",
+     "arquivo": "tuba-mp3.js",
+     "bytes": 1531356,
+     "sha256": "4ddb512f709929edb451095c0a6fba5d340d8666e50a3a097ae141b25739d5f5"
+    },
+    {
+     "instrumento": "cello",
+     "arquivo": "cello-mp3.js",
+     "bytes": 1946601,
+     "sha256": "0ae457d8496be5982624b20ffb594932f48e9bb390528d6e2b3f7227c01f786d"
+    },
+    {
+     "instrumento": "contrabass",
+     "arquivo": "contrabass-mp3.js",
+     "bytes": 1459986,
+     "sha256": "634cdc6946594cf0fe317d47eb05be31eeb1061506924645a3b8659cca166e7e"
+    },
+    {
+     "instrumento": "viola",
+     "arquivo": "viola-mp3.js",
+     "bytes": 1946601,
+     "sha256": "e58c5febf105362a0ffbd90af241be366bee15444f4583f36c7e3b4f2041a550"
+    },
+    {
+     "instrumento": "violin",
+     "arquivo": "violin-mp3.js",
+     "bytes": 1946602,
+     "sha256": "074886788642ea53991bc3272132609a0fd86526e5bf1c738abcdd72b0b99745"
+    }
+   ]
+  }
+ ]
+}

@@ -1,5 +1,9 @@
 <script lang="ts">
   import Icone from "$lib/Icone.svelte";
+  import type { Chave } from "$lib/i18n/pt";
+  import { sons } from "$lib/sons/pacotes.svelte";
+  import { formatarMB } from "$lib/sons/formato";
+  import { bytesDoPacote } from "$lib/sons/tipos";
   import Aviso from "$lib/Aviso.svelte";
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
@@ -15,6 +19,13 @@
   let confirmando = $state(false);
   // O texto do "Sobre o app" é longo: fica num card fechado, que a pessoa abre se quiser ler.
   let sobreAberto = $state(false);
+
+  // Código do erro do download -> texto traduzido.
+  const erroDoSom = (codigo: string): Chave =>
+    codigo === "rede" ? "sons.erro_rede"
+    : codigo === "armazenamento" ? "sons.erro_armazenamento"
+    : codigo === "outro" ? "sons.erro_outro"
+    : "sons.erro_arquivo";
 
   async function importar(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
@@ -115,6 +126,39 @@
     {#if resultado}<Aviso tipo={resultado.tipo}>{resultado.texto}</Aviso>{/if}
   </section>
 
+  <section>
+    <h2>{t("sons.titulo")}</h2>
+    <p class="meta">{t("sons.explica")}</p>
+    {#each sons.pacotes as p (p.id)}
+      {@const and = sons.andamento(p.id)}
+      {@const instalado = sons.pacoteInstalado(p)}
+      {@const tamanho = formatarMB(bytesDoPacote(p), i18n.idioma)}
+      <div class="pacote">
+        <div class="pacote-info">
+          <strong>{t(`sons.pacote_${p.id}` as Chave)}</strong>
+          <span class="meta">{tamanho} · {instalado ? t("sons.instalado") : t("sons.nao_instalado")}</span>
+        </div>
+        {#if and.fase === "baixando"}
+          <progress
+            value={and.progresso}
+            max="1"
+            aria-label={t("sons.baixando", { n: Math.round(and.progresso * 100) })}
+          ></progress>
+          <span class="meta">{t("sons.baixando", { n: Math.round(and.progresso * 100) })}</span>
+        {:else if and.fase === "conferindo"}
+          <span class="meta" role="status">{t("sons.conferindo")}</span>
+        {:else if instalado}
+          <button class="botao" onclick={() => sons.remover(p.id)}>{t("sons.remover")}</button>
+        {:else}
+          <button class="botao primario" onclick={() => sons.baixar(p.id)}>{t("sons.baixar", { tamanho })}</button>
+        {/if}
+      </div>
+      {#if and.fase === "erro"}
+        <Aviso tipo="erro">{t(erroDoSom(and.erro))}</Aviso>
+      {/if}
+    {/each}
+  </section>
+
   <!-- Aviso: o app não tem ligação com a CCB. Vem antes do "Sobre", em destaque. -->
   <section>
     <Aviso tipo="info"><strong>{t("sobre.aviso_titulo")}</strong><br />{t("sobre.aviso")}</Aviso>
@@ -163,6 +207,9 @@
   summary::-webkit-details-marker { display: none; }
   .corpo { padding: 0.2rem 0.9rem 0.9rem; }
   .versao { margin: 0 0 1.5rem; text-align: center; }
+  .pacote { display: grid; gap: 0.5rem; margin: 0.6rem 0; padding: 0.8rem 0.9rem; border: 1px solid var(--borda-controle); border-radius: 12px; background: var(--superficie); }
+  .pacote-info { display: grid; gap: 0.15rem; }
+  .pacote progress { width: 100%; height: 10px; accent-color: var(--acento); }
   .sobre p, .sobre li { line-height: 1.5; }
   .sobre h3 { margin: 1.1rem 0 0.3rem; font-size: 0.95rem; }
   .sobre ul { margin: 0; padding-left: 1.2rem; }

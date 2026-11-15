@@ -34,7 +34,7 @@ que o `smplr` já lê. Tamanho depois do corte: de 1,6 a 2,1 MB por instrumento.
 ## Gerar
 
 ```sh
-sh tools/baixar-sons-teste.sh        # baixa os arquivos originais do banco para static/sons/ (fora do Git)
+sh tools/baixar-sons-teste.sh        # baixa os arquivos originais do banco para sons-fonte/ (fora do Git)
 python3 tools/preparar-sons.py --pacote sons-001 --saida <pasta de saída>/sons-001
 # ou só alguns:  --instrumentos drawbar_organ flute clarinet
 ```
@@ -77,11 +77,34 @@ antes de guardar.
 O `smplr` lê o arquivo com `JSON.parse` e decodifica o áudio; **não executa** o conteúdo (conferido em 2026-11-14: nenhum
 `eval`, `Function` nem criação de script). Um arquivo adulterado só pode dar erro ou um som estranho.
 
-## O que falta no app
+## Como funciona no app (implementado em 2026-11-15, versão 0.3.0)
 
-- [ ] Manifesto dentro do app (`instrumento`, `arquivo`, `bytes`, `sha256`, endereços) e a lista de instrumentos por voz.
-- [ ] Download pelo lado nativo, conferência do SHA-256 e armazenamento no aparelho (funciona offline depois).
-- [ ] Ajustes, "Sons gravados": lista por grupo com o tamanho de cada instrumento, baixar, remover, baixar o grupo, e
-      quanto espaço ocupa.
-- [ ] O seletor de instrumento de cada voz mostrar só os gravados que já foram baixados (já é assim no protótipo).
+- **Manifesto** em `src/lib/sons/manifesto.json`, gerado por `tools/montar-manifesto-sons.py` (junta os manifestos dos
+  grupos e os links). Hoje há **um pacote só, `todos`**, com os 16 instrumentos, no link da pasta `BibliotecaMusical`
+  (29,4 MB). Quando cada grupo tiver o seu link: `python3 tools/montar-manifesto-sons.py --link orgao=URL --link madeiras=URL ...`.
+- **Ajustes, "Sons gravados":** lista os pacotes do manifesto com o tamanho, o estado (instalado ou não), o botão
+  **Baixar** (com barra de progresso) e **Remover**, e traduz os erros.
+- **Download** pelo lado nativo (`@tauri-apps/plugin-http`; o link do File Browser não manda CORS), com a rede **restrita ao
+  endereço do servidor** em `src-tauri/capabilities/default.json`.
+- **Conferência:** o zip é aberto em memória (`fflate`), só os arquivos que o manifesto espera são extraídos (as pastas do
+  zip são ignoradas) e **cada um precisa bater com o tamanho e o SHA-256 do manifesto**; zip adulterado, incompleto ou
+  "bomba" (mais de 100 MB descompactados) é recusado inteiro.
+- **Armazenamento** no Cache do navegador interno do app (chaves virtuais `/sons/<arquivo>`), com pedido de persistência;
+  funciona **offline** depois de baixado. O `smplr` lê dali pelo seu `storage` próprio, sem rede.
+- **Escolha por voz** (card Instrumentos): sem nenhum som gravado instalado, um seletor só (sintetizado). Com algum
+  instalado, cada voz ganha um alternador **Sintetizado | Gravado**; o seletor mostra só os instrumentos do modo e da voz
+  (4 a 7 itens, não 30). Trocar de modo mantém o instrumento quando há equivalente. Remover o pacote devolve as vozes ao
+  sintetizado.
+- **Volume:** cada gravado tem um ganho (em `src/lib/realista.ts`) medido contra o sintetizado equivalente.
+
+Testado com o zip **real** do servidor (16 arquivos conferidos em 41 ms) e com zips adulterados, intrusos, truncados e
+"bomba". **Ainda não testado em aparelho**: o download dentro do app (plugin HTTP, Cache e smplr) só se confirma no
+emulador ou no celular.
+
+## O que falta
+
+- [ ] Testar o download, a instalação e a remoção no emulador e no celular.
+- [ ] Um link por grupo (`orgao`, `madeiras`, `metais`, `cordas`) no File Browser, e regerar o manifesto.
+- [ ] Aumentar o limite de banda do link (hoje ~500 KB/s: 29 MB levam ~60 s).
 - [ ] Texto de créditos com o aviso de copyright do FluidR3 (`docs/licencas-de-terceiros.md`).
+- [ ] Substituto do flugelhorn e do bombardino (ver a busca de euphonium acima).
