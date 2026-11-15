@@ -41,6 +41,14 @@ INSTRUMENTOS = {
     "oboe": ("oboe", 58, 91),
     "sax_alto": ("alto_sax", 49, 81),
     "sax_tenor": ("tenor_sax", 44, 76),
+    # Segunda leva: os demais com gravado no banco. O contrabaixo só tem notas audíveis até a 57.
+    "flauta_doce": ("recorder", 72, 96),
+    "violino": ("violin", 55, 96),
+    "clarinete": ("clarinet", 50, 94),
+    "viola": ("viola", 48, 84),
+    "violoncelo": ("cello", 36, 76),
+    "contrabaixo": ("contrabass", 28, 55),
+    "trompa": ("french_horn", 41, 77),
 }
 NOTAS = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
 
@@ -431,7 +439,11 @@ def main():
         for midi in range(lo, hi + 1, PASSO_ANCORAS):
             if midi not in amostras:
                 continue
-            m = analisar_nota(decodificar(amostras[midi]), midi)
+            x = decodificar(amostras[midi])
+            if rms_janelas(x)[0].max(initial=0) < 1e-3:  # o banco deixa algumas notas mudas: sem sinal não há timbre a medir
+                print(f"{nome}: nota {midi} muda no banco, pulada", file=sys.stderr)
+                continue
+            m = analisar_nota(x, midi)
             ancoras.append(m)
             if args.diagnostico:
                 print(f"{nome:9} midi {midi:3} f0={m['f_med']:7.2f} ataque={m['ataque']*1000:4.0f} ms  centroide={m['centroide']:5.2f}  "

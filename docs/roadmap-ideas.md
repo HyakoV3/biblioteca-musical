@@ -1081,6 +1081,12 @@ Limite da medida: o banco reaproveita amostras entre notas vizinhas, então ela 
 (tuba, tenor e trombone os que mais; o sax alto e o trompete ainda ficam ~400 Hz abaixo do gravado, o que o ruído e as
 ressonâncias não modeladas explicam).
 
+**Segunda leva (2026-11-15):** o mesmo método foi aplicado aos outros 7 sintetizados que têm gravado no banco (flauta doce,
+violino, clarinete, viola, violoncelo, contrabaixo e trompa; a trompa ganha também o filtro de abertura, por ser metal).
+Distância à gravação: flauta doce 1,4 → 0,3; violino 3,4 → 1,2; clarinete 18,6 → 1,7; viola 5,6 → 2,2; violoncelo
+5,4 → 2,5; contrabaixo 10,2 → 1,4; trompa 9,3 → 1,0 (média dos 14: 8,7 → 1,6 dB). Sem gravado no banco, ficam com a tabela
+fixa: flugelhorn, bombardino e os órgãos suave e pleno. Vibrato e volume eficaz dos perfis seguem os de antes. Falta ouvir.
+
 **Para ouvir:** `node tools/previas-timbres.mjs <pasta>` gera, por instrumento, um MP3 com a mesma escala de duas oitavas
 em **antes → agora → gravado** (o gravado vai igualado ao "agora" em volume, para comparar só o timbre). Roda o código
 real do app num Chrome mudo, sem tocar som.

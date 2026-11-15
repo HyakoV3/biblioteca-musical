@@ -26,8 +26,8 @@ export const temTimbreMedido = (id: string): id is SinteticoId => Object.hasOwn(
 /** Ataque nunca abaixo de 20 ms (estalo) nem acima de 80 ms (o oboé gravado "incha" em 200 ms, o que num hino atrasa a nota). */
 const ATAQUE_MIN = 0.02;
 const ATAQUE_MAX = 0.08;
-/** Só os metais abrem o brilho no começo; nas palhetas a medida é inconclusiva (quase sempre já nasce aberta). */
-const COM_ABERTURA = new Set<string>(["trompete", "trombone", "tuba"]);
+/** Só os metais abrem o brilho no começo; nas palhetas, cordas e flauta a medida é inconclusiva (quase sempre já nasce aberta). */
+const COM_ABERTURA = new Set<string>(["trompete", "trombone", "tuba", "trompa"]);
 /** Acima disto o "começo escuro" medido já é o espectro inteiro: não há abertura a imitar. */
 const CORTE_MAXIMO = 20;
 /** Abaixo da amplitude relativa 0,003 (-50 dB) o harmônico não se ouve: não entra na tabela. */

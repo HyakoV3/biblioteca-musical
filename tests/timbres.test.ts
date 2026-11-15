@@ -3,7 +3,7 @@ import medidas from "../src/lib/timbres.json";
 import { INSTRUMENTOS } from "../src/lib/instrumentos";
 import { COM_TIMBRE_MEDIDO, eficazRelativo, harmonicosEm, perfilDaNota, temTimbreMedido } from "../src/lib/timbres";
 
-const AFETADOS = ["trompete", "trombone", "tuba", "fagote", "oboe", "sax_alto", "sax_tenor"] as const;
+const AFETADOS = ["trompete", "trombone", "tuba", "fagote", "oboe", "sax_alto", "sax_tenor", "flauta_doce", "violino", "clarinete", "viola", "violoncelo", "contrabaixo", "trompa"] as const;
 type Ancora = { midi: number; h: number[]; ataque: number };
 const ancoras = (id: string) => (medidas.instrumentos as unknown as Record<string, { faixa: number[]; ancoras: Ancora[] }>)[id];
 const centroide = (h: number[]) => {
@@ -17,11 +17,11 @@ const centroide = (h: number[]) => {
 };
 
 describe("timbres.json (medido nas gravações)", () => {
-  it("cobre os sete instrumentos pedidos e nenhum outro", () => {
+  it("cobre os 14 instrumentos que têm gravado de referência e nenhum outro", () => {
     expect([...COM_TIMBRE_MEDIDO].sort()).toEqual([...AFETADOS].sort());
     for (const id of AFETADOS) expect(id in INSTRUMENTOS).toBe(true);
     expect(temTimbreMedido("trompete")).toBe(true);
-    expect(temTimbreMedido("violino")).toBe(false);
+    expect(temTimbreMedido("flugelhorn")).toBe(false); // o banco não tem gravado dele
   });
 
   it("âncoras ordenadas, dentro da faixa, com tabelas válidas (relativas ao harmônico mais forte)", () => {
@@ -66,13 +66,15 @@ describe("harmonicosEm", () => {
       const { faixa } = ancoras(id);
       const grave = centroide(harmonicosEm(id, faixa[0] + 2));
       const agudo = centroide(harmonicosEm(id, faixa[1] - 2));
-      expect(grave).toBeGreaterThan(agudo * 1.3);
+      // Só metais e palhetas (a primeira leva) têm essa regra: nas cordas e na flauta doce o corpo do instrumento fixa as
+      // ressonâncias e o brilho, contado em número de harmônico, não precisa cair com a altura.
+      if (AFETADOS.indexOf(id) < 7) expect(grave).toBeGreaterThan(agudo * 1.3);
     }
   });
 
   it("instrumento sem medida usa a tabela fixa", () => {
-    expect(harmonicosEm("violino", 60)).toBe(INSTRUMENTOS.violino.harmonicos);
-    expect(perfilDaNota("violino", 60)).toBe(INSTRUMENTOS.violino);
+    expect(harmonicosEm("flugelhorn", 60)).toBe(INSTRUMENTOS.flugelhorn.harmonicos);
+    expect(perfilDaNota("flugelhorn", 60)).toBe(INSTRUMENTOS.flugelhorn);
   });
 });
 
@@ -112,10 +114,10 @@ describe("perfilDaNota", () => {
     }
   });
 
-  it("só os metais (trompete, trombone, tuba) abrem o brilho no começo", () => {
+  it("só os metais (trompete, trombone, tuba, trompa) abrem o brilho no começo", () => {
     for (const id of AFETADOS) {
       const ab = perfilDaNota(id, ancoras(id).faixa[0] + 6).abertura;
-      if (["trompete", "trombone", "tuba"].includes(id)) {
+      if (["trompete", "trombone", "tuba", "trompa"].includes(id)) {
         expect(ab).toBeDefined();
         expect(ab!.corte).toBeGreaterThan(1);
         expect(ab!.corte).toBeLessThan(20);
