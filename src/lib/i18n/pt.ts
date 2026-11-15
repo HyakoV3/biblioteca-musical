@@ -23,6 +23,7 @@ export const pt = {
   "player.volume": "Volume de {voz}",
   "player.instrumento": "Instrumento de {voz}",
   "player.transposicao": "Transposição",
+  "player.redefinir_instrumentos": "Redefinir instrumentos",
   "player.redefinir": "Redefinir vozes",
   "grupo.orgaos": "Órgãos",
   "grupo.instrumentos": "Instrumentos",

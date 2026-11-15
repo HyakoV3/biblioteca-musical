@@ -82,12 +82,18 @@
 
   const aoMudarVoz = (i: number) => reproducao.volumeAoVivo(hino.numero, i);
 
+  // Só volume e silenciar (valem na hora, até tocando). Os instrumentos têm o seu próprio botão.
   function redefinirVozes() {
     const p = padrao();
-    cfg.instrumentos = hino.vozes.map(() => p.instrumento);
     cfg.volumes = hino.vozes.map(() => p.volume);
     cfg.mudas = hino.vozes.map(() => p.muda);
     hino.vozes.forEach((_, i) => aoMudarVoz(i));
+  }
+
+  // Só os instrumentos (voltam ao padrão). Só muda parado ou pausado, como a escolha de cada instrumento.
+  function redefinirInstrumentos() {
+    const p = padrao();
+    cfg.instrumentos = hino.vozes.map(() => p.instrumento);
   }
 
   function restaurarPadrao() {
@@ -296,8 +302,8 @@
         {/each}
       </div>
 
-      <!-- Redefine também os instrumentos, que só mudam parado ou pausado (como "Restaurar padrão"). -->
-      <button class="botao secundario" disabled={!editavel} onclick={redefinirVozes}>{t("player.redefinir")}</button>
+      <!-- Só volume e silenciar: vale na hora, também tocando. -->
+      <button class="botao secundario" onclick={redefinirVozes}>{t("player.redefinir")}</button>
     </div>
   </details>
 
@@ -330,6 +336,10 @@
           </select>
         </label>
       {/each}
+
+      <button class="botao secundario" disabled={!editavel} onclick={redefinirInstrumentos}>
+        {t("player.redefinir_instrumentos")}
+      </button>
     </div>
   </details>
 </section>
