@@ -120,9 +120,11 @@
     cfg.transposicao = 0;
   }
 
-  const passoAndamento = 5;
-  const mudarAndamento = (d: number) =>
-    (cfg.andamento = Math.min(ANDAMENTO_MAX, Math.max(ANDAMENTO_MIN, cfg.andamento + d * passoAndamento)));
+  // Andamento em dois passos: 1 bpm (ajuste fino) e 5 bpm (ajuste grosso).
+  const PASSO_FINO = 1;
+  const PASSO_GROSSO = 5;
+  const mudarAndamento = (bpm: number) =>
+    (cfg.andamento = Math.min(ANDAMENTO_MAX, Math.max(ANDAMENTO_MIN, cfg.andamento + bpm)));
   const mudarTom = (d: number) =>
     (cfg.transposicao = Math.min(TRANSPOSICAO_MAX, Math.max(-TRANSPOSICAO_MAX, cfg.transposicao + d)));
   const sinal = (n: number) => (n > 0 ? `+${n}` : String(n));
@@ -240,20 +242,25 @@
       <span class="direita"><span class="resumo">{resumoAjustes}</span><Icone nome={cartoes.ajustes ? "fechar" : "abrir"} tamanho={24} /></span>
     </summary>
     <div class="corpo">
-      <div class="passo-linha">
+      <!-- Andamento: dois passos de cada lado, −5 −1 [valor] +1 +5. Linha inteira (quatro botões não cabem ao lado do rótulo). -->
+      <div class="passo-linha andamento">
         <span class="rotulo" id="rot-andamento">{t("player.andamento_rotulo")}</span>
         <div class="passo" role="group" aria-labelledby="rot-andamento">
-          <button
-            aria-label={t("player.diminuir", { item: t("player.andamento_rotulo").toLowerCase() })}
-            disabled={!editavel || cfg.andamento <= ANDAMENTO_MIN}
-            onclick={() => mudarAndamento(-1)}><Icone nome="menos" tamanho={24} /></button
-          >
+          {#each [-PASSO_GROSSO, -PASSO_FINO] as bpm (bpm)}
+            <button
+              aria-label={t("player.diminuir_n", { item: t("player.andamento_rotulo").toLowerCase(), n: -bpm })}
+              disabled={!editavel || cfg.andamento <= ANDAMENTO_MIN}
+              onclick={() => mudarAndamento(bpm)}>−{-bpm}</button
+            >
+          {/each}
           <output aria-live="polite">{t("player.bpm", { n: cfg.andamento })}</output>
-          <button
-            aria-label={t("player.aumentar", { item: t("player.andamento_rotulo").toLowerCase() })}
-            disabled={!editavel || cfg.andamento >= ANDAMENTO_MAX}
-            onclick={() => mudarAndamento(1)}><Icone nome="mais" tamanho={24} /></button
-          >
+          {#each [PASSO_FINO, PASSO_GROSSO] as bpm (bpm)}
+            <button
+              aria-label={t("player.aumentar_n", { item: t("player.andamento_rotulo").toLowerCase(), n: bpm })}
+              disabled={!editavel || cfg.andamento >= ANDAMENTO_MAX}
+              onclick={() => mudarAndamento(bpm)}>+{bpm}</button
+            >
+          {/each}
         </div>
       </div>
 
@@ -410,6 +417,11 @@
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   .passo output { min-width: 6.5rem; text-align: center; font-variant-numeric: tabular-nums; }
+  /* Andamento: rótulo em cima e os cinco itens (−5 −1 valor +1 +5) repartindo a largura toda. Botões de texto. */
+  .passo-linha.andamento { flex-wrap: wrap; }
+  .andamento .passo { flex: 1 1 100%; justify-content: space-between; }
+  .andamento .passo button { flex: none; min-width: 48px; width: auto; padding: 0 0.5rem; font-size: 1.05rem; font-weight: 600; }
+  .andamento .passo output { flex: 1; min-width: 0; }
   /* Botões compactos ("▶ Intro", "▶ 1ª", "▶ 3ª ⚑") que dividem a linha inteira. O que toca fica em destaque. */
   .vezes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   /* Cada botão ocupa uma fatia igual da linha (flex: 1 1 0). Com muitas vezes (até 8 + Intro), quebram de linha e

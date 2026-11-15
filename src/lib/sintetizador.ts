@@ -217,6 +217,13 @@ export class Sintetizador {
     }
     this.fontes = [];
     for (const inst of this.reaisAtivos) {
+      // `stop()` só cala as notas que já estão soando. As notas futuras ficam na fila do agendador do smplr e
+      // seguiriam disparando no andamento antigo por cima do novo: é preciso esvaziar a fila também.
+      try {
+        inst.scheduler.stop();
+      } catch {
+        /* sem agendador */
+      }
       try {
         inst.stop();
       } catch {

@@ -134,6 +134,8 @@ export const pt = {
   "player.bpm": "{n} bpm",
   "player.diminuir": "Diminuir {item}",
   "player.aumentar": "Aumentar {item}",
+  "player.diminuir_n": "Diminuir {item} em {n}",
+  "player.aumentar_n": "Aumentar {item} em {n}",
   "player.restaurar_padrao": "Restaurar padrão",
   "player.parar_para_alterar": "Pause ou pare a reprodução para alterar andamento, tom e instrumentos.",
   "player.mudancas_ao_continuar": "Andamento, tom e instrumentos podem ser alterados agora. As mudanças valem quando você continuar.",
