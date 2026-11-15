@@ -38,7 +38,7 @@ if (!bancoSf2 || !saida) {
 const lib = await import(process.env.SPESSASYNTH ? pathToFileURL(process.env.SPESSASYNTH).href : "spessasynth_core");
 const { SoundBankLoader, SpessaSynthProcessor } = lib;
 const instrumentos = pedidos.length ? pedidos : Object.keys(PROGRAMAS);
-for (const i of instrumentos) if (!(i in PROGRAMAS)) throw new Error(`instrumento desconhecido: ${i} (${Object.keys(PROGRAMAS).join(", ")})`);
+for (const i of instrumentos) if (!Object.hasOwn(PROGRAMAS, i)) throw new Error(`instrumento desconhecido: ${i} (${Object.keys(PROGRAMAS).join(", ")})`);
 
 const sf = fs.readFileSync(bancoSf2);
 const banco = SoundBankLoader.fromArrayBuffer(sf.buffer.slice(sf.byteOffset, sf.byteOffset + sf.byteLength));

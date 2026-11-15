@@ -313,6 +313,8 @@ def nivel_do_instrumento(arquivo, vozes, ganho):
         ini = int(np.argmax(env > 0.05 * env.max()))
         a, b = int((ini * passo + 0.45) * SR), min(len(x), int((ini * passo + 1.2) * SR))
         acum.append(niveis_do_trecho(x[a:b], ganho))
+    if not acum:
+        sys.exit(f"{arquivo}: todas as notas medidas estão mudas em {FONTE}")
     a = np.array(acum)
     return (10 * np.log10(np.mean(10 ** (a[:, 0] / 10))), 10 * np.log10(np.mean(10 ** (a[:, 1] / 10))),
             10 * np.log10(np.mean(10 ** (a[:, 2] / 10))), float(a[:, 3].max()))
