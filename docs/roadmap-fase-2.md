@@ -49,7 +49,8 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
 - [x] Ajustes, "Sons gravados": lista com tamanhos, baixar, remover; armazenamento no app, uso offline; alternador
       Sintetizado | Gravado por voz. **Implementado na 0.3.0, falta testar em aparelho** (`docs/pacote-de-sons.md`).
 - [ ] Hospedar os arquivos nós mesmos (depende de o repositório ser público) e carregar do armazenamento do app.
-- [ ] Página de créditos e licenças das amostras (aviso de copyright do FluidR3).
+- [x] Créditos e licenças: card fechado em Ajustes (FluidR3, amostras do Gleitzman com a atribuição CC BY 3.0, smplr, ícones,
+      bibliotecas), com o texto de cada licença. Ver `docs/licencas-de-terceiros.md` (inclui a divergência MIT x CC BY 3.0).
 - [ ] Comparar de ouvido os órgãos do banco: `church_organ`, `reed_organ` (palhetas) e `drawbar_organ` (tirantes), os
       três já no APK de comparação (baixados em 2026-11-14, ~3 MB cada). Escolher o mais parecido com o da igreja e
       decidir o substituto do flugelhorn. **(depende do responsável)**

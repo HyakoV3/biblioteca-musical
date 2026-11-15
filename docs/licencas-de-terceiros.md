@@ -11,12 +11,24 @@ O código deste projeto é MIT (`LICENSE`). Alguns materiais de terceiros acompa
 
 ## Sons gravados (pacote opcional, em preparação, ver I-07)
 
-- **Banco:** FluidR3_GM, de Frank Wen, **licença MIT**, distribuído em amostras por instrumento no repositório
-  `midi-js-soundfonts` de Benjamin Gleitzman.
-- **Biblioteca que toca as amostras:** `smplr` (o pacote no npm declara MIT).
-- **Pendente:** ler o `LICENSE` do repositório do `smplr` e a licença exata do pacote de amostras do Gleitzman; o texto
-  completo do aviso de copyright do FluidR3 vai neste arquivo quando o pacote de sons for distribuído. Os arquivos de som
-  ficam fora do Git (`sons-fonte/`).
+- **Banco:** FluidR3_GM, de Frank Wen. O autor o libera sob a **licença MIT** (README original: "I hereby release Fluid
+  under the MIT license"; aviso lido no arquivo de copyright do pacote `fluid-soundfont` da Debian, que cita o texto do
+  README e a linha "Copyright © 2000-2002, 2008 Frank Wen").
+- **Amostras em MP3 por instrumento:** geradas do FluidR3 pelo repositório `midi-js-soundfonts`, de Benjamin Gleitzman. O
+  código do repositório é **MIT** ("Copyright (C) 2012 Benjamin Gleitzman", `LICENSE.txt`), **mas o README dele rotula as
+  amostras geradas do FluidR3 como Creative Commons Atribuição 3.0 (CC BY 3.0)**, o que diverge da licença MIT do autor
+  do banco. Como as duas pedem **atribuição**, o app cumpre as duas: credita o autor, cita a licença com o link e declara
+  as alterações (conversão em MP3 e corte às notas dos hinos). Se um dia a dúvida importar (por exemplo, publicação em
+  loja), vale perguntar ao Gleitzman qual vale.
+- **Biblioteca que toca as amostras:** `smplr`, MIT (campo `license` do pacote e seção "License" do README). O pacote não
+  publica arquivo `LICENSE` nem linha de copyright; o app registra "Author: danigb", como o pacote declara.
+- **Onde aparece:** Ajustes, "Créditos e licenças" (`src/lib/licencas.ts`, textos em `src/lib/licencas-textos.ts`), com o
+  texto da licença de cada item. Lista: FluidR3_GM, midi-js-soundfonts, smplr, ícones Google Material (Apache 2.0, texto
+  integral), fflate, Svelte e SvelteKit, e Tauri (linhas de copyright lidas nos arquivos de licença dos pacotes
+  instalados). Os arquivos de som ficam fora do Git (`sons-fonte/`).
+- **Fora desta lista, por ora:** as dependências indiretas do JavaScript e os crates do Rust do Tauri (cada uma com o seu
+  aviso). Se o app for publicado em loja, vale gerar essa lista por ferramenta (por exemplo `cargo about` e um gerador
+  de avisos do npm), em vez de mantê-la à mão.
 
 ## Conteúdo dos hinos
 

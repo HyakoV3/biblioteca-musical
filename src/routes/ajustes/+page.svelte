@@ -11,6 +11,7 @@
   import { usarVoltar } from "$lib/navegacao";
   import { reproducao } from "$lib/reproducao.svelte";
   import { ESTILOS, TEMAS, estilo, tema } from "$lib/tema.svelte";
+  import { CREDITOS, textoDaLicenca } from "$lib/licencas";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const voltar = usarVoltar();
@@ -19,6 +20,8 @@
   let confirmando = $state(false);
   // O texto do "Sobre o app" é longo: fica num card fechado, que a pessoa abre se quiser ler.
   let sobreAberto = $state(false);
+  // Os créditos também ficam num card fechado: é informação de licença, que quase ninguém precisa ler no dia a dia.
+  let creditosAberto = $state(false);
 
   // Código do erro do download -> texto traduzido.
   const erroDoSom = (codigo: string): Chave =>
@@ -204,6 +207,35 @@
     </details>
   </section>
 
+  <section>
+    <details class="cartao" bind:open={creditosAberto}>
+      <summary>
+        <span>{t("ajustes.creditos")}</span>
+        <Icone nome={creditosAberto ? "fechar" : "abrir"} tamanho={24} />
+      </summary>
+      <div class="corpo sobre">
+        <p>{t("creditos.intro")}</p>
+        <ul class="creditos">
+          {#each CREDITOS as c (c.id)}
+            <li>
+              <strong>{c.nome}</strong>
+              <span class="meta">{t("creditos.por", { autor: c.autoria })}</span>
+              <span>{t(`creditos.uso.${c.id}` as Chave)}</span>
+              <span class="meta">{t("creditos.licenca", { licenca: c.licenca })}</span>
+              {#if c.url}<span class="meta url">{c.url}</span>{/if}
+              <details class="licenca">
+                <summary>{t("creditos.ver")}</summary>
+                {#each c.textos as tx}
+                  <pre>{textoDaLicenca(tx)}</pre>
+                {/each}
+              </details>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    </details>
+  </section>
+
   <!-- A versão fica sozinha no fim, centralizada, fora do card. -->
   <p class="meta versao">{t("ajustes.versao", { v: `${__APP_VERSAO__} (${__APP_COMMIT__})` })}</p>
 </main>
@@ -224,6 +256,12 @@
   .sobre p, .sobre li { line-height: 1.5; }
   .sobre h3 { margin: 1.1rem 0 0.3rem; font-size: 0.95rem; }
   .sobre ul { margin: 0; padding-left: 1.2rem; }
+  .sobre ul.creditos { padding-left: 0; list-style: none; }
+  .creditos li { display: grid; gap: 0.15rem; padding: 0.7rem 0; border-top: 1px solid var(--borda-controle); }
+  .creditos li:first-child { border-top: 0; }
+  .creditos .url { overflow-wrap: anywhere; }
+  .licenca summary { min-height: 44px; padding: 0; font-weight: 500; color: var(--acento); }
+  .licenca pre { margin: 0.4rem 0 0.8rem; font: 0.78rem/1.45 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
   h2 { margin: 0 0 0.6rem; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--suave); }
   select {
     width: 100%; box-sizing: border-box; /* ocupa toda a largura, como as opções de aparência */
