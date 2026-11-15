@@ -59,9 +59,13 @@ li > a,
   .mini {
     animation: subir 200ms ease-out both;
   }
-  /* A barra de progresso avança sem "pulos" (o tempo é atualizado a cada 200 ms). */
+  /* A barra de progresso avança sem "pulos" (o tempo é atualizado a cada 200 ms). O dourado que enche o botão da
+     parte que toca (Intro, 1ª, 2ª...) faz o mesmo. */
   .preenchido {
     transition: width 220ms linear;
+  }
+  .enchimento {
+    transition: clip-path 220ms linear;
   }
   /* O karaokê rola a letra até a linha que soa: suave, só para quem não pediu menos movimento. */
   html {

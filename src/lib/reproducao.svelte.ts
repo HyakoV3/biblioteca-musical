@@ -258,8 +258,11 @@ function limpar() {
   configs.clear();
 }
 
-/** Onde a música está agora: a parte, a batida dentro dela e se essa parte é o final do hino. */
-export type Ponto = { parte: "intro" | number; batida: number; final: boolean };
+/**
+ * Onde a música está agora: a parte, a batida dentro dela, a duração dela (em batidas, 0 se desconhecida) e se essa
+ * parte é o final do hino. `batida / duracao` é o quanto da parte já passou (o botão da parte enche com isso).
+ */
+export type Ponto = { parte: "intro" | number; batida: number; duracao: number; final: boolean };
 
 /**
  * Lê a posição NESTE instante, direto do relógio do áudio (o `decorrido` do store só anda a cada 200 ms, o que
@@ -271,10 +274,12 @@ function ponto(numero: number): Ponto | null {
   const batida = (sint.audivel() * atual.andamento) / 60;
   const parte = atual.parte === "tudo" ? parteNaBatida(atual.marcos, batida) : atual.parte;
   if (parte === null) return null;
-  // Em "tudo" a parte começa onde o marco diz; tocada sozinha, começa em 0.
-  const inicio = atual.parte === "tudo" ? (atual.marcos.find((m) => m.parte === parte)?.inicio ?? 0) : 0;
+  // Em "tudo" a parte começa onde o marco diz; tocada sozinha, começa em 0. A duração vem do marco nos dois casos.
+  const marco = atual.marcos.find((m) => m.parte === parte);
+  const inicio = atual.parte === "tudo" ? (marco?.inicio ?? 0) : 0;
+  const duracao = marco ? Math.max(0, marco.fim - marco.inicio) : 0;
   const final = parte !== "intro" && atual.comFinal && parte === atual.total;
-  return { parte, batida: Math.max(0, batida - inicio), final };
+  return { parte, batida: Math.max(0, batida - inicio), duracao, final };
 }
 
 export const reproducao = {

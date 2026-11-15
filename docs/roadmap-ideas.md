@@ -176,7 +176,17 @@ resto). Se aparecerem muitas estruturas diferentes, o caminho consolidado é usa
 
 ## I-02 — Variante "pergaminho" nos temas claro e escuro
 
-- **Status:** anotada
+> **Status: feita (primeira versão), 2026-11-15, a validar no celular.** Em **Ajustes → Aparência** há agora duas
+> escolhas que se combinam: **Modo** (Automático, Claro, Escuro) e **Estilo** (Normal, **Pergaminho**, **Marinho e ouro**,
+> esta é a I-14). Cada estilo tem versão clara e escura, então o Automático funciona em todos (6 paletas). O Pergaminho
+> vale para o **app inteiro** (não só para a letra). Claro: fundo `#f5eedb`, cartões `#fffaeb`, texto marrom `#2b1a08`,
+> ações em terra `#8a3f0a`. Escuro: marrom-quente `#2b261f` (mais claro que o escuro normal), ações em âmbar `#f2b27a`.
+> Todas as combinações passam em `tools/contraste.py` (4,5:1 para texto, 3:1 para componentes). Prévias lado a lado em
+> `design/identidade/previa-estilos-ouvir.png` e `previa-estilos-letra.png`; detalhes em `docs/design-tokens.md`.
+> **Para confirmar com o responsável:** o quanto amarelado (os valores foram escolhidos por mim, a partir da paleta
+> terrosa e da conta de contraste), e o nome em cada idioma (Pergaminho, Pergamino, Parchment).
+
+- **Status:** feita (primeira versão)
 - **Origem:** pedido do responsável, 2026-11-14.
 - **Prioridade:** a definir
 
@@ -937,7 +947,15 @@ gravador (I-03).
 
 ## I-14 — Variante de tema com a paleta do ícone (azul-marinho e dourado)
 
-- **Status:** anotada
+> **Status: feita (primeira versão), 2026-11-15, a validar no celular.** É o estilo **Marinho e ouro** de
+> **Ajustes → Aparência** (junto do Pergaminho, ver a I-02). **Respostas que adotei às perguntas em aberto (a
+> confirmar):** (1) as ações **não** viram douradas: ficam em azul (marinho `#173f7a` no claro, azul claro `#8fbaf7` no
+> escuro) e o dourado do ícone segue só para "onde estou na música", como nos outros estilos; (2) **duas** paletas, clara
+> e escura, para o Automático funcionar (o claro usa um fundo azul-gelo `#e9eef7`, para não se confundir com o
+> Pergaminho); (3) é **escolha da pessoa**, e o padrão continua o Normal. Escuro: fundo `#041a3b`, cartões `#0b2a56`. Todas
+> as combinações passam em `tools/contraste.py`. Prévias em `design/identidade/previa-estilos-*.png`.
+
+- **Status:** feita (primeira versão)
 - **Origem:** pedido do responsável, 2026-11-14 ("Quero sim"), depois de perguntar se o tema segue as cores do ícone.
 - **Prioridade:** a definir
 

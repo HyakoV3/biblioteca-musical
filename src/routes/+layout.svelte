@@ -6,7 +6,7 @@
   import { i18n } from "$lib/i18n/index.svelte";
   import Miniplayer from "$lib/Miniplayer.svelte";
   import { sons } from "$lib/sons/pacotes.svelte";
-  import { aplicarTema, tema } from "$lib/tema.svelte";
+  import { aplicarEstilo, aplicarTema, estilo, tema } from "$lib/tema.svelte";
 
   let { children } = $props();
 
@@ -21,9 +21,10 @@
     document.documentElement.lang = i18n.idioma;
   });
 
-  // Aplica a aparência escolhida (Sistema, Claro ou Escuro).
+  // Aplica a aparência escolhida: o modo (Automático, Claro ou Escuro) e o estilo de cor (normal, pergaminho, marinho).
   $effect(() => {
     aplicarTema(tema.atual);
+    aplicarEstilo(estilo.atual);
   });
 </script>
 

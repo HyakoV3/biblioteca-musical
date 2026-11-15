@@ -38,7 +38,8 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
       iOS sem Mac. Mas **instalar** em iPhone, usar o TestFlight ou publicar na App Store exige uma conta do
       **Apple Developer Program** (cerca de US$ 99 por ano), com certificado e perfil de provisionamento guardados como
       segredos. Sem a conta, só sai build de simulador. Decidir entre iOS e uma versão web instalável (PWA); com PWA, a
-      página sai pelo GitHub Pages. **(depende do responsável)**
+      página sai pelo GitHub Pages. Se virar PWA, sincronizar o **modo e o estilo de cor entre abas** (evento `storage`):
+      no app Tauri, de janela única, isso não se aplica (revisão do vandame no PR dos estilos, a reavaliar nessa hora). **(depende do responsável)**
 
 ## 3. Revisão de código
 

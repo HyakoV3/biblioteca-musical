@@ -7,10 +7,16 @@
     <title>Biblioteca Musical CCB</title>
     <script>
       // Aplica o tema salvo antes da primeira pintura (evita piscar). Mantém em sintonia com src/lib/tema.svelte.ts.
-      try {
-        var t = localStorage.getItem("tema");
-        if (t === "claro" || t === "escuro") document.documentElement.dataset.tema = t;
-      } catch (e) {}
+      // Numa função própria, para as variáveis não virarem globais (window.t, window.e).
+      (function () {
+        try {
+          var t = localStorage.getItem("tema");
+          if (t === "claro" || t === "escuro") document.documentElement.dataset.tema = t;
+          // Estilos de cor (lista e chave em src/lib/estilos.ts; o "normal" não leva atributo).
+          var e = localStorage.getItem("estilo");
+          if (e === "pergaminho" || e === "marinho") document.documentElement.dataset.estilo = e;
+        } catch (erro) {}
+      })();
     </script>
     %sveltekit.head%
   </head>

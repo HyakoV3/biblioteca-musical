@@ -61,6 +61,14 @@
   const ativa = (parte: Alvo) => meu && !parado && reproducao.atual?.parte === parte;
   // Esta é a parte da música que está soando agora (em "hino todo" o destaque anda de uma para a outra).
   const destacada = (parte: "intro" | number) => meu && !parado && reproducao.parteTocando === parte;
+  // O botão da parte que soa vai enchendo de dourado com o tempo (de 0 a 1); ao mudar de parte, o antigo volta ao normal e o
+  // novo começa do zero. Recalcula a cada passo do `decorrido` (200 ms) e lê o relógio do áudio, como o karaokê.
+  const pontoAgora = $derived.by(() => {
+    void decorrido;
+    return meu && !parado ? reproducao.ponto(hino.numero) : null;
+  });
+  const fracaoDaParte = (parte: "intro" | number) =>
+    pontoAgora && pontoAgora.parte === parte ? fracao(pontoAgora.batida, pontoAgora.duracao) : 0;
   // pausa: tocando sozinha · música: soando dentro do hino todo (sinal que não depende só da cor) · play: pronta para tocar.
   const icone = (parte: Alvo): IconeNome =>
     ativa(parte) && estado === "tocando" ? "pause" : parte !== "tudo" && destacada(parte) && !ativa(parte) ? "musica" : "play";
@@ -176,7 +184,17 @@
       </div>
 
       {#if comPartes}
-        <!-- Cada botão toca só aquela parte, direto. Em "hino todo" o dourado acompanha a parte que está soando. -->
+        <!-- Cada botão toca só aquela parte, direto. Em "hino todo" o dourado acompanha a parte que está soando, e o botão
+             dessa parte vai enchendo de dourado enquanto ela toca. O rótulo é desenhado duas vezes, uma por camada: o da
+             camada dourada (recortada na largura do progresso) usa a cor de texto própria do dourado. -->
+        {#snippet conteudoParte(parte: "intro" | number)}
+          <Icone nome={icone(parte)} />
+          {#if parte === "intro"}
+            {t("vez.intro_curta")}
+          {:else}
+            {rotuloCurtoDaVez(parte)}{#if comFinalDisponivel && parte === totalVezes}<span class="flag"><Icone nome="bandeira" tamanho={18} /></span>{/if}
+          {/if}
+        {/snippet}
         <div class="vezes" role="group" aria-label={t("vez.grupo")}>
           {#if comIntroducao}
             <button
@@ -187,8 +205,12 @@
               aria-label={dicaDaParte("intro")}
               onclick={() => reproducao.alternar(hino, "intro")}
             >
-              <Icone nome={icone("intro")} />
-              {t("vez.intro_curta")}
+              <span class="rotulo-vez">{@render conteudoParte("intro")}</span>
+              {#if destacada("intro")}
+                <span class="enchimento" aria-hidden="true" style:clip-path={`inset(0 ${(1 - fracaoDaParte("intro")) * 100}% 0 0)`}>
+                  <span class="rotulo-vez">{@render conteudoParte("intro")}</span>
+                </span>
+              {/if}
             </button>
           {/if}
           {#if totalVezes > 1}
@@ -201,8 +223,12 @@
                 aria-label={dicaDaParte(vez)}
                 onclick={() => reproducao.alternar(hino, vez)}
               >
-                <Icone nome={icone(vez)} />
-                {rotuloCurtoDaVez(vez)}{#if comFinalDisponivel && vez === totalVezes}<span class="flag"><Icone nome="bandeira" tamanho={18} /></span>{/if}
+                <span class="rotulo-vez">{@render conteudoParte(vez)}</span>
+                {#if destacada(vez)}
+                  <span class="enchimento" aria-hidden="true" style:clip-path={`inset(0 ${(1 - fracaoDaParte(vez)) * 100}% 0 0)`}>
+                    <span class="rotulo-vez">{@render conteudoParte(vez)}</span>
+                  </span>
+                {/if}
               </button>
             {/each}
           {/if}
@@ -426,7 +452,16 @@
   .vezes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   /* Cada botão ocupa uma fatia igual da linha (flex: 1 1 0). Com muitas vezes (até 8 + Intro), quebram de linha e
      cada linha também se reparte por inteiro. */
-  .vez { flex: 1 1 0; gap: 0.35rem; min-width: 48px; padding: 0 0.4rem; }
+  .vez { flex: 1 1 0; gap: 0.35rem; min-width: 48px; padding: 0 0.4rem; position: relative; overflow: hidden; }
+  .rotulo-vez { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; }
+  /* A parte que soa: base normal (a cor do cartão) com borda dourada, e por cima o dourado enchendo da esquerda para a
+     direita. As duas camadas têm o mesmo tamanho e o mesmo rótulo, e a de cima é recortada no quanto já passou, então o
+     texto troca de cor exatamente na borda do preenchimento (escuro sobre o dourado, normal sobre o resto). */
+  .vez.tocando { background: var(--superficie); color: var(--texto); }
+  .enchimento {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: var(--ouro); color: var(--ouro-sobre); pointer-events: none;
+  }
 
   .vozes { display: grid; gap: 0.5rem; }
   .voz { display: grid; grid-template-columns: 48px minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }
