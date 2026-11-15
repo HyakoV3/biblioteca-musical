@@ -35,9 +35,9 @@ O idioma da **interface** (esta tradução) é separado do idioma dos **hinos**.
 
 - **O conteúdo dos hinos** (título e letra) vem do arquivo `hinario.json` e fica na língua em que foi
   escrito. Um hinário em outra língua é só outro arquivo.
-- **Mensagens de erro da importação e do carregamento** são traduzidas pela interface: o Rust devolve um código estável com os
-  dados (`versao|2|1`, `repetido|5`, `vazio`...) e `src/lib/erros.ts` o transforma no texto `erro.rust.<codigo>` do idioma
-  escolhido. Ao criar um erro novo no Rust, acrescente o código em `ERROS_DO_RUST` e o texto nos três idiomas (um teste confere).
+- **Mensagens de erro da importação e do carregamento** são traduzidas pela interface: o Rust devolve um JSON com um código
+  estável e os dados (`["versao","2","1"]`, `["repetido","5"]`, `["vazio"]`...; JSON porque os dados podem vir do arquivo
+  importado e conter qualquer caractere) e `src/lib/erros.ts` o transforma no texto `erro.rust.<codigo>` do idioma escolhido. Ao criar um erro novo no Rust, acrescente o código em `ERROS_DO_RUST` e o texto nos três idiomas (um teste confere).
   O detalhe de sistema que algumas mensagens carregam (por exemplo, "permissão negada") continua como o sistema o devolve.
 - Nomes de voz do arquivo como "Soprano", "Contralto", "Tenor" e "Baixo" são reconhecidos e traduzidos;
   outros nomes ("Parte I") aparecem como estão no arquivo.

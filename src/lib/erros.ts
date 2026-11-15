@@ -1,6 +1,7 @@
-// Erros do lado Rust (src-tauri/src/hinario.rs) chegam como `codigo|argumento|argumento`: um código estável e os dados, sem
-// frase pronta, para a interface traduzir no idioma da pessoa. O último argumento recebe todo o resto (um detalhe de sistema
-// pode conter "|"). Texto que não começa por um código conhecido é devolvido como está.
+// Erros do lado Rust (src-tauri/src/hinario.rs) chegam como um JSON `["codigo", "argumento", ...]`: um código estável e os dados,
+// sem frase pronta, para a interface traduzir no idioma da pessoa. É JSON, e não texto separado por delimitador, porque os
+// argumentos podem vir de dados importados (nomes de voz) e conter qualquer caractere. Texto que não for um desses JSON, ou
+// cujo código não seja conhecido, é devolvido como está.
 import type { Chave } from "./i18n/pt";
 
 type Tradutor = (c: Chave, p?: Record<string, string | number>) => string;
@@ -19,15 +20,24 @@ export const ERROS_DO_RUST: Readonly<Record<string, readonly string[]>> = {
   remover: ["detalhe"],
 };
 
+/** `["codigo", "arg", ...]` decodificado, ou null se o texto não tiver esse formato. */
+function decodificar(texto: string): string[] | null {
+  if (!texto.startsWith("[")) return null;
+  try {
+    const v: unknown = JSON.parse(texto);
+    return Array.isArray(v) && v.length > 0 && v.every((x) => typeof x === "string") ? v : null;
+  } catch {
+    return null;
+  }
+}
+
 export function traduzirErro(texto: string, t: Tradutor): string {
-  const corte = texto.indexOf("|");
-  const codigo = corte < 0 ? texto : texto.slice(0, corte);
-  if (!Object.hasOwn(ERROS_DO_RUST, codigo)) return texto;
-  const nomes = ERROS_DO_RUST[codigo];
-  const partes = corte < 0 ? [] : texto.slice(corte + 1).split("|");
+  const partes = decodificar(texto);
+  if (!partes || !Object.hasOwn(ERROS_DO_RUST, partes[0])) return texto;
+  const [codigo, ...args] = partes;
   const params: Record<string, string> = {};
-  nomes.forEach((nome, k) => {
-    params[nome] = k === nomes.length - 1 ? partes.slice(k).join("|") : (partes[k] ?? "");
+  ERROS_DO_RUST[codigo].forEach((nome, k) => {
+    params[nome] = args[k] ?? "";
   });
   return t(`erro.rust.${codigo}` as Chave, params);
 }

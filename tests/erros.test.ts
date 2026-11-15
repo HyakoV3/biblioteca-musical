@@ -7,32 +7,40 @@ import { ERROS_DO_RUST, traduzirErro } from "../src/lib/erros";
 // Tradutor falso: devolve a chave e os parâmetros, para conferir o que a função entrega.
 const t = (c: string, p?: Record<string, string | number>) => `${c} ${JSON.stringify(p ?? {})}`;
 const tr = (s: string) => traduzirErro(s, t as never);
+// Como o Rust monta o erro: um JSON com o código e os argumentos.
+const rust = (...v: string[]) => JSON.stringify(v);
 
 describe("traduzirErro (erros do Rust)", () => {
   it("código sem argumentos", () => {
-    expect(tr("vazio")).toBe("erro.rust.vazio {}");
-    expect(tr("grande_demais")).toBe("erro.rust.grande_demais {}");
+    expect(tr(rust("vazio"))).toBe("erro.rust.vazio {}");
+    expect(tr(rust("grande_demais"))).toBe("erro.rust.grande_demais {}");
   });
 
   it("código com argumentos, na ordem do Rust", () => {
-    expect(tr("versao|2|1")).toBe('erro.rust.versao {"versao":"2","esperado":"1"}');
-    expect(tr("repetido|5")).toBe('erro.rust.repetido {"numero":"5"}');
-    expect(tr("vozes_final|457|Baixo, Soprano|Soprano")).toBe(
+    expect(tr(rust("versao", "2", "1"))).toBe('erro.rust.versao {"versao":"2","esperado":"1"}');
+    expect(tr(rust("repetido", "5"))).toBe('erro.rust.repetido {"numero":"5"}');
+    expect(tr(rust("vozes_final", "457", "Baixo, Soprano", "Soprano"))).toBe(
       'erro.rust.vozes_final {"hino":"457","outras":"Baixo, Soprano","normal":"Soprano"}',
     );
   });
 
-  it("o último argumento recebe o resto, mesmo com '|' dentro (detalhe do sistema)", () => {
-    expect(tr("json_invalido|expected value | line 1 column 3")).toBe('erro.rust.json_invalido {"detalhe":"expected value | line 1 column 3"}');
-    expect(tr("gravar|/pasta/x: permissão negada")).toBe('erro.rust.gravar {"detalhe":"/pasta/x: permissão negada"}');
+  it("os dados podem ter qualquer caractere, inclusive '|', aspas e barra invertida (nomes de voz vêm do arquivo importado)", () => {
+    expect(tr(rust("vozes_final", "5", 'A|B, C"D', "Sop\\rano"))).toBe(
+      'erro.rust.vozes_final {"hino":"5","outras":"A|B, C\\"D","normal":"Sop\\\\rano"}',
+    );
+    expect(tr(rust("json_invalido", "expected value | line 1 column 3"))).toBe('erro.rust.json_invalido {"detalhe":"expected value | line 1 column 3"}');
+    expect(tr(rust("gravar", "/pasta/x: permissão negada"))).toBe('erro.rust.gravar {"detalhe":"/pasta/x: permissão negada"}');
   });
 
-  it("texto sem código conhecido volta como está (inclusive nomes herdados do objeto)", () => {
-    expect(tr("falha qualquer")).toBe("falha qualquer");
-    expect(tr("toString")).toBe("toString");
-    expect(tr("constructor|x")).toBe("constructor|x");
-    expect(tr("__proto__")).toBe("__proto__");
-    expect(tr("")).toBe("");
+  it("argumento que faltou vira texto vazio, e o que sobrou é ignorado", () => {
+    expect(tr(rust("versao", "2"))).toBe('erro.rust.versao {"versao":"2","esperado":""}');
+    expect(tr(rust("vazio", "sobra"))).toBe("erro.rust.vazio {}");
+  });
+
+  it("texto que não é um desses JSON, ou de código desconhecido, volta como está (inclusive nomes herdados do objeto)", () => {
+    for (const s of ["falha qualquer", "", "toString", "__proto__", "[", "[1,2]", "[]", '{"a":1}', rust("constructor"), rust("toString", "x"), rust("__proto__")]) {
+      expect(tr(s), s).toBe(s);
+    }
   });
 
   it("todo código tem texto nos três idiomas, com exatamente os parâmetros que a função envia", () => {
