@@ -268,8 +268,8 @@
       <span class="direita"><span class="resumo">{resumoAjustes}</span><Icone nome={cartoes.ajustes ? "fechar" : "abrir"} tamanho={24} /></span>
     </summary>
     <div class="corpo">
-      <!-- Andamento: dois passos de cada lado, −5 −1 [valor] +1 +5. Linha inteira (quatro botões não cabem ao lado do rótulo). -->
-      <div class="passo-linha andamento">
+      <!-- Andamento e transposição têm o mesmo desenho: o rótulo em cima e os controles numa linha inteira embaixo. No andamento são dois passos de cada lado (−5 −1 [valor] +1 +5), e quatro botões não cabem ao lado do rótulo; na transposição, − [n semitons] +. -->
+      <div class="passo-linha empilhado">
         <span class="rotulo" id="rot-andamento">{t("player.andamento_rotulo")}</span>
         <div class="passo" role="group" aria-labelledby="rot-andamento">
           {#each [-PASSO_GROSSO, -PASSO_FINO] as bpm (bpm)}
@@ -290,7 +290,7 @@
         </div>
       </div>
 
-      <div class="passo-linha">
+      <div class="passo-linha empilhado">
         <span class="rotulo" id="rot-tom">{t("player.transposicao")}</span>
         <div class="passo" role="group" aria-labelledby="rot-tom">
           <button
@@ -444,10 +444,10 @@
   }
   .passo output { min-width: 6.5rem; text-align: center; font-variant-numeric: tabular-nums; }
   /* Andamento: rótulo em cima e os cinco itens (−5 −1 valor +1 +5) repartindo a largura toda. Botões de texto. */
-  .passo-linha.andamento { flex-wrap: wrap; }
-  .andamento .passo { flex: 1 1 100%; justify-content: space-between; }
-  .andamento .passo button { flex: none; min-width: 48px; width: auto; padding: 0 0.5rem; font-size: 1.05rem; font-weight: 600; }
-  .andamento .passo output { flex: 1; min-width: 0; }
+  .passo-linha.empilhado { flex-wrap: wrap; }
+  .empilhado .passo { flex: 1 1 100%; justify-content: space-between; }
+  .empilhado .passo button { flex: none; min-width: 48px; width: auto; padding: 0 0.5rem; font-size: 1.05rem; font-weight: 600; }
+  .empilhado .passo output { flex: 1; min-width: 0; }
   /* Botões compactos ("▶ Intro", "▶ 1ª", "▶ 3ª ⚑") que dividem a linha inteira. O que toca fica em destaque. */
   .vezes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   /* Cada botão ocupa uma fatia igual da linha (flex: 1 1 0). Com muitas vezes (até 8 + Intro), quebram de linha e
