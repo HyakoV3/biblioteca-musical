@@ -64,11 +64,10 @@
 <main class="coluna conteudo">
   <section>
     <h2>{t("ajustes.aparencia")}</h2>
-    <!-- Duas escolhas que se combinam: o modo (claro ou escuro) e o estilo de cor. O rótulo visível fica fora do
-         leitor de tela (o nome do grupo vem da legenda escondida), para não ser lido duas vezes. -->
-    <p class="rotulo-grupo" aria-hidden="true">{t("ajustes.modo")}</p>
-    <fieldset class="segmentos">
-      <legend class="so-leitor">{t("ajustes.modo")}</legend>
+    <!-- Duas escolhas que se combinam: o modo (claro ou escuro) e o estilo de cor. O próprio rótulo visível dá o nome
+         ao grupo (aria-labelledby), então texto visível e nome acessível são sempre o mesmo. -->
+    <p class="rotulo-grupo" id="rotulo-modo">{t("ajustes.modo")}</p>
+    <fieldset class="segmentos" aria-labelledby="rotulo-modo">
       {#each TEMAS as id}
         <label class:ativo={tema.atual === id}>
           <input type="radio" name="tema" value={id} checked={tema.atual === id} onchange={() => (tema.atual = id)} />
@@ -76,9 +75,8 @@
         </label>
       {/each}
     </fieldset>
-    <p class="rotulo-grupo" aria-hidden="true">{t("ajustes.estilo")}</p>
-    <fieldset class="segmentos">
-      <legend class="so-leitor">{t("ajustes.estilo")}</legend>
+    <p class="rotulo-grupo" id="rotulo-estilo">{t("ajustes.estilo")}</p>
+    <fieldset class="segmentos" aria-labelledby="rotulo-estilo">
       {#each ESTILOS as id}
         <label class:ativo={estilo.atual === id}>
           <input type="radio" name="estilo" value={id} checked={estilo.atual === id} onchange={() => (estilo.atual = id)} />

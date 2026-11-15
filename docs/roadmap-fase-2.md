@@ -104,5 +104,6 @@ sem ir para o Git.
 Entram conforme o retorno dos testes: gravador de áudio (I-03, com fone toca o hino no ouvido e grava; sem fone só
 grava), afinador (I-13, dá o tom e mostra num medidor se a nota está baixa ou alta), modo de baixa visão (I-06),
 correção de letras (I-05). **Já feitas, a validar no celular:** os estilos de cor **Pergaminho** (I-02) e **Marinho e
-ouro** (I-14), em Ajustes → Aparência, combinados com o modo claro, escuro ou automático. Gravador e afinador dividem a detecção de fone e a permissão de
+ouro** (I-14), em Ajustes → Aparência, combinados com o modo claro, escuro ou automático; e o **botão da parte que
+toca** (Intro, 1ª, 2ª...) que **enche de dourado** com o tempo e recomeça do zero quando a parte muda. Gravador e afinador dividem a detecção de fone e a permissão de
 microfone: convém decidir os dois juntos.

@@ -71,7 +71,7 @@ def ler_tokens(texto):
         if not tokens:
             continue
         contexto = " ".join(pilha)
-        achado = re.search(r'data-estilo="(\w+)"', contexto)
+        achado = re.search(r'data-estilo="([\w-]+)"', contexto)
         estilo = estilos.setdefault(achado.group(1) if achado else "normal", {"claro": {}, "escuro": []})
         if "prefers-color-scheme: dark" in contexto or 'data-tema="escuro"' in contexto:
             estilo["escuro"].append(tokens)
@@ -99,10 +99,18 @@ def main():
             falhas += 1
 
         escuro = escuros[0] if escuros else {}
-        # Cada estilo só redefine o que muda; o resto vem do normal (o :root padrão). Aqui conferimos a paleta final.
+        # Cada estilo só redefine o que muda; o resto vem do normal (o :root padrão). Aqui conferimos a paleta final, na
+        # ordem real da cascata do CSS. No escuro, o bloco claro do estilo (:root[data-estilo], especificidade igual à do
+        # escuro base e escrito depois) também vale e vence o escuro base; só então o escuro do estilo (mais específico)
+        # vence o claro. Ou seja: escuro base < claro do estilo < escuro do estilo. Se o escuro de um estilo omitir um
+        # token, o que a pessoa vê é o valor claro do estilo, e é esse que precisa ser conferido.
         base = estilos["normal"]
         claro = {**base["claro"], **est["claro"]} if nome_estilo != "normal" else est["claro"]
-        escuro = {**(base["escuro"][0] if base["escuro"] else {}), **escuro} if nome_estilo != "normal" else escuro
+        escuro = (
+            {**(base["escuro"][0] if base["escuro"] else {}), **est["claro"], **escuro}
+            if nome_estilo != "normal"
+            else escuro
+        )
 
         if markdown:
             print(f"\n#### Estilo `{nome_estilo}`\n")

@@ -8,6 +8,9 @@
 // O script de src/app.html aplica o estilo salvo antes da primeira pintura e repete esta lista à mão:
 // tests/estilos.test.ts confere que as duas continuam iguais.
 
+/** Chave do localStorage onde o estilo é guardado. O script de src/app.html lê a mesma chave (conferido em tests/). */
+export const CHAVE_ESTILO = "estilo";
+
 export const ESTILOS = ["normal", "pergaminho", "marinho"] as const;
 export type Estilo = (typeof ESTILOS)[number];
 

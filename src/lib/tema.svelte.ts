@@ -2,7 +2,7 @@
 // "sistema" não define data-tema e deixa o CSS seguir prefers-color-scheme.
 // O app.html aplica a escolha salva antes da primeira pintura, para não piscar.
 
-import { ESTILOS, ehEstilo, type Estilo } from "./estilos";
+import { CHAVE_ESTILO, ESTILOS, ehEstilo, type Estilo } from "./estilos";
 
 export { ESTILOS, type Estilo };
 
@@ -30,8 +30,6 @@ export function aplicarTema(t: Tema) {
 }
 
 // --- Estilo de cor (normal, pergaminho, marinho), independente do modo acima ---
-const CHAVE_ESTILO = "estilo";
-
 function estiloInicial(): Estilo {
   try {
     const salvo = localStorage.getItem(CHAVE_ESTILO);
