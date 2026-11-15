@@ -19,7 +19,7 @@
 </script>
 
 <!-- O título do documento é o que leitores de tela anunciam a cada troca de tela. -->
-<svelte:head><title>{t("biblioteca.titulo")} · BibliotecaMusical CCB</title></svelte:head>
+<svelte:head><title>{t("biblioteca.titulo")} · Biblioteca Musical CCB</title></svelte:head>
 
 <Barra titulo={t("biblioteca.titulo")}>
   {#snippet acao()}<a class="botao" href="/ajustes">{t("nav.ajustes")}</a>{/snippet}

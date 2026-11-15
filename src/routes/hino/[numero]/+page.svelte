@@ -62,7 +62,7 @@
 </script>
 
 <!-- O título do documento é o que leitores de tela anunciam a cada troca de tela. -->
-<svelte:head><title>{tituloPagina} · BibliotecaMusical CCB</title></svelte:head>
+<svelte:head><title>{tituloPagina} · Biblioteca Musical CCB</title></svelte:head>
 
 {#if biblioteca.erro}
   <Barra titulo={t("biblioteca.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />

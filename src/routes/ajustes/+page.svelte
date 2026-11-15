@@ -43,7 +43,7 @@
   }
 </script>
 
-<svelte:head><title>{t("ajustes.titulo")} · BibliotecaMusical CCB</title></svelte:head>
+<svelte:head><title>{t("ajustes.titulo")} · Biblioteca Musical CCB</title></svelte:head>
 
 <Barra titulo={t("ajustes.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />
 
@@ -115,7 +115,7 @@
   <section>
     <h2>{t("ajustes.sobre")}</h2>
     <p>{t("app.aviso")}</p>
-    <p class="meta">BibliotecaMusical CCB · MIT</p>
+    <p class="meta">Biblioteca Musical CCB · MIT</p>
     <p class="meta">{t("ajustes.versao", { v: `${__APP_VERSAO__} (${__APP_COMMIT__})` })}</p>
   </section>
 </main>
