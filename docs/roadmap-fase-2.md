@@ -16,6 +16,11 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
 
 - [x] **I-10 — Trocar instrumento, andamento e tom com a música pausada** (pedido do responsável). Ao continuar, o
       app reagenda as notas a partir da posição atual com os ajustes novos. **Falta validar no celular.**
+      Achado no teste do APK 004: nas vozes **gravadas**, as notas do andamento antigo seguiam disparando (a fila do
+      agendador do smplr não era esvaziada ao parar); corrigido no zip 005. No sintetizado puro, a medição não
+      mostrou atraso nem desvio: se reaparecer, anotar voz, modo, hino e se foi pausar ou parar.
+- [x] Andamento de 1 em 1 e de 5 em 5 (`−5 −1 +1 +5`) e abas Ouvir | Letra embaixo, ou à esquerda com o celular
+      deitado (zip 005). **Falta ver no celular.**
 - [ ] **Aplicar o roteiro de teste** (`docs/teste-de-uso.md`) com 3 a 5 músicos, com o APK de teste
       (`docs/apk-de-teste.md`). **(depende do responsável)**
 - [ ] Corrigir o que dois ou mais músicos repetirem: bloqueios primeiro, depois o que atrapalha.

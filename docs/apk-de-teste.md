@@ -67,6 +67,7 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 
 | Zip | Versão (commit) | Data | Conteúdo | SHA-256 |
 |---|---|---|---|---|
+| **005** | 0.3.0 (ef561d7) | 2026-11-14 | **Abas Ouvir \| Letra embaixo** (barra lateral à esquerda com o celular deitado; o miniplayer sobe acima da barra); **andamento de 1 em 1 e de 5 em 5** (`−5 −1 +1 +5`); **correção:** ao parar ou pausar e tocar de novo, as notas do andamento antigo das vozes **gravadas** seguiam soando por cima das novas. Entregue em `<pasta de entrega dos zips>/` | `93c61549…8e053` |
 | **001** | 0.2.0 (c0f6699) | 2026-11-14 | 5 hinos e 5 sons gravados embutidos; cards, ganhos de volume, versão em Ajustes | `617af79f…d25f99` |
 | **004** | 0.3.0 (0a4aa2a) | 2026-11-15 | **Sons gravados por download** (Ajustes, "Sons gravados": baixa o pacote do File Browser, confere o SHA-256 e guarda no aparelho) e alternador Sintetizado \| Gravado por voz; **sem sons embutidos** (o APK só leva os 5 hinos de teste); cabeçalho com logo; botão de Ajustes em engrenagem. Entregue em `<pasta de entrega dos zips>/` | `633d5d41…a23f5` |
 | **003** | 0.2.0 (238a103) | 2026-11-14 | Ajustes: "Sobre o app" num card fechado, aviso de independência à parte e versão centralizada fora do card; tema "Automático"; botões "Importar hinário" e "Remover importação"; seletor de idioma na largura toda | `52ceec38…01e50` |
