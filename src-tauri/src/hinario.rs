@@ -124,12 +124,9 @@ pub struct Pacote {
 }
 
 pub fn ler(json: &str) -> Result<Hinario, String> {
-    let mut h: Hinario = serde_json::from_str(json).map_err(|e| format!("JSON inválido: {e}"))?;
+    let mut h: Hinario = serde_json::from_str(json).map_err(|e| format!("json_invalido|{e}"))?;
     if h.versao != VERSAO_SUPORTADA {
-        return Err(format!(
-            "versão {} não suportada (esperado {VERSAO_SUPORTADA})",
-            h.versao
-        ));
+        return Err(format!("versao|{}|{VERSAO_SUPORTADA}", h.versao));
     }
     // O karaokê é um extra: sincronia malformada é descartada, sem recusar o hino.
     for hino in &mut h.hinos {
@@ -144,7 +141,7 @@ pub fn ler(json: &str) -> Result<Hinario, String> {
             let final_: Vec<&str> = f.vozes.iter().map(|v| v.nome.as_str()).collect();
             if normal != final_ {
                 return Err(format!(
-                    "hino {}: as vozes do final ({}) não correspondem às da passada normal ({})",
+                    "vozes_final|{}|{}|{}",
                     hino.numero,
                     final_.join(", "),
                     normal.join(", ")
@@ -156,7 +153,7 @@ pub fn ler(json: &str) -> Result<Hinario, String> {
             let intro: Vec<&str> = i.vozes.iter().map(|v| v.nome.as_str()).collect();
             if normal != intro {
                 return Err(format!(
-                    "hino {}: as vozes da introdução ({}) não correspondem às da passada normal ({})",
+                    "vozes_intro|{}|{}|{}",
                     hino.numero,
                     intro.join(", "),
                     normal.join(", ")
@@ -175,7 +172,7 @@ pub fn carregar(dir: Option<&Path>) -> Result<Pacote, String> {
         let arquivo = dir.join("hinario.json");
         if arquivo.is_file() {
             let texto = std::fs::read_to_string(&arquivo)
-                .map_err(|e| format!("não foi possível ler {}: {e}", arquivo.display()))?;
+                .map_err(|e| format!("ler|{}: {e}", arquivo.display()))?;
             return Ok(Pacote { hinario: ler(&texto)?, exemplo: false });
         }
     }
@@ -210,7 +207,7 @@ fn semear(dir: &Path, incluso: &str) -> Result<(), String> {
         return Ok(());
     }
     importar(dir, incluso)?;
-    std::fs::write(&marca, &nova).map_err(|e| format!("erro ao gravar {}: {e}", marca.display()))
+    std::fs::write(&marca, &nova).map_err(|e| format!("gravar|{}: {e}", marca.display()))
 }
 
 const LIMITE_BYTES: usize = 20 * 1024 * 1024;
@@ -219,22 +216,22 @@ const LIMITE_BYTES: usize = 20 * 1024 * 1024;
 /// (arquivo temporário + rename): um arquivo inválido nunca substitui o atual.
 pub fn importar(dir: &Path, json: &str) -> Result<Pacote, String> {
     if json.len() > LIMITE_BYTES {
-        return Err("arquivo grande demais (limite de 20 MB)".into());
+        return Err("grande_demais".into());
     }
     let h = ler(json)?;
     if h.hinos.is_empty() {
-        return Err("o hinário não tem nenhum hino".into());
+        return Err("vazio".into());
     }
     let mut numeros: Vec<u32> = h.hinos.iter().map(|x| x.numero).collect();
     numeros.sort_unstable();
     if let Some(par) = numeros.windows(2).find(|p| p[0] == p[1]) {
-        return Err(format!("número de hino repetido: {}", par[0]));
+        return Err(format!("repetido|{}", par[0]));
     }
     std::fs::create_dir_all(dir)
-        .map_err(|e| format!("não foi possível criar {}: {e}", dir.display()))?;
+        .map_err(|e| format!("gravar|{}: {e}", dir.display()))?;
     let tmp = dir.join("hinario.json.tmp");
-    std::fs::write(&tmp, json).map_err(|e| format!("erro ao gravar: {e}"))?;
-    std::fs::rename(&tmp, dir.join("hinario.json")).map_err(|e| format!("erro ao gravar: {e}"))?;
+    std::fs::write(&tmp, json).map_err(|e| format!("gravar|{e}"))?;
+    std::fs::rename(&tmp, dir.join("hinario.json")).map_err(|e| format!("gravar|{e}"))?;
     Ok(Pacote { hinario: h, exemplo: false })
 }
 
@@ -242,7 +239,7 @@ pub fn importar(dir: &Path, json: &str) -> Result<Pacote, String> {
 pub fn remover(dir: &Path) -> Result<Pacote, String> {
     let arquivo = dir.join("hinario.json");
     if arquivo.is_file() {
-        std::fs::remove_file(&arquivo).map_err(|e| format!("erro ao remover: {e}"))?;
+        std::fs::remove_file(&arquivo).map_err(|e| format!("remover|{e}"))?;
     }
     carregar(Some(dir))
 }
@@ -305,7 +302,7 @@ mod testes {
     fn final_com_vozes_diferentes_das_da_passada_normal_e_recusado() {
         // número de vozes diferente
         let e = ler(&json_com_final(r#"[{"nome":"Soprano","notas":[[0,1,60]]}]"#)).unwrap_err();
-        assert!(e.contains("hino 457") && e.contains("não correspondem"), "{e}");
+        assert!(e.starts_with("vozes_final|457|"), "{e}");
         // mesmo número, mas nomes ou ordem diferentes
         let e = ler(&json_com_final(
             r#"[{"nome":"Baixo","notas":[[0,1,48]]},{"nome":"Soprano","notas":[[0,1,60]]}]"#,
@@ -338,7 +335,7 @@ mod testes {
     #[test]
     fn introducao_com_vozes_diferentes_das_da_passada_normal_e_recusada() {
         let e = ler(&json_com_introducao(r#"[{"nome":"Soprano","notas":[[0,1,60]]}]"#)).unwrap_err();
-        assert!(e.contains("hino 1") && e.contains("introdução") && e.contains("não correspondem"), "{e}");
+        assert!(e.starts_with("vozes_intro|1|"), "{e}");
     }
 
     fn json_com_sincronia(sincronia: &str) -> String {
@@ -404,7 +401,7 @@ mod testes {
     #[test]
     fn rejeita_versao_desconhecida() {
         let e = ler(r#"{"versao":2,"hinario":{"id":"a","nome":"A"},"hinos":[]}"#).unwrap_err();
-        assert!(e.contains("versão 2"));
+        assert_eq!(e, "versao|2|1");
     }
 
     #[test]
@@ -445,7 +442,7 @@ mod testes {
     fn importar_invalido_nao_substitui_o_atual() {
         let d = dir_teste("inv");
         importar(&d, VALIDO).unwrap();
-        assert!(importar(&d, "{ quebrado").is_err());
+        assert!(importar(&d, "{ quebrado").unwrap_err().starts_with("json_invalido|"));
         assert!(importar(&d, r#"{"versao":2,"hinario":{"id":"a","nome":"A"},"hinos":[]}"#).is_err());
         assert_eq!(carregar(Some(&d)).unwrap().hinario.hinario.id, "x");
         std::fs::remove_dir_all(&d).ok();
@@ -455,9 +452,9 @@ mod testes {
     fn importar_rejeita_vazio_e_numero_repetido() {
         let d = dir_teste("val");
         let vazio = r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[]}"#;
-        assert!(importar(&d, vazio).unwrap_err().contains("nenhum hino"));
+        assert_eq!(importar(&d, vazio).unwrap_err(), "vazio");
         let rep = r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":5,"titulo":"A"},{"numero":5,"titulo":"B"}]}"#;
-        assert!(importar(&d, rep).unwrap_err().contains("repetido: 5"));
+        assert_eq!(importar(&d, rep).unwrap_err(), "repetido|5");
         std::fs::remove_dir_all(&d).ok();
     }
 

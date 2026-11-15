@@ -4,6 +4,7 @@
   import { biblioteca } from "$lib/biblioteca.svelte";
   import Icone from "$lib/Icone.svelte";
   import Estado from "$lib/Estado.svelte";
+  import { traduzirErro } from "$lib/erros";
   import { i18n } from "$lib/i18n/index.svelte";
   import { casaComNumero, zerosAEsquerda } from "$lib/numero";
 
@@ -34,7 +35,7 @@
 
 <main class="coluna conteudo">
   {#if biblioteca.erro}
-    <Aviso tipo="erro">{t("erro.carregar", { erro: biblioteca.erro })}</Aviso>
+    <Aviso tipo="erro">{t("erro.carregar", { erro: traduzirErro(biblioteca.erro, t) })}</Aviso>
     <button class="botao" onclick={() => biblioteca.carregar()}>{t("erro.tentar")}</button>
   {:else if !biblioteca.pacote}
     <Estado tipo="carregando" texto={t("carregando")} />

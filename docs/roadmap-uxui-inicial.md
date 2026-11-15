@@ -180,7 +180,7 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
 - [ ] iOS: exige Mac com Xcode (ou CI com macOS); distribuição exige Apple Developer Program.
       Alternativa a avaliar: versão web instalável (PWA).
 - [ ] Publicar o código no GitHub (repositório ainda sem remote).
-- [ ] Mensagens de erro da importação vêm do Rust em português; trocar por códigos traduzidos pela interface.
+- [x] Mensagens de erro da importação traduzidas pela interface (códigos do Rust + `src/lib/erros.ts`; ver `docs/TRADUCOES.md`).
 
 ## 5. Melhorias de áudio (depois do redesenho)
 
