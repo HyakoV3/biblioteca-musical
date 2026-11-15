@@ -64,23 +64,46 @@ function encerrar(p, sinal) {
   }
 }
 
-async function limpar() {
-  for (const p of filhos) encerrar(p, "SIGTERM");
-  // O Chrome ainda escreve na pasta do perfil ao sair: espera ele terminar (e, se demorar, força) antes de apagá-la.
-  await Promise.all(
-    filhos.map((p) =>
-      p.exitCode !== null
-        ? null
-        : new Promise((r) => {
-            p.once("exit", r);
-            setTimeout(() => {
-              encerrar(p, "SIGKILL");
-              r();
-            }, 4000);
-          }),
-    ),
-  );
-  await dormir(500);
+// O grupo de processos ainda tem alguém vivo? `kill(-pid, 0)` não envia nada: só falha com ESRCH quando o grupo
+// esvaziou. O líder (o processo que o Node criou) pode sair antes dos filhos, então olhar só o `exit` dele não basta.
+function grupoVivo(p) {
+  if (process.platform === "win32") return p.exitCode === null;
+  try {
+    process.kill(-p.pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function aguardarGrupo(p, ms) {
+  const fim = Date.now() + ms;
+  while (grupoVivo(p) && Date.now() < fim) await dormir(100);
+}
+
+let limpando = null;
+function limpar() {
+  limpando ??= (async () => {
+    for (const p of filhos) encerrar(p, "SIGTERM");
+    // O Chrome ainda escreve na pasta do perfil ao sair: espera o grupo inteiro sumir (e, se demorar, força).
+    await Promise.all(filhos.map((p) => aguardarGrupo(p, 4000)));
+    for (const p of filhos) if (grupoVivo(p)) encerrar(p, "SIGKILL");
+    await Promise.all(filhos.map((p) => aguardarGrupo(p, 2000)));
+    apagarPerfil();
+  })();
+  return limpando;
+}
+
+// Com `detached: true` o Ctrl-C do terminal não chega mais aos filhos: sem isto, interromper o teste (ou cancelar o job)
+// deixaria o Chrome e o Vite órfãos, e o Vite seguiria na porta 5199 e quebraria a próxima execução.
+for (const [sinal, codigo] of [["SIGINT", 130], ["SIGTERM", 143]]) {
+  process.on(sinal, async () => {
+    await limpar();
+    process.exit(codigo);
+  });
+}
+
+function apagarPerfil() {
   if (perfil) {
     try {
       rmSync(perfil, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
