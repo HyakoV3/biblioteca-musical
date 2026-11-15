@@ -1,0 +1,88 @@
+name: ci
+
+# Verificações a cada pull request, a cada push na main e sob demanda. Só dados fictícios: o repositório não tem
+# conteúdo de hinários, e os testes não precisam dele.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # num PR, um push novo cancela a verificação antiga; na main, cada push termina a sua
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  web:
+    name: App (tipos, testes e verificadores)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Tipos (svelte-check, inclui tests/)
+        run: npm run check
+      - name: Testes (Vitest)
+        run: npm test
+      - name: Traduções, movimento e contraste
+        run: |
+          python3 tools/verificar-traducoes.py
+          python3 tools/verificar-movimento.py
+          python3 tools/contraste.py
+
+  conversor:
+    name: Conversor de partituras (Rust)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools/mscx2json
+      - run: cargo test --manifest-path tools/mscx2json/Cargo.toml
+
+  leitor:
+    name: Leitor do hinário (Rust, src-tauri)
+    # Fixo: o Tauri precisa das bibliotecas do WebKitGTK, e o ubuntu-latest mudou de versão
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Dependências do Tauri no Linux
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+      # o Tauri confere se a pasta do front-end existe ao compilar
+      - run: npm ci
+      - run: npm run build
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: cargo test --lib --manifest-path src-tauri/Cargo.toml
+
+  e2e:
+    name: Karaokê num Chrome de verdade
+    # Fixo: usa o Chrome que já vem na imagem do Ubuntu 24.04
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Teste de ponta a ponta (Chrome mudo, hino fictício)
+        run: npm run test:e2e
