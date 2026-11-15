@@ -43,6 +43,8 @@ const ESPERADO_VEZ1 = [["do", 0], ["re", 2], ["mi", 4], ["fa", 6], ["sol", 8]];
 const ESPERADO_VEZ2 = [["la", 0], ["si", 2], ["do", 4], ["re", 6], ["mi", 8]];
 const BPM = 120;
 const MS_POR_BATIDA = 60000 / BPM;
+// 1ª vez (10 batidas) + pausa de 2 s (4 batidas) + 2ª vez (10 batidas) = 24 batidas.
+const DURACAO_MUSICA_MS = (10 + (2 * BPM) / 60 + 10) * MS_POR_BATIDA;
 
 const STUB = `window.__TAURI_INTERNALS__ = {
   invoke: async (cmd) => (cmd === "carregar_hinario" ? { hinario: ${JSON.stringify(hinario)}, exemplo: false } : null),
@@ -215,12 +217,19 @@ async function principal() {
       const e = document.querySelector('.estrofe.da-vez h2');
       window.__am.push([Math.round(performance.now() - window.__t0), tr ? tr.textContent : null, e ? e.textContent : null]);
     }, 25); 1`);
-  await dormir(15000); // 1ª vez (10 s) + pausa de 2 s + 2ª vez começando
+  // A música dura 12 s: 1ª vez (5 s, 10 batidas), pausa de 2 s e 2ª vez (5 s). A amostragem começa ~0,8 s depois do play, então
+  // a sílaba "re" da 2ª vez (batida 20) acende em ~9,3 s de amostragem e "mi" em ~10,3 s. Pausar aos 9,9 s cai no meio da "re",
+  // com ~0,5 s de folga para cada lado: se a pausa NÃO congelasse o destaque, a "mi" acenderia durante a espera e o teste falharia.
+  // (Antes esperava 15 s, depois do fim da música: a pausa nem era testada, pois já não havia nada aceso.)
+  await dormir(9900);
   const msPausa = await av("Math.round(performance.now() - window.__t0)");
+  confere(msPausa < DURACAO_MUSICA_MS - 1000, `a pausa é pedida no meio da música (${msPausa} ms de amostragem; a música dura ${DURACAO_MUSICA_MS} ms)`);
   await av("document.querySelector('.mini .acao')?.click(); 1"); // pausa pelo miniplayer
   await dormir(1500);
   const distintos = await av("new Set(window.__am.slice(-40).map((x) => x[1] + '|' + x[2])).size");
   confere(distintos === 1, `a pausa congela o destaque (estados distintos no último 1 s: ${distintos})`);
+  const aceso = await av("document.querySelector('.trecho')?.textContent ?? null");
+  confere(aceso === "re", `a sílaba acesa durante a pausa é a da hora em que se pausou: ${JSON.stringify(aceso)} (esperado "re")`);
   await av("document.querySelector('.chave-karaoke')?.click(); 1"); // desliga
   await dormir(400);
   confere((await av("document.querySelectorAll('.trecho').length")) === 0, "com o botão desligado nada fica aceso");
