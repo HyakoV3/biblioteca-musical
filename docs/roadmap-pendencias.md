@@ -68,9 +68,10 @@ mesmo conjunto de fluxos que o responsável já usa em outros projetos.
 
 ## 4. Testes automatizados
 
-- [x] **Testes do app no repositório** (`tests/`, executor Vitest): `npm test`. 48 testes em 7 arquivos, só com dados
+- [x] **Testes do app no repositório** (`tests/`, executor Vitest): `npm test`. 68 testes em 9 arquivos, só com dados
       **fictícios** (`tests/amostras.ts`; nenhum hino real entra no Git): partes e vezes do hino (introdução, final,
-      pausas), sintetizador (reagendar na pausa, tempo audível), karaokê (validação e escolha da sílaba), pacote de
+      pausas), sintetizador (reagendar na pausa, tempo audível, filtro de abertura dos metais, uma onda por altura),
+      timbres por altura (interpolação das medidas, volume preservado; `tests/timbres.test.ts`), karaokê (validação e escolha da sílaba), pacote de
       sons (zips sintéticos adulterados, truncados e "bomba"), catálogo de sons gravados x manifesto, número do hino e
       preferências. Os tipos dos testes passam por `npm run check`.
 - [x] Regressão do `smplr`: `parar()` tem de esvaziar a fila do agendador (`tests/sintetizador.test.ts`). Conferido: sem
@@ -95,6 +96,7 @@ mesmo conjunto de fluxos que o responsável já usa em outros projetos.
 
 ## 6. Produto (resumo)
 
-Feito: **karaokê, fase A** (a letra acompanhando a música), a validar no celular. Depois: créditos do
+Feito: **karaokê, fase A** (a letra acompanhando a música), a validar no celular, e os **timbres sintetizados** dos
+sete instrumentos reclamados (I-15), a conferir de ouvido. Depois: créditos do
 FluidR3, teste das 4 vozes gravadas no celular, partitura (I-08) e, por último, o conteúdo completo. Detalhes em
 [`roadmap-fase-2.md`](roadmap-fase-2.md).

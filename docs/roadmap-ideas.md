@@ -1008,7 +1008,7 @@ Uma opção de aparência em que a **base é a paleta do ícone**: fundos e supe
 
 ## I-15 — Timbres sintetizados mais parecidos com os instrumentos
 
-- **Status:** anotada
+- **Status:** implementada em 2026-11-15 (falta o responsável conferir de ouvido, ver "O que foi feito")
 - **Origem:** observação do responsável no teste, 2026-11-15: "os áudios sintetizados do trompete, trombone, tuba,
   fagote, oboé, sax alto e sax tenor estão ruins, nem parece o som do instrumento".
 - **Prioridade:** a definir (o responsável pediu antes o CI e os temas I-02 e I-14)
@@ -1041,10 +1041,62 @@ Instrumentos de sopro de metal e de palheta mudam de timbre com a altura e com o
   Tone.js), com licença e tamanho. Registrar o que foi lido, como na I-07. Sem reinventar a roda.
 - Oferecer o gravado como padrão **se já estiver baixado** (o app já faz o alternador por voz).
 
+### O que foi feito (2026-11-15)
+
+Seguiu-se o primeiro caminho: **medir as amostras gravadas** (FluidR3_GM, MIT) e usar os números na síntese.
+
+- `tools/analisar-timbres.py` mede, em uma âncora a cada 3 semitons da faixa natural de cada um dos sete instrumentos, o
+  espectro de harmônicos na parte sustentada, o ataque, o quanto o brilho abre no começo e o ruído. Grava
+  `src/lib/timbres.json` (28 KB). O resto do catálogo não muda.
+- `src/lib/timbres.ts` interpola as duas âncoras vizinhas e devolve o perfil da nota (tabela, ataque, nível, abertura).
+  Fora da faixa medida vale a âncora da ponta. É função pura, sem Web Audio.
+- `agendarNota()` (em `sintetizador.ts`) agora monta cada nota e serve ao app e às prévias offline. Uma onda por
+  (instrumento, altura), guardada. Nos metais (trompete, trombone, tuba) entra um passa-baixa que abre em ~40 a 100 ms:
+  um filtro a mais por nota, só nesses três.
+- **O volume não muda**: o `nivel` de cada nota é corrigido para o mesmo volume eficaz da tabela antiga (o Web Audio
+  normaliza o pico, e uma tabela mais cheia soaria mais alta). Assim os `ganho` dos gravados, calibrados contra a síntese,
+  seguem valendo.
+- O ataque vem da mediana medida, limitado a 20 a 80 ms (o oboé gravado "incha" em 200 ms, o que atrasaria a nota).
+
+**O que ficou de fora, de propósito:** ruído de sopro (a energia fora dos harmônicos medida é menor que 2%, na prática
+inaudível) e formantes (as ressonâncias das palhetas já vêm no espectro medido por altura). O brilho que abre no
+começo só entra nos metais: nas palhetas a medida é inconclusiva (a maioria das amostras já nasce aberta).
+
+**Medida objetiva** (`python3 tools/analisar-timbres.py --distancia`): distância espectral entre a síntese e a gravação,
+em notas que **não** são âncoras (162 notas; dB, ponderada pela energia de cada harmônico; menor = mais parecido):
+
+| instrumento | antes | agora |
+|---|---|---|
+| trompete | 5,1 | 0,6 |
+| trombone | 15,8 | 1,4 |
+| tuba | 9,8 | 0,9 |
+| fagote | 9,2 | 2,3 |
+| oboé | 4,6 | 0,9 |
+| sax alto | 5,8 | 2,9 |
+| sax tenor | 14,3 | 2,9 |
+| **todos** | **9,3** | **1,7** |
+
+Limite da medida: o banco reaproveita amostras entre notas vizinhas, então ela é em parte "fácil", e a meta é parecer com a
+**gravação**, não com o instrumento real. No áudio renderizado, o centroide espectral ficou mais perto do gravado nos sete
+(tuba, tenor e trombone os que mais; o sax alto e o trompete ainda ficam ~400 Hz abaixo do gravado, o que o ruído e as
+ressonâncias não modeladas explicam).
+
+**Para ouvir:** `node tools/previas-timbres.mjs <pasta>` gera, por instrumento, um MP3 com a mesma escala de duas oitavas
+em **antes → agora → gravado** (o gravado vai igualado ao "agora" em volume, para comparar só o timbre). Roda o código
+real do app num Chrome mudo, sem tocar som.
+
+**Órgão de tirantes (gravado):** o `ganho` subiu de 2,65 para 7,1. Medido com `python3 tools/analisar-timbres.py
+--niveis`, era o mais baixo dos 16 gravados (−8,6 dB no ouvido e −9,8 dB no celular em relação à mediana), porque a
+calibração por RMS escondia que o registro de 16' dele tem 1,9× a energia da nota, grave que o ouvido e o alto-falante do
+celular quase não reproduzem. Agora fica na mediana do ouvido (pico 0,62). Falta o responsável conferir de ouvido.
+
 ### Perguntas em aberto
 
 1. Quais dos sete importam mais para o uso real (por voz: tuba e trombone costumam ir no baixo)?
-2. Aceita-se um pouco mais de processamento no celular (mais filtros por nota)?
+2. ~~Aceita-se um pouco mais de processamento no celular?~~ Só os três metais ganharam um filtro por nota; o custo é
+   pequeno, mas **falta conferir num celular com 4 vozes** de metal ao mesmo tempo.
+3. Os outros 15 gravados também devem ser equalizados pelo nível no ouvido? Flautas, clarinete e trompa estão 4 a 12 dB
+   acima da mediana.
 
 ### Critérios de aceitação (propostos)
 

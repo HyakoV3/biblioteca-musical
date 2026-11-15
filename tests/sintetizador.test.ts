@@ -3,7 +3,7 @@ import { PADRAO } from "../src/lib/instrumentos";
 import { Sintetizador, notasAPartirDe, type Nota, type Voz } from "../src/lib/sintetizador";
 
 // AudioContext falso: guarda o que o sintetizador pede, para conferir posição, duração e retomada.
-type Registro = { resume: number; suspend: number; osc: { t0?: number }[]; ctxs: FakeCtx[] };
+type Registro = { resume: number; suspend: number; osc: { t0?: number }[]; ctxs: FakeCtx[]; filtros: unknown[]; ondas: number };
 let reg: Registro;
 
 class FakeCtx {
@@ -32,8 +32,15 @@ class FakeCtx {
   createGain() {
     return { ...this.no(), gain: this.param() };
   }
+  sampleRate = 44100;
   createPeriodicWave() {
+    reg.ondas++;
     return {};
+  }
+  createBiquadFilter() {
+    const f = { ...this.no(), type: "", Q: this.param(), frequency: { ...this.param(), exponentialRampToValueAtTime() {} } };
+    reg.filtros.push(f);
+    return f;
   }
   createOscillator() {
     const o = {
@@ -53,7 +60,7 @@ class FakeCtx {
 }
 
 beforeEach(() => {
-  reg = { resume: 0, suspend: 0, osc: [], ctxs: [] };
+  reg = { resume: 0, suspend: 0, osc: [], ctxs: [], filtros: [], ondas: 0 };
   vi.stubGlobal("AudioContext", FakeCtx);
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -96,6 +103,30 @@ describe("Sintetizador", () => {
     expect(dur).toBeCloseTo(12, 9); // 12 batidas a 60 bpm
     expect(reg.resume).toBe(1);
     expect(reg.osc).toHaveLength(3);
+  });
+
+  it("metais passam por um filtro de abertura; órgão e palhetas, não", async () => {
+    const s = new Sintetizador();
+    await s.tocar(vozes, op(60, { instrumentos: ["trombone"] }));
+    expect(reg.filtros).toHaveLength(3);
+    // O Q do lowpass do Web Audio é em dB: o Butterworth (1/√2) é -3,01 dB; passar 0,707 daria um pico de ressonância.
+    const q = (reg.filtros[0] as { Q: { value: number } }).Q.value;
+    expect(q).toBeCloseTo(-3.0103, 3);
+    reg.filtros.length = 0;
+    await s.tocar(vozes, op(60, { instrumentos: ["fagote"] }));
+    await s.tocar(vozes, op(60, { instrumentos: ["orgao_principal"] }));
+    expect(reg.filtros).toHaveLength(0);
+  });
+
+  it("cria uma onda por (instrumento, altura), não por nota", async () => {
+    const s = new Sintetizador();
+    const repetidas: Voz[] = [{ nome: "S", notas: [[0, 1, 60], [1, 1, 60], [2, 1, 62], [3, 1, 60]] }];
+    await s.tocar(repetidas, op(60, { instrumentos: ["oboe"] }));
+    expect(reg.ondas).toBe(2); // 60 e 62
+    await s.tocar(repetidas, op(60, { instrumentos: ["oboe"] })); // reagendar reaproveita
+    expect(reg.ondas).toBe(2);
+    await s.tocar(repetidas, op(60, { instrumentos: ["oboe"], transposicao: 2 })); // 62 e 64: só o 64 é novo
+    expect(reg.ondas).toBe(3);
   });
 
   it("reagenda na pausa com outro andamento, a partir da posição", async () => {
