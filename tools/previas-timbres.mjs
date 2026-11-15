@@ -137,7 +137,7 @@ const NA_PAGINA = `async (dados) => {
   const { agendarNota } = await import("/src/lib/sintetizador.ts");
   const { INSTRUMENTOS } = await import("/src/lib/instrumentos.ts");
   const { REALISTAS } = await import("/src/lib/realista.ts");
-  const { temTimbreMedido } = await import("/src/lib/timbres.ts");
+  const { temTimbre: medido_ } = await import("/src/lib/timbres.ts");
   const SR = 44100, PASSO = 0.5, FINAL = 1.6, SILENCIO = 0.8;
   const notas = dados.escala.map((m, i) => [i * PASSO, PASSO * 0.95, m]);
   notas.push([notas.length * PASSO, FINAL, dados.escala[dados.escala.length - 1] - 12]);
@@ -173,8 +173,8 @@ const NA_PAGINA = `async (dados) => {
     await montar(ctx, mestre);
     return (await ctx.startRendering()).getChannelData(0);
   }
-  // Só os instrumentos com timbre medido (I-15) mudaram: nos outros o "antes" é idêntico ao "agora" e não se repete.
-  const medido = temTimbreMedido(dados.id);
+  // Só os instrumentos com timbre por altura (I-15: medido ou derivado de medidas) mudaram: nos outros o "antes" é idêntico ao "agora" e não se repete.
+  const medido = medido_(dados.id);
   const antes = medido ? await renderizar((ctx, d) => { for (const [t, dur, m] of notas) notaAntiga(ctx, d, dados.id, m, 0.05 + t, dur); }) : null;
   const agora = await renderizar((ctx, d) => { const ondas = new Map(); for (const [t, dur, m] of notas) agendarNota(ctx, ondas, d, dados.id, m, 0.05 + t, dur); });
   const gravado = !dados.real ? null : await renderizar(async (ctx, d) => {

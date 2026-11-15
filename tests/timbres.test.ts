@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import medidas from "../src/lib/timbres.json";
-import { INSTRUMENTOS } from "../src/lib/instrumentos";
-import { COM_TIMBRE_MEDIDO, eficazRelativo, harmonicosEm, perfilDaNota, temTimbreMedido } from "../src/lib/timbres";
+import { INSTRUMENTOS, type SinteticoId } from "../src/lib/instrumentos";
+import { COM_TIMBRE_MEDIDO, eficazRelativo, harmonicosEm, perfilDaNota, temTimbre, temTimbreDerivado, temTimbreMedido } from "../src/lib/timbres";
 
 const AFETADOS = ["trompete", "trombone", "tuba", "fagote", "oboe", "sax_alto", "sax_tenor", "flauta_doce", "violino", "clarinete", "viola", "violoncelo", "contrabaixo", "trompa"] as const;
 type Ancora = { midi: number; h: number[]; ataque: number };
@@ -21,7 +21,7 @@ describe("timbres.json (medido nas gravações)", () => {
     expect([...COM_TIMBRE_MEDIDO].sort()).toEqual([...AFETADOS].sort());
     for (const id of AFETADOS) expect(id in INSTRUMENTOS).toBe(true);
     expect(temTimbreMedido("trompete")).toBe(true);
-    expect(temTimbreMedido("flugelhorn")).toBe(false); // o banco não tem gravado dele
+    expect(temTimbreMedido("flugelhorn")).toBe(false); // o banco não tem gravado dele: o timbre é derivado, ver temTimbreDerivado
   });
 
   it("âncoras ordenadas, dentro da faixa, com tabelas válidas (relativas ao harmônico mais forte)", () => {
@@ -73,8 +73,8 @@ describe("harmonicosEm", () => {
   });
 
   it("instrumento sem medida usa a tabela fixa", () => {
-    expect(harmonicosEm("flugelhorn", 60)).toBe(INSTRUMENTOS.flugelhorn.harmonicos);
-    expect(perfilDaNota("flugelhorn", 60)).toBe(INSTRUMENTOS.flugelhorn);
+    expect(harmonicosEm("orgao_suave", 60)).toBe(INSTRUMENTOS.orgao_suave.harmonicos);
+    expect(perfilDaNota("orgao_suave", 60)).toBe(INSTRUMENTOS.orgao_suave);
   });
 });
 
@@ -131,5 +131,56 @@ describe("perfilDaNota", () => {
 
   it("é determinístico e guarda o resultado", () => {
     expect(perfilDaNota("fagote", 50)).toBe(perfilDaNota("fagote", 50));
+  });
+});
+
+describe("instrumentos derivados (sem gravado no banco): flugelhorn e bombardino", () => {
+  const mix = (a: SinteticoId, b: SinteticoId, midi: number) => {
+    const x = harmonicosEm(a, midi);
+    const y = harmonicosEm(b, midi);
+    return Array.from({ length: Math.max(x.length, y.length) }, (_, k) => ((x[k] ?? 0) + (y[k] ?? 0)) / 2);
+  };
+
+  it("são reconhecidos como derivados, não como medidos", () => {
+    for (const id of ["flugelhorn", "bombardino"]) {
+      expect(temTimbreDerivado(id)).toBe(true);
+      expect(temTimbreMedido(id)).toBe(false);
+      expect(temTimbre(id)).toBe(true);
+    }
+    expect(temTimbre("orgao_suave")).toBe(false);
+  });
+
+  it("a tabela é a média, nota a nota, dos dois instrumentos medidos", () => {
+    for (const midi of [57, 62, 70]) {
+      const f = harmonicosEm("flugelhorn", midi);
+      const esperado = mix("trompete", "trompa", midi);
+      for (let k = 1; k < 8; k++) expect(f[k]).toBeCloseTo(esperado[k], 9);
+    }
+    for (const midi of [38, 48, 58]) {
+      const b = harmonicosEm("bombardino", midi);
+      const esperado = mix("trombone", "tuba", midi);
+      for (let k = 1; k < 8; k++) expect(b[k]).toBeCloseTo(esperado[k], 9);
+    }
+  });
+
+  it("o timbre muda com a altura (a tabela fixa antiga não mudava)", () => {
+    expect(harmonicosEm("flugelhorn", 56)).not.toEqual(harmonicosEm("flugelhorn", 76));
+    expect(harmonicosEm("bombardino", 40)).not.toEqual(harmonicosEm("bombardino", 64));
+  });
+
+  it("perfil da nota: volume eficaz da tabela antiga, solta do instrumento e abertura de metal", () => {
+    for (const id of ["flugelhorn", "bombardino"] as const) {
+      const antigo = INSTRUMENTOS[id];
+      for (const midi of [45, 55, 65]) {
+        const p = perfilDaNota(id, midi);
+        const fator = p.nivel / antigo.nivel;
+        expect(fator).toBeGreaterThanOrEqual(0.5 - 1e-9);
+        expect(fator).toBeLessThanOrEqual(2 + 1e-9);
+        expect(p.solta).toBe(antigo.solta);
+        expect(p.ataque).toBeGreaterThan(0);
+        expect(p.ataque).toBeLessThanOrEqual(0.08);
+        expect(p.abertura).toBeDefined();
+      }
+    }
   });
 });

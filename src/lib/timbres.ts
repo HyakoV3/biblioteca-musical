@@ -23,6 +23,20 @@ export type PerfilDaNota = Perfil & {
 export const COM_TIMBRE_MEDIDO = Object.keys(MEDIDAS) as SinteticoId[];
 export const temTimbreMedido = (id: string): id is SinteticoId => Object.hasOwn(MEDIDAS, id);
 
+/**
+ * Instrumentos SEM gravado no banco (não há o que medir), feitos como mistura ponderada de instrumentos medidos, nota a
+ * nota. É aproximação, não medida: o flugelhorn costuma ser descrito entre o trompete e a trompa (mais escuro que o
+ * trompete, mais vivo que a trompa) e o bombardino (euphonium) entre o trombone e a tuba (tubo cônico, como o da tuba, mas
+ * na região do trombone). Os pesos são palpite a ajustar de ouvido.
+ */
+const MISTURAS: Record<string, [SinteticoId, number][]> = {
+  flugelhorn: [["trompete", 0.5], ["trompa", 0.5]],
+  bombardino: [["trombone", 0.5], ["tuba", 0.5]],
+};
+export const temTimbreDerivado = (id: string): id is SinteticoId => Object.hasOwn(MISTURAS, id);
+/** Tem timbre por altura, medido ou derivado de medidas. */
+export const temTimbre = (id: string): id is SinteticoId => temTimbreMedido(id) || temTimbreDerivado(id);
+
 /** Ataque nunca abaixo de 20 ms (estalo) nem acima de 80 ms (o oboé gravado "incha" em 200 ms, o que num hino atrasa a nota). */
 const ATAQUE_MIN = 0.02;
 const ATAQUE_MAX = 0.08;
@@ -45,6 +59,15 @@ function mediana(v: number[]): number {
  * timbre não é o do instrumento.
  */
 export function harmonicosEm(id: SinteticoId, midi: number): number[] {
+  const mistura = MISTURAS[id];
+  if (mistura) {
+    const partes = mistura.map(([c, peso]) => ({ h: harmonicosEm(c, midi), peso }));
+    const n = Math.max(...partes.map((p) => p.h.length));
+    const h = [0];
+    for (let k = 1; k < n; k++) h.push(partes.reduce((s, p) => s + p.peso * (p.h[k] ?? 0), 0));
+    while (h.length > 2 && h[h.length - 1] < PISO) h.pop();
+    return h;
+  }
   const m = MEDIDAS[id];
   if (!m) return INSTRUMENTOS[id].harmonicos;
   const a = m.ancoras;
@@ -91,8 +114,7 @@ const cache = new Map<string, PerfilDaNota>();
  */
 export function perfilDaNota(id: SinteticoId, midi: number): PerfilDaNota {
   const base: Perfil = INSTRUMENTOS[id];
-  const m = MEDIDAS[id];
-  if (!m) return base;
+  if (!temTimbre(id)) return base;
   const chave = `${id}:${Math.round(midi)}`;
   let p = cache.get(chave);
   if (!p) {
@@ -110,7 +132,10 @@ const ataques = new Map<string, number>();
 function ataqueMedido(id: SinteticoId): number {
   let v = ataques.get(id);
   if (v === undefined) {
-    v = Math.min(ATAQUE_MAX, Math.max(ATAQUE_MIN, mediana(MEDIDAS[id].ancoras.map((a) => a.ataque))));
+    const mistura = MISTURAS[id];
+    v = mistura
+      ? mistura.reduce((s, [c, peso]) => s + peso * ataqueMedido(c), 0)
+      : Math.min(ATAQUE_MAX, Math.max(ATAQUE_MIN, mediana(MEDIDAS[id].ancoras.map((a) => a.ataque))));
     ataques.set(id, v);
   }
   return v;
@@ -121,7 +146,17 @@ function aberturaMedida(id: SinteticoId): { corte: number; tempo: number } | nul
   let v = aberturas.get(id);
   if (v === undefined) {
     v = null;
-    if (COM_ABERTURA.has(id)) {
+    const mistura = MISTURAS[id];
+    if (mistura) {
+      // Só abre o brilho se todos os componentes abrem (os dois pares aqui são de metais).
+      const partes = mistura.map(([c, peso]) => ({ ab: aberturaMedida(c), peso }));
+      if (partes.every((p) => p.ab)) {
+        v = {
+          corte: partes.reduce((s, p) => s + p.peso * p.ab!.corte, 0),
+          tempo: partes.reduce((s, p) => s + p.peso * p.ab!.tempo, 0),
+        };
+      }
+    } else if (COM_ABERTURA.has(id)) {
       const validas = MEDIDAS[id].ancoras.filter((a) => a.fc_inicio !== null && a.fc_inicio < CORTE_MAXIMO && a.abertura !== null);
       if (validas.length) {
         v = {
