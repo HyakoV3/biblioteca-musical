@@ -189,6 +189,10 @@ Em cada tema, duas versões:
 
 Ou seja, quatro paletas no total.
 
+Reforço do responsável (2026-11-14): o claro "mais puxado para **bege, papiro, marfim**" e o escuro **menos escuro** que o
+atual. Os nomes ("bege", "papiro", "marfim") servem de referência de cor para a versão amarelada. A I-14 (paleta do
+ícone, azul-marinho e dourado) mexe nas mesmas variáveis de cor: decidir as duas juntas.
+
 ### Motivação (a confirmar)
 
 Conforto de leitura da letra por períodos longos: fundo amarelado costuma cansar menos a vista do que o
@@ -271,9 +275,13 @@ para escolher o WhatsApp e o instrutor; o app não precisa conhecer contatos.
    **Cuidado com fone Bluetooth:** ele atrasa o som em 100 a 300 ms, e a pessoa tocaria **atrasada** em relação ao
    hino que está gravado junto. Medir o atraso e compensar, ou avisar que o fone com fio é melhor (a I-13 tem a mesma
    questão).
-2. **Formato do arquivo.** O WhatsApp precisa conseguir tocar o áudio recebido; o formato gerado pelo navegador
+2. **Formato do arquivo.** Preferência do responsável (2026-11-14): gravar num formato **compacto, que não ocupe
+   espaço**, como o **Opus** (`.opus`/OGG). O responsável lembra que WhatsApp e Telegram costumam **reconverter** o áudio
+   de qualquer forma ao enviar; **a confirmar**, porque pode valer só para mensagem de voz e não para áudio anexado
+   como arquivo. O WhatsApp precisa conseguir tocar o áudio recebido; o formato gerado pelo navegador
    (por exemplo WebM/Opus) pode não ser aceito, e talvez seja preciso converter (por exemplo para M4A ou OGG/Opus).
-   Não verificado.
+   Não verificado: o que `MediaRecorder` produz no WebView do Android, e como o WhatsApp e o Telegram tratam o arquivo
+   enviado. Testar com um contato real, olhando o tamanho e se o áudio toca.
 3. **Onde ficam as gravações** e por quanto tempo; apagar depois de enviar?
 4. **Quem grava.** Há jovens e menores entre os músicos: definir o aviso de privacidade (as gravações ficam só no
    aparelho; o app não envia nada sozinho).
@@ -882,6 +890,56 @@ gravador (I-03).
 - Sem fone, o app não tenta tocar e escutar ao mesmo tempo e diz por quê.
 - Sem a permissão de microfone, dar o tom continua funcionando.
 - O medidor se entende sem cor (número e palavra) e com "reduzir movimento".
+
+---
+
+## I-14 — Variante de tema com a paleta do ícone (azul-marinho e dourado)
+
+- **Status:** anotada
+- **Origem:** pedido do responsável, 2026-11-14 ("Quero sim"), depois de perguntar se o tema segue as cores do ícone.
+- **Prioridade:** a definir
+
+### O problema
+
+Hoje o **dourado do ícone** (`#f8b000`) já marca "onde estou na música" (parte que toca, barra de progresso, aba
+selecionada, ⚑ do final), mas a **base do tema não vem do ícone**: fundo, cartões e bordas são neutros, e as ações são
+azuis (`#1768b3` no claro, `#7bbcff` no escuro). O ícone é **azul-marinho (`#012352`) com dourado**. O app e o ícone
+parecem de famílias diferentes.
+
+### O que se deseja
+
+Uma opção de aparência em que a **base é a paleta do ícone**: fundos e superfícies em tons do **azul-marinho**, e o
+**dourado** como cor de destaque. Seria um tema além de Claro, Escuro e Automático.
+
+### Ideia de comportamento (a validar)
+
+- Em **Ajustes → Aparência**, uma escolha nova (nome a definir, por exemplo "Ícone" ou "Marinho e ouro").
+- Provavelmente **escura** (o marinho pede texto claro), com o dourado nos destaques. Pergunta: precisa de uma versão
+  clara (marfim com marinho nos textos) ou basta uma?
+- Convive com as ideias I-02 (variantes "pergaminho") e I-06 (baixa visão): as três mexem nas mesmas variáveis de cor
+  (`src/lib/tema.css`, `docs/design-tokens.md`). Convém decidir juntas como as escolhas se combinam, para não explodir o
+  número de paletas.
+
+### Perguntas em aberto
+
+1. **Papel do azul das ações** (`--acento`): vira dourado também? O dourado já marca "onde estou na música"; usar o
+   mesmo dourado para ações apagaria essa distinção. Alternativa: ações em azul-claro do marinho, dourado só na música.
+2. **Uma paleta (escura) ou duas** (escura e clara)?
+3. É um tema de **escolha da pessoa** ou o **padrão** do app?
+
+### Impacto técnico (hipóteses)
+
+- Só variáveis de cor em `tema.css`; nenhum componente muda.
+- **Contraste:** todas as combinações passam por `tools/contraste.py` (4,5:1 para texto, 3:1 para componentes). O dourado
+  `#f8b000` sobre claro tem só 1,8:1 (por isso o app usa `#946200` como `--ouro-linha` no tema claro); sobre o
+  marinho, deve passar com folga, mas precisa ser medido.
+- O logo e a tela de abertura já usam as cores do ícone, então a coerência visual melhora sem trabalho extra.
+
+### Critérios de aceitação (propostos)
+
+- A nova aparência aparece em Ajustes e persiste, sem quebrar "Automático".
+- Todos os pares de cor passam em `tools/contraste.py` com as metas atuais.
+- Parte que toca, aba selecionada e barra de progresso continuam distintas das ações.
 
 ---
 
