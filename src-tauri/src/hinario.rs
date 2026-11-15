@@ -78,7 +78,10 @@ pub struct Sincronia {
 fn estrofes_validas(estrofes: &[EstrofeSinc]) -> bool {
     estrofes.iter().all(|e| {
         e.estrofe >= 1
-            && e.linhas.iter().flatten().all(|Trecho(t, de, ate)| t.is_finite() && *t >= 0.0 && de < ate)
+            && e.linhas
+                .iter()
+                .flatten()
+                .all(|Trecho(t, de, ate)| t.is_finite() && *t >= 0.0 && de < ate)
     })
 }
 
@@ -132,9 +135,13 @@ fn erro(codigo: &str, args: &[String]) -> String {
 }
 
 pub fn ler(json: &str) -> Result<Hinario, String> {
-    let mut h: Hinario = serde_json::from_str(json).map_err(|e| erro("json_invalido", &[e.to_string()]))?;
+    let mut h: Hinario =
+        serde_json::from_str(json).map_err(|e| erro("json_invalido", &[e.to_string()]))?;
     if h.versao != VERSAO_SUPORTADA {
-        return Err(erro("versao", &[h.versao.to_string(), VERSAO_SUPORTADA.to_string()]));
+        return Err(erro(
+            "versao",
+            &[h.versao.to_string(), VERSAO_SUPORTADA.to_string()],
+        ));
     }
     // O karaokê é um extra: sincronia malformada é descartada, sem recusar o hino.
     for hino in &mut h.hinos {
@@ -150,7 +157,11 @@ pub fn ler(json: &str) -> Result<Hinario, String> {
             if normal != final_ {
                 return Err(erro(
                     "vozes_final",
-                    &[hino.numero.to_string(), final_.join(", "), normal.join(", ")],
+                    &[
+                        hino.numero.to_string(),
+                        final_.join(", "),
+                        normal.join(", "),
+                    ],
                 ));
             }
         }
@@ -177,10 +188,16 @@ pub fn carregar(dir: Option<&Path>) -> Result<Pacote, String> {
         if arquivo.is_file() {
             let texto = std::fs::read_to_string(&arquivo)
                 .map_err(|e| erro("ler", &[format!("{}: {e}", arquivo.display())]))?;
-            return Ok(Pacote { hinario: ler(&texto)?, exemplo: false });
+            return Ok(Pacote {
+                hinario: ler(&texto)?,
+                exemplo: false,
+            });
         }
     }
-    Ok(Pacote { hinario: ler(EXEMPLO)?, exemplo: true })
+    Ok(Pacote {
+        hinario: ler(EXEMPLO)?,
+        exemplo: true,
+    })
 }
 
 /// Impressão digital simples (FNV-1a de 64 bits + tamanho) para saber se o conteúdo incluso mudou.
@@ -211,7 +228,8 @@ fn semear(dir: &Path, incluso: &str) -> Result<(), String> {
         return Ok(());
     }
     importar(dir, incluso)?;
-    std::fs::write(&marca, &nova).map_err(|e| erro("gravar", &[format!("{}: {e}", marca.display())]))
+    std::fs::write(&marca, &nova)
+        .map_err(|e| erro("gravar", &[format!("{}: {e}", marca.display())]))
 }
 
 const LIMITE_BYTES: usize = 20 * 1024 * 1024;
@@ -235,8 +253,12 @@ pub fn importar(dir: &Path, json: &str) -> Result<Pacote, String> {
         .map_err(|e| erro("gravar", &[format!("{}: {e}", dir.display())]))?;
     let tmp = dir.join("hinario.json.tmp");
     std::fs::write(&tmp, json).map_err(|e| erro("gravar", &[e.to_string()]))?;
-    std::fs::rename(&tmp, dir.join("hinario.json")).map_err(|e| erro("gravar", &[e.to_string()]))?;
-    Ok(Pacote { hinario: h, exemplo: false })
+    std::fs::rename(&tmp, dir.join("hinario.json"))
+        .map_err(|e| erro("gravar", &[e.to_string()]))?;
+    Ok(Pacote {
+        hinario: h,
+        exemplo: false,
+    })
 }
 
 /// Remove o conteúdo importado; o app volta a mostrar o pacote de exemplo.
@@ -270,8 +292,10 @@ mod testes {
 
     #[test]
     fn campos_opcionais_tem_padrao() {
-        let h = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":7,"titulo":"T"}]}"#)
-            .unwrap();
+        let h = ler(
+            r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":7,"titulo":"T"}]}"#,
+        )
+        .unwrap();
         let hino = &h.hinos[0];
         assert!(hino.letra.is_empty() && hino.tonalidade.is_none());
         assert!(hino.vozes.is_empty() && hino.andamento.is_none());
@@ -297,20 +321,33 @@ mod testes {
             r#"[{"nome":"Soprano","notas":[[0,1,60],[1,2,62]]},{"nome":"Baixo","notas":[[0,3,48]]}]"#,
         ))
         .unwrap();
-        let f = h.hinos[0].passada_final.as_ref().expect("deveria ter final");
+        let f = h.hinos[0]
+            .passada_final
+            .as_ref()
+            .expect("deveria ter final");
         assert_eq!(f.vozes[0].notas.len(), 2);
         // ao serializar, a chave continua "final" (e some quando não há final)
         let saida = serde_json::to_string(&h.hinos[0]).unwrap();
         assert!(saida.contains(r#""final":{"vozes""#), "{saida}");
-        let sem = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T"}]}"#).unwrap();
+        let sem = ler(
+            r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T"}]}"#,
+        )
+        .unwrap();
         assert!(sem.hinos[0].passada_final.is_none());
-        assert!(!serde_json::to_string(&sem.hinos[0]).unwrap().contains("final"));
+        assert!(
+            !serde_json::to_string(&sem.hinos[0])
+                .unwrap()
+                .contains("final")
+        );
     }
 
     #[test]
     fn final_com_vozes_diferentes_das_da_passada_normal_e_recusado() {
         // número de vozes diferente
-        let e = ler(&json_com_final(r#"[{"nome":"Soprano","notas":[[0,1,60]]}]"#)).unwrap_err();
+        let e = ler(&json_com_final(
+            r#"[{"nome":"Soprano","notas":[[0,1,60]]}]"#,
+        ))
+        .unwrap_err();
         assert_eq!(args(&e)[..2], ["vozes_final", "457"], "{e}");
         // mesmo número, mas nomes ou ordem diferentes
         let e = ler(&json_com_final(
@@ -334,23 +371,52 @@ mod testes {
             r#"[{"nome":"Soprano","notas":[[0,1,60]]},{"nome":"Baixo","notas":[[0,1,48]]}]"#,
         ))
         .unwrap();
-        assert_eq!(h.hinos[0].introducao.as_ref().expect("deveria ter introdução").vozes.len(), 2);
-        assert!(serde_json::to_string(&h.hinos[0]).unwrap().contains(r#""introducao":{"vozes""#));
-        let sem = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T"}]}"#).unwrap();
+        assert_eq!(
+            h.hinos[0]
+                .introducao
+                .as_ref()
+                .expect("deveria ter introdução")
+                .vozes
+                .len(),
+            2
+        );
+        assert!(
+            serde_json::to_string(&h.hinos[0])
+                .unwrap()
+                .contains(r#""introducao":{"vozes""#)
+        );
+        let sem = ler(
+            r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T"}]}"#,
+        )
+        .unwrap();
         assert!(sem.hinos[0].introducao.is_none());
-        assert!(!serde_json::to_string(&sem.hinos[0]).unwrap().contains("introducao"));
+        assert!(
+            !serde_json::to_string(&sem.hinos[0])
+                .unwrap()
+                .contains("introducao")
+        );
     }
 
     #[test]
     fn nome_de_voz_com_barra_vertical_nao_embaralha_os_argumentos_do_erro() {
         // O nome vem do arquivo importado: pode ter qualquer caractere, inclusive o separador de antes.
-        let e = ler(&json_com_final(r#"[{"nome":"A|B","notas":[[0,1,60]]},{"nome":"C\"D","notas":[[0,1,48]]}]"#)).unwrap_err();
-        assert_eq!(args(&e), ["vozes_final", "457", "A|B, C\"D", "Soprano, Baixo"], "{e}");
+        let e = ler(&json_com_final(
+            r#"[{"nome":"A|B","notas":[[0,1,60]]},{"nome":"C\"D","notas":[[0,1,48]]}]"#,
+        ))
+        .unwrap_err();
+        assert_eq!(
+            args(&e),
+            ["vozes_final", "457", "A|B, C\"D", "Soprano, Baixo"],
+            "{e}"
+        );
     }
 
     #[test]
     fn introducao_com_vozes_diferentes_das_da_passada_normal_e_recusada() {
-        let e = ler(&json_com_introducao(r#"[{"nome":"Soprano","notas":[[0,1,60]]}]"#)).unwrap_err();
+        let e = ler(&json_com_introducao(
+            r#"[{"nome":"Soprano","notas":[[0,1,60]]}]"#,
+        ))
+        .unwrap_err();
         assert_eq!(args(&e)[..2], ["vozes_intro", "1"], "{e}");
     }
 
@@ -367,17 +433,37 @@ mod testes {
             r#"{"normal":[{"estrofe":1,"linhas":[[[0,0,2],[1.5,3,5]]]}],"final":[{"estrofe":1,"linhas":[[[0,0,2]]]}]}"#,
         ))
         .unwrap();
-        let s = h.hinos[0].sincronia.as_ref().expect("deveria ter sincronia");
+        let s = h.hinos[0]
+            .sincronia
+            .as_ref()
+            .expect("deveria ter sincronia");
         assert_eq!(s.normal[0].estrofe, 1);
-        assert_eq!(s.normal[0].linhas[0], vec![Trecho(0.0, 0, 2), Trecho(1.5, 3, 5)]);
-        assert_eq!(s.passada_final.as_ref().unwrap()[0].linhas[0], vec![Trecho(0.0, 0, 2)]);
+        assert_eq!(
+            s.normal[0].linhas[0],
+            vec![Trecho(0.0, 0, 2), Trecho(1.5, 3, 5)]
+        );
+        assert_eq!(
+            s.passada_final.as_ref().unwrap()[0].linhas[0],
+            vec![Trecho(0.0, 0, 2)]
+        );
         // ao serializar, a chave do final continua "final"
         let saida = serde_json::to_string(&h.hinos[0]).unwrap();
-        assert!(saida.contains(r#""sincronia":{"normal":[{"estrofe":1"#) && saida.contains(r#""final":[{"estrofe":1"#), "{saida}");
+        assert!(
+            saida.contains(r#""sincronia":{"normal":[{"estrofe":1"#)
+                && saida.contains(r#""final":[{"estrofe":1"#),
+            "{saida}"
+        );
 
-        let sem = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T"}]}"#).unwrap();
+        let sem = ler(
+            r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T"}]}"#,
+        )
+        .unwrap();
         assert!(sem.hinos[0].sincronia.is_none());
-        assert!(!serde_json::to_string(&sem.hinos[0]).unwrap().contains("sincronia"));
+        assert!(
+            !serde_json::to_string(&sem.hinos[0])
+                .unwrap()
+                .contains("sincronia")
+        );
     }
 
     #[test]
@@ -389,7 +475,8 @@ mod testes {
             r#"{"normal":[{"estrofe":0,"linhas":[[[0,0,2]]]}]}"#,
             r#"{"normal":[{"estrofe":1,"linhas":[[[0,0,2]]]}],"final":[{"estrofe":1,"linhas":[[[0,5,2]]]}]}"#,
         ] {
-            let h = ler(&json_com_sincronia(ruim)).unwrap_or_else(|e| panic!("não devia recusar: {e}"));
+            let h =
+                ler(&json_com_sincronia(ruim)).unwrap_or_else(|e| panic!("não devia recusar: {e}"));
             assert_eq!(h.hinos[0].titulo, "T");
             assert!(h.hinos[0].sincronia.is_none(), "devia descartar: {ruim}");
         }
@@ -406,12 +493,21 @@ mod testes {
 
     #[test]
     fn idioma_do_conteudo_e_lido_e_nao_aparece_quando_ausente() {
-        let com = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A","idioma":"es"},"hinos":[]}"#).unwrap();
+        let com = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A","idioma":"es"},"hinos":[]}"#)
+            .unwrap();
         assert_eq!(com.hinario.idioma.as_deref(), Some("es"));
-        assert!(serde_json::to_string(&com.hinario).unwrap().contains(r#""idioma":"es""#));
+        assert!(
+            serde_json::to_string(&com.hinario)
+                .unwrap()
+                .contains(r#""idioma":"es""#)
+        );
 
         let sem = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[]}"#).unwrap();
-        assert!(!serde_json::to_string(&sem.hinario).unwrap().contains("idioma"));
+        assert!(
+            !serde_json::to_string(&sem.hinario)
+                .unwrap()
+                .contains("idioma")
+        );
     }
 
     #[test]
@@ -458,8 +554,17 @@ mod testes {
     fn importar_invalido_nao_substitui_o_atual() {
         let d = dir_teste("inv");
         importar(&d, VALIDO).unwrap();
-        assert_eq!(args(&importar(&d, "{ quebrado").unwrap_err())[0], "json_invalido");
-        assert!(importar(&d, r#"{"versao":2,"hinario":{"id":"a","nome":"A"},"hinos":[]}"#).is_err());
+        assert_eq!(
+            args(&importar(&d, "{ quebrado").unwrap_err())[0],
+            "json_invalido"
+        );
+        assert!(
+            importar(
+                &d,
+                r#"{"versao":2,"hinario":{"id":"a","nome":"A"},"hinos":[]}"#
+            )
+            .is_err()
+        );
         assert_eq!(carregar(Some(&d)).unwrap().hinario.hinario.id, "x");
         std::fs::remove_dir_all(&d).ok();
     }
@@ -474,7 +579,8 @@ mod testes {
         std::fs::remove_dir_all(&d).ok();
     }
 
-    const OUTRO: &str = r#"{"versao":1,"hinario":{"id":"y","nome":"Y"},"hinos":[{"numero":9,"titulo":"Z"}]}"#;
+    const OUTRO: &str =
+        r#"{"versao":1,"hinario":{"id":"y","nome":"Y"},"hinos":[{"numero":9,"titulo":"Z"}]}"#;
 
     #[test]
     fn semear_sem_conteudo_incluso_nao_faz_nada() {
@@ -535,7 +641,10 @@ mod testes {
     #[test]
     fn saida_do_conversor_mscx2json_e_aceita() {
         // Gerada por tools/mscx2json a partir de partituras fictícias.
-        let h = ler(include_str!("../../tools/mscx2json/tests/fixtures/hinario.json")).unwrap();
+        let h = ler(include_str!(
+            "../../tools/mscx2json/tests/fixtures/hinario.json"
+        ))
+        .unwrap();
         assert_eq!(h.hinos.len(), 2);
         assert_eq!(h.hinos[0].andamento, Some(80));
         assert_eq!(h.hinos[0].vozes[0].notas[0], Nota(0.0, 1.0, 72));
