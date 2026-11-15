@@ -43,9 +43,13 @@ Saem os `*-mp3.js` e um `manifesto.json` (instrumento, notas, bytes e SHA-256 de
 
 ## Hospedagem
 
-- **Agora (testes):** uma **pasta dedicada** só com os sons, no **File Browser** que o responsável já roda no servidor do responsável, com
-  **link público de leitura** (sem senha). A pasta é a mesma do Nextcloud (`<pasta de saída>/sons-001`), que
-  sincroniza com o servidor. Nada mais do servidor pessoal fica exposto.
+- **Agora (testes):** uma **pasta dedicada** só com os sons, no **File Browser** que o responsável hospeda
+  (`https://fb.hm.hv2.xyz`, **hv2**), com **link público de leitura** (sem senha, sem validade). Decisão de 2026-11-15:
+  **sem o Nextcloud**. A pasta é `BibliotecaMusical/` no servidor, com o pacote em
+  `BibliotecaMusical/sons-001/` (3 instrumentos e o manifesto; arquivos copiados e conferidos pelo SHA-256 no servidor).
+  **Só a pasta `BibliotecaMusical` é compartilhada**; nada mais fica exposto.
+- **Estado:** pasta e arquivos prontos; falta criar o **link público** na tela do File Browser (exige login) e passar
+  o endereço para eu testar o download.
 - **Depois:** GitHub Releases quando o código for público; o servidor do responsável vira espelho.
 - O app **baixa pelo lado nativo** (Rust), porque servidores de link público costumam não liberar o acesso do navegador
   interno (CORS); **confere o SHA-256** contra o manifesto que vem dentro do app, então um arquivo trocado no servidor é
