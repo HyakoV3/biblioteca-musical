@@ -54,17 +54,64 @@ const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 const filhos = [];
 let perfil = null;
 
-async function limpar() {
-  for (const p of filhos) {
+// Encerra o processo e os filhos dele (o Chrome abre vários): sinal para o grupo de processos inteiro.
+function encerrar(p, sinal) {
+  try {
+    if (process.platform === "win32") p.kill(sinal);
+    else process.kill(-p.pid, sinal);
+  } catch {
+    /* já saiu */
+  }
+}
+
+// O grupo de processos ainda tem alguém vivo? `kill(-pid, 0)` não envia nada: só falha com ESRCH quando o grupo
+// esvaziou. O líder (o processo que o Node criou) pode sair antes dos filhos, então olhar só o `exit` dele não basta.
+function grupoVivo(p) {
+  if (process.platform === "win32") return p.exitCode === null;
+  try {
+    process.kill(-p.pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function aguardarGrupo(p, ms) {
+  const fim = Date.now() + ms;
+  while (grupoVivo(p) && Date.now() < fim) await dormir(100);
+}
+
+let limpando = null;
+function limpar() {
+  limpando ??= (async () => {
+    for (const p of filhos) encerrar(p, "SIGTERM");
+    // O Chrome ainda escreve na pasta do perfil ao sair: espera o grupo inteiro sumir (e, se demorar, força).
+    await Promise.all(filhos.map((p) => aguardarGrupo(p, 4000)));
+    for (const p of filhos) if (grupoVivo(p)) encerrar(p, "SIGKILL");
+    await Promise.all(filhos.map((p) => aguardarGrupo(p, 2000)));
+    apagarPerfil();
+  })();
+  return limpando;
+}
+
+// Com `detached: true` o Ctrl-C do terminal não chega mais aos filhos: sem isto, interromper o teste (ou cancelar o job)
+// deixaria o Chrome e o Vite órfãos, e o Vite seguiria na porta 5199 e quebraria a próxima execução.
+for (const [sinal, codigo] of [["SIGINT", 130], ["SIGTERM", 143]]) {
+  process.on(sinal, async () => {
+    await limpar();
+    process.exit(codigo);
+  });
+}
+
+function apagarPerfil() {
+  if (perfil) {
     try {
-      p.kill("SIGTERM");
-    } catch {
-      /* já saiu */
+      rmSync(perfil, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
+    } catch (e) {
+      // É só uma pasta temporária: não pode mudar o resultado do teste.
+      console.warn(`aviso: não deu para apagar ${perfil}: ${e.code ?? e.message}`);
     }
   }
-  // O Chrome ainda escreve na pasta do perfil ao sair: espera ele terminar antes de apagá-la.
-  await Promise.all(filhos.map((p) => (p.exitCode !== null ? null : new Promise((r) => { p.once("exit", r); setTimeout(r, 4000); }))));
-  if (perfil) rmSync(perfil, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
 }
 
 function acharChrome() {
@@ -99,7 +146,7 @@ async function principal() {
   const vite = spawn(
     process.execPath,
     [join(RAIZ, "node_modules/vite/bin/vite.js"), "dev", "--port", String(PORTA_VITE), "--strictPort", "--host", "127.0.0.1"],
-    { cwd: RAIZ, stdio: "ignore" },
+    { cwd: RAIZ, stdio: "ignore", detached: true },
   );
   filhos.push(vite);
   await esperarUrl(`http://127.0.0.1:${PORTA_VITE}/`, 60000);
@@ -110,7 +157,7 @@ async function principal() {
     acharChrome(),
     ["--headless=new", "--no-sandbox", "--disable-gpu", "--mute-audio", "--autoplay-policy=no-user-gesture-required",
       "--window-size=412,915", `--user-data-dir=${perfil}`, `--remote-debugging-port=${PORTA_CHROME}`, "about:blank"],
-    { stdio: "ignore" },
+    { stdio: "ignore", detached: true },
   );
   filhos.push(chrome);
   await esperarUrl(`http://127.0.0.1:${PORTA_CHROME}/json/version`, 30000);
