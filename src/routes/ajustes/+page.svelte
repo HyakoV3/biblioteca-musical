@@ -13,6 +13,8 @@
 
   let resultado = $state<{ tipo: "sucesso" | "erro"; texto: string } | null>(null);
   let confirmando = $state(false);
+  // O texto do "Sobre o app" é longo: fica num card fechado, que a pessoa abre se quiser ler.
+  let sobreAberto = $state(false);
 
   async function importar(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
@@ -118,33 +120,49 @@
     <Aviso tipo="info"><strong>{t("sobre.aviso_titulo")}</strong><br />{t("sobre.aviso")}</Aviso>
   </section>
 
-  <section class="sobre">
-    <h2>{t("ajustes.sobre")}</h2>
-    <p>{t("sobre.intro")}</p>
+  <section>
+    <details class="cartao" bind:open={sobreAberto}>
+      <summary>
+        <span>{t("ajustes.sobre")}</span>
+        <Icone nome={sobreAberto ? "fechar" : "abrir"} tamanho={24} />
+      </summary>
+      <div class="corpo sobre">
+        <p>{t("sobre.intro")}</p>
 
-    <h3>{t("sobre.fazer_titulo")}</h3>
-    <ul>
-      <li>{t("sobre.fazer_1")}</li>
-      <li>{t("sobre.fazer_2")}</li>
-      <li>{t("sobre.fazer_3")}</li>
-      <li>{t("sobre.fazer_4")}</li>
-    </ul>
+        <h3>{t("sobre.fazer_titulo")}</h3>
+        <ul>
+          <li>{t("sobre.fazer_1")}</li>
+          <li>{t("sobre.fazer_2")}</li>
+          <li>{t("sobre.fazer_3")}</li>
+          <li>{t("sobre.fazer_4")}</li>
+        </ul>
 
-    <h3>{t("sobre.como_titulo")}</h3>
-    <p>{t("sobre.como")}</p>
+        <h3>{t("sobre.como_titulo")}</h3>
+        <p>{t("sobre.como")}</p>
 
-    <h3>{t("sobre.privacidade_titulo")}</h3>
-    <p>{t("sobre.privacidade")}</p>
+        <h3>{t("sobre.privacidade_titulo")}</h3>
+        <p>{t("sobre.privacidade")}</p>
 
-    <h3>{t("sobre.codigo_titulo")}</h3>
-    <p>{t("sobre.codigo")}</p>
-
-    <p class="meta">{t("ajustes.versao", { v: `${__APP_VERSAO__} (${__APP_COMMIT__})` })}</p>
+        <h3>{t("sobre.codigo_titulo")}</h3>
+        <p>{t("sobre.codigo")}</p>
+      </div>
+    </details>
   </section>
+
+  <!-- A versão fica sozinha no fim, centralizada, fora do card. -->
+  <p class="meta versao">{t("ajustes.versao", { v: `${__APP_VERSAO__} (${__APP_COMMIT__})` })}</p>
 </main>
 
 <style>
   section { margin-bottom: 1.8rem; }
+  .cartao { border: 1px solid var(--borda-controle); border-radius: 12px; background: var(--superficie); }
+  summary {
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 48px;
+    padding: 0 0.9rem; font-weight: 600; cursor: pointer; list-style: none;
+  }
+  summary::-webkit-details-marker { display: none; }
+  .corpo { padding: 0.2rem 0.9rem 0.9rem; }
+  .versao { margin: 0 0 1.5rem; text-align: center; }
   .sobre p, .sobre li { line-height: 1.5; }
   .sobre h3 { margin: 1.1rem 0 0.3rem; font-size: 0.95rem; }
   .sobre ul { margin: 0; padding-left: 1.2rem; }
