@@ -988,6 +988,55 @@ Uma opção de aparência em que a **base é a paleta do ícone**: fundos e supe
 
 ---
 
+## I-15 — Timbres sintetizados mais parecidos com os instrumentos
+
+- **Status:** anotada
+- **Origem:** observação do responsável no teste, 2026-11-15: "os áudios sintetizados do trompete, trombone, tuba,
+  fagote, oboé, sax alto e sax tenor estão ruins, nem parece o som do instrumento".
+- **Prioridade:** a definir (o responsável pediu antes o CI e os temas I-02 e I-14)
+
+### O problema
+
+O som **sintetizado** é o padrão do app (não pesa nada e funciona sem rede). Para estes sete instrumentos ele não
+lembra o instrumento. Quem não baixa o pacote de sons gravados só ouve a síntese. Os gravados desses mesmos
+instrumentos existem e soam bem; o problema é só do padrão.
+
+### Como é hoje (fato, lido do código)
+
+Cada instrumento é uma **tabela fixa de harmônicos** (`PeriodicWave`), uma envoltória simples (ataque e soltar) e, em
+alguns, vibrato. A mesma tabela vale para qualquer altura da nota.
+
+### Hipóteses do que falta (não medidas)
+
+Instrumentos de sopro de metal e de palheta mudam de timbre com a altura e com o ataque. A síntese de hoje não tem:
+1. **brilho que muda com a altura** (notas graves e agudas têm espectros diferentes: uma tabela por região);
+2. **o brilho que sobe no ataque** nos metais (filtro com envoltória, o "buá" do começo da nota);
+3. **ruído de sopro e um ataque com transiente**, que dão o caráter de sopro;
+4. **ressonâncias fixas (formantes)** nas palhetas (oboé, fagote e saxes), que fazem o som "anasalado".
+
+### Caminhos possíveis, a pesquisar antes de construir
+
+- **Extrair os espectros das próprias amostras gravadas** (as do pacote, licença MIT): analisar, por FFT, o espectro de
+  cada instrumento em algumas alturas e gerar tabelas por região para a síntese. Reaproveita dado real, sem pesar no
+  app (são só alguns números por instrumento). É a que eu tentaria primeiro.
+- Conferir se alguma biblioteca já resolve (síntese por FM ou por filtro subtrativo, por exemplo nos sintetizadores do
+  Tone.js), com licença e tamanho. Registrar o que foi lido, como na I-07. Sem reinventar a roda.
+- Oferecer o gravado como padrão **se já estiver baixado** (o app já faz o alternador por voz).
+
+### Perguntas em aberto
+
+1. Quais dos sete importam mais para o uso real (por voz: tuba e trombone costumam ir no baixo)?
+2. Aceita-se um pouco mais de processamento no celular (mais filtros por nota)?
+
+### Critérios de aceitação (propostos)
+
+- Comparação **às cegas, de ouvido**, pelo responsável: cada um dos sete soa mais parecido com o instrumento que a
+  versão de hoje, e o ranking vira um item no documento.
+- O espectro médio de cada instrumento sintetizado fica mais perto do da amostra gravada do que o de hoje (medida
+  objetiva, em `tools/`), sem aumentar de forma relevante o tamanho do app nem o uso de CPU com 4 vozes.
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown

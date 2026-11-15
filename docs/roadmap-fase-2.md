@@ -55,6 +55,8 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
       decidir o substituto do flugelhorn. **(depende do responsável)**
 - [ ] Testar 4 vozes gravadas ao mesmo tempo no celular do responsável (estalos, atraso, memória).
       **(depende do responsável, com o APK de comparação)**
+- [ ] **Timbres sintetizados** de trompete, trombone, tuba, fagote, oboé e dos saxes alto e tenor, que o responsável
+      achou ruins no teste (I-15). Hipótese a pesquisar: tabelas de harmônicos por região tiradas das amostras gravadas.
 
 **Pronto quando:** o pacote de sons baixa, funciona offline e se remove pelos Ajustes; 4 vozes gravadas tocam no celular
 sem estalos; a licença de cada som está registrada; e o app base não cresceu.
