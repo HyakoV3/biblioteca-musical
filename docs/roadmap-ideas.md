@@ -687,8 +687,8 @@ ajustes novos, em vez de retomar o agendamento antigo:
 
 ## I-11 — Ícones em SVG local (subset), no lugar de emojis e símbolos
 
-> **Situação: feita** (2026-11-14), com o conjunto **`ic`** (a recomendação do assistente; o responsável contava com a
-> troca e não pediu outro conjunto). `Icone.svelte` lê `src/lib/icones.json` (13 ícones, **1,9 KB**), gerado por
+> **Situação: feita** (2026-11-14), com o conjunto **`ic`** (Material Icons, contorno), **escolha confirmada pelo
+> responsável** ("pode ser o Material Icons, contorno está bom"). `Icone.svelte` lê `src/lib/icones.json` (13 ícones, **1,9 KB**), gerado por
 > `tools/gerar-icones.mjs` (busca no Iconify uma vez). Trocados: tocar, pausar, parar, música (introdução), bandeira
 > (final), alto-falante ligado e mudo, voltar, ok, mais, menos e a seta dos cards (que muda de baixo para cima quando o
 > card abre). Ficam como letra o `!` e o `i` dos avisos de erro e informação. **Para trocar de conjunto:** mude

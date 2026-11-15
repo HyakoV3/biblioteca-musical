@@ -111,8 +111,8 @@
   const sinal = (n: number) => (n > 0 ? `+${n}` : String(n));
   const percentual = (v: number) => Math.round(v * 100);
 
-  // Cards recolhíveis: o que está aberto fica lembrado no aparelho. O card "Tocar" é fixo (sem ele, com a música
-  // tocando, não haveria como pausar daqui).
+  // Cards recolhíveis: só um fica aberto por vez (abrir um fecha os outros, para economizar tela) e o que está aberto fica
+  // lembrado no aparelho. O card "Tocar" é fixo (sem ele, com a música tocando, não haveria como pausar daqui).
   const cartoes = $state(lerCartoes());
   $effect(() => {
     salvarCartoes({ ajustes: cartoes.ajustes, vozes: cartoes.vozes, instrumentos: cartoes.instrumentos });
@@ -217,7 +217,7 @@
   </section>
 
   <!-- Card 2: andamento e transposição. -->
-  <details class="cartao" bind:open={cartoes.ajustes}>
+  <details class="cartao" name="cartoes-ouvir" bind:open={cartoes.ajustes}>
     <summary>
       <span>{t("player.cartao_ajustes")}</span>
       <span class="direita"><span class="resumo">{resumoAjustes}</span><Icone nome={cartoes.ajustes ? "fechar" : "abrir"} tamanho={24} /></span>
@@ -265,7 +265,7 @@
 
   <!-- Card 3: vozes. Mixer: cada voz tem dois controles distintos. Interruptor = liga/desliga a voz;
        controle deslizante = volume. O instrumento fica no card seguinte. -->
-  <details class="cartao" bind:open={cartoes.vozes}>
+  <details class="cartao" name="cartoes-ouvir" bind:open={cartoes.vozes}>
     <summary>
       <span>{t("player.vozes")}</span>
       <span class="direita"><span class="resumo"><Icone nome="som" tamanho={16} /> {resumoVozes}</span><Icone nome={cartoes.vozes ? "fechar" : "abrir"} tamanho={24} /></span>
@@ -310,7 +310,7 @@
   </details>
 
   <!-- Card 4: instrumentos de cada voz. -->
-  <details class="cartao" bind:open={cartoes.instrumentos}>
+  <details class="cartao" name="cartoes-ouvir" bind:open={cartoes.instrumentos}>
     <summary>
       <span>{t("player.instrumentos")}</span>
       <span class="direita"><span class="resumo">{resumoInstrumentos}</span><Icone nome={cartoes.instrumentos ? "fechar" : "abrir"} tamanho={24} /></span>

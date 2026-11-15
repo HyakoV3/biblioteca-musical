@@ -47,7 +47,7 @@ export type Cartoes = { ajustes: boolean; vozes: boolean; instrumentos: boolean 
 
 const CHAVE_CARTOES = "prefs.cartoes";
 
-/** Padrão: só as vozes (volume e silenciar, que se usa tocando) ficam abertas. */
+/** Padrão: só as vozes (volume e silenciar, que se usa tocando) ficam abertas. Só um card fica aberto por vez. */
 export const cartoesPadrao = (): Cartoes => ({ ajustes: false, vozes: true, instrumentos: false });
 
 export function lerCartoes(): Cartoes {
@@ -58,6 +58,11 @@ export function lerCartoes(): Cartoes {
     if (o && typeof o === "object" && !Array.isArray(o)) {
       for (const k of Object.keys(p) as (keyof Cartoes)[]) if (typeof o[k] === "boolean") p[k] = o[k];
     }
+    // Os cards são um grupo exclusivo: se o salvo tiver mais de um aberto (de uma versão anterior), vale o primeiro por
+    // prioridade (vozes, andamento e tom, instrumentos). Nenhum aberto é permitido.
+    const ordem: (keyof Cartoes)[] = ["vozes", "ajustes", "instrumentos"];
+    const primeiro = ordem.find((k) => p[k]);
+    for (const k of ordem) p[k] = k === primeiro;
   } catch {
     /* sem armazenamento ou JSON inválido: vale o padrão */
   }
