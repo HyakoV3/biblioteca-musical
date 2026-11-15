@@ -43,8 +43,10 @@ const ESPERADO_VEZ1 = [["do", 0], ["re", 2], ["mi", 4], ["fa", 6], ["sol", 8]];
 const ESPERADO_VEZ2 = [["la", 0], ["si", 2], ["do", 4], ["re", 6], ["mi", 8]];
 const BPM = 120;
 const MS_POR_BATIDA = 60000 / BPM;
-// 1ª vez (10 batidas) + pausa de 2 s (4 batidas) + 2ª vez (10 batidas) = 24 batidas.
-const DURACAO_MUSICA_MS = (10 + (2 * BPM) / 60 + 10) * MS_POR_BATIDA;
+// A 2ª vez começa depois da 1ª (10 batidas) mais a pausa de 2 s (4 batidas a 120 bpm). Definido uma vez e usado por tudo.
+const BATIDAS_ESTROFE = 10;
+const PAUSA_BATIDAS = (2 * BPM) / 60;
+const INICIO_VEZ2 = BATIDAS_ESTROFE + PAUSA_BATIDAS;
 
 const STUB = `window.__TAURI_INTERNALS__ = {
   invoke: async (cmd) => (cmd === "carregar_hinario" ? { hinario: ${JSON.stringify(hinario)}, exemplo: false } : null),
@@ -217,19 +219,40 @@ async function principal() {
       const e = document.querySelector('.estrofe.da-vez h2');
       window.__am.push([Math.round(performance.now() - window.__t0), tr ? tr.textContent : null, e ? e.textContent : null]);
     }, 25); 1`);
-  // A música dura 12 s: 1ª vez (5 s, 10 batidas), pausa de 2 s e 2ª vez (5 s). A amostragem começa ~0,8 s depois do play, então
-  // a sílaba "re" da 2ª vez (batida 20) acende em ~9,3 s de amostragem e "mi" em ~10,3 s. Pausar aos 9,9 s cai no meio da "re",
-  // com ~0,5 s de folga para cada lado: se a pausa NÃO congelasse o destaque, a "mi" acenderia durante a espera e o teste falharia.
-  // (Antes esperava 15 s, depois do fim da música: a pausa nem era testada, pois já não havia nada aceso.)
-  await dormir(9900);
-  const msPausa = await av("Math.round(performance.now() - window.__t0)");
-  confere(msPausa < DURACAO_MUSICA_MS - 1000, `a pausa é pedida no meio da música (${msPausa} ms de amostragem; a música dura ${DURACAO_MUSICA_MS} ms)`);
-  await av("document.querySelector('.mini .acao')?.click(); 1"); // pausa pelo miniplayer
-  await dormir(1500);
-  const distintos = await av("new Set(window.__am.slice(-40).map((x) => x[1] + '|' + x[2])).size");
-  confere(distintos === 1, `a pausa congela o destaque (estados distintos no último 1 s: ${distintos})`);
-  const aceso = await av("document.querySelector('.trecho')?.textContent ?? null");
-  confere(aceso === "re", `a sílaba acesa durante a pausa é a da hora em que se pausou: ${JSON.stringify(aceso)} (esperado "re")`);
+  // A pausa é ancorada no que o teste OBSERVA, e não num tempo fixo (que dependeria de atrasos de início que ninguém mede):
+  // espera a sílaba "re" da 2ª estrofe aparecer na amostragem e pede a pausa meia batida depois, no meio dela. Essa sílaba dura
+  // 2 batidas (1 s); a "mi" só acende 1 s depois do início da "re". (Antes esperava 15 s, depois do fim da música, que dura 12 s:
+  // a pausa nem era testada, pois já não havia nada aceso.)
+  const estado = (x) => `${x[1]}|${x[2]}`;
+  const eRe2 = (x) => x && x[1] === "re" && (x[2] ?? "").includes("2");
+  let achouRe2 = false;
+  for (let fim = Date.now() + 25000; Date.now() < fim && !achouRe2; ) {
+    achouRe2 = eRe2(await av("window.__am.at(-1)"));
+    if (!achouRe2) await dormir(25);
+  }
+  confere(achouRe2, 'a sílaba "re" da 2ª estrofe acendeu (a pausa é pedida no meio da música)');
+  await dormir(MS_POR_BATIDA / 2);
+  // Lê o instante, o último estado amostrado e clica na MESMA expressão: é o estado exato do momento da pausa.
+  const pausa = await av(`(() => {
+    const b = document.querySelector('.mini .acao');
+    const antes = window.__am.at(-1);
+    const ms = Math.round(performance.now() - window.__t0);
+    if (b) b.click();
+    return { botao: !!b, ms, antes };
+  })()`); // pausa pelo miniplayer
+  confere(pausa.botao, "botão de pausa do miniplayer encontrado e clicado");
+  const msPausa = pausa.ms;
+  confere(eRe2(pausa.antes), `o destaque no instante da pausa era a "re" da 2ª estrofe: ${JSON.stringify(pausa.antes?.slice(1))}`);
+  await dormir(1500); // a "mi" acenderia 0,5 s depois do clique, se a pausa não congelasse
+  const todas = await av("window.__am");
+  // Tudo o que foi amostrado depois do clique (com 150 ms de acomodação) tem de ser exatamente o estado do instante da pausa.
+  const depois = todas.filter((x) => x[0] >= msPausa + 150);
+  const estados = [...new Set(depois.map(estado))];
+  confere(depois.length >= 40, `amostras depois da pausa: ${depois.length} (esperado pelo menos 40, ~1 s)`);
+  confere(
+    estados.length === 1 && estados[0] === estado(pausa.antes),
+    `a pausa congela o destaque no estado em que foi pedida (depois dela: ${JSON.stringify(estados)}; antes: ${JSON.stringify(estado(pausa.antes))})`,
+  );
   await av("document.querySelector('.chave-karaoke')?.click(); 1"); // desliga
   await dormir(400);
   confere((await av("document.querySelectorAll('.trecho').length")) === 0, "com o botão desligado nada fica aceso");
@@ -245,9 +268,7 @@ async function principal() {
     if (tr !== null && tr !== ant) trocas.push({ ms, tr, est });
     ant = tr ?? ant;
   }
-  // a 2ª vez começa depois da 1ª (10 batidas) mais a pausa de 2 s (4 batidas a 120 bpm)
-  const inicioVez2 = 10 + (2 * BPM) / 60;
-  const alvo = [...ESPERADO_VEZ1.map(([tr, b]) => ({ tr, b, est: "1" })), ...ESPERADO_VEZ2.map(([tr, b]) => ({ tr, b: inicioVez2 + b, est: "2" }))];
+  const alvo = [...ESPERADO_VEZ1.map(([tr, b]) => ({ tr, b, est: "1" })), ...ESPERADO_VEZ2.map(([tr, b]) => ({ tr, b: INICIO_VEZ2 + b, est: "2" }))];
   const obs = trocas.slice(0, alvo.length);
   console.log("trocas (ms desde o início da amostragem):", obs.map((o) => `${o.ms} ${o.tr}`).join(" | "));
   console.log("esperado (batidas):", alvo.map((a) => `${a.b} ${a.tr}`).join(" | "));
