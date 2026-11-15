@@ -53,8 +53,12 @@ npm install
 npm run tauri dev            # desktop
 npm run tauri android init   # uma vez
 npm run tauri android dev    # Android
-npm run check                # tipos (svelte-check)
+npm run check                # tipos (svelte-check, inclui tests/)
+npm test                     # testes da lógica (Vitest), só com dados fictícios
+npm run test:e2e             # karaokê num Chrome de verdade (precisa de Chrome ou Chromium)
 ```
+
+Os testes do conversor e do leitor em Rust: `cargo test` em `tools/mscx2json` e `cargo test --lib` em `src-tauri`.
 
 APK de teste fechado: [`docs/apk-de-teste.md`](docs/apk-de-teste.md).
 

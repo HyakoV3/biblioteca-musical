@@ -43,13 +43,21 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
 
 ## 4. Testes automatizados
 
-- [ ] Os testes do app (sintetizador e reagendamento na pausa, partes do hino, pacote de sons) foram feitos em
-      scripts fora do repositório. Trazê-los para `tests/` com um executor (Vitest) e rodar no CI.
-- [ ] Teste de regressão do `smplr`: parar tem de esvaziar a fila do agendador (corrigido no zip 005; ver `roadmap-fase-2.md`).
-- [x] O conversor `tools/mscx2json` já tem testes em Rust, dentro do repositório.
-
-- [ ] Teste de ponta a ponta do karaokê: hoje roda fora do repositório (Chrome mudo com um `invoke` simulado do
-      Tauri, lendo o relógio do áudio). Trazer para o repositório junto com os demais e rodar no CI.
+- [x] **Testes do app no repositório** (`tests/`, executor Vitest): `npm test`. 48 testes em 7 arquivos, só com dados
+      **fictícios** (`tests/amostras.ts`; nenhum hino real entra no Git): partes e vezes do hino (introdução, final,
+      pausas), sintetizador (reagendar na pausa, tempo audível), karaokê (validação e escolha da sílaba), pacote de
+      sons (zips sintéticos adulterados, truncados e "bomba"), catálogo de sons gravados x manifesto, número do hino e
+      preferências. Os tipos dos testes passam por `npm run check`.
+- [x] Regressão do `smplr`: `parar()` tem de esvaziar a fila do agendador (`tests/sintetizador.test.ts`). Conferido: sem
+      a correção, o teste falha.
+- [x] **Ponta a ponta do karaokê** (`npm run test:e2e`, `tests/e2e/karaoke.mjs`): sobe o Vite e um Chrome mudo, entrega
+      um hino fictício por um `invoke` simulado do Tauri e confere sílaba, estrofe, tempo, pausa e o botão. Precisa de
+      Chrome ou Chromium (variável `CHROME` indica o executável) e não sobra processo nem pasta temporária.
+- [x] O conversor `tools/mscx2json` tem testes em Rust, dentro do repositório (`cargo test`), e o leitor do app também
+      (`cargo test --lib` em `src-tauri`).
+- [ ] Rodar tudo isso no **CI** (seção 2). O e2e é mais pesado: avaliar rodá-lo só em `main` ou sob demanda.
+- [ ] Testes de componentes Svelte e do store (`reproducao.svelte.ts`), que dependem do compilador do Svelte no
+      Vitest: ficam de fora por enquanto (a lógica pura já está coberta).
 
 ## 5. Ambiente de teste (emulador)
 
