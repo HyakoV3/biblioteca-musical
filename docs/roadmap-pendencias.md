@@ -37,9 +37,26 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
 
 ## 3. Revisão de código
 
-- [ ] Revisão automática de código nos *pull requests*. Ferramenta a definir (o responsável citou "vandame", a
-      confirmar qual é). Pontos que a revisão deve cobrir: segurança (rede só para o servidor de sons, conferência de
+O **vandame** é um aplicativo do GitHub (`vandame-bot`) que posta as revisões, junto com o `claude-code-action`. É o
+mesmo conjunto de fluxos que o responsável já usa em outros projetos.
+
+- [x] **Fluxos trazidos** (`.github/workflows/`): `claude-code-review.yml` revisa cada *pull request* novo, com um
+      comentário por problema, linha a linha e com sugestões que o GitHub aplica no botão "Commit suggestion";
+      `claude-resolve-threads.yml`, a cada *push* no PR, confere se os pedidos do vandame-bot foram atendidos e resolve
+      essas conversas. Nenhum deles tem nada específico de outro projeto.
+- [ ] **Para funcionar neste repositório, só o responsável pode fazer:**
+      1. cadastrar os segredos `VANDAME_APP_ID`, `VANDAME_APP_PRIVATE_KEY` e `CLAUDE_CODE_OAUTH_TOKEN_ENTERPRISE`
+         (Settings, Secrets and variables, Actions);
+      2. instalar o aplicativo vandame neste repositório (Settings, Applications, vandame, Configure, Repository access).
+      Fazer as duas coisas **antes do primeiro pull request**: sem os segredos o job de revisão falha.
+- [ ] A revisão só roda em **pull requests**. Para ter revisão, o fluxo passa a ser ramo, PR em rascunho e *merge*, em
+      vez de enviar direto para a `main`.
+- [ ] Repositório público: os fluxos rodam em `pull_request`, então PRs de *forks* não recebem os segredos, e o de
+      resolver conversas só roda em PR do próprio repositório. Ativar também "exigir aprovação para primeiros
+      colaboradores" nas configurações de Actions.
+- [ ] Pontos que a revisão deve cobrir neste projeto: segurança (rede só para o servidor de sons, conferência de
       SHA-256), acessibilidade (alvos de 48 px, contraste, movimento reduzido) e dados de terceiros fora do Git.
+      O pedido padrão do fluxo é genérico; dá para acrescentar esses pontos ao texto dele.
 
 ## 4. Testes automatizados
 
