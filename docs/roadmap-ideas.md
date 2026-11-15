@@ -193,6 +193,23 @@ Reforço do responsável (2026-11-14): o claro "mais puxado para **bege, papiro,
 atual. Os nomes ("bege", "papiro", "marfim") servem de referência de cor para a versão amarelada. A I-14 (paleta do
 ícone, azul-marinho e dourado) mexe nas mesmas variáveis de cor: decidir as duas juntas.
 
+**Referência de cores: a paleta de tons terrosos de um projeto do responsável**, lembrada em 2026-11-14 como candidata para esta variante:
+
+| Papel | Claro | Escuro |
+|---|---|---|
+| Fundo | `#ffffff`, com `#fffbe7` (marfim) como fundo alternativo | `#211e1b` (marrom-quente, no lugar do azul-frio) |
+| Superfície | `#ffffff`; linha alternada `#f7f3ec` | `#2a2622` (mais forte `#37312b`) |
+| Texto | `#241300` (suave `#55361a`) | `#f4f0eb` (suave `#c4bcb2`) |
+| Acento (areia) | `#dbb778` (forte `#c49f5c`), texto sobre ele `#241300` | `#e0c084` (forte `#eed9ab`), texto sobre ele `#171513` |
+| Borda | `#e0d8cc` (forte `#4a3a25`) | `#3e3831` (forte `#554d44`) |
+
+Medido em 2026-11-14 com a razão de contraste do WCAG: **todos os pares de texto passam** (de 8:1 a 18:1, o menor é o
+texto suave sobre superfície escura, 8:1). **Não passam como componente (meta 3:1):** o acento areia sobre o marfim
+(1,8:1), a borda comum sobre o marfim (1,4:1) e as bordas do escuro (1,4:1 e 2,0:1). É o mesmo problema que o app já
+resolveu no tema atual com `--ouro-linha` (mais escuro no claro) e `--borda-controle`: a variante precisa de versões
+mais escuras para linhas, bordas de controle e o dourado de "onde estou na música". O dourado do ícone (`#f8b000`)
+sobre o fundo escuro terroso dá 8,9:1, então combina com esta base.
+
 ### Motivação (a confirmar)
 
 Conforto de leitura da letra por períodos longos: fundo amarelado costuma cansar menos a vista do que o
@@ -926,6 +943,9 @@ Uma opção de aparência em que a **base é a paleta do ícone**: fundos e supe
    mesmo dourado para ações apagaria essa distinção. Alternativa: ações em azul-claro do marinho, dourado só na música.
 2. **Uma paleta (escura) ou duas** (escura e clara)?
 3. É um tema de **escolha da pessoa** ou o **padrão** do app?
+4. **Base azul-marinho (ícone) ou base terrosa (a de um projeto do responsável, ver a I-02)?** O dourado do ícone combina com as duas.
+   A terrosa atende ao pedido de um claro "bege, papiro, marfim" e de um escuro menos escuro e menos frio; a marinho
+   é a que mais lembra o ícone. Dá para oferecer as duas como aparências separadas, se não explodir o número de paletas.
 
 ### Impacto técnico (hipóteses)
 
