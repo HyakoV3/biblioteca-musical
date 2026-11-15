@@ -4,6 +4,7 @@
 Uso (a partir da raiz do projeto, depois de `sh tools/baixar-sons-teste.sh`):
     python3 tools/preparar-sons.py                       # lê static/sons/FluidR3_GM, grava em dist-sons/
     python3 tools/preparar-sons.py --faixa 30 86         # outra faixa de notas MIDI (padrão: 30 a 86)
+    python3 tools/preparar-sons.py --instrumentos drawbar_organ flute clarinet --pacote sons-001 --saida ~/Downloads/sons-001
 
 O que faz:
   1. lê cada `<instrumento>-mp3.js` (formato do banco FluidR3_GM do repositório midi-js-soundfonts: um objeto com uma
@@ -59,12 +60,21 @@ def main():
     ap.add_argument("--entrada", type=Path, default=ENTRADA_PADRAO)
     ap.add_argument("--saida", type=Path, default=SAIDA_PADRAO)
     ap.add_argument("--faixa", type=int, nargs=2, default=[30, 86], metavar=("MIN", "MAX"))
+    ap.add_argument("--instrumentos", nargs="+", metavar="NOME", help="só estes (ex.: drawbar_organ flute); padrão: todos os da entrada")
+    ap.add_argument("--pacote", default="sons", help="nome do pacote, gravado no manifesto (ex.: sons-001)")
     args = ap.parse_args()
     minimo, maximo = args.faixa
 
-    arquivos = sorted(args.entrada.glob("*-mp3.js"))
+    arquivos = sorted(args.entrada.expanduser().glob("*-mp3.js"))
+    if args.instrumentos:
+        pedidos = set(args.instrumentos)
+        arquivos = [a for a in arquivos if a.name[: -len("-mp3.js")] in pedidos]
+        faltam = pedidos - {a.name[: -len("-mp3.js")] for a in arquivos}
+        if faltam:
+            sys.exit(f"instrumento(s) sem arquivo de entrada: {', '.join(sorted(faltam))}")
     if not arquivos:
         sys.exit(f"nenhum *-mp3.js em {args.entrada} (rode tools/baixar-sons-teste.sh)")
+    args.saida = args.saida.expanduser()
     args.saida.mkdir(parents=True, exist_ok=True)
 
     lista = []
@@ -91,7 +101,7 @@ def main():
         })
         print(f"{instrumento:14} {len(todas):3} -> {len(mantidas):3} notas | {arq.stat().st_size/1e6:5.2f} MB -> {len(dados)/1e6:5.2f} MB")
 
-    manifesto = {"versao": 1, "banco": "FluidR3_GM", "faixa": [minimo, maximo], "arquivos": lista}
+    manifesto = {"versao": 1, "pacote": args.pacote, "banco": "FluidR3_GM", "faixa": [minimo, maximo], "arquivos": lista}
     (args.saida / "manifesto.json").write_text(json.dumps(manifesto, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     total = sum(a["bytes"] for a in lista)
     print(f"{len(lista)} arquivo(s), {total/1e6:.2f} MB no total, manifesto em {args.saida / 'manifesto.json'}")

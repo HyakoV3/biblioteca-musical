@@ -50,10 +50,14 @@ responsável (quem perde a chave não consegue mais atualizar o app).
 O APK é entregue **dentro de um `.zip` numerado**, para o responsável distinguir um build do outro:
 
 ```sh
-cd ~/Downloads
+cd <pasta de saída>      # a pasta do Nextcloud do responsável (sincroniza com o servidor dele)
 zip -j BibliotecaMusical-CCB-teste-NNN.zip BibliotecaMusical-CCB-teste.apk   # NNN = próximo número, com 3 dígitos
 sha256sum BibliotecaMusical-CCB-teste-NNN.zip
+rm BibliotecaMusical-CCB-teste.apk BibliotecaMusical-CCB-teste.apk.idsig     # o apksigner deixa um .idsig ao lado
 ```
+
+Os zips (e os pacotes de sons, `docs/pacote-de-sons.md`) vão **direto para a pasta de entrega**, a pedido do
+responsável (antes iam para `~/Downloads`, e ele os movia para lá).
 
 O **próximo número é o da última linha da tabela abaixo + 1**. A tabela, e não a pasta `~/Downloads`, é o contador,
 porque os arquivos são movidos para fora da pasta depois de baixados. **Acrescente a linha a cada build.** A versão e o
