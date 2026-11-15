@@ -18,9 +18,14 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
 
 ## 2. CI/CD (GitHub Actions)
 
-- [ ] **CI** a cada *push* e *pull request*: `npm run check`; `tools/verificar-traducoes.py`,
-      `tools/verificar-movimento.py` e `tools/contraste.py`; `cargo test` (e `fmt`/`clippy`) do conversor
-      `tools/mscx2json`; cache de npm e de cargo.
+- [x] **CI** (`.github/workflows/ci.yml`), a cada *pull request*, a cada *push* na `main` e sob demanda, com cache de npm e
+      de cargo. Quatro tarefas: **App** (`npm run check`, `npm test` e os verificadores de tradução, movimento e
+      contraste); **Conversor** (`cargo test` em `tools/mscx2json`); **Leitor** (`cargo test --lib` em `src-tauri`, com as
+      bibliotecas do Tauri instaladas no Ubuntu 24.04); **Karaokê num Chrome de verdade** (`npm run test:e2e`).
+- [ ] **Limpeza do Rust para ligar mais verificações no CI.** Hoje `cargo fmt --check` e `cargo clippy -- -D warnings`
+      **falham** no conversor (formatação do `main.rs` e duas sugestões do clippy sobre `if` que podem ser juntados),
+      então ficaram de fora do CI para ele não nascer vermelho. Formatar e corrigir num PR à parte, e depois ligar os dois.
+- [ ] Se o teste de ponta a ponta ficar lento ou instável, restringi-lo à `main` e ao disparo manual.
 - [ ] **APK de teste no GitHub** (Android): JDK 21, SDK e NDK, `npm run tauri android build -- --apk --target aarch64`,
       APK como artefato do *workflow*.
       **Sem conteúdo embutido:** o `BMCCB_PACOTE` (hinos de terceiros) nunca entra no CI nem em *release* público. Só o
@@ -72,7 +77,7 @@ mesmo conjunto de fluxos que o responsável já usa em outros projetos.
       Chrome ou Chromium (variável `CHROME` indica o executável) e não sobra processo nem pasta temporária.
 - [x] O conversor `tools/mscx2json` tem testes em Rust, dentro do repositório (`cargo test`), e o leitor do app também
       (`cargo test --lib` em `src-tauri`).
-- [ ] Rodar tudo isso no **CI** (seção 2). O e2e é mais pesado: avaliar rodá-lo só em `main` ou sob demanda.
+- [x] Tudo isso roda no **CI** (seção 2), inclusive o teste de ponta a ponta.
 - [ ] Testes de componentes Svelte e do store (`reproducao.svelte.ts`), que dependem do compilador do Svelte no
       Vitest: ficam de fora por enquanto (a lógica pura já está coberta).
 
