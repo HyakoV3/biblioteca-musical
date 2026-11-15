@@ -19,6 +19,9 @@ vite.config.ts.timestamp-*
 /sons-fonte/
 /dist-sons/
 
+# Notas locais: nunca versionar
+/docs/privado/
+
 # Worktrees e arquivos locais do Claude Code
 /.claude/
 
