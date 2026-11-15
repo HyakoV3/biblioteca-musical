@@ -17,6 +17,7 @@ vite.config.ts.timestamp-*
 
 # Amostras de som (protótipo da I-07, ~3 MB por instrumento): baixar com tools/baixar-sons-teste.sh
 /static/sons/
+/dist-sons/
 
 # Worktrees e arquivos locais do Claude Code
 /.claude/

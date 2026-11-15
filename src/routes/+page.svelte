@@ -25,9 +25,9 @@
 
 <Barra titulo={t("biblioteca.titulo")}>
   {#snippet acao()}
-    <!-- Botão só de ícone (hambúrguer); o nome "Ajustes" vai no rótulo de acessibilidade e na dica. -->
+    <!-- Botão só de ícone (engrenagem); o nome "Ajustes" vai no rótulo de acessibilidade e na dica. -->
     <a class="botao botao-icone" href="/ajustes" aria-label={t("nav.ajustes")} title={t("nav.ajustes")}>
-      <Icone nome="menu" tamanho={26} />
+      <Icone nome="ajustes" tamanho={26} />
     </a>
   {/snippet}
 </Barra>

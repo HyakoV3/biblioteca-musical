@@ -751,6 +751,62 @@ Decisão do responsável: **pendente**.
 
 ---
 
+## I-12 — Karaokê: acompanhar a música na letra e na partitura
+
+> **Origem:** sugestão do responsável: "uma possibilidade de fazer meio que um karaokê, tanto na letra das músicas como nas
+> partituras". Nasce da I-09 (que já destaca a parte que está soando) e da I-08 (partitura em SVG).
+
+### O que se deseja
+Enquanto o hino toca, o app mostra **onde a música está**: na **letra**, a sílaba ou palavra que está sendo cantada (e a
+estrofe da vez); na **partitura**, o compasso ou a nota atual, com a página rolando junto.
+
+### O que já existe
+- **O dado de tempo da letra já passa pelo conversor:** cada sílaba é lida com o instante (em batidas) da nota a que
+  pertence, a estrofe e se a palavra continua na sílaba seguinte (`Silaba` em `tools/mscx2json/src/main.rs`). Hoje isso só
+  serve para montar as linhas, e os tempos são descartados na saída.
+- **A posição da música em batidas já existe no app** (`parteTocando` da I-09: tempo decorrido × andamento ÷ 60) e já
+  considera mudança de andamento na pausa (I-10).
+- **A estrofe que soa é a da vez:** a vez N canta a estrofe N, e `partesDoTudo` sabe em que instante cada vez começa.
+
+### Proposta em duas fases
+**Fase A: letra (não depende de nada novo).**
+1. Conversor: gravar, por estrofe, a lista de sílabas com início e fim em batidas (campo opcional novo no
+   `hinario.json`, por exemplo `sincronia`; `docs/FORMATO.md` e o leitor em Rust acompanham).
+2. App: na aba Letra (com o miniplayer para pausar), destacar a estrofe que soa, a linha atual e a sílaba atual, e rolar a
+   tela para a linha atual. O destaque **não pode depender só de cor** (negrito ou sublinhado) e a rolagem respeita
+   "reduzir movimento".
+3. Atualização suave: ler o relógio do áudio a cada quadro, e não só a cada 200 ms, para a sílaba não ficar atrasada.
+
+**Fase B: partitura (junto da I-08).**
+1. O MuseScore exporta, além do SVG, as **posições dos compassos e das notas** (arquivos de posição usados por apps
+   com cursor de reprodução); alternativa sem o MuseScore: a biblioteca OpenSheetMusicDisplay já tem cursor, mas exige
+   MusicXML. Decidir junto com a escolha de ferramenta da I-08.
+2. Mapa **tempo tocado para compasso**: hinos com final tocam um caminho diferente na última vez (compassos puladas e
+   repetidas). O conversor já conhece esse plano e pode gravar, por versão (normal e final), em que instante começa cada
+   compasso.
+3. App: cursor ou compasso destacado e rolagem automática da página.
+
+### Pontos de atenção
+- **Qualidade da letra:** o karaokê expõe erros de sílaba e de alinhamento que hoje passam despercebidos (I-05).
+- **Hinos com estrutura diferente** (bis, estrofes com notas diferentes): o conversor deve avisar e deixar sem
+  sincronia em vez de adivinhar, como já faz com as repetições.
+- **Tamanho do JSON:** cerca de uma sílaba por nota; acompanhar quanto cresce nos 480 hinos.
+- **Acessibilidade:** sem aviso falado a cada sílaba (competiria com o áudio); o leitor de tela segue lendo a letra
+  normalmente.
+
+### Perguntas em aberto
+1. Granularidade da letra: **sílaba**, **palavra** ou **linha**? (Sílaba é o mais "karaokê"; linha é o mais calmo.)
+2. O destaque também aparece na aba Ouvir, ou só na Letra?
+3. A rolagem acompanha sozinha, ou só quando a pessoa pede ("seguir a letra")?
+
+### Critérios de aceitação (propostos)
+- No 457, tocando o hino todo, a estrofe 1 acende na 1ª vez, a 2 na 2ª e a 3 na 3ª (final), e a sílaba atual acompanha
+  a música dentro de meio compasso.
+- Pausar, continuar e trocar o andamento na pausa mantêm o destaque certo.
+- Hino sem sincronia continua mostrando a letra normalmente, sem erro.
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown

@@ -38,7 +38,9 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
       O responsável aprovou: "bem mais real", e o órgão soa como o de igreja da CCB. **Decisão:** a síntese continua
       sendo o padrão e os sons gravados viram **pacote opcional baixado sob demanda** (detalhes e números na I-07).
 - [ ] Ler o `LICENSE` do repositório do smplr (o pacote no npm declara MIT) e a licença das amostras do Gleitzman.
-- [ ] `tools/preparar-sons.py`: um arquivo por instrumento, cortado à faixa dos hinos e em binário (~1,5 MB cada).
+- [x] `tools/preparar-sons.py`: um arquivo por instrumento, cortado à faixa dos hinos (30 a 86), no mesmo formato que o
+      smplr já lê (sem carregador novo), mais `manifesto.json` com o SHA-256 de cada um. Medido: **órgão de tirantes
+      1,64 MB** (era 2,55); os outros 1,93 a 1,95 MB; os cinco juntos 9,4 MB. Saída em `dist-sons/` (fora do Git).
 - [ ] Ajustes, "Sons gravados": lista com tamanhos, baixar, remover; armazenamento no app, uso offline; **órgão
       primeiro**. O app volta à síntese se o som faltar (já feito no protótipo).
 - [ ] Hospedar os arquivos nós mesmos (depende de o repositório ser público) e carregar do armazenamento do app.
@@ -58,7 +60,8 @@ sem estalos; a licença de cada som está registrada; e o app base não cresceu.
       de avaliar a alternativa sem instalar)**
 - [ ] Pacote de **vários arquivos** (`.zip`) na importação, no lugar do JSON único (limite atual de 20 MB).
 - [ ] Aba **Partitura** com zoom e rolagem, nos temas claro, escuro e (futuro) baixa visão.
-- [ ] Extra, depois: cursor ou compasso destacado acompanhando a música (junto da I-09, que já sabe a parte que soa).
+- [ ] **Karaokê (I-12):** fase A, a **letra** acompanhando a música (não depende da partitura: o conversor já lê o
+      tempo de cada sílaba); fase B, cursor ou compasso na partitura, junto da I-08.
 
 **Pronto quando:** a partitura de um hino de amostra aparece nítida no emulador e no celular, e o pacote importa
 sem ir para o Git.
