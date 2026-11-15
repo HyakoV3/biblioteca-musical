@@ -64,9 +64,10 @@
 
 <style>
   .mini {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    /* Sobe acima da barra de abas (--altura-navegacao) ou se afasta da barra lateral (--largura-trilho), quando existem. */
+    position: fixed; left: var(--largura-trilho, 0px); right: 0; bottom: var(--altura-navegacao, 0px); z-index: 20;
     background: var(--superficie); border-top: 1px solid var(--borda-controle);
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: var(--inset-miniplayer, env(safe-area-inset-bottom));
   }
   .linha { display: flex; align-items: center; gap: 0.5rem; min-height: 64px; }
   .acao {

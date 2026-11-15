@@ -36,7 +36,8 @@
     color: var(--texto);
     background: var(--fundo);
   }
-  :global(body) { margin: 0; -webkit-text-size-adjust: 100%; }
+  /* --largura-trilho: a barra lateral de abas (celular deitado) ocupa o lado esquerdo; a página inteira se afasta dela. */
+  :global(body) { margin: 0; -webkit-text-size-adjust: 100%; padding-left: var(--largura-trilho, 0px); }
   /* Anel de foco visível para teclado e leitores de tela com navegação por foco. */
   :global(:focus-visible) { outline: 3px solid var(--foco); outline-offset: 2px; }
   :global(a) { color: var(--acento); }
@@ -47,8 +48,10 @@
   }
   :global(.conteudo) {
     padding-top: 1rem;
-    /* --altura-miniplayer é definida pelo miniplayer quando ele está visível. */
-    padding-bottom: calc(var(--altura-miniplayer, 0px) + max(1.5rem, env(safe-area-inset-bottom)));
+    /* --altura-miniplayer e --altura-navegacao (barra de abas) são definidas por quem as mostra. */
+    padding-bottom: calc(
+      var(--altura-miniplayer, 0px) + var(--altura-navegacao, 0px) + max(1.5rem, env(safe-area-inset-bottom))
+    );
   }
   :global(.meta) { color: var(--suave); font-size: 0.9rem; }
   /* Texto só para leitores de tela. */

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import Abas from "$lib/Abas.svelte";
   import Aviso from "$lib/Aviso.svelte";
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
@@ -47,18 +48,6 @@
     };
   });
 
-  // Teclado nas abas (padrão WAI-ARIA): setas trocam de aba; Home e End vão para a primeira e a última.
-  function teclas(e: KeyboardEvent) {
-    if (!temAudio) return;
-    let destino: Aba | null = null;
-    if (e.key === "ArrowLeft" || e.key === "ArrowRight") destino = aba === "letra" ? "ouvir" : "letra";
-    else if (e.key === "Home") destino = ABAS[0];
-    else if (e.key === "End") destino = ABAS[ABAS.length - 1];
-    if (!destino) return;
-    e.preventDefault();
-    aba = destino;
-    document.getElementById(`aba-${destino}`)?.focus();
-  }
 </script>
 
 <!-- O título do documento é o que leitores de tela anunciam a cada troca de tela. -->
@@ -84,31 +73,7 @@
     lang={idiomaConteudo}
     {voltar}
     rotuloVoltar={t("nav.voltar")}
-  >
-    <!-- As abas ficam dentro da barra fixa: a altura se ajusta sozinha a fonte ampliada. -->
-    {#snippet rodape()}
-      {#if temAudio}
-        <div class="coluna abas" role="tablist" aria-label={t("hino.abas")} tabindex="-1" onkeydown={teclas}>
-          <button
-            role="tab"
-            id="aba-ouvir"
-            aria-selected={aba === "ouvir"}
-            aria-controls="painel-ouvir"
-            tabindex={aba === "ouvir" ? 0 : -1}
-            onclick={() => (aba = "ouvir")}>{t("hino.aba_ouvir")}</button
-          >
-          <button
-            role="tab"
-            id="aba-letra"
-            aria-selected={aba === "letra"}
-            aria-controls="painel-letra"
-            tabindex={aba === "letra" ? 0 : -1}
-            onclick={() => (aba = "letra")}>{t("hino.aba_letra")}</button
-          >
-        </div>
-      {/if}
-    {/snippet}
-  </Barra>
+  />
 
   <main class="coluna conteudo">
     <!-- Os dois painéis ficam montados (só um visível): o som não para ao trocar de aba. -->
@@ -136,15 +101,19 @@
       </div>
     {/if}
   </main>
+
+  <!-- As abas ficam embaixo (ao alcance do polegar); com o celular deitado, numa barra lateral à esquerda. -->
+  {#if temAudio}
+    <Abas
+      abas={ABAS.map((id) => ({ id, rotulo: t(id === "ouvir" ? "hino.aba_ouvir" : "hino.aba_letra") }))}
+      selecionada={aba}
+      aoSelecionar={(id) => (aba = id as Aba)}
+      rotulo={t("hino.abas")}
+    />
+  {/if}
 {/if}
 
 <style>
-  .abas { display: flex; gap: 0.25rem; }
-  [role="tab"] {
-    flex: 1; min-height: 48px; font-size: 1rem; background: transparent; color: var(--suave);
-    border: 0; border-bottom: 3px solid transparent; cursor: pointer;
-  }
-  [role="tab"][aria-selected="true"] { color: var(--texto); font-weight: 600; border-bottom-color: var(--ouro-linha); }
   .estrofe { margin-bottom: 1.4rem; }
   .estrofe h2 { margin: 0 0 0.3rem; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--suave); }
   .estrofe p { margin: 0; font-size: 1.15rem; line-height: 1.7; overflow-wrap: anywhere; }

@@ -2,8 +2,7 @@
   import Icone from "./Icone.svelte";
   import type { Snippet } from "svelte";
 
-  // Barra de topo fixa. `rodape` fica dentro do mesmo bloco fixo (ex.: as abas do hino), então a altura
-  // total se ajusta sozinha a fonte ampliada ou a título de duas linhas, sem número mágico.
+  // Barra de topo fixa; a altura se ajusta sozinha a fonte ampliada ou a título de duas linhas, sem número mágico.
   let {
     titulo,
     subtitulo,
@@ -11,7 +10,6 @@
     voltar,
     rotuloVoltar = "",
     acao,
-    rodape,
     lang,
   }: {
     titulo: string;
@@ -21,7 +19,6 @@
     voltar?: () => void;
     rotuloVoltar?: string;
     acao?: Snippet;
-    rodape?: Snippet;
     /** Idioma do título quando difere da interface (ex.: título de hino em outra língua). */
     lang?: string;
   } = $props();
@@ -39,7 +36,6 @@
     </div>
     {#if acao}<div class="acao">{@render acao()}</div>{/if}
   </div>
-  {#if rodape}{@render rodape()}{/if}
 </header>
 
 <style>
