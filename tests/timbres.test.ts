@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import medidas from "../src/lib/timbres.json";
-import { INSTRUMENTOS } from "../src/lib/instrumentos";
-import { COM_TIMBRE_MEDIDO, eficazRelativo, harmonicosEm, perfilDaNota, temTimbreMedido } from "../src/lib/timbres";
+import { INSTRUMENTOS, type SinteticoId } from "../src/lib/instrumentos";
+import { COM_TIMBRE_MEDIDO, eficazRelativo, harmonicosEm, perfilDaNota, temTimbre, temTimbreDerivado, temTimbreMedido } from "../src/lib/timbres";
 
-const AFETADOS = ["trompete", "trombone", "tuba", "fagote", "oboe", "sax_alto", "sax_tenor"] as const;
+const AFETADOS = ["trompete", "trombone", "tuba", "fagote", "oboe", "sax_alto", "sax_tenor", "flauta_doce", "violino", "clarinete", "viola", "violoncelo", "contrabaixo", "trompa"] as const;
 type Ancora = { midi: number; h: number[]; ataque: number };
 const ancoras = (id: string) => (medidas.instrumentos as unknown as Record<string, { faixa: number[]; ancoras: Ancora[] }>)[id];
 const centroide = (h: number[]) => {
@@ -17,11 +17,11 @@ const centroide = (h: number[]) => {
 };
 
 describe("timbres.json (medido nas gravações)", () => {
-  it("cobre os sete instrumentos pedidos e nenhum outro", () => {
+  it("cobre os 14 instrumentos que têm gravado de referência e nenhum outro", () => {
     expect([...COM_TIMBRE_MEDIDO].sort()).toEqual([...AFETADOS].sort());
     for (const id of AFETADOS) expect(id in INSTRUMENTOS).toBe(true);
     expect(temTimbreMedido("trompete")).toBe(true);
-    expect(temTimbreMedido("violino")).toBe(false);
+    expect(temTimbreMedido("flugelhorn")).toBe(false); // o banco não tem gravado dele: o timbre é derivado, ver temTimbreDerivado
   });
 
   it("âncoras ordenadas, dentro da faixa, com tabelas válidas (relativas ao harmônico mais forte)", () => {
@@ -66,13 +66,15 @@ describe("harmonicosEm", () => {
       const { faixa } = ancoras(id);
       const grave = centroide(harmonicosEm(id, faixa[0] + 2));
       const agudo = centroide(harmonicosEm(id, faixa[1] - 2));
-      expect(grave).toBeGreaterThan(agudo * 1.3);
+      // Só metais e palhetas (a primeira leva) têm essa regra: nas cordas e na flauta doce o corpo do instrumento fixa as
+      // ressonâncias e o brilho, contado em número de harmônico, não precisa cair com a altura.
+      if (AFETADOS.indexOf(id) < 7) expect(grave).toBeGreaterThan(agudo * 1.3);
     }
   });
 
   it("instrumento sem medida usa a tabela fixa", () => {
-    expect(harmonicosEm("violino", 60)).toBe(INSTRUMENTOS.violino.harmonicos);
-    expect(perfilDaNota("violino", 60)).toBe(INSTRUMENTOS.violino);
+    expect(harmonicosEm("orgao_suave", 60)).toBe(INSTRUMENTOS.orgao_suave.harmonicos);
+    expect(perfilDaNota("orgao_suave", 60)).toBe(INSTRUMENTOS.orgao_suave);
   });
 });
 
@@ -112,10 +114,10 @@ describe("perfilDaNota", () => {
     }
   });
 
-  it("só os metais (trompete, trombone, tuba) abrem o brilho no começo", () => {
+  it("só os metais (trompete, trombone, tuba, trompa) abrem o brilho no começo", () => {
     for (const id of AFETADOS) {
       const ab = perfilDaNota(id, ancoras(id).faixa[0] + 6).abertura;
-      if (["trompete", "trombone", "tuba"].includes(id)) {
+      if (["trompete", "trombone", "tuba", "trompa"].includes(id)) {
         expect(ab).toBeDefined();
         expect(ab!.corte).toBeGreaterThan(1);
         expect(ab!.corte).toBeLessThan(20);
@@ -129,5 +131,56 @@ describe("perfilDaNota", () => {
 
   it("é determinístico e guarda o resultado", () => {
     expect(perfilDaNota("fagote", 50)).toBe(perfilDaNota("fagote", 50));
+  });
+});
+
+describe("instrumentos derivados (sem gravado no banco): flugelhorn e bombardino", () => {
+  const mix = (a: SinteticoId, b: SinteticoId, midi: number) => {
+    const x = harmonicosEm(a, midi);
+    const y = harmonicosEm(b, midi);
+    return Array.from({ length: Math.max(x.length, y.length) }, (_, k) => ((x[k] ?? 0) + (y[k] ?? 0)) / 2);
+  };
+
+  it("são reconhecidos como derivados, não como medidos", () => {
+    for (const id of ["flugelhorn", "bombardino"]) {
+      expect(temTimbreDerivado(id)).toBe(true);
+      expect(temTimbreMedido(id)).toBe(false);
+      expect(temTimbre(id)).toBe(true);
+    }
+    expect(temTimbre("orgao_suave")).toBe(false);
+  });
+
+  it("a tabela é a média, nota a nota, dos dois instrumentos medidos", () => {
+    for (const midi of [57, 62, 70]) {
+      const f = harmonicosEm("flugelhorn", midi);
+      const esperado = mix("trompete", "trompa", midi);
+      for (let k = 1; k < 8; k++) expect(f[k]).toBeCloseTo(esperado[k], 9);
+    }
+    for (const midi of [38, 48, 58]) {
+      const b = harmonicosEm("bombardino", midi);
+      const esperado = mix("trombone", "tuba", midi);
+      for (let k = 1; k < 8; k++) expect(b[k]).toBeCloseTo(esperado[k], 9);
+    }
+  });
+
+  it("o timbre muda com a altura (a tabela fixa antiga não mudava)", () => {
+    expect(harmonicosEm("flugelhorn", 56)).not.toEqual(harmonicosEm("flugelhorn", 76));
+    expect(harmonicosEm("bombardino", 40)).not.toEqual(harmonicosEm("bombardino", 64));
+  });
+
+  it("perfil da nota: volume eficaz da tabela antiga, solta do instrumento e abertura de metal", () => {
+    for (const id of ["flugelhorn", "bombardino"] as const) {
+      const antigo = INSTRUMENTOS[id];
+      for (const midi of [45, 55, 65]) {
+        const p = perfilDaNota(id, midi);
+        const fator = p.nivel / antigo.nivel;
+        expect(fator).toBeGreaterThanOrEqual(0.5 - 1e-9);
+        expect(fator).toBeLessThanOrEqual(2 + 1e-9);
+        expect(p.solta).toBe(antigo.solta);
+        expect(p.ataque).toBeGreaterThan(0);
+        expect(p.ataque).toBeLessThanOrEqual(0.08);
+        expect(p.abertura).toBeDefined();
+      }
+    }
   });
 });
