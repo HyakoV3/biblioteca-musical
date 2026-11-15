@@ -1,4 +1,4 @@
-// Preferência de aparência: Seguir o sistema (padrão), Claro ou Escuro.
+// Preferência de aparência: Automático (padrão, segue o sistema), Claro ou Escuro.
 // "sistema" não define data-tema e deixa o CSS seguir prefers-color-scheme.
 // O app.html aplica a escolha salva antes da primeira pintura, para não piscar.
 

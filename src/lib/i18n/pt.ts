@@ -1,7 +1,6 @@
 // Português: idioma de referência. Os outros idiomas precisam ter exatamente as mesmas chaves
 // (o TypeScript acusa chave faltando). Veja docs/TRADUCOES.md.
 export const pt = {
-  "app.aviso": "App não oficial, sem vínculo com a Congregação Cristã no Brasil.",
   carregando: "Carregando…",
   "erro.carregar": "Erro ao carregar o hinário: {erro}",
 
@@ -77,7 +76,21 @@ export const pt = {
   "ajustes.biblioteca": "Biblioteca",
   "ajustes.fonte_atual": "Conteúdo atual: {nome} ({total})",
   "ajustes.versao": "Versão {v}",
-  "ajustes.sobre": "Sobre",
+  "ajustes.sobre": "Sobre o app",
+  "sobre.aviso_titulo": "Aplicativo independente",
+  "sobre.aviso": "Este aplicativo é independente e não oficial. Não tem ligação com a Congregação Cristã no Brasil.",
+  "sobre.intro": "Biblioteca Musical CCB é um aplicativo gratuito para músicos em treino. Ele reúne a lista de hinos, a letra e um player que toca cada voz, para você estudar a sua.",
+  "sobre.fazer_titulo": "O que dá para fazer",
+  "sobre.fazer_1": "Buscar hinos por número ou título e ler a letra por estrofe.",
+  "sobre.fazer_2": "Ouvir a introdução, cada vez ou o hino todo.",
+  "sobre.fazer_3": "Silenciar vozes, ajustar o volume, mudar o andamento e transpor o tom.",
+  "sobre.fazer_4": "Escolher o instrumento de cada voz.",
+  "sobre.como_titulo": "Como funciona",
+  "sobre.como": "O som é gerado pelo próprio aplicativo a partir das notas, sem gravações. Por isso o app é leve e funciona sem internet.",
+  "sobre.privacidade_titulo": "Privacidade",
+  "sobre.privacidade": "Suas escolhas ficam só neste aparelho. O aplicativo não tem cadastro, anúncios nem coleta de dados.",
+  "sobre.codigo_titulo": "Código e conteúdo",
+  "sobre.codigo": "O código é livre, sob a licença MIT. Letras e partituras pertencem aos seus titulares e não fazem parte do código.",
   "ajustes.remover_titulo": "Remover conteúdo importado?",
   "ajustes.remover_texto": "Os hinos importados serão apagados deste aparelho e o app voltará a mostrar só o pacote de exemplo. Você pode importar de novo depois.",
   "ajustes.cancelar": "Cancelar",
@@ -99,7 +112,7 @@ export const pt = {
   "mini.regiao": "Reprodução em andamento",
 
   "ajustes.aparencia": "Aparência",
-  "tema.sistema": "Seguir o sistema",
+  "tema.sistema": "Automático",
   "tema.claro": "Claro",
   "tema.escuro": "Escuro",
   "hino.sem_audio": "Este hino não tem notas para tocar neste pacote.",

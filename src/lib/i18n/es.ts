@@ -1,7 +1,6 @@
 import type { Dicionario } from "./pt";
 
 export const es: Dicionario = {
-  "app.aviso": "App no oficial, sin vínculo con la Congregación Cristiana en Brasil.",
   carregando: "Cargando…",
   "erro.carregar": "Error al cargar el himnario: {erro}",
 
@@ -77,7 +76,21 @@ export const es: Dicionario = {
   "ajustes.biblioteca": "Biblioteca",
   "ajustes.fonte_atual": "Contenido actual: {nome} ({total})",
   "ajustes.versao": "Versión {v}",
-  "ajustes.sobre": "Acerca de",
+  "ajustes.sobre": "Acerca de la app",
+  "sobre.aviso_titulo": "Aplicación independiente",
+  "sobre.aviso": "Esta aplicación es independiente y no oficial. No tiene ningún vínculo con la Congregación Cristiana en Brasil.",
+  "sobre.intro": "Biblioteca Musical CCB es una aplicación gratuita para músicos en formación. Reúne la lista de himnos, la letra y un reproductor que toca cada voz, para que estudies la tuya.",
+  "sobre.fazer_titulo": "Qué se puede hacer",
+  "sobre.fazer_1": "Buscar himnos por número o título y leer la letra por estrofa.",
+  "sobre.fazer_2": "Escuchar la introducción, cada vez o el himno completo.",
+  "sobre.fazer_3": "Silenciar voces, ajustar el volumen, cambiar el tempo y transponer el tono.",
+  "sobre.fazer_4": "Elegir el instrumento de cada voz.",
+  "sobre.como_titulo": "Cómo funciona",
+  "sobre.como": "El sonido lo genera la propia aplicación a partir de las notas, sin grabaciones. Por eso es liviana y funciona sin internet.",
+  "sobre.privacidade_titulo": "Privacidad",
+  "sobre.privacidade": "Tus preferencias se guardan solo en este dispositivo. La aplicación no tiene registro, anuncios ni recopilación de datos.",
+  "sobre.codigo_titulo": "Código y contenido",
+  "sobre.codigo": "El código es libre, bajo la licencia MIT. Las letras y partituras pertenecen a sus titulares y no forman parte del código.",
   "ajustes.remover_titulo": "¿Quitar el contenido importado?",
   "ajustes.remover_texto": "Los himnos importados se borrarán de este dispositivo y la app volverá a mostrar solo el paquete de ejemplo. Puedes importar de nuevo más tarde.",
   "ajustes.cancelar": "Cancelar",
@@ -99,7 +112,7 @@ export const es: Dicionario = {
   "mini.regiao": "Reproducción en curso",
 
   "ajustes.aparencia": "Apariencia",
-  "tema.sistema": "Seguir el sistema",
+  "tema.sistema": "Automático",
   "tema.claro": "Claro",
   "tema.escuro": "Oscuro",
   "hino.sem_audio": "Este himno no tiene notas para reproducir en este paquete.",

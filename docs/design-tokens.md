@@ -2,7 +2,7 @@
 
 O app tem três modos de aparência, escolhidos em **Ajustes → Aparência**:
 
-- **Seguir o sistema** (padrão): usa o tema claro ou escuro do aparelho (`prefers-color-scheme`).
+- **Automático** (padrão, segue o sistema): usa o tema claro ou escuro do aparelho (`prefers-color-scheme`).
 - **Claro** e **Escuro**: forçam o tema, ignorando o sistema (`data-tema` no `<html>`).
 
 A escolha é guardada no aparelho. O `src/app.html` aplica o tema salvo antes da primeira pintura, para

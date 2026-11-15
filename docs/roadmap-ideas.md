@@ -197,10 +197,10 @@ vale testar com quem lê.
 
 ### Ideia de comportamento (a validar)
 
-Duas escolhas independentes em **Ajustes → Aparência**, para "Seguir o sistema" continuar funcionando
+Duas escolhas independentes em **Ajustes → Aparência**, para "Automático" continuar funcionando
 com as duas variantes:
 
-1. **Modo:** Seguir o sistema | Claro | Escuro (já existe).
+1. **Modo:** Automático | Claro | Escuro (já existe).
 2. **Estilo:** Normal | Pergaminho (novo).
 
 Combinações: claro normal, claro pergaminho, escuro normal, escuro pergaminho.
@@ -234,7 +234,7 @@ Combinações: claro normal, claro pergaminho, escuro normal, escuro pergaminho.
 
 - As quatro paletas passam em `tools/contraste.py` com as mesmas metas das paletas atuais.
 - Escolher o estilo muda o app na hora e a escolha sobrevive ao fechar o app.
-- "Seguir o sistema" combinado com "Pergaminho" acompanha o tema claro ou escuro do aparelho.
+- "Automático" combinado com "Pergaminho" acompanha o tema claro ou escuro do aparelho.
 
 ---
 
@@ -396,7 +396,7 @@ num modo de baixa visão vale usar preto também no secundário.
 
 ### Ideia de comportamento (a validar)
 
-Uma nova opção em **Ajustes → Aparência**, ao lado de Seguir o sistema, Claro e Escuro: **Alto contraste** (preto sobre
+Uma nova opção em **Ajustes → Aparência**, ao lado de Automático, Claro e Escuro: **Alto contraste** (preto sobre
 amarelo claro). Além das cores, o modo reforça o resto do visual:
 
 - Borda dos controles mais grossa e preta; foco com contorno grosso e bem visível.
@@ -407,7 +407,7 @@ amarelo claro). Além das cores, o modo reforça o resto do visual:
 ### Aproveitar o padrão da plataforma (não reinventar)
 
 O navegador e o sistema já têm o conceito: a media query CSS **`prefers-contrast: more`** indica que a pessoa pediu mais
-contraste, e **`forced-colors`** cobre o modo de cores forçadas. A ideia é: em "Seguir o sistema", se o aparelho pedir
+contraste, e **`forced-colors`** cobre o modo de cores forçadas. A ideia é: em "Automático", se o aparelho pedir
 mais contraste, o app usa esta paleta automaticamente; e a opção manual existe para quem quer o modo sem mexer no
 sistema. **Não verificado:** se o WebView do Android e o do iOS repassam essa preferência; precisa de teste no aparelho.
 
@@ -423,7 +423,7 @@ sistema. **Não verificado:** se o WebView do Android e o do iOS repassam essa p
 ### Impacto técnico (hipóteses, não verificadas)
 
 - **Tokens (`src/lib/tema.css`):** novo conjunto de valores para `data-tema="alto-contraste"`, e um bloco
-  `@media (prefers-contrast: more)` para "Seguir o sistema".
+  `@media (prefers-contrast: more)` para "Automático".
 - **Preferência e primeira pintura:** estender `src/lib/tema.svelte.ts` (os temas passam de 3 para 4) e o script do
   `src/app.html` que aplica o tema antes da primeira pintura.
 - **Contraste (`tools/contraste.py`):** conferir esta paleta com a meta **AAA** (7:1 para texto, e 4,5:1 ou mais para

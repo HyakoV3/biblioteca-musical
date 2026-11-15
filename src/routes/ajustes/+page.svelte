@@ -113,16 +113,41 @@
     {#if resultado}<Aviso tipo={resultado.tipo}>{resultado.texto}</Aviso>{/if}
   </section>
 
+  <!-- Aviso: o app não tem ligação com a CCB. Vem antes do "Sobre", em destaque. -->
   <section>
+    <Aviso tipo="info"><strong>{t("sobre.aviso_titulo")}</strong><br />{t("sobre.aviso")}</Aviso>
+  </section>
+
+  <section class="sobre">
     <h2>{t("ajustes.sobre")}</h2>
-    <p>{t("app.aviso")}</p>
-    <p class="meta">Biblioteca Musical CCB · MIT</p>
+    <p>{t("sobre.intro")}</p>
+
+    <h3>{t("sobre.fazer_titulo")}</h3>
+    <ul>
+      <li>{t("sobre.fazer_1")}</li>
+      <li>{t("sobre.fazer_2")}</li>
+      <li>{t("sobre.fazer_3")}</li>
+      <li>{t("sobre.fazer_4")}</li>
+    </ul>
+
+    <h3>{t("sobre.como_titulo")}</h3>
+    <p>{t("sobre.como")}</p>
+
+    <h3>{t("sobre.privacidade_titulo")}</h3>
+    <p>{t("sobre.privacidade")}</p>
+
+    <h3>{t("sobre.codigo_titulo")}</h3>
+    <p>{t("sobre.codigo")}</p>
+
     <p class="meta">{t("ajustes.versao", { v: `${__APP_VERSAO__} (${__APP_COMMIT__})` })}</p>
   </section>
 </main>
 
 <style>
   section { margin-bottom: 1.8rem; }
+  .sobre p, .sobre li { line-height: 1.5; }
+  .sobre h3 { margin: 1.1rem 0 0.3rem; font-size: 0.95rem; }
+  .sobre ul { margin: 0; padding-left: 1.2rem; }
   h2 { margin: 0 0 0.6rem; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--suave); }
   select {
     width: 100%; box-sizing: border-box; /* ocupa toda a largura, como as opções de aparência */
