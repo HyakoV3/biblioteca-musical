@@ -35,7 +35,41 @@ pub struct Hino {
     /// Introdução: do começo da partitura até o marcador `*`, nas mesmas vozes, na mesma ordem.
     pub introducao: Option<Vec<Voz>>,
     pub letra: Vec<String>,
+    /// Tempo de cada sílaba da letra, para o karaokê (opcional: só quando a partitura tem letra).
+    pub sincronia: Option<Sincronia>,
     pub avisos: Vec<String>,
+}
+
+/// Uma sílaba dentro do texto da letra, com o instante em que é cantada.
+/// `(inicio_em_batidas, de, ate)`: `de..ate` são posições (em unidades UTF-16, como as do JavaScript) dentro da linha
+/// da letra, sem o "N. " do começo da estrofe.
+pub type Trecho = (f64, usize, usize);
+
+/// Linhas de uma estrofe: cada linha é a lista dos trechos cantados nela, na ordem do tempo. Uma linha sem nenhum
+/// trecho tocado naquela passada fica como lista vazia, para o índice continuar igual ao da linha da letra.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EstrofeSinc {
+    /// Número da estrofe como aparece na letra ("1." é 1).
+    pub estrofe: u32,
+    pub linhas: Vec<Vec<Trecho>>,
+}
+
+/// Sincronia da letra em cada passada: o tempo de cada trecho já está na régua daquela passada (a normal ou a do
+/// final), a mesma das notas das vozes.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Sincronia {
+    pub normal: Vec<EstrofeSinc>,
+    pub passada_final: Option<Vec<EstrofeSinc>>,
+}
+
+/// Posição de uma sílaba na letra montada, com o instante dela na partitura (antes de escolher a passada).
+#[derive(Debug, Clone, PartialEq)]
+struct Marca {
+    verso: u32,
+    linha: usize,
+    de: usize,
+    ate: usize,
+    t: f64,
 }
 
 fn filho<'a, 'i>(n: Node<'a, 'i>, nome: &str) -> Option<Node<'a, 'i>> {
@@ -327,7 +361,7 @@ fn dividir_em_vozes(camadas: Vec<Vec<Acorde>>, limite: Option<usize>) -> (Vec<Ve
 /// 0 = primeira) vira uma sequência de linhas, com quebra a cada respiração. Estrofes são
 /// separadas por uma linha vazia e a primeira linha de cada uma leva "N. ". Se duas camadas
 /// trazem sílaba para o mesmo instante e estrofe, vale a da voz mais alta (menor número).
-fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> Vec<String> {
+fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<String>, Vec<Marca>) {
     const EPS: f64 = 1e-6;
     silabas.sort_by(|a, b| a.t.total_cmp(&b.t).then(a.voz.cmp(&b.voz)));
     respiracoes.sort_by(|a, b| a.total_cmp(b));
@@ -341,6 +375,7 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> Vec<Stri
         ultima_voz: usize,
     }
     let mut estrofes: BTreeMap<u32, Estrofe> = BTreeMap::new();
+    let mut marcas: Vec<Marca> = vec![];
 
     for sil in silabas {
         let e = estrofes.entry(sil.verso).or_insert_with(|| Estrofe {
@@ -373,11 +408,17 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> Vec<Stri
                 e.espaco = false;
             }
         }
+        // Linhas vazias só podem sobrar no fim (uma quebra nunca abre linha sobre linha vazia), então o índice daqui
+        // é o mesmo da linha na letra pronta.
+        let indice = e.linhas.len() - 1;
         let linha = e.linhas.last_mut().unwrap();
         if e.espaco && !linha.is_empty() {
             linha.push(' ');
         }
+        // Posições em unidades UTF-16: é como o JavaScript do app indexa o texto.
+        let de = linha.encode_utf16().count();
         linha.push_str(texto);
+        marcas.push(Marca { verso: sil.verso, linha: indice, de, ate: de + texto.encode_utf16().count(), t: sil.t });
         e.espaco = !sil.continua;
     }
 
@@ -388,6 +429,45 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> Vec<Stri
         }
         for (i, l) in e.linhas.into_iter().filter(|l| !l.is_empty()).enumerate() {
             saida.push(if i == 0 { format!("{}. {l}", verso + 1) } else { l });
+        }
+    }
+    (saida, marcas)
+}
+
+/// Instante da partitura na régua de uma passada (as notas dela, sem buracos), ou `None` se esse trecho não toca nela.
+fn instante_na_passada(t: f64, segmentos: &[(usize, usize)], inicios: &[f64]) -> Option<f64> {
+    const EPS: f64 = 1e-6;
+    let mut acumulado = 0.0;
+    for &(de, ate) in segmentos {
+        let (t0, t1) = (inicios[de], inicios[ate]);
+        if t >= t0 - EPS && t < t1 - EPS {
+            return Some(t - t0 + acumulado);
+        }
+        acumulado += t1 - t0;
+    }
+    None
+}
+
+/// Agrupa as marcas por estrofe e linha, com o tempo na régua da passada. Estrofes sem nenhum trecho nessa passada
+/// ficam de fora; linhas sem trecho ficam vazias (o índice continua o da letra).
+fn estrofes_da_passada(marcas: &[Marca], segmentos: &[(usize, usize)], inicios: &[f64]) -> Vec<EstrofeSinc> {
+    let mut linhas_por_verso: BTreeMap<u32, usize> = BTreeMap::new();
+    for m in marcas {
+        let n = linhas_por_verso.entry(m.verso).or_insert(0);
+        *n = (*n).max(m.linha + 1);
+    }
+    let mut saida = vec![];
+    for (&verso, &n_linhas) in &linhas_por_verso {
+        let mut linhas: Vec<Vec<Trecho>> = vec![vec![]; n_linhas];
+        let mut algum = false;
+        for m in marcas.iter().filter(|m| m.verso == verso) {
+            if let Some(t) = instante_na_passada(m.t, segmentos, inicios) {
+                linhas[m.linha].push((arredondar(t), m.de, m.ate));
+                algum = true;
+            }
+        }
+        if algum {
+            saida.push(EstrofeSinc { estrofe: verso + 1, linhas });
         }
     }
     saida
@@ -595,6 +675,7 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
     let mut final_ok = true;
     let mut avisos: Vec<String> = vec![];
     let mut letra: Vec<String> = vec![];
+    let mut marcas: Vec<Marca> = vec![];
     let mut andamento = None;
     let mut estrutura = Estrutura::default();
     let mut plano: Option<Plano> = None;
@@ -668,7 +749,7 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
         }
 
         if letra.is_empty() && !silabas.is_empty() {
-            letra = montar_letra(silabas, respiracoes);
+            (letra, marcas) = montar_letra(silabas, respiracoes);
         }
         let base = if nome_parte.is_empty() { format!("Voz {id}") } else { nome_parte.clone() };
         let sufixo = if total > 1 { format!(" (pauta {pos_pauta})") } else { String::new() };
@@ -737,6 +818,22 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
     }
     let passada_final = (final_ok && !vozes_final.is_empty()).then_some(vozes_final);
 
+    // Sincronia da letra (karaokê): o instante de cada sílaba na régua de cada passada. A passada normal toca os
+    // compassos do plano (ou a partitura toda, sem plano); a do final, só quando o final foi aceito.
+    let sincronia = if marcas.is_empty() || estrutura.inicios.len() < 2 {
+        None
+    } else {
+        let todos = [(0, estrutura.inicios.len() - 1)];
+        let normal_seg: &[(usize, usize)] = plano.as_ref().map_or(&todos, |p| &p.normal);
+        let normal = estrofes_da_passada(&marcas, normal_seg, &estrutura.inicios);
+        let final_ = plano
+            .as_ref()
+            .filter(|_| passada_final.is_some())
+            .map(|p| estrofes_da_passada(&marcas, &p.final_, &estrutura.inicios))
+            .filter(|f| !f.is_empty());
+        (!normal.is_empty()).then_some(Sincronia { normal, passada_final: final_ })
+    };
+
     // Introdução: do começo até o primeiro "*" (hipótese a confirmar com o responsável). Sai das vozes já
     // montadas, então tem as mesmas vozes, na mesma ordem. O "*" fica entre dois acordes, no meio do compasso.
     let fim_intro = asteriscos.iter().copied().fold(f64::INFINITY, f64::min);
@@ -775,7 +872,7 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
     }
     let autoria = (!nomes.is_empty()).then(|| nomes.join(" · "));
 
-    Ok(Hino { numero: numero_hino, titulo, autoria, andamento, vozes, passada_final, introducao, letra, avisos })
+    Ok(Hino { numero: numero_hino, titulo, autoria, andamento, vozes, passada_final, introducao, letra, sincronia, avisos })
 }
 
 /// Recorta o começo de cada voz, até `ate` batidas: notas que começam antes entram, e as que atravessam o corte
@@ -817,7 +914,22 @@ pub fn para_json(h: &Hino) -> Value {
     if let Some(i) = &h.introducao {
         m.insert("introducao".into(), json!({ "vozes": vozes_json(i) }));
     }
+    if let Some(s) = &h.sincronia {
+        let mut o = Map::new();
+        o.insert("normal".into(), json!(estrofes_json(&s.normal)));
+        if let Some(f) = &s.passada_final {
+            o.insert("final".into(), json!(estrofes_json(f)));
+        }
+        m.insert("sincronia".into(), Value::Object(o));
+    }
     Value::Object(m)
+}
+
+fn estrofes_json(estrofes: &[EstrofeSinc]) -> Vec<Value> {
+    estrofes
+        .iter()
+        .map(|e| json!({ "estrofe": e.estrofe, "linhas": e.linhas }))
+        .collect()
 }
 
 fn vozes_json(vozes: &[Voz]) -> Vec<Value> {
@@ -1134,6 +1246,87 @@ mod testes {
         assert_eq!(h.letra, vec!["1. la"]);
     }
 
+    /// Compasso de uma semibreve com uma sílaba (estrofe 1) na nota, para os testes da sincronia.
+    fn comp_com_silaba(extra: &str, pitch: u8, silaba: &str) -> String {
+        format!(
+            "<Measure>{extra}<voice>{C44}<Chord><durationType>whole</durationType><Lyrics><text>{silaba}</text></Lyrics>\
+             <Note><pitch>{pitch}</pitch></Note></Chord></voice></Measure>"
+        )
+    }
+
+    #[test]
+    fn sincronia_marca_a_posicao_na_linha_e_o_instante_de_cada_silaba() {
+        let ac = |sil: &[(&str, Option<u32>, &str)], pitch: u8| {
+            let ls: String = sil
+                .iter()
+                .map(|(sy, no, t)| {
+                    let no = no.map(|n| format!("<no>{n}</no>")).unwrap_or_default();
+                    let sy = if sy.is_empty() { String::new() } else { format!("<syllabic>{sy}</syllabic>") };
+                    format!("<Lyrics>{no}{sy}<text>{t}</text></Lyrics>")
+                })
+                .collect();
+            format!("<Chord><durationType>quarter</durationType>{ls}<Note><pitch>{pitch}</pitch></Note></Chord>")
+        };
+        let c = format!(
+            "{C44}{}{}<Breath/>{}",
+            ac(&[("begin", None, "ba"), ("", Some(1), "la")], 60),
+            ac(&[("end", None, "la"), ("", Some(1), "lá")], 62),
+            ac(&[("", None, "um"), ("", Some(1), "dois")], 64),
+        );
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap();
+        assert_eq!(h.letra, vec!["1. bala", "um", "", "2. la lá", "dois"]);
+        let s = h.sincronia.expect("deveria ter sincronia");
+        assert!(s.passada_final.is_none());
+        // Estrofe 1: "bala" (ba=0..2 em t0, la=2..4 em t1) e "um" na linha seguinte (t2).
+        assert_eq!(s.normal[0].estrofe, 1);
+        assert_eq!(s.normal[0].linhas, vec![vec![(0.0, 0, 2), (1.0, 2, 4)], vec![(2.0, 0, 2)]]);
+        // Estrofe 2: "la lá" (a posição do "lá" conta o espaço: 3..5) e "dois".
+        assert_eq!(s.normal[1].estrofe, 2);
+        assert_eq!(s.normal[1].linhas, vec![vec![(0.0, 0, 2), (1.0, 3, 5)], vec![(2.0, 0, 4)]]);
+    }
+
+    #[test]
+    fn sincronia_da_passada_do_final_pula_a_1a_casa_e_fica_sem_buracos() {
+        // Mesma estrutura do hino com final (6 compassos): normal = 1 a 3; final = 1, 2, 4, 5 e 6.
+        let medidas = [
+            comp_com_silaba("<startRepeat/>", 60, "a"),
+            comp_com_silaba("", 62, "b"),
+            comp_com_silaba(r#"<endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta>"#, 64, "c"),
+            comp_com_silaba(r#"<endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta>"#, 65, "d"),
+            comp_com_silaba(r#"<endSpanner id="2"/>"#, 67, "e"),
+            comp_com_silaba("", 69, "f"),
+        ]
+        .concat();
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap();
+        assert_eq!(h.letra, vec!["1. a b c d e f"]);
+        let s = h.sincronia.expect("deveria ter sincronia");
+        // Passada normal: só a, b, c (compassos 1 a 3), nos tempos da partitura.
+        assert_eq!(s.normal[0].linhas, vec![vec![(0.0, 0, 1), (4.0, 2, 3), (8.0, 4, 5)]]);
+        // Passada do final: "c" (1ª casa) não toca; d, e, f entram no lugar dele, colados, na régua das notas do final.
+        let f = s.passada_final.expect("deveria ter sincronia do final");
+        assert_eq!(
+            f[0].linhas,
+            vec![vec![(0.0, 0, 1), (4.0, 2, 3), (8.0, 6, 7), (12.0, 8, 9), (16.0, 10, 11)]]
+        );
+        // Confere com as notas do final: o "d" cai na nota de 8 batidas (pitch 65), como a sílaba.
+        let nf = h.passada_final.as_ref().unwrap();
+        assert!(nf[0].notas.iter().any(|n| n.inicio == 8.0 && n.midi == 65));
+    }
+
+    #[test]
+    fn sincronia_vai_para_o_json_e_some_sem_letra() {
+        let medidas = [comp_com_silaba("", 60, "la"), comp_com_silaba("", 62, "lá")].concat();
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap();
+        let j = para_json(&h);
+        assert_eq!(j["sincronia"]["normal"][0]["estrofe"], 1);
+        assert_eq!(j["sincronia"]["normal"][0]["linhas"][0], json!([[0.0, 0, 2], [4.0, 3, 5]]));
+        assert!(j["sincronia"].get("final").is_none(), "sem final, sem sincronia do final");
+
+        let c = format!("{C44}{}", acorde("whole", 60));
+        let sem = converter(&doc(&parte(1, "S"), &pauta(1, &compasso(&c))), 1).unwrap();
+        assert!(sem.sincronia.is_none() && para_json(&sem).get("sincronia").is_none());
+    }
+
     #[test]
     fn sem_letra_nao_gera_campo() {
         let c = format!("{C44}{}", acorde("whole", 60));
@@ -1155,6 +1348,7 @@ mod testes {
                 .map(|n| Voz { nome: n.to_string(), notas: vec![] })
                 .collect(),
             letra: vec![],
+            sincronia: None,
             avisos: vec![],
         };
         nomes_satb(&mut h);
@@ -1405,6 +1599,7 @@ mod testes {
             andamento: None,
             vozes: partes(),
             letra: vec![],
+            sincronia: None,
             avisos: vec![],
         };
         nomes_satb(&mut h);

@@ -795,6 +795,28 @@ Decisão do responsável: **pendente**.
 > **Origem:** sugestão do responsável: "uma possibilidade de fazer meio que um karaokê, tanto na letra das músicas como nas
 > partituras". Nasce da I-09 (que já destaca a parte que está soando) e da I-08 (partitura em SVG).
 
+> **Status:** **fase A (letra) feita** em 2026-11-14, a validar no aparelho. **Fase B (partitura)** continua pendente e
+> depende da I-08.
+>
+> **O que a fase A faz:** na aba **Letra** há o botão **Karaokê** (ligado por padrão, lembrado entre as aberturas).
+> Tocando, acende a **estrofe da vez** (barra dourada na borda), a **linha** (as outras da estrofe esmaecem) e o **trecho
+> (sílaba)** que soa (fundo dourado e sublinhado, sem mudar o tamanho do texto). A tela **rola até a linha** quando ela
+> sai da vista, e só nesse momento (a pessoa pode rolar à vontade entre uma linha e outra); a rolagem é suave só para
+> quem não pediu menos movimento. Pausa congela o destaque (testado). Trocar o andamento na pausa deve manter o lugar,
+> porque a posição é lida do relógio do áudio em batidas, mas **isso ainda não foi testado**. O conversor grava o campo `sincronia` (`docs/FORMATO.md`), com a passada normal e a do final.
+>
+> **Respostas que adotei às perguntas em aberto (a confirmar):** (1) granularidade: **sílaba**, com a linha atual em
+> destaque; (2) o destaque aparece **só na aba Letra** (na Ouvir já há os controles e o botão de cada parte); (3) a
+> rolagem acompanha sozinha quando o karaokê está ligado, e o botão desliga tudo.
+>
+> **Medido (Chrome real, mudo, hino 457):** troca de sílaba com desvio máximo de **27 ms** em relação ao tempo da
+> sincronia e **−2 ms** acumulados em 23 s; pausa congela o destaque; desligar apaga tudo. Na **vez do final** o destaque
+> segue a estrofe 3 e, no trecho final (escrito sob a estrofe 1), passa para lá. Nas 5 amostras reais, **0 erros** de
+> posição e de ordem do tempo. No celular a latência da saída de áudio é descontada (`AudioContext.outputLatency`).
+>
+> **Limites conhecidos:** cobre só o que a partitura traz como sílaba; letras com erro na partitura aparecem no destaque
+> (ver I-05); numa estrofe sem número ("1.") não acende; sem aviso falado a cada sílaba, de propósito.
+
 ### O que se deseja
 Enquanto o hino toca, o app mostra **onde a música está**: na **letra**, a sílaba ou palavra que está sendo cantada (e a
 estrofe da vez); na **partitura**, o compasso ou a nota atual, com a página rolando junto.

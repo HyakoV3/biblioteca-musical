@@ -258,7 +258,27 @@ function limpar() {
   configs.clear();
 }
 
+/** Onde a música está agora: a parte, a batida dentro dela e se essa parte é o final do hino. */
+export type Ponto = { parte: "intro" | number; batida: number; final: boolean };
+
+/**
+ * Lê a posição NESTE instante, direto do relógio do áudio (o `decorrido` do store só anda a cada 200 ms, o que
+ * faria o karaokê chegar atrasado). Usa o tempo que se ouve, descontando o atraso da saída de áudio. Nulo se o
+ * hino `numero` não é o que está tocando ou pausado. Não é reativo: quem chama lê a cada quadro.
+ */
+function ponto(numero: number): Ponto | null {
+  if (!atual || atual.numero !== numero || estado === "parado") return null;
+  const batida = (sint.audivel() * atual.andamento) / 60;
+  const parte = atual.parte === "tudo" ? parteNaBatida(atual.marcos, batida) : atual.parte;
+  if (parte === null) return null;
+  // Em "tudo" a parte começa onde o marco diz; tocada sozinha, começa em 0.
+  const inicio = atual.parte === "tudo" ? (atual.marcos.find((m) => m.parte === parte)?.inicio ?? 0) : 0;
+  const final = parte !== "intro" && atual.comFinal && parte === atual.total;
+  return { parte, batida: Math.max(0, batida - inicio), final };
+}
+
 export const reproducao = {
+  ponto,
   get atual() {
     return atual;
   },

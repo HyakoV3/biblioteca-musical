@@ -193,6 +193,17 @@ export class Sintetizador {
     return this.ctx ? this.base + Math.max(0, this.ctx.currentTime - this.inicio) : 0;
   }
 
+  /**
+   * Como `decorrido`, mas descontando o atraso da saída de áudio do aparelho: o que se OUVE agora, e não o que já foi
+   * entregue ao hardware. Serve para o karaokê não acender a sílaba antes de ela soar. Na pausa, vale o `decorrido`.
+   */
+  audivel(): number {
+    const ctx = this.ctx;
+    if (!ctx) return 0;
+    const atraso = ctx.state === "running" && Number.isFinite(ctx.outputLatency) ? Math.max(0, ctx.outputLatency) : 0;
+    return Math.max(0, this.decorrido() - atraso);
+  }
+
   async pausar() {
     await this.ctx?.suspend();
   }

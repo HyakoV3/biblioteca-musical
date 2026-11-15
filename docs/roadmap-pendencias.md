@@ -48,8 +48,20 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
 - [ ] Teste de regressão do `smplr`: parar tem de esvaziar a fila do agendador (corrigido no zip 005; ver `roadmap-fase-2.md`).
 - [x] O conversor `tools/mscx2json` já tem testes em Rust, dentro do repositório.
 
-## 5. Produto (resumo)
+- [ ] Teste de ponta a ponta do karaokê: hoje roda fora do repositório (Chrome mudo com um `invoke` simulado do
+      Tauri, lendo o relógio do áudio). Trazer para o repositório junto com os demais e rodar no CI.
 
-Em andamento: **karaokê, fase A** (a letra acompanhando a música; não depende da partitura). Depois: créditos do
+## 5. Ambiente de teste (emulador)
+
+- [ ] O emulador mostra diálogos de "não está respondendo". Investigação de 2026-11-14 (só leitura): o log do sistema
+      **não tem nenhum ANR do nosso app**; o DropBox do Android tem só 8 quedas nativas desde as 16h, **todas da
+      pilha de Bluetooth do emulador**; o app instalado ali é uma compilação de **depuração x86_64 de 201 MB** (a do
+      `tauri android dev`), bem mais pesada que o APK de teste de ~10 MB; a imagem é Android 17 com 4 GB de RAM.
+      Para melhorar: testar com uma compilação de release para x86_64, aumentar a memória do emulador, e preferir uma
+      imagem sem Play Store. Falta o texto exato do diálogo e de qual app ele vem. **(depende do responsável)**
+
+## 6. Produto (resumo)
+
+Feito: **karaokê, fase A** (a letra acompanhando a música), a validar no celular. Depois: créditos do
 FluidR3, teste das 4 vozes gravadas no celular, partitura (I-08) e, por último, o conteúdo completo. Detalhes em
 [`roadmap-fase-2.md`](roadmap-fase-2.md).

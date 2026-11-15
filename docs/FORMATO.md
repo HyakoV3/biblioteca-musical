@@ -96,6 +96,33 @@ O player permite silenciar vozes, mudar o andamento e transpor em semitons.
 `letra` é uma lista de linhas. Uma linha vazia (`""`) separa as estrofes, e a primeira linha
 de cada estrofe pode começar com o número ("1. ..."). O app mostra as linhas como estão.
 
+### Sincronia da letra (karaokê)
+
+Opcionalmente o hino ganha `sincronia`: o **instante em que cada sílaba é cantada**, para a aba Letra acender a
+estrofe, a linha e a sílaba que está soando. O conversor `mscx2json` gera o campo sozinho quando a partitura tem letra.
+
+```json
+"sincronia": {
+  "normal": [ { "estrofe": 1, "linhas": [ [ [0, 0, 2], [1, 2, 4] ], [ [2, 0, 2] ] ] } ],
+  "final":  [ { "estrofe": 1, "linhas": [ [ [0, 0, 2] ] ] } ]
+}
+```
+
+- `normal` vale para as vezes normais e `final` (opcional, só em hino com final) para a última vez. O **tempo de cada
+  trecho está na régua das notas daquela passada** (batidas, começando em 0, como `vozes` e `final.vozes`): o conversor
+  já tira da passada do final o que ela não toca (a 1ª casa) e cola o resto sem buracos.
+- `estrofe` é o número como aparece na letra ("1." é 1). A vez N acende a estrofe N. Num hino com final, o texto do
+  trecho final costuma estar escrito sob uma estrofe só; depois da última sílaba da estrofe da vez, o destaque passa a
+  esse texto, onde ele está na letra.
+- `linhas[i]` é a i-ésima linha da estrofe na `letra` (sem o "N. " do começo). Cada trecho é
+  `[inicio_em_batidas, de, ate]`: o pedaço `de..ate` da linha começa a ser cantado em `inicio`. As posições contam
+  **unidades UTF-16**, como o JavaScript indexa o texto. Uma linha sem trecho naquela passada é uma lista vazia, para o
+  índice continuar o da letra.
+- O app **confere a sincronia com a letra** (posições dentro da linha, estrofes existentes). Se a letra foi editada e
+  deixou de combinar, o karaokê fica desligado para aquele hino e a letra aparece normalmente. Na leitura, uma
+  estrutura malformada (tempo negativo, `de >= ate`, estrofe 0) é descartada **sem recusar o hino**.
+- Sem `sincronia`, o hino funciona como sempre e o botão "Karaokê" não aparece.
+
 `partitura` é um caminho relativo opcional dentro do pacote. Todos os campos além de
 `numero` e `titulo` são opcionais.
 

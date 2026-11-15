@@ -63,6 +63,10 @@ li > a,
   .preenchido {
     transition: width 220ms linear;
   }
+  /* O karaokê rola a letra até a linha que soa: suave, só para quem não pediu menos movimento. */
+  html {
+    scroll-behavior: smooth;
+  }
   /* Resposta ao toque. */
   .botao:active,
   li > a:active {

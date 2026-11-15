@@ -65,8 +65,9 @@ sem estalos; a licença de cada som está registrada; e o app base não cresceu.
       de avaliar a alternativa sem instalar)**
 - [ ] Pacote de **vários arquivos** (`.zip`) na importação, no lugar do JSON único (limite atual de 20 MB).
 - [ ] Aba **Partitura** com zoom e rolagem, nos temas claro, escuro e (futuro) baixa visão.
-- [ ] **Karaokê (I-12):** fase A, a **letra** acompanhando a música (não depende da partitura: o conversor já lê o
-      tempo de cada sílaba); fase B, cursor ou compasso na partitura, junto da I-08.
+- [x] **Karaokê (I-12), fase A:** a **letra** acompanhando a música, com botão ligar/desligar na aba Letra (campo
+      `sincronia` no formato, conversor e leitor). **Feito, falta ver no celular.**
+- [ ] **Karaokê (I-12), fase B:** cursor ou compasso na partitura, junto da I-08.
 
 **Pronto quando:** a partitura de um hino de amostra aparece nítida no emulador e no celular, e o pacote importa
 sem ir para o Git.

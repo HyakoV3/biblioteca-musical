@@ -1,6 +1,7 @@
 // Estado compartilhado da biblioteca: o conteúdo carregado e a busca sobrevivem à navegação entre
 // telas (assim voltar do hino devolve a lista como estava) e o Rust é chamado uma vez só.
 import { invoke } from "@tauri-apps/api/core";
+import type { Sincronia } from "./karaoke";
 import type { Voz } from "./sintetizador";
 
 export type Hino = {
@@ -17,6 +18,8 @@ export type Hino = {
   final?: { vozes: Voz[] } | null;
   /** Do começo até o marcador "*" (mesmas vozes, na mesma ordem). */
   introducao?: { vozes: Voz[] } | null;
+  /** Tempo de cada sílaba da letra, para o karaokê (opcional). */
+  sincronia?: Sincronia | null;
 };
 
 export type Pacote = {

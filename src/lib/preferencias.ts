@@ -77,6 +77,26 @@ export function salvarCartoes(c: Cartoes) {
   }
 }
 
+const CHAVE_KARAOKE = "prefs.karaoke";
+
+/** Karaokê da letra ligado? Padrão: ligado (só tem efeito nos hinos que trazem a sincronia). */
+export function lerKaraoke(): boolean {
+  try {
+    const v = localStorage.getItem(CHAVE_KARAOKE);
+    return v === null ? true : v === "1";
+  } catch {
+    return true;
+  }
+}
+
+export function salvarKaraoke(ligado: boolean) {
+  try {
+    localStorage.setItem(CHAVE_KARAOKE, ligado ? "1" : "0");
+  } catch {
+    /* sem armazenamento: vale só nesta sessão */
+  }
+}
+
 /** Salva as preferências de várias vozes de uma vez (uma gravação). */
 export function salvarVozes(lista: { nome: string; pref: PrefVoz }[]) {
   try {

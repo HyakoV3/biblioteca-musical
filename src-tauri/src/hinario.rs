@@ -47,6 +47,46 @@ pub struct Hino {
     /// começando em 0. A interface a toca sozinha ("Introdução") e antes da 1ª vez em "Tocar o hino todo".
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub introducao: Option<Introducao>,
+    /// Tempo de cada sílaba da letra, para o karaokê (opcional). Se estiver malformada, é descartada na leitura:
+    /// o hino continua importando, só sem karaokê.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sincronia: Option<Sincronia>,
+}
+
+/// Trecho da letra: `[inicio_em_batidas, de, ate]`. `de..ate` são posições, em unidades UTF-16 (as do JavaScript),
+/// dentro da linha da letra sem o "N. " do começo da estrofe.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Trecho(pub f32, pub u32, pub u32);
+
+/// Os trechos de cada linha de uma estrofe. A linha `i` é a `i`-ésima linha da estrofe na `letra`; uma linha sem
+/// trecho naquela passada fica vazia.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct EstrofeSinc {
+    /// Número da estrofe como aparece na letra ("1." é 1).
+    pub estrofe: u32,
+    pub linhas: Vec<Vec<Trecho>>,
+}
+
+/// Sincronia da letra em cada passada; o tempo de cada trecho está na régua daquela passada (a mesma das notas).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Sincronia {
+    pub normal: Vec<EstrofeSinc>,
+    #[serde(rename = "final", default, skip_serializing_if = "Option::is_none")]
+    pub passada_final: Option<Vec<EstrofeSinc>>,
+}
+
+fn estrofes_validas(estrofes: &[EstrofeSinc]) -> bool {
+    estrofes.iter().all(|e| {
+        e.estrofe >= 1
+            && e.linhas.iter().flatten().all(|Trecho(t, de, ate)| t.is_finite() && *t >= 0.0 && de < ate)
+    })
+}
+
+impl Sincronia {
+    /// Estrutura utilizável: tempos finitos e não negativos, e cada trecho com `de < ate`.
+    fn valida(&self) -> bool {
+        estrofes_validas(&self.normal) && self.passada_final.as_deref().is_none_or(estrofes_validas)
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -84,12 +124,18 @@ pub struct Pacote {
 }
 
 pub fn ler(json: &str) -> Result<Hinario, String> {
-    let h: Hinario = serde_json::from_str(json).map_err(|e| format!("JSON inválido: {e}"))?;
+    let mut h: Hinario = serde_json::from_str(json).map_err(|e| format!("JSON inválido: {e}"))?;
     if h.versao != VERSAO_SUPORTADA {
         return Err(format!(
             "versão {} não suportada (esperado {VERSAO_SUPORTADA})",
             h.versao
         ));
+    }
+    // O karaokê é um extra: sincronia malformada é descartada, sem recusar o hino.
+    for hino in &mut h.hinos {
+        if hino.sincronia.as_ref().is_some_and(|s| !s.valida()) {
+            hino.sincronia = None;
+        }
     }
     // O final precisa ter as mesmas vozes da passada normal, na mesma ordem (a interface as junta por posição).
     for hino in &h.hinos {
@@ -293,6 +339,47 @@ mod testes {
     fn introducao_com_vozes_diferentes_das_da_passada_normal_e_recusada() {
         let e = ler(&json_com_introducao(r#"[{"nome":"Soprano","notas":[[0,1,60]]}]"#)).unwrap_err();
         assert!(e.contains("hino 1") && e.contains("introdução") && e.contains("não correspondem"), "{e}");
+    }
+
+    fn json_com_sincronia(sincronia: &str) -> String {
+        format!(
+            r#"{{"versao":1,"hinario":{{"id":"a","nome":"A"}},"hinos":[{{"numero":1,"titulo":"T","letra":["1. la lá"],
+            "vozes":[{{"nome":"Soprano","notas":[[0,1,60],[1,1,62]]}}],"sincronia":{sincronia}}}]}}"#
+        )
+    }
+
+    #[test]
+    fn sincronia_e_lida_volta_na_saida_e_some_quando_nao_ha() {
+        let h = ler(&json_com_sincronia(
+            r#"{"normal":[{"estrofe":1,"linhas":[[[0,0,2],[1.5,3,5]]]}],"final":[{"estrofe":1,"linhas":[[[0,0,2]]]}]}"#,
+        ))
+        .unwrap();
+        let s = h.hinos[0].sincronia.as_ref().expect("deveria ter sincronia");
+        assert_eq!(s.normal[0].estrofe, 1);
+        assert_eq!(s.normal[0].linhas[0], vec![Trecho(0.0, 0, 2), Trecho(1.5, 3, 5)]);
+        assert_eq!(s.passada_final.as_ref().unwrap()[0].linhas[0], vec![Trecho(0.0, 0, 2)]);
+        // ao serializar, a chave do final continua "final"
+        let saida = serde_json::to_string(&h.hinos[0]).unwrap();
+        assert!(saida.contains(r#""sincronia":{"normal":[{"estrofe":1"#) && saida.contains(r#""final":[{"estrofe":1"#), "{saida}");
+
+        let sem = ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T"}]}"#).unwrap();
+        assert!(sem.hinos[0].sincronia.is_none());
+        assert!(!serde_json::to_string(&sem.hinos[0]).unwrap().contains("sincronia"));
+    }
+
+    #[test]
+    fn sincronia_malformada_e_descartada_sem_recusar_o_hino() {
+        // trecho com de >= ate, tempo negativo, estrofe 0 e (no final) trecho invertido: cada um derruba só a sincronia
+        for ruim in [
+            r#"{"normal":[{"estrofe":1,"linhas":[[[0,3,3]]]}]}"#,
+            r#"{"normal":[{"estrofe":1,"linhas":[[[-1,0,2]]]}]}"#,
+            r#"{"normal":[{"estrofe":0,"linhas":[[[0,0,2]]]}]}"#,
+            r#"{"normal":[{"estrofe":1,"linhas":[[[0,0,2]]]}],"final":[{"estrofe":1,"linhas":[[[0,5,2]]]}]}"#,
+        ] {
+            let h = ler(&json_com_sincronia(ruim)).unwrap_or_else(|e| panic!("não devia recusar: {e}"));
+            assert_eq!(h.hinos[0].titulo, "T");
+            assert!(h.hinos[0].sincronia.is_none(), "devia descartar: {ruim}");
+        }
     }
 
     #[test]
