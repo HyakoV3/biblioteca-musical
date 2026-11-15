@@ -25,7 +25,11 @@ const TODAS: readonly TipoVoz[] = ["soprano", "contralto", "tenor", "baixo"];
 
 export const REALISTAS = {
   // O órgão de tirantes foi o escolhido como o mais parecido com o da igreja.
-  real_orgao_tirantes: { arquivo: "drawbar_organ", ganho: 2.65, grupo: "orgao", vozes: TODAS, sintetico: "orgao_principal" },
+  // Ganho 7,1 (era 2,65): a calibração por RMS escondia que o tirantes tem o registro de 16' (0,5x a nota) 1,9x mais forte
+  // que a própria nota, energia grave que o ouvido e o alto-falante do celular quase não reproduzem. Medido com
+  // `tools/analisar-timbres.py --niveis` (2026-11-15): ele era o mais baixo dos 16, 8,6 dB abaixo da mediana no ouvido
+  // (curva A) e 9,8 dB no celular; +8,6 dB o põe na mediana do ouvido, com pico de 0,62.
+  real_orgao_tirantes: { arquivo: "drawbar_organ", ganho: 7.1, grupo: "orgao", vozes: TODAS, sintetico: "orgao_principal" },
   real_flauta: { arquivo: "flute", ganho: 3.95, grupo: "madeiras", vozes: ["soprano"] },
   real_flauta_doce: { arquivo: "recorder", ganho: 3.8, grupo: "madeiras", vozes: ["soprano"], sintetico: "flauta_doce" },
   real_clarinete: { arquivo: "clarinet", ganho: 1.65, grupo: "madeiras", vozes: ["soprano"], sintetico: "clarinete" },

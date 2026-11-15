@@ -3,9 +3,10 @@
 // Pausar suspende o relógio do AudioContext: as notas já agendadas retomam do ponto certo.
 // Para mudar instrumento, andamento ou tom no meio do hino, `tocar` reagenda tudo a partir de uma posição em batidas.
 import { Soundfont } from "smplr";
-import { INSTRUMENTOS, PADRAO, type InstrumentoId, type Perfil, type SinteticoId } from "./instrumentos";
+import { INSTRUMENTOS, PADRAO, type InstrumentoId, type SinteticoId } from "./instrumentos";
 import { REALISTAS, ehRealista, urlDoRealista, type RealistaId } from "./realista";
 import { armazenamentoDoSmplr } from "./sons/armazenamento";
+import { perfilDaNota } from "./timbres";
 
 export type Nota = [inicio: number, duracao: number, midi: number];
 export type Voz = { nome: string; notas: Nota[] };
@@ -35,6 +36,73 @@ export function notasAPartirDe(notas: Nota[], batida: number): Nota[] {
   return saida;
 }
 
+/**
+ * Agenda UMA nota sintetizada (oscilador, filtro de abertura nos metais, envoltória e vibrato) e devolve as fontes, para
+ * quem chamou poder pará-las. `midi` é a altura que SOA (já transposta); `ini` e `dur` estão em segundos do relógio de
+ * `ctx`. Serve ao app (AudioContext) e às prévias geradas offline (OfflineAudioContext). `ondas` guarda as ondas já
+ * criadas: cada (instrumento, altura) tem a sua tabela de harmônicos, e criá-la a cada nota seria desperdício.
+ */
+export function agendarNota(
+  ctx: BaseAudioContext,
+  ondas: Map<string, PeriodicWave>,
+  destino: AudioNode,
+  id: SinteticoId,
+  midi: number,
+  ini: number,
+  dur: number,
+): AudioScheduledSourceNode[] {
+  const perfil = perfilDaNota(id, midi);
+  const chave = `${id}:${Math.round(midi)}`;
+  let onda = ondas.get(chave);
+  if (!onda) {
+    onda = ctx.createPeriodicWave(new Float32Array(perfil.harmonicos.length), Float32Array.from(perfil.harmonicos));
+    ondas.set(chave, onda);
+  }
+  const f0 = frequencia(midi);
+  const osc = ctx.createOscillator();
+  const env = ctx.createGain();
+  osc.setPeriodicWave(onda);
+  osc.frequency.value = f0;
+  const fimNota = ini + Math.max(dur, 0.05);
+  const ataque = Math.min(perfil.ataque, (fimNota - ini) / 2);
+  env.gain.setValueAtTime(0, ini);
+  env.gain.linearRampToValueAtTime(perfil.nivel, ini + ataque);
+  env.gain.setValueAtTime(perfil.nivel, Math.max(ini + ataque, fimNota - perfil.solta));
+  env.gain.linearRampToValueAtTime(0, fimNota);
+  if (perfil.abertura) {
+    // Metais: o brilho nasce fechado e abre em poucas dezenas de milissegundos (passa-baixa de 2ª ordem).
+    const teto = ctx.sampleRate * 0.45;
+    const filtro = ctx.createBiquadFilter();
+    filtro.type = "lowpass";
+    filtro.Q.value = Math.SQRT1_2;
+    const de = Math.min(teto, perfil.abertura.corte * f0);
+    filtro.frequency.setValueAtTime(de, ini);
+    filtro.frequency.exponentialRampToValueAtTime(teto, ini + perfil.abertura.tempo);
+    osc.connect(filtro).connect(env).connect(destino);
+  } else {
+    osc.connect(env).connect(destino);
+  }
+  const fontes: AudioScheduledSourceNode[] = [osc];
+
+  if (perfil.vibrato) {
+    // O vibrato entra devagar, depois do atraso: notas curtas quase não o recebem.
+    const lfo = ctx.createOscillator();
+    const prof = ctx.createGain();
+    lfo.frequency.value = perfil.vibrato.hz;
+    prof.gain.setValueAtTime(0, ini);
+    prof.gain.setValueAtTime(0, ini + perfil.vibrato.atraso);
+    prof.gain.linearRampToValueAtTime(perfil.vibrato.cents, ini + perfil.vibrato.atraso + 0.25);
+    lfo.connect(prof).connect(osc.detune);
+    lfo.start(ini);
+    lfo.stop(fimNota + 0.02);
+    fontes.push(lfo);
+  }
+
+  osc.start(ini);
+  osc.stop(fimNota + 0.02);
+  return fontes;
+}
+
 /** Como `tocar` deve começar. */
 export type Partida = {
   /** Posição, em batidas, de onde tocar (0 = do começo). */
@@ -51,7 +119,7 @@ export class Sintetizador {
   private mestre: GainNode | null = null;
   private ganhos: GainNode[] = [];
   private fontes: AudioScheduledSourceNode[] = [];
-  private ondas = new Map<SinteticoId, PeriodicWave>();
+  private ondas = new Map<string, PeriodicWave>();
   /** Instrumentos gravados já carregados, um por (instrumento, voz): as amostras demoram a decodificar e se reaproveitam. */
   private reais = new Map<string, { inst: ReturnType<typeof Soundfont>; saida: GainNode }>();
   /** Os gravados que estão soando no agendamento atual (para parar). */
@@ -82,15 +150,6 @@ export class Sintetizador {
     r.saida.disconnect();
     r.saida.connect(destino);
     return r.inst;
-  }
-
-  private onda(ctx: AudioContext, id: SinteticoId, perfil: Perfil): PeriodicWave {
-    let w = this.ondas.get(id);
-    if (!w) {
-      w = ctx.createPeriodicWave(new Float32Array(perfil.harmonicos.length), Float32Array.from(perfil.harmonicos));
-      this.ondas.set(id, w);
-    }
-    return w;
   }
 
   /**
@@ -148,40 +207,11 @@ export class Sintetizador {
       }
       const pedido = opcoes.instrumentos[i];
       const id: SinteticoId = pedido && pedido in INSTRUMENTOS ? (pedido as SinteticoId) : PADRAO;
-      const perfil: Perfil = INSTRUMENTOS[id];
-      const onda = this.onda(ctx, id, perfil);
       for (const [t, dur, midi] of notasAPartirDe(voz.notas, aPartirDe)) {
-        const osc = ctx.createOscillator();
-        const env = ctx.createGain();
-        osc.setPeriodicWave(onda);
-        osc.frequency.value = frequencia(midi + opcoes.transposicao);
         const ini = inicio + t * seg;
-        const fimNota = ini + Math.max(dur * seg, 0.05);
-        const ataque = Math.min(perfil.ataque, (fimNota - ini) / 2);
-        env.gain.setValueAtTime(0, ini);
-        env.gain.linearRampToValueAtTime(perfil.nivel, ini + ataque);
-        env.gain.setValueAtTime(perfil.nivel, Math.max(ini + ataque, fimNota - perfil.solta));
-        env.gain.linearRampToValueAtTime(0, fimNota);
-        osc.connect(env).connect(this.ganhos[i]);
-
-        if (perfil.vibrato) {
-          // O vibrato entra devagar, depois do atraso: notas curtas quase não o recebem.
-          const lfo = ctx.createOscillator();
-          const prof = ctx.createGain();
-          lfo.frequency.value = perfil.vibrato.hz;
-          prof.gain.setValueAtTime(0, ini);
-          prof.gain.setValueAtTime(0, ini + perfil.vibrato.atraso);
-          prof.gain.linearRampToValueAtTime(perfil.vibrato.cents, ini + perfil.vibrato.atraso + 0.25);
-          lfo.connect(prof).connect(osc.detune);
-          lfo.start(ini);
-          lfo.stop(fimNota + 0.02);
-          this.fontes.push(lfo);
-        }
-
-        osc.start(ini);
-        osc.stop(fimNota + 0.02);
-        this.fontes.push(osc);
-        fim = Math.max(fim, fimNota - inicio);
+        const duracao = Math.max(dur * seg, 0.05);
+        this.fontes.push(...agendarNota(ctx, this.ondas, this.ganhos[i], id, midi + opcoes.transposicao, ini, duracao));
+        fim = Math.max(fim, ini + duracao - inicio);
       }
     });
 
