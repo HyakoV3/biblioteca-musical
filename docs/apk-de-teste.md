@@ -64,6 +64,7 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 | Zip | Versão (commit) | Data | Conteúdo | SHA-256 |
 |---|---|---|---|---|
 | **001** | 0.2.0 (c0f6699) | 2026-11-14 | 5 hinos e 5 sons gravados embutidos; cards, ganhos de volume, versão em Ajustes | `617af79f…d25f99` |
+| **003** | 0.2.0 (238a103) | 2026-11-14 | Ajustes: "Sobre o app" num card fechado, aviso de independência à parte e versão centralizada fora do card; tema "Automático"; botões "Importar hinário" e "Remover importação"; seletor de idioma na largura toda | `52ceec38…01e50` |
 | **002** | 0.2.0 (bc7ba9b) | 2026-11-14 | Nome "Biblioteca Musical CCB"; ícones SVG (conjunto `ic`); cards em grupo (abrir um fecha os outros); "Redefinir vozes" e "Redefinir instrumentos" separados; lista com 001, 002; Ajustes como botão hambúrguer | `47944215…0a665` |
 
 ## Instalar no celular
