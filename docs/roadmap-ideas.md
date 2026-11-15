@@ -798,7 +798,10 @@ Decisão do responsável: **pendente**.
 > **Status:** **fase A (letra) feita** em 2026-11-14, a validar no aparelho. **Fase B (partitura)** continua pendente e
 > depende da I-08.
 >
-> **O que a fase A faz:** na aba **Letra** há o botão **Karaokê** (ligado por padrão, lembrado entre as aberturas).
+> **O que a fase A faz:** no cabeçalho, só na aba **Letra** e em hino que traz a sincronia, há um **botão de ícone**
+> (microfone cheio com borda dourada = ligado; microfone riscado = desligado; ligado por padrão e lembrado entre as
+> aberturas). A posição foi escolhida pelo responsável entre três propostas (ícone no cabeçalho, botão flutuante e
+> faixa fixa): fica sempre à vista e não gasta espaço da letra.
 > Tocando, acende a **estrofe da vez** (barra dourada na borda), a **linha** (as outras da estrofe esmaecem) e o **trecho
 > (sílaba)** que soa (fundo dourado e sublinhado, sem mudar o tamanho do texto). A tela **rola até a linha** quando ela
 > sai da vista, e só nesse momento (a pessoa pode rolar à vontade entre uma linha e outra); a rolagem é suave só para

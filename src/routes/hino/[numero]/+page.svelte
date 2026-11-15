@@ -5,6 +5,7 @@
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
   import Estado from "$lib/Estado.svelte";
+  import Icone from "$lib/Icone.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
   import { estrofes } from "$lib/letra";
   import { marcaEm, marcasDaVez, sincroniaCombina, type Marca } from "$lib/karaoke";
@@ -124,6 +125,8 @@
   }
 
   let aba = $state<Aba>("letra");
+  // O botão do karaokê só aparece na aba Letra (é onde o destaque acontece) e em hino que traz a sincronia.
+  const mostrarKaraoke = $derived(sincroniaOk && aba === "letra");
   // Ao abrir um hino: Ouvir primeiro (se houver notas para tocar); sem notas, só existe a Letra.
   $effect(() => {
     aba = hino && hino.vozes.length > 0 ? "ouvir" : "letra";
@@ -141,6 +144,20 @@
 
 <!-- O título do documento é o que leitores de tela anunciam a cada troca de tela. -->
 <svelte:head><title>{tituloPagina} · Biblioteca Musical CCB</title></svelte:head>
+
+<!-- Karaokê: botão só de ícone no cabeçalho (microfone vazado = desligado, cheio = ligado, então o estado não depende só
+     da cor). O nome e a explicação vão no rótulo de acessibilidade e na dica; `aria-pressed` diz o estado ao leitor de tela. -->
+{#snippet botaoKaraoke()}
+  <button
+    class="botao botao-icone chave-karaoke"
+    aria-pressed={karaoke}
+    aria-label={t("hino.karaoke")}
+    title={`${t("hino.karaoke")}: ${karaoke ? t("hino.karaoke_ligado") : t("hino.karaoke_desligado")}. ${t("hino.karaoke_ajuda")}`}
+    onclick={alternarKaraoke}
+  >
+    <Icone nome={karaoke ? "karaoke_ligado" : "karaoke"} tamanho={26} />
+  </button>
+{/snippet}
 
 {#if biblioteca.erro}
   <Barra titulo={t("biblioteca.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />
@@ -162,6 +179,7 @@
     lang={idiomaConteudo}
     {voltar}
     rotuloVoltar={t("nav.voltar")}
+    acao={mostrarKaraoke ? botaoKaraoke : undefined}
   />
 
   <main class="coluna conteudo">
@@ -169,16 +187,6 @@
     <div role="tabpanel" id="painel-letra" aria-labelledby={temAudio ? "aba-letra" : undefined} hidden={aba !== "letra"}>
       {#if !temAudio}
         <Aviso tipo="info">{t("hino.sem_audio")}</Aviso>
-      {/if}
-      {#if sincroniaOk}
-        <!-- Karaokê: a letra acompanha a música. O estado aparece em texto, não só na cor. -->
-        <div class="karaoke">
-          <button class="botao chave-karaoke" aria-pressed={karaoke} onclick={alternarKaraoke}>
-            <span>{t("hino.karaoke")}</span>
-            <span class="estado-karaoke">{karaoke ? `✓ ${t("hino.karaoke_ligado")}` : t("hino.karaoke_desligado")}</span>
-          </button>
-          <span class="meta">{t("hino.karaoke_ajuda")}</span>
-        </div>
       {/if}
       <div lang={idiomaConteudo}>
         {#each partes as e}
@@ -218,11 +226,8 @@
 {/if}
 
 <style>
-  .karaoke { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem 0.75rem; margin-bottom: 1rem; }
-  .chave-karaoke { gap: 0.6rem; }
-  .estado-karaoke { font-weight: 600; }
+  .botao-icone { min-width: 48px; padding: 0; }
   .chave-karaoke[aria-pressed="true"] { border: 2px solid var(--ouro-linha); }
-  .karaoke .meta { flex: 1 1 12rem; margin: 0; }
   /* A estrofe que soa leva uma barra dourada na borda (o recuo negativo mantém o texto no mesmo lugar). */
   .estrofe { margin-bottom: 1.4rem; margin-left: -1rem; padding-left: calc(1rem - 4px); border-left: 4px solid transparent; }
   .estrofe.da-vez { border-left-color: var(--ouro-linha); }
