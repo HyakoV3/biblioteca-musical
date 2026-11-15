@@ -67,6 +67,7 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 
 | Zip | Versão (commit) | Data | Conteúdo | SHA-256 |
 |---|---|---|---|---|
+| **007** | 0.3.0 (c53524c) | 2026-11-15 | **Estilos de cor** (Ajustes, Aparência: Modo e Estilo, com Normal, Pergaminho e Marinho e ouro); **botões Intro, 1ª, 2ª... que enchem de dourado** com o tempo e recomeçam do zero na parte seguinte; botão do karaokê num **ícone de microfone no cabeçalho** (só na aba Letra). Os 5 hinos de teste embutidos já com a sincronia do karaokê. Entregue em `<pasta de entrega dos zips>/` | `0c5f4c3c…cc1d3` |
 | **006** | 0.3.0 (c14825e) | 2026-11-14 | **Karaokê da letra (fase A):** na aba Letra, botão "Karaokê" (ligado por padrão) que acende a estrofe da vez, a linha e a sílaba que soa, e rola até a linha. Os 5 hinos de teste embutidos já trazem a sincronia. Entregue em `<pasta de entrega dos zips>/` | `6888156a…67a29` |
 | **005** | 0.3.0 (ef561d7) | 2026-11-14 | **Abas Ouvir \| Letra embaixo** (barra lateral à esquerda com o celular deitado; o miniplayer sobe acima da barra); **andamento de 1 em 1 e de 5 em 5** (`−5 −1 +1 +5`); **correção:** ao parar ou pausar e tocar de novo, as notas do andamento antigo das vozes **gravadas** seguiam soando por cima das novas. Entregue em `<pasta de entrega dos zips>/` | `93c61549…8e053` |
 | **001** | 0.2.0 (c0f6699) | 2026-11-14 | 5 hinos e 5 sons gravados embutidos; cards, ganhos de volume, versão em Ajustes | `617af79f…d25f99` |
