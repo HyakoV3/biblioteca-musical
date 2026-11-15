@@ -101,10 +101,10 @@ de cada estrofe pode começar com o número ("1. ..."). O app mostra as linhas c
 
 ## Importar
 
-Na tela inicial, o botão **Importar hinário (.json)** escolhe o arquivo. O app valida
+Na tela inicial, o botão **Importar hinário** escolhe o arquivo `.json`. O app valida
 (versão, ao menos um hino, números de hino sem repetição, limite de 20 MB) e só então grava em
 `content/hinario.json`, de forma atômica: um arquivo inválido nunca substitui o conteúdo atual.
-**Remover conteúdo importado** apaga o arquivo e volta ao pacote de exemplo.
+**Remover importação** apaga o arquivo e volta ao pacote de exemplo.
 Por enquanto só o `hinario.json` é importado; arquivos de partitura ainda não.
 
 ## Onde o app lê

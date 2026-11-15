@@ -8,8 +8,8 @@ export const pt = {
   "lista.buscar": "Buscar por número ou título",
   "lista.buscar_aria": "Buscar hino",
 
-  "importar.botao": "Importar hinário (.json)",
-  "importar.remover": "Remover conteúdo importado",
+  "importar.botao": "Importar hinário",
+  "importar.remover": "Remover importação",
   "importar.ok": "Importado: {total} de “{nome}”.",
   "importar.erro": "Não foi possível importar: {erro}",
   "remover.ok": "Conteúdo importado removido. Mostrando o pacote de exemplo.",

@@ -8,8 +8,8 @@ export const en: Dicionario = {
   "lista.buscar": "Search by number or title",
   "lista.buscar_aria": "Search hymn",
 
-  "importar.botao": "Import hymnal (.json)",
-  "importar.remover": "Remove imported content",
+  "importar.botao": "Import hymnal",
+  "importar.remover": "Remove import",
   "importar.ok": "Imported: {total} from “{nome}”.",
   "importar.erro": "Could not import: {erro}",
   "remover.ok": "Imported content removed. Showing the sample package.",

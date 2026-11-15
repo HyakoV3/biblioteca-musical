@@ -125,6 +125,7 @@
   section { margin-bottom: 1.8rem; }
   h2 { margin: 0 0 0.6rem; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--suave); }
   select {
+    width: 100%; box-sizing: border-box; /* ocupa toda a largura, como as opções de aparência */
     min-height: 48px; font-size: 1rem; padding: 0 0.6rem; border-radius: 12px;
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }

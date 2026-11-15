@@ -8,8 +8,8 @@ export const es: Dicionario = {
   "lista.buscar": "Buscar por número o título",
   "lista.buscar_aria": "Buscar himno",
 
-  "importar.botao": "Importar himnario (.json)",
-  "importar.remover": "Quitar contenido importado",
+  "importar.botao": "Importar himnario",
+  "importar.remover": "Quitar importación",
   "importar.ok": "Importado: {total} de “{nome}”.",
   "importar.erro": "No se pudo importar: {erro}",
   "remover.ok": "Contenido importado eliminado. Mostrando el paquete de ejemplo.",
