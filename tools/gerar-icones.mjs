@@ -30,6 +30,8 @@ const NOMES = {
   menos: "outline-remove",
   abrir: "outline-expand-more",
   fechar: "outline-expand-less",
+  menu: "outline-menu", // hambúrguer (três linhas)
+  ajustes: "outline-settings", // engrenagem
 };
 // Só tags de desenho: o corpo do SVG é inserido na página com {@html}, então nada além disso pode passar.
 const TAGS_PERMITIDAS = new Set(["path", "g", "circle", "rect", "ellipse", "line", "polyline", "polygon"]);

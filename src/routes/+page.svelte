@@ -2,8 +2,10 @@
   import Aviso from "$lib/Aviso.svelte";
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
+  import Icone from "$lib/Icone.svelte";
   import Estado from "$lib/Estado.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
+  import { casaComNumero, zerosAEsquerda } from "$lib/numero";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
 
@@ -14,7 +16,7 @@
     const todos = biblioteca.pacote?.hinario.hinos ?? [];
     const q = normalizar(biblioteca.busca);
     if (!q) return todos;
-    return todos.filter((h) => String(h.numero) === q || normalizar(h.titulo).includes(q));
+    return todos.filter((h) => casaComNumero(q, h.numero) || normalizar(h.titulo).includes(q));
   });
 </script>
 
@@ -22,7 +24,12 @@
 <svelte:head><title>{t("biblioteca.titulo")} · Biblioteca Musical CCB</title></svelte:head>
 
 <Barra titulo={t("biblioteca.titulo")}>
-  {#snippet acao()}<a class="botao" href="/ajustes">{t("nav.ajustes")}</a>{/snippet}
+  {#snippet acao()}
+    <!-- Botão só de ícone (hambúrguer); o nome "Ajustes" vai no rótulo de acessibilidade e na dica. -->
+    <a class="botao botao-icone" href="/ajustes" aria-label={t("nav.ajustes")} title={t("nav.ajustes")}>
+      <Icone nome="menu" tamanho={26} />
+    </a>
+  {/snippet}
 </Barra>
 
 <main class="coluna conteudo">
@@ -51,7 +58,7 @@
         {#each hinos as h (h.numero)}
           <li>
             <a href={`/hino/${h.numero}`}>
-              <span class="num">{h.numero}</span>
+              <span class="num"><span aria-hidden="true" class="zeros">{zerosAEsquerda(h.numero)}</span>{h.numero}</span>
               <span class="titulo">
                 <span>{h.titulo}</span>
                 {#if h.autoria}<span class="autoria">{h.autoria}</span>{/if}
@@ -102,7 +109,10 @@
     padding: 0.5rem 0.9rem; text-decoration: none; color: var(--texto);
     background: var(--superficie); border: 1px solid var(--borda-controle); border-radius: 12px;
   }
-  .num { font-weight: 700; min-width: 2.4rem; }
+  /* Três dígitos com zeros à esquerda e algarismos de mesma largura: os números alinham em coluna. */
+  .botao-icone { min-width: 48px; padding: 0; }
+  .num { font-weight: 700; min-width: 2.8rem; font-variant-numeric: tabular-nums; }
+  .zeros { color: var(--suave); font-weight: 400; }
   .titulo { flex: 1; min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; }
   .autoria { font-size: 0.85rem; color: var(--suave); }
   small { color: var(--suave); }
