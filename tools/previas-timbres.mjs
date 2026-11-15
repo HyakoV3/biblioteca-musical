@@ -1,6 +1,7 @@
 // Gera prévias de áudio (MP3) para comparar de ouvido os timbres sintetizados: ANTES (tabela fixa), AGORA (timbre por
-// altura, I-15) e GRAVADO (a amostra do FluidR3_GM). Cada arquivo tem os três trechos em sequência, separados por silêncio:
-// uma escala de duas oitavas e uma nota final longa.
+// altura, I-15) e GRAVADO (a amostra do FluidR3_GM). Cada arquivo tem os trechos em sequência, separados por silêncio
+// (uma escala de duas oitavas e uma nota final longa). Os sete instrumentos com timbre medido têm antes → agora →
+// gravado; os demais têm sintetizado → gravado, e os sem gravado no banco só o sintetizado. O nome do arquivo diz a ordem.
 //
 // Roda o código REAL do app (`agendarNota`, em src/lib/sintetizador.ts) num Chrome headless e MUDO, com um
 // OfflineAudioContext: renderiza em memória, sem tocar nada nas caixas.
@@ -17,15 +18,29 @@ import { fileURLToPath } from "node:url";
 const RAIZ = fileURLToPath(new URL("../", import.meta.url)); // decodifica %20 e acentos; `.pathname` quebraria com espaço no caminho
 const PORTA_VITE = 5198;
 const PORTA_CHROME = 9341;
-// Instrumento da síntese -> [arquivo da amostra, nota mais grave da faixa natural]; o mesmo de tools/analisar-timbres.py.
+// Instrumento da síntese -> [arquivo da amostra gravada (null = o banco não tem), nota inicial da escala, id no catálogo
+// de gravados]. A nota inicial fica na região natural do instrumento e a escala sobe duas oitavas, dentro das notas que o
+// banco toca (o contrabaixo é mudo acima da nota 57). Os sete primeiros são os que têm timbre medido (I-15).
 const INSTRUMENTOS = {
-  trompete: ["trumpet", 52],
-  trombone: ["trombone", 38],
-  tuba: ["tuba", 26],
-  fagote: ["bassoon", 34],
-  oboe: ["oboe", 58],
-  sax_alto: ["alto_sax", 49],
-  sax_tenor: ["tenor_sax", 44],
+  trompete: ["trumpet", 54, "real_trompete"],
+  trombone: ["trombone", 40, "real_trombone"],
+  tuba: ["tuba", 28, "real_tuba"],
+  fagote: ["bassoon", 36, "real_fagote"],
+  oboe: ["oboe", 60, "real_oboe"],
+  sax_alto: ["alto_sax", 51, "real_sax_alto"],
+  sax_tenor: ["tenor_sax", 46, "real_sax_tenor"],
+  flauta_doce: ["recorder", 72, "real_flauta_doce"],
+  violino: ["violin", 55, "real_violino"],
+  clarinete: ["clarinet", 52, "real_clarinete"],
+  viola: ["viola", 48, "real_viola"],
+  violoncelo: ["cello", 36, "real_violoncelo"],
+  contrabaixo: ["contrabass", 31, "real_contrabaixo"],
+  trompa: ["french_horn", 41, "real_trompa"],
+  flugelhorn: [null, 55, null],
+  bombardino: [null, 40, null],
+  orgao_suave: [null, 48, null],
+  orgao_principal: ["drawbar_organ", 48, "real_orgao_tirantes"], // o equivalente gravado é o órgão de tirantes
+  orgao_pleno: [null, 48, null],
 };
 const ESCALA = [0, 2, 4, 5, 7, 9, 11, 12, 14, 16, 17, 19, 21, 23, 24]; // maior, duas oitavas
 const NOTAS = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -122,6 +137,7 @@ const NA_PAGINA = `async (dados) => {
   const { agendarNota } = await import("/src/lib/sintetizador.ts");
   const { INSTRUMENTOS } = await import("/src/lib/instrumentos.ts");
   const { REALISTAS } = await import("/src/lib/realista.ts");
+  const { temTimbreMedido } = await import("/src/lib/timbres.ts");
   const SR = 44100, PASSO = 0.5, FINAL = 1.6, SILENCIO = 0.8;
   const notas = dados.escala.map((m, i) => [i * PASSO, PASSO * 0.95, m]);
   notas.push([notas.length * PASSO, FINAL, dados.escala[dados.escala.length - 1] - 12]);
@@ -157,9 +173,11 @@ const NA_PAGINA = `async (dados) => {
     await montar(ctx, mestre);
     return (await ctx.startRendering()).getChannelData(0);
   }
-  const antes = await renderizar((ctx, d) => { for (const [t, dur, m] of notas) notaAntiga(ctx, d, dados.id, m, 0.05 + t, dur); });
+  // Só os instrumentos com timbre medido (I-15) mudaram: nos outros o "antes" é idêntico ao "agora" e não se repete.
+  const medido = temTimbreMedido(dados.id);
+  const antes = medido ? await renderizar((ctx, d) => { for (const [t, dur, m] of notas) notaAntiga(ctx, d, dados.id, m, 0.05 + t, dur); }) : null;
   const agora = await renderizar((ctx, d) => { const ondas = new Map(); for (const [t, dur, m] of notas) agendarNota(ctx, ondas, d, dados.id, m, 0.05 + t, dur); });
-  const gravado = await renderizar(async (ctx, d) => {
+  const gravado = !dados.real ? null : await renderizar(async (ctx, d) => {
     const saida = ctx.createGain(); saida.gain.value = REALISTAS[dados.real].ganho; saida.connect(d);
     const buffers = {};
     for (const m of new Set(notas.map((n) => n[2]))) {
@@ -175,10 +193,12 @@ const NA_PAGINA = `async (dados) => {
     }
   });
   const rms = (v) => Math.sqrt(v.reduce((s, x) => s + x * x, 0) / v.length);
-  const nivel = { antes: rms(antes), agora: rms(agora), gravado: rms(gravado) };
+  const nivel = { antes: antes && rms(antes), agora: rms(agora), gravado: gravado && rms(gravado) };
   // O gravado é igualado ao AGORA em volume eficaz: a comparação é de TIMBRE, não de quem está mais alto.
-  const fatorGravado = nivel.agora / nivel.gravado;
-  const todos = [antes, agora, gravado.map((x) => x * fatorGravado)];
+  const fatorGravado = gravado ? nivel.agora / nivel.gravado : 1;
+  const partes = medido ? ["antes", "agora"] : ["sintetizado"];
+  const todos = medido ? [antes, agora] : [agora];
+  if (gravado) { partes.push("gravado"); todos.push(gravado.map((x) => x * fatorGravado)); }
   const lacuna = new Float32Array(Math.ceil(SR * SILENCIO));
   const juntos = [];
   todos.forEach((v, i) => { juntos.push(...(i ? [lacuna] : []), v); });
@@ -189,7 +209,7 @@ const NA_PAGINA = `async (dados) => {
   for (const v of juntos) for (let i = 0; i < v.length; i++) saida[p++] = Math.round(Math.max(-1, Math.min(1, v[i] * k)) * 32767);
   let b64 = ""; const bytes = new Uint8Array(saida.buffer);
   for (let i = 0; i < bytes.length; i += 0x8000) b64 += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return { pcm: btoa(b64), niveis: nivel, fatorGravado, duracao, silencio: SILENCIO, pico };
+  return { pcm: btoa(b64), niveis: nivel, partes, fatorGravado, duracao, silencio: SILENCIO, pico };
 }`;
 
 async function principal() {
@@ -241,12 +261,11 @@ async function principal() {
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
   await dormir(6000); // primeira compilação pelo Vite
 
-  const REAL = { trompete: "real_trompete", trombone: "real_trombone", tuba: "real_tuba", fagote: "real_fagote", oboe: "real_oboe", sax_alto: "real_sax_alto", sax_tenor: "real_sax_tenor" };
-  console.log(`${"instrumento".padEnd(11)} ${"antes".padStart(8)} ${"agora".padStart(8)} ${"gravado".padStart(8)}  (volume eficaz; o gravado vai igualado ao AGORA na prévia)`);
+  console.log(`${"instrumento".padEnd(16)} partes (volume eficaz em dB; o gravado vai igualado ao último sintetizado na prévia)`);
+  let ordem = 0;
   for (const id of nomes) {
-    const [arquivo, grave] = INSTRUMENTOS[id];
-    const base = grave + 2;
-    const dados = { id, real: REAL[id], escala: ESCALA.map((g) => base + g), amostras: amostrasDaEscala(arquivo, base) };
+    const [arquivo, base, real] = INSTRUMENTOS[id];
+    const dados = { id, real, escala: ESCALA.map((g) => base + g), amostras: arquivo ? amostrasDaEscala(arquivo, base) : {} };
     const r = await enviar("Runtime.evaluate", { expression: `(${NA_PAGINA})(${JSON.stringify(dados)})`, returnByValue: true, awaitPromise: true });
     if (r.error) throw new Error(`${id}: CDP ${r.error.message}`); // erro do protocolo vem sem `result`
     if (r.result?.exceptionDetails) throw new Error(`${id}: ${JSON.stringify(r.result.exceptionDetails).slice(0, 400)}`);
@@ -254,10 +273,12 @@ async function principal() {
     const pcm = new Int16Array(Buffer.from(v.pcm, "base64").buffer.slice(0));
     const wav = join(perfil, `${id}.wav`);
     writeFileSync(wav, wav16(pcm, 44100));
-    const mp3 = join(saida, `${id}-antes-agora-gravado.mp3`);
+    // Numerado para a lista seguir a ordem do catálogo; o nome diz a ordem dos trechos dentro do arquivo.
+    const mp3 = join(saida, `${String(++ordem).padStart(2, "0")}-${id}-${v.partes.join("-")}.mp3`);
     execFileSync("ffmpeg", ["-v", "error", "-y", "-i", wav, "-codec:a", "libmp3lame", "-q:a", "2", mp3]);
     const f = (x) => (20 * Math.log10(x)).toFixed(1);
-    console.log(`${id.padEnd(11)} ${f(v.niveis.antes).padStart(8)} ${f(v.niveis.agora).padStart(8)} ${f(v.niveis.gravado).padStart(8)}  dB  -> ${mp3}`);
+    const niveis = v.partes.map((p) => `${p} ${f(v.niveis[p === "sintetizado" ? "agora" : p])}`).join(" | ");
+    console.log(`${id.padEnd(16)} ${niveis}  -> ${mp3}`);
   }
 }
 
