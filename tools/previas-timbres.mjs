@@ -12,8 +12,9 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
+import { fileURLToPath } from "node:url";
 
-const RAIZ = new URL("../", import.meta.url).pathname;
+const RAIZ = fileURLToPath(new URL("../", import.meta.url)); // decodifica %20 e acentos; `.pathname` quebraria com espaço no caminho
 const PORTA_VITE = 5198;
 const PORTA_CHROME = 9341;
 // Instrumento da síntese -> [arquivo da amostra, nota mais grave da faixa natural]; o mesmo de tools/analisar-timbres.py.
@@ -247,6 +248,7 @@ async function principal() {
     const base = grave + 2;
     const dados = { id, real: REAL[id], escala: ESCALA.map((g) => base + g), amostras: amostrasDaEscala(arquivo, base) };
     const r = await enviar("Runtime.evaluate", { expression: `(${NA_PAGINA})(${JSON.stringify(dados)})`, returnByValue: true, awaitPromise: true });
+    if (r.error) throw new Error(`${id}: CDP ${r.error.message}`); // erro do protocolo vem sem `result`
     if (r.result?.exceptionDetails) throw new Error(`${id}: ${JSON.stringify(r.result.exceptionDetails).slice(0, 400)}`);
     const v = r.result.result.value;
     const pcm = new Int16Array(Buffer.from(v.pcm, "base64").buffer.slice(0));

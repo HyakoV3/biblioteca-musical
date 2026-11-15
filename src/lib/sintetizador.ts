@@ -74,7 +74,7 @@ export function agendarNota(
     const teto = ctx.sampleRate * 0.45;
     const filtro = ctx.createBiquadFilter();
     filtro.type = "lowpass";
-    filtro.Q.value = Math.SQRT1_2;
+    filtro.Q.value = 20 * Math.log10(Math.SQRT1_2); // no lowpass do Web Audio o Q é em dB: -3,01 dB = Butterworth, sem pico (o modelo medido)
     const de = Math.min(teto, perfil.abertura.corte * f0);
     filtro.frequency.setValueAtTime(de, ini);
     filtro.frequency.exponentialRampToValueAtTime(teto, ini + perfil.abertura.tempo);

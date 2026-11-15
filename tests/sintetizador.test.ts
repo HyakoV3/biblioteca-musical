@@ -109,6 +109,9 @@ describe("Sintetizador", () => {
     const s = new Sintetizador();
     await s.tocar(vozes, op(60, { instrumentos: ["trombone"] }));
     expect(reg.filtros).toHaveLength(3);
+    // O Q do lowpass do Web Audio é em dB: o Butterworth (1/√2) é -3,01 dB; passar 0,707 daria um pico de ressonância.
+    const q = (reg.filtros[0] as { Q: { value: number } }).Q.value;
+    expect(q).toBeCloseTo(-3.0103, 3);
     reg.filtros.length = 0;
     await s.tocar(vozes, op(60, { instrumentos: ["fagote"] }));
     await s.tocar(vozes, op(60, { instrumentos: ["orgao_principal"] }));

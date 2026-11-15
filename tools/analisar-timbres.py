@@ -406,7 +406,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--distancia", action="store_true", help="valida a síntese: distância espectral à gravação em notas fora das âncoras (antes x agora)")
     ap.add_argument("--niveis", action="store_true", help="compara o volume dos 16 gravados (o órgão de tirantes em destaque)")
-    ap.add_argument("--instrumento", help="só este (nome da síntese: trompete, trombone, tuba, fagote, oboe, sax_alto, sax_tenor)")
+    ap.add_argument("--instrumento", choices=list(INSTRUMENTOS), help="só este (nome da síntese: trompete, trombone, tuba, fagote, oboe, sax_alto, sax_tenor)")
     ap.add_argument("--diagnostico", action="store_true", help="mostra as medidas e não grava")
     ap.add_argument("--orgaos", action="store_true", help="mede o órgão de tirantes e compara com os órgãos sintetizados")
     args = ap.parse_args()
@@ -439,6 +439,11 @@ def main():
                       f"h1-6={[round(v, 2) for v in m['h'][:6]]}")
         saida["instrumentos"][nome] = {"arquivo": arquivo, "faixa": [lo, hi], "ancoras": ancoras}
     if not args.diagnostico:
+        if args.instrumento and SAIDA.exists():
+            # Atualiza só o escolhido: os demais ficam como estão no arquivo (na ordem do catálogo).
+            antigos = json.loads(SAIDA.read_text(encoding="utf-8"))["instrumentos"]
+            antigos.update(saida["instrumentos"])
+            saida["instrumentos"] = {nome: antigos[nome] for nome in INSTRUMENTOS if nome in antigos}
         SAIDA.write_text(json.dumps(saida, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
         print(f"gravado {SAIDA} ({SAIDA.stat().st_size / 1024:.1f} KB)")
 
