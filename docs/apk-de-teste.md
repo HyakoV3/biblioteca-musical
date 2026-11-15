@@ -45,6 +45,26 @@ $BT/apksigner verify --verbose BibliotecaMusical-CCB-teste.apk
 **Esta assinatura não serve para loja.** Para publicar é preciso uma chave **própria**, criada e guardada pelo
 responsável (quem perde a chave não consegue mais atualizar o app).
 
+## Entregar em zip numerado
+
+O APK é entregue **dentro de um `.zip` numerado**, para o responsável distinguir um build do outro:
+
+```sh
+cd ~/Downloads
+zip -j BibliotecaMusical-CCB-teste-NNN.zip BibliotecaMusical-CCB-teste.apk   # NNN = próximo número, com 3 dígitos
+sha256sum BibliotecaMusical-CCB-teste-NNN.zip
+```
+
+O **próximo número é o da última linha da tabela abaixo + 1**. A tabela, e não a pasta `~/Downloads`, é o contador,
+porque os arquivos são movidos para fora da pasta depois de baixados. **Acrescente a linha a cada build.** A versão e o
+commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
+
+### Histórico dos zips
+
+| Zip | Versão (commit) | Data | Conteúdo | SHA-256 |
+|---|---|---|---|---|
+| *(sem número)* | 0.2.0 (c0f6699) | 2026-11-14 | 5 hinos e 5 sons gravados embutidos; cards, ganhos de volume, versão em Ajustes | `617af79f…d25f99` |
+
 ## Instalar no celular
 
 Copie o `.apk` para o aparelho e abra. O Android pede para permitir "instalar apps desconhecidos" daquela origem, e o
