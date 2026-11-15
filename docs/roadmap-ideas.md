@@ -574,7 +574,7 @@ Uma aba **Partitura** no hino (ao lado de Ouvir e Letra) para o músico ler a m�
 de compasso, acidentes, ligaduras, cifras e casas de volta. Reconstruir isso seria reinventar a roda.
 
 ### Pontos de atenção
-- **Direitos:** as partituras vêm das mesmas transcrições do autor das transcrições, então a resposta dele vale aqui também. As
+- **Direitos:** as partituras vêm das mesmas transcrições, então a resposta dele vale aqui também. As
   imagens ficam **fora do Git**, como as letras.
 - **Importação:** hoje o app importa um só JSON (limite de 20 MB). Com imagens, é preciso um **pacote de vários
   arquivos** (um `.zip`). É a parte de maior trabalho.
