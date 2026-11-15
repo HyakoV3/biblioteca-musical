@@ -17,7 +17,7 @@ vite.config.ts.timestamp-*
 
 # Amostras de som originais (I-07, ~3 MB por instrumento): baixar com tools/baixar-sons-gm.py. Ficam FORA de static/ para não irem no APK
 /sons-fonte/
-/dist-sons/
+/dist-sons*/
 
 # Notas locais: nunca versionar
 /docs/privado/

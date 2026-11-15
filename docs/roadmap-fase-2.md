@@ -49,6 +49,9 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
 - [x] Ajustes, "Sons gravados": lista com tamanhos, baixar, remover; armazenamento no app, uso offline; alternador
       Sintetizado | Gravado por voz. **Implementado na 0.3.0, falta testar em aparelho** (`docs/pacote-de-sons.md`).
 - [ ] Hospedar os arquivos nós mesmos (depende de o repositório ser público) e carregar do armazenamento do app.
+- [x] **Troca do banco dos gravados: FluidR3 → GeneralUser GS** (decisão do responsável após comparar os 16 de ouvido), com
+      os ganhos recalculados para o mesmo nível médio. Ver `docs/pacote-de-sons.md`. **Falta subir o pacote novo ao servidor**
+      (pasta `BibliotecaMusical/` do File Browser) e gerar o APK 010; até lá o app deste ramo não baixa os sons.
 - [x] Créditos e licenças: card fechado em Ajustes (FluidR3, amostras do Gleitzman com a atribuição CC BY 3.0, smplr, ícones,
       bibliotecas), com o texto de cada licença. Ver `docs/licencas-de-terceiros.md` (inclui a divergência MIT x CC BY 3.0).
 - [ ] Comparar de ouvido os órgãos do banco: `church_organ`, `reed_organ` (palhetas) e `drawbar_organ` (tirantes), os

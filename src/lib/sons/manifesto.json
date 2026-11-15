@@ -8,98 +8,98 @@
     {
      "instrumento": "drawbar_organ",
      "arquivo": "drawbar_organ-mp3.js",
-     "bytes": 1636113,
-     "sha256": "b280ab03b189f39ebf98ab5150cc9795ac5ee60b9f789f3634669978d1a5c748"
+     "bytes": 2387789,
+     "sha256": "27b84ee207a44627eea5aab5fa8280f85faf976e221e1f08356bc812dd0043da"
     },
     {
      "instrumento": "alto_sax",
      "arquivo": "alto_sax-mp3.js",
-     "bytes": 1913044,
-     "sha256": "46242526aec2fd643f946ab78a794b28629044c2673f4279c3caa40e11d27ff8"
+     "bytes": 2387784,
+     "sha256": "ff8dc1a58e46bb60a5c4ff5240c942f3e9b0cb30a6b22c987b5d0e3a62b56385"
     },
     {
      "instrumento": "bassoon",
      "arquivo": "bassoon-mp3.js",
-     "bytes": 1913043,
-     "sha256": "12c15ef09f3c80f91fe1b31ec7e35e832bd8e93db9f96d286cabbc43c92613c6"
+     "bytes": 2387783,
+     "sha256": "b18a894515405972fbdff146e2f98ac1dfa582302518b18ecb9e53b8312c9215"
     },
     {
      "instrumento": "clarinet",
      "arquivo": "clarinet-mp3.js",
-     "bytes": 1933320,
-     "sha256": "d11e429eb34cbe4a0a511ccb118c45a50e2fdc6906fb2fa2041eafc912350361"
+     "bytes": 2387784,
+     "sha256": "6a96e38b6272b01e86fb50762f7e9a40090fcf9d7dfe16819ce175f956b7cfe4"
     },
     {
      "instrumento": "flute",
      "arquivo": "flute-mp3.js",
-     "bytes": 1941149,
-     "sha256": "d5062871eea6ec69f970540a2cde651d4daab93a569ce375d6345effc68da5ce"
+     "bytes": 2387781,
+     "sha256": "0f51fad09cd4481c17466b406e651688466a30d167e4c34cf7a8ce7abf888990"
     },
     {
      "instrumento": "oboe",
      "arquivo": "oboe-mp3.js",
-     "bytes": 1946076,
-     "sha256": "25ac7e78ea954460e0049c21f12192996e6f104aa4e698965c8db401bcb99b9e"
+     "bytes": 2387780,
+     "sha256": "9b64bdba9a9571a55f927696fb7e01febf27766704b1160ae1542fae7e4b1147"
     },
     {
      "instrumento": "recorder",
      "arquivo": "recorder-mp3.js",
-     "bytes": 1660440,
-     "sha256": "c1555030819950a5a3be85d256eaa335b1fd4c244f6091cb11c3e4f68280337e"
+     "bytes": 2387784,
+     "sha256": "ef254a2633ec1efffbe7bd18efa9e0da852d4795b9241e503733b21196403d9f"
     },
     {
      "instrumento": "tenor_sax",
      "arquivo": "tenor_sax-mp3.js",
-     "bytes": 1946605,
-     "sha256": "b227b1008058101907c08ba9882621a86afb81a72ffda0023fddbdd8dbd6d719"
+     "bytes": 2387785,
+     "sha256": "6d7e83d8ace5696914c51b9e9c617e0f8795a66c0a677b38318faf757d96e9b1"
     },
     {
      "instrumento": "french_horn",
      "arquivo": "french_horn-mp3.js",
-     "bytes": 1946607,
-     "sha256": "2a9cc59f706a02afdd08ae165889da63f007002f0e5dd9acfd0214db75a48365"
+     "bytes": 2387787,
+     "sha256": "4f228ff2c0954743fc91922c13b29b8f1137ce744756b1dc2000f9f4cd3d0975"
     },
     {
      "instrumento": "trombone",
      "arquivo": "trombone-mp3.js",
-     "bytes": 1814088,
-     "sha256": "3d8825cbe8b9a9b3f116b3a2d9011bc07a39738459f45ac61725007123fc9c1d"
+     "bytes": 2387784,
+     "sha256": "89587f1fc44422b9bb81bfc568a192163795b0749279a0bbe1531a80cf185eaa"
     },
     {
      "instrumento": "trumpet",
      "arquivo": "trumpet-mp3.js",
-     "bytes": 1926959,
-     "sha256": "8195abeb91ae83950face9b107534696c3ab6dca93149087479cd652882a256d"
+     "bytes": 2387783,
+     "sha256": "ad60dd86ceb629729a6610d6003bd652275a0c5fa87daf88034d2fc4d4da2441"
     },
     {
      "instrumento": "tuba",
      "arquivo": "tuba-mp3.js",
-     "bytes": 1531356,
-     "sha256": "4ddb512f709929edb451095c0a6fba5d340d8666e50a3a097ae141b25739d5f5"
+     "bytes": 2387780,
+     "sha256": "ff11210526196745bcbb6cc0643bab3e7dec5aee405aff654ecac71e6a2770c3"
     },
     {
      "instrumento": "cello",
      "arquivo": "cello-mp3.js",
-     "bytes": 1946601,
-     "sha256": "0ae457d8496be5982624b20ffb594932f48e9bb390528d6e2b3f7227c01f786d"
+     "bytes": 2387781,
+     "sha256": "a76f1a17b3016aea492e985de3fcdf0cd704d33180db7bc933d1ca280ba6d6ac"
     },
     {
      "instrumento": "contrabass",
      "arquivo": "contrabass-mp3.js",
-     "bytes": 1459986,
-     "sha256": "634cdc6946594cf0fe317d47eb05be31eeb1061506924645a3b8659cca166e7e"
+     "bytes": 2387786,
+     "sha256": "adc5f2559e77f55ead6da737431ae7b22494cc1f8e8fc4a20981b964d970c67e"
     },
     {
      "instrumento": "viola",
      "arquivo": "viola-mp3.js",
-     "bytes": 1946601,
-     "sha256": "e58c5febf105362a0ffbd90af241be366bee15444f4583f36c7e3b4f2041a550"
+     "bytes": 2387781,
+     "sha256": "2fca7ca62ce7ee63025ae9677cce7a30ad85ff0d5fdd449ab5f0e8f66aef8c2a"
     },
     {
      "instrumento": "violin",
      "arquivo": "violin-mp3.js",
-     "bytes": 1946602,
-     "sha256": "074886788642ea53991bc3272132609a0fd86526e5bf1c738abcdd72b0b99745"
+     "bytes": 2387782,
+     "sha256": "02c2de3c2cb49321b5d75408574ce41ea9c10f65182b73e5715663216408f3b3"
     }
    ]
   }
