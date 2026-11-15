@@ -54,17 +54,41 @@ const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 const filhos = [];
 let perfil = null;
 
+// Encerra o processo e os filhos dele (o Chrome abre vários): sinal para o grupo de processos inteiro.
+function encerrar(p, sinal) {
+  try {
+    if (process.platform === "win32") p.kill(sinal);
+    else process.kill(-p.pid, sinal);
+  } catch {
+    /* já saiu */
+  }
+}
+
 async function limpar() {
-  for (const p of filhos) {
+  for (const p of filhos) encerrar(p, "SIGTERM");
+  // O Chrome ainda escreve na pasta do perfil ao sair: espera ele terminar (e, se demorar, força) antes de apagá-la.
+  await Promise.all(
+    filhos.map((p) =>
+      p.exitCode !== null
+        ? null
+        : new Promise((r) => {
+            p.once("exit", r);
+            setTimeout(() => {
+              encerrar(p, "SIGKILL");
+              r();
+            }, 4000);
+          }),
+    ),
+  );
+  await dormir(500);
+  if (perfil) {
     try {
-      p.kill("SIGTERM");
-    } catch {
-      /* já saiu */
+      rmSync(perfil, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
+    } catch (e) {
+      // É só uma pasta temporária: não pode mudar o resultado do teste.
+      console.warn(`aviso: não deu para apagar ${perfil}: ${e.code ?? e.message}`);
     }
   }
-  // O Chrome ainda escreve na pasta do perfil ao sair: espera ele terminar antes de apagá-la.
-  await Promise.all(filhos.map((p) => (p.exitCode !== null ? null : new Promise((r) => { p.once("exit", r); setTimeout(r, 4000); }))));
-  if (perfil) rmSync(perfil, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
 }
 
 function acharChrome() {
@@ -99,7 +123,7 @@ async function principal() {
   const vite = spawn(
     process.execPath,
     [join(RAIZ, "node_modules/vite/bin/vite.js"), "dev", "--port", String(PORTA_VITE), "--strictPort", "--host", "127.0.0.1"],
-    { cwd: RAIZ, stdio: "ignore" },
+    { cwd: RAIZ, stdio: "ignore", detached: true },
   );
   filhos.push(vite);
   await esperarUrl(`http://127.0.0.1:${PORTA_VITE}/`, 60000);
@@ -110,7 +134,7 @@ async function principal() {
     acharChrome(),
     ["--headless=new", "--no-sandbox", "--disable-gpu", "--mute-audio", "--autoplay-policy=no-user-gesture-required",
       "--window-size=412,915", `--user-data-dir=${perfil}`, `--remote-debugging-port=${PORTA_CHROME}`, "about:blank"],
-    { stdio: "ignore" },
+    { stdio: "ignore", detached: true },
   );
   filhos.push(chrome);
   await esperarUrl(`http://127.0.0.1:${PORTA_CHROME}/json/version`, 30000);
