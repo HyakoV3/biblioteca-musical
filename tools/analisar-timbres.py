@@ -298,26 +298,33 @@ def sintetico_organ(nome, midi):
     return onda * nivel
 
 
+def nivel_do_instrumento(arquivo, vozes, ganho):
+    """(rms, ouvido, celular, pico) do instrumento, na faixa das vozes dele, com o ganho dado (dB, e o pico em amplitude)."""
+    amostras = ler_amostras(arquivo)
+    lo = min(FAIXA_VOZ[v][0] for v in vozes)
+    hi = max(FAIXA_VOZ[v][1] for v in vozes)
+    alturas = [45, 55, 64, 72] if len(vozes) == 4 else [lo, (lo + hi) // 2, hi]
+    acum = []
+    for midi in alturas:
+        x = decodificar(amostras[midi])
+        env, passo = rms_janelas(x)
+        if env.max() < 1e-4:  # o banco deixa algumas notas mudas (ex.: o contrabaixo acima da nota 59)
+            continue
+        ini = int(np.argmax(env > 0.05 * env.max()))
+        a, b = int((ini * passo + 0.45) * SR), min(len(x), int((ini * passo + 1.2) * SR))
+        acum.append(niveis_do_trecho(x[a:b], ganho))
+    a = np.array(acum)
+    return (10 * np.log10(np.mean(10 ** (a[:, 0] / 10))), 10 * np.log10(np.mean(10 ** (a[:, 1] / 10))),
+            10 * np.log10(np.mean(10 ** (a[:, 2] / 10))), float(a[:, 3].max()))
+
+
 def comparar_niveis():
     print("Níveis com o ganho do app, na faixa de cada voz. Quanto MAIOR o número (menos negativo), mais alto soa.")
     print("  rms    = o que a calibração atual igualou;  ouvido = ponderado pela curva A;  celular = curva A sem os graves abaixo de ~250 Hz.\n")
     linhas = []
     for id_, arquivo, ganho, vozes in parse_realistas():
-        amostras = ler_amostras(arquivo)
-        lo = min(FAIXA_VOZ[v][0] for v in vozes)
-        hi = max(FAIXA_VOZ[v][1] for v in vozes)
-        alturas = [45, 55, 64, 72] if len(vozes) == 4 else [lo, (lo + hi) // 2, hi]
-        acum = []
-        for midi in alturas:
-            x = decodificar(amostras[midi])
-            env, passo = rms_janelas(x)
-            if env.max() < 1e-4:  # o banco deixa algumas notas mudas (ex.: o contrabaixo acima da nota 59)
-                continue
-            ini = int(np.argmax(env > 0.05 * env.max()))
-            a, b = int((ini * passo + 0.45) * SR), min(len(x), int((ini * passo + 1.2) * SR))
-            acum.append(niveis_do_trecho(x[a:b], ganho))
-        a = np.array(acum)
-        linhas.append((id_, ganho, 10 * np.log10(np.mean(10 ** (a[:, 0] / 10))), 10 * np.log10(np.mean(10 ** (a[:, 1] / 10))), 10 * np.log10(np.mean(10 ** (a[:, 2] / 10))), a[:, 3].max()))
+        r, o, c, pico = nivel_do_instrumento(arquivo, vozes, ganho)
+        linhas.append((id_, ganho, r, o, c, pico))
     med_rms = float(np.median([l[2] for l in linhas]))
     med_ouv = float(np.median([l[3] for l in linhas]))
     med_cel = float(np.median([l[4] for l in linhas]))
@@ -410,16 +417,56 @@ def medir_distancia():
     print(f"{'todos':<11}{len(todas_antes):>6} | {np.mean(todas_antes):7.1f}{np.mean(todas_agora):8.1f} | {np.mean(todas_antes) / np.mean(todas_agora):7.1f}x")
 
 
+PICO_MAXIMO = 0.85  # amplitude de uma voz sozinha: acima disso, 4 vozes somadas passam do que o compressor segura
+
+
+def calibrar(alvo, escrever):
+    """Calcula o ganho de cada gravado para ficarem todos no MESMO nível médio no ouvido (curva A), na faixa das vozes dele.
+    Sem --escrever só mostra; com --escrever grava os ganhos em src/lib/realista.ts."""
+    ts_caminho = RAIZ / "src" / "lib" / "realista.ts"
+    ts = ts_caminho.read_text(encoding="utf-8")
+    print(f"Alvo: {alvo:.1f} dB no ouvido (curva A). Ganho = o que leva o nível medido com ganho 1 ao alvo; limitado pelo pico de {PICO_MAXIMO}.\n")
+    print(f"{'instrumento':<22}{'ganho':>7}{'(antes)':>9} | {'ouvido':>7}{'celular':>9}{'pico':>6}")
+    resultados = []
+    for id_, arquivo, ganho_atual, vozes in parse_realistas():
+        r, o, c, pico = nivel_do_instrumento(arquivo, vozes, 1.0)
+        ganho = 10 ** ((alvo - o) / 20)
+        limitado = pico * ganho > PICO_MAXIMO
+        if limitado:
+            ganho = PICO_MAXIMO / pico
+        ganho = round(ganho, 2)
+        marca = "  <== limitado pelo pico" if limitado else ""
+        resultados.append((id_, ganho))
+        print(f"{id_:<22}{ganho:7.2f}{ganho_atual:9.2f} | {o + 20 * np.log10(ganho):7.1f}{c + 20 * np.log10(ganho):9.1f}{pico * ganho:6.2f}{marca}")
+    if escrever:
+        for id_, ganho in resultados:
+            ts, n = re.subn(rf"({id_}:\s*\{{\s*arquivo:\s*\"\w+\",\s*ganho:\s*)[\d.]+", rf"\g<1>{ganho}", ts)
+            if n != 1:
+                sys.exit(f"não achei o ganho de {id_} em realista.ts")
+        ts_caminho.write_text(ts, encoding="utf-8")
+        print(f"\nganhos gravados em {ts_caminho}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--distancia", action="store_true", help="valida a síntese: distância espectral à gravação em notas fora das âncoras (antes x agora)")
+    ap.add_argument("--fonte", type=Path, help="pasta com os <instrumento>-mp3.js a medir (padrão: sons-fonte/FluidR3_GM)")
+    ap.add_argument("--calibrar", action="store_true", help="calcula o ganho de cada gravado para o mesmo nível médio no ouvido")
+    ap.add_argument("--alvo", type=float, default=-24.6, help="nível alvo no ouvido, em dB, para --calibrar (padrão: a mediana medida antes da troca de banco)")
+    ap.add_argument("--escrever", action="store_true", help="com --calibrar, grava os ganhos em src/lib/realista.ts")
     ap.add_argument("--niveis", action="store_true", help="compara o volume dos 16 gravados (o órgão de tirantes em destaque)")
     ap.add_argument("--instrumento", choices=list(INSTRUMENTOS), help="só este (nome da síntese: trompete, trombone, tuba, fagote, oboe, sax_alto, sax_tenor)")
     ap.add_argument("--diagnostico", action="store_true", help="mostra as medidas e não grava")
     ap.add_argument("--orgaos", action="store_true", help="mede o órgão de tirantes e compara com os órgãos sintetizados")
     args = ap.parse_args()
+    global FONTE
+    if args.fonte:
+        FONTE = args.fonte.expanduser().resolve()
     if not FONTE.is_dir():
         sys.exit(f"sem {FONTE}: rode tools/baixar-sons-gm.py")
+    if args.calibrar:
+        calibrar(args.alvo, args.escrever)
+        return
     if args.niveis:
         comparar_niveis()
         return

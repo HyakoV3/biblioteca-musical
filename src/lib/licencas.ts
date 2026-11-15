@@ -1,9 +1,9 @@
 // Créditos e licenças de terceiros mostrados em Ajustes ("Créditos e licenças"). A fonte de cada dado está em
 // docs/licencas-de-terceiros.md. Nomes, autoria e textos de licença ficam no original; só a descrição do uso é traduzida
 // (chave `licencas.uso.<id>`).
-import { TEXTO_APACHE_2, TEXTO_MIT } from "./licencas-textos";
+import { TEXTO_APACHE_2, TEXTO_GENERALUSER, TEXTO_MIT } from "./licencas-textos";
 
-export type TipoTexto = "mit" | "apache2" | "ccby3";
+export type TipoTexto = "mit" | "apache2" | "ccby3" | "generaluser";
 
 export type Credito = {
   id: string;
@@ -17,6 +17,14 @@ export type Credito = {
 };
 
 export const CREDITOS: readonly Credito[] = [
+  {
+    id: "generaluser",
+    nome: "GeneralUser GS",
+    autoria: "S. Christian Collins",
+    licenca: "GeneralUser GS License v2.0",
+    url: "https://github.com/mrbumpy409/GeneralUser-GS",
+    textos: [{ tipo: "generaluser" }],
+  },
   {
     id: "fluidr3",
     nome: "FluidR3_GM",
@@ -74,11 +82,14 @@ export const CREDITOS: readonly Credito[] = [
   },
 ] as const;
 
-/** Atribuição exigida pela CC BY 3.0 para as amostras convertidas (o texto legal fica no link). */
+/**
+ * Atribuição da CC BY 3.0 para as amostras do FluidR3 em MP3 (o texto legal fica no link). Hoje elas só servem para MEDIR o
+ * timbre dos instrumentos sintetizados (os sons gravados do pacote vêm do GeneralUser GS); a atribuição continua por honestidade.
+ */
 export const AVISO_CCBY3 =
   "Sound samples generated from FluidR3_GM by Benjamin Gleitzman (midi-js-soundfonts); the repository README labels them " +
-  "Creative Commons Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/us/). Changes made: the samples were " +
-  "converted to MP3 per instrument by the midi-js-soundfonts project, and trimmed by this app to the notes used by the hymns.";
+  "Creative Commons Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/us/). They are used by this app only to measure " +
+  "the timbre of the synthesized instruments (spectrum, attack); no FluidR3 sample is played or distributed by the app.";
 
 /** O texto de uma licença para um crédito (com a linha de direitos autorais, quando há). */
 export function textoDaLicenca(t: Credito["textos"][number]): string {
@@ -89,5 +100,7 @@ export function textoDaLicenca(t: Credito["textos"][number]): string {
       return TEXTO_APACHE_2;
     case "ccby3":
       return AVISO_CCBY3;
+    case "generaluser":
+      return TEXTO_GENERALUSER;
   }
 }
