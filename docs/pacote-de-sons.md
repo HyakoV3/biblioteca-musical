@@ -48,8 +48,25 @@ Saem os `*-mp3.js` e um `manifesto.json` (instrumento, notas, bytes e SHA-256 de
   **sem o Nextcloud**. A pasta é `BibliotecaMusical/` no servidor, com o pacote em
   `BibliotecaMusical/sons-001/` (3 instrumentos e o manifesto; arquivos copiados e conferidos pelo SHA-256 no servidor).
   **Só a pasta `BibliotecaMusical` é compartilhada**; nada mais fica exposto.
-- **Estado:** pasta e arquivos prontos; falta criar o **link público** na tela do File Browser (exige login) e passar
-  o endereço para eu testar o download.
+- **Estado (2026-11-15):** pasta, arquivos e **link público criados e testados**. O link expõe só a pasta
+  `BibliotecaMusical` (conferido pela API pública). O endereço do link fica na configuração do app, não neste documento.
+
+### O que o link público do File Browser permite (testado)
+
+- **Baixa a pasta compartilhada inteira em um `.zip`:** `https://fb.hm.hv2.xyz/public/api/resources/download?hash=<hash>`.
+  Resultado: 5,5 MB em 9,9 s, e os 3 arquivos de dentro conferem com o SHA-256 do manifesto. Dentro do zip os
+  arquivos vêm com o prefixo `BibliotecaMusical/sons-001/` (o app precisa ignorar o prefixo).
+- **Não baixa um arquivo avulso:** cinco formas de endereço (`raw` e `resources/download`, com `path` ou `files`)
+  devolveram **sempre a pasta inteira em zip**, ignorando o arquivo pedido.
+- **Listagem:** `.../public/api/resources?path=/&hash=<hash>` devolve o conteúdo em JSON.
+- **Limite de banda do link:** ~500 KB/s (aparece como `maxBandwidth: 500` e foi o que se mediu). Um pacote de 2 MB
+  leva ~4 s; o conjunto todo (~23 MB), ~46 s. Dá para aumentar nas opções do compartilhamento.
+
+**Consequência para o desenho:** o app baixa **um zip por compartilhamento**, então **cada grupo é uma pasta
+compartilhada própria, com o seu link** (Órgão, Madeiras, Metais, Cordas), e não um link só para tudo. O manifesto dentro
+do app lista, por grupo, o endereço do link e o SHA-256 de cada arquivo. O app baixa o zip pelo lado nativo, extrai
+**com limite de tamanho** (contra zip malicioso), ignora o prefixo das pastas e confere cada arquivo contra o manifesto
+antes de guardar.
 - **Depois:** GitHub Releases quando o código for público; o servidor do responsável vira espelho.
 - O app **baixa pelo lado nativo** (Rust), porque servidores de link público costumam não liberar o acesso do navegador
   interno (CORS); **confere o SHA-256** contra o manifesto que vem dentro do app, então um arquivo trocado no servidor é
