@@ -50,7 +50,7 @@ responsável (quem perde a chave não consegue mais atualizar o app).
 O APK é entregue **dentro de um `.zip` numerado**, para o responsável distinguir um build do outro:
 
 ```sh
-cd <pasta de saída>      # a pasta do Nextcloud do responsável (sincroniza com o servidor dele)
+cd "<pasta de entrega dos zips>"   # a pasta de entrega dos zips do responsável
 zip -j BibliotecaMusical-CCB-teste-NNN.zip BibliotecaMusical-CCB-teste.apk   # NNN = próximo número, com 3 dígitos
 sha256sum BibliotecaMusical-CCB-teste-NNN.zip
 rm BibliotecaMusical-CCB-teste.apk BibliotecaMusical-CCB-teste.apk.idsig     # o apksigner deixa um .idsig ao lado
@@ -68,6 +68,7 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 | Zip | Versão (commit) | Data | Conteúdo | SHA-256 |
 |---|---|---|---|---|
 | **001** | 0.2.0 (c0f6699) | 2026-11-14 | 5 hinos e 5 sons gravados embutidos; cards, ganhos de volume, versão em Ajustes | `617af79f…d25f99` |
+| **004** | 0.3.0 (0a4aa2a) | 2026-11-15 | **Sons gravados por download** (Ajustes, "Sons gravados": baixa o pacote do File Browser, confere o SHA-256 e guarda no aparelho) e alternador Sintetizado \| Gravado por voz; **sem sons embutidos** (o APK só leva os 5 hinos de teste); cabeçalho com logo; botão de Ajustes em engrenagem. Entregue em `<pasta de entrega dos zips>/` | `633d5d41…a23f5` |
 | **003** | 0.2.0 (238a103) | 2026-11-14 | Ajustes: "Sobre o app" num card fechado, aviso de independência à parte e versão centralizada fora do card; tema "Automático"; botões "Importar hinário" e "Remover importação"; seletor de idioma na largura toda | `52ceec38…01e50` |
 | **002** | 0.2.0 (bc7ba9b) | 2026-11-14 | Nome "Biblioteca Musical CCB"; ícones SVG (conjunto `ic`); cards em grupo (abrir um fecha os outros); "Redefinir vozes" e "Redefinir instrumentos" separados; lista com 001, 002; Ajustes como botão hambúrguer | `47944215…0a665` |
 
