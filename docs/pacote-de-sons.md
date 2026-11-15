@@ -16,7 +16,17 @@ de um grupo de uma vez:
 | **Metais** | trompete (`trumpet`), trompa (`french_horn`), trombone (`trombone`), tuba (`tuba`) | ~7 MB |
 | **Cordas** | violino (`violin`), viola (`viola`), violoncelo (`cello`), contrabaixo (`contrabass`) | ~8 MB |
 
-Sem equivalente no banco General MIDI: **flugelhorn** e **bombardino**. Ficam só na síntese.
+Sem equivalente no banco General MIDI: **flugelhorn** e **bombardino** (em inglês, *euphonium*). Ficam só na síntese até
+haver uma amostra com licença livre. O responsável quer o bombardino gravado ("vai ter"); busca feita em 2026-11-14:
+
+| Fonte | Resultado |
+|---|---|
+| FluidR3_GM / MusyngKite (banco atual) | Não tem euphonium (só `tuba`, `trombone`, `french_horn`). |
+| VCSL (CC0) | Lista de arquivos lida no repositório: **nenhum instrumento de metal**. |
+| Philharmonia Orchestra (amostras gratuitas) | Os termos oficiais permitem uso em obra comercial, mas **proíbem tornar as amostras disponíveis como estão ou como instrumento de amostras**; um espelho no GitHub diz CC BY-SA 3.0, o que **não bate** com o texto oficial. Não se confirmou que o euphonium esteja na biblioteca. **Não usar sem autorização por escrito.** |
+| MuseScore_General (MIT) | Tem um preset "Euphonium", mas é uma **tuba reprocessada** com a extensão ampliada, não um euphonium amostrado. A licença é clara; falta extrair o preset do arquivo SF3 (ferramenta ainda não escolhida). |
+
+Nada foi baixado para essa busca. **Não rotular outro instrumento (tuba, trombone) como "Bombardino".**
 
 Cada arquivo tem as notas MIDI 30 a 86 (a faixa dos hinos mais a transposição de ±6 semitons e folga), no mesmo formato
 que o `smplr` já lê. Tamanho depois do corte: de 1,6 a 2,1 MB por instrumento.
