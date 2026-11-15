@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icone from "$lib/Icone.svelte";
   import Aviso from "$lib/Aviso.svelte";
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
@@ -55,7 +56,7 @@
       {#each TEMAS as id}
         <label class:ativo={tema.atual === id}>
           <input type="radio" name="tema" value={id} checked={tema.atual === id} onchange={() => (tema.atual = id)} />
-          <span>{#if tema.atual === id}✓ {/if}{t(`tema.${id}`)}</span>
+          <span class="opcao-tema">{#if tema.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`tema.${id}`)}</span>
         </label>
       {/each}
     </fieldset>
@@ -136,6 +137,7 @@
     padding: 0 0.5rem; text-align: center; border-radius: 12px; font-size: 0.95rem;
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
+  .opcao-tema { display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; }
   .segmentos .ativo span { border: 2px solid var(--acento); font-weight: 700; }
   .segmentos input:focus-visible + span { outline: 3px solid var(--foco); outline-offset: 2px; }
   .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0; }

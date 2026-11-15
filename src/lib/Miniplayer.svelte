@@ -1,5 +1,6 @@
 <script lang="ts">
   import { i18n } from "$lib/i18n/index.svelte";
+  import Icone from "./Icone.svelte";
   import { reproducao } from "./reproducao.svelte";
   import { rotuloDaParte } from "./rotulo-vez";
   import { formatarTempo, fracao } from "./tempo";
@@ -34,7 +35,7 @@
         onclick={() => reproducao.alternarAtual()}
         aria-label={tocando ? t("audio.pausar") : t("audio.continuar")}
       >
-        {tocando ? "❚❚" : "▶"}
+        <Icone nome={tocando ? "pause" : "play"} tamanho={24} />
       </button>
       <a class="info" href={`/hino/${atual.numero}`}>
         <span class="titulo">{atual.numero} · {atual.titulo}</span>
@@ -42,7 +43,7 @@
           >{parte ? `${parte} · ` : ""}{formatarTempo(reproducao.decorrido)} / {formatarTempo(reproducao.duracao)}</span
         >
       </a>
-      <button class="acao" onclick={() => reproducao.parar()} aria-label={t("audio.parar")}>■</button>
+      <button class="acao" onclick={() => reproducao.parar()} aria-label={t("audio.parar")}><Icone nome="stop" tamanho={24} /></button>
     </div>
     <div
       class="fio"

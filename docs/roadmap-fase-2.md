@@ -19,7 +19,7 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
 - [ ] **Aplicar o roteiro de teste** (`docs/teste-de-uso.md`) com 3 a 5 músicos, com o APK de teste
       (`docs/apk-de-teste.md`). **(depende do responsável)**
 - [ ] Corrigir o que dois ou mais músicos repetirem: bloqueios primeiro, depois o que atrapalha.
-- [ ] **Ícones em SVG local (I-11)**: trocar emojis e símbolos por um subset local de ícones (~11 KB), reaproveitando a
+- [x] **Ícones em SVG local (I-11)**: feito com o conjunto `ic` (1,9 KB). Texto original:: trocar emojis e símbolos por um subset local de ícones (~11 KB), reaproveitando a
       ideia de outro projeto do responsável. Item pequeno. **Prévia feita** (`design/icones/previa-icones.png`); recomendação: conjunto `ic`.
       **(depende de o responsável escolher o conjunto)**
 - [ ] Opcionais, conforme o retorno: tamanho e alinhamento da letra (I-04), favoritos e histórico (D4).

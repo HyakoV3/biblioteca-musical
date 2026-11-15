@@ -1,13 +1,14 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import Icone from "./Icone.svelte";
 
   // Aviso de sucesso, erro ou informação. O tipo aparece por ícone e posição, nunca só por cor.
   let { tipo = "info", children }: { tipo?: "sucesso" | "erro" | "info"; children: Snippet } = $props();
-  const icones = { sucesso: "✓", erro: "!", info: "i" } as const;
+  const letras = { erro: "!", info: "i" } as const;
 </script>
 
 <div class={`aviso ${tipo}`} role={tipo === "erro" ? "alert" : "status"}>
-  <span class="icone" aria-hidden="true">{icones[tipo]}</span>
+  <span class="icone" aria-hidden="true">{#if tipo === "sucesso"}<Icone nome="ok" tamanho={16} />{:else}{letras[tipo]}{/if}</span>
   <div class="texto">{@render children()}</div>
 </div>
 

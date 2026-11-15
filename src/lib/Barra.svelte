@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icone from "./Icone.svelte";
   import type { Snippet } from "svelte";
 
   // Barra de topo fixa. `rodape` fica dentro do mesmo bloco fixo (ex.: as abas do hino), então a altura
@@ -26,7 +27,7 @@
 <header class="barra">
   <div class="coluna linha">
     {#if voltar}
-      <button class="voltar" onclick={voltar} aria-label={rotuloVoltar}>←</button>
+      <button class="voltar" onclick={voltar} aria-label={rotuloVoltar}><Icone nome="voltar" tamanho={24} /></button>
     {/if}
     <div class="textos">
       <h1 title={titulo} {lang}>{titulo}</h1>

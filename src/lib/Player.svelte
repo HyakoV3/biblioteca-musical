@@ -6,6 +6,8 @@
   import { lerCartoes, padrao, salvarCartoes, salvarVozes } from "./preferencias";
   import { realistasDisponiveis, type RealistaId } from "./realista";
   import { ANDAMENTO_MAX, ANDAMENTO_MIN, TRANSPOSICAO_MAX, reproducao, vezesDoHino } from "./reproducao.svelte";
+  import Icone from "./Icone.svelte";
+  import type { IconeNome } from "./icones";
   import { rotuloCurtoDaVez, rotuloDaParte } from "./rotulo-vez";
   import { formatarTempo, fracao } from "./tempo";
   import { PAUSA_ENTRE_PARTES_S, partesDoTudo, temFinal, temIntroducao } from "./vezes";
@@ -63,9 +65,9 @@
   const ativa = (parte: Alvo) => meu && !parado && reproducao.atual?.parte === parte;
   // Esta é a parte da música que está soando agora (em "hino todo" o destaque anda de uma para a outra).
   const destacada = (parte: "intro" | number) => meu && !parado && reproducao.parteTocando === parte;
-  // ❚❚ tocando sozinha · ▶ pronta para tocar · ♪ soando dentro do hino todo (sinal que não depende só da cor).
-  const icone = (parte: Alvo) =>
-    ativa(parte) && estado === "tocando" ? "❚❚" : parte !== "tudo" && destacada(parte) && !ativa(parte) ? "♪" : "▶";
+  // pausa: tocando sozinha · música: soando dentro do hino todo (sinal que não depende só da cor) · play: pronta para tocar.
+  const icone = (parte: Alvo): IconeNome =>
+    ativa(parte) && estado === "tocando" ? "pause" : parte !== "tudo" && destacada(parte) && !ativa(parte) ? "musica" : "play";
 
   const rotuloTudo = $derived(comPartes ? t("vez.tudo") : t("audio.tocar"));
   // Texto completo para leitor de tela (o botão mostra só "1ª", "Intro"...).
@@ -125,7 +127,7 @@
   const resumoAjustes = $derived(
     `${t("player.bpm", { n: cfg.andamento })} · ${i18n.tn("plural.semitons", Math.abs(cfg.transposicao), { n: sinal(cfg.transposicao) })}`,
   );
-  const resumoVozes = $derived(`🔊 ${cfg.mudas.filter((m) => !m).length}/${hino.vozes.length}`);
+  const resumoVozes = $derived(`${cfg.mudas.filter((m) => !m).length}/${hino.vozes.length}`);
 </script>
 
 <section class="player" aria-label={t("player.titulo")}>
@@ -146,11 +148,11 @@
           aria-pressed={comPartes ? ativa("tudo") : undefined}
           onclick={() => reproducao.alternar(hino, "tudo")}
         >
-          {icone("tudo")}
+          <Icone nome={icone("tudo")} tamanho={24} />
           {rotuloTudo}
         </button>
         {#if !parado}
-          <button class="botao parar" onclick={() => reproducao.parar()}>■ {t("audio.parar")}</button>
+          <button class="botao parar" onclick={() => reproducao.parar()}><Icone nome="stop" tamanho={22} /> {t("audio.parar")}</button>
         {/if}
       </div>
 
@@ -166,7 +168,7 @@
               aria-label={dicaDaParte("intro")}
               onclick={() => reproducao.alternar(hino, "intro")}
             >
-              <span aria-hidden="true">{icone("intro")}</span>
+              <Icone nome={icone("intro")} />
               {t("vez.intro_curta")}
             </button>
           {/if}
@@ -180,8 +182,8 @@
                 aria-label={dicaDaParte(vez)}
                 onclick={() => reproducao.alternar(hino, vez)}
               >
-                <span aria-hidden="true">{icone(vez)}</span>
-                {rotuloCurtoDaVez(vez)}{#if comFinalDisponivel && vez === totalVezes}<span class="flag" aria-hidden="true"> ⚑</span>{/if}
+                <Icone nome={icone(vez)} />
+                {rotuloCurtoDaVez(vez)}{#if comFinalDisponivel && vez === totalVezes}<span class="flag"><Icone nome="bandeira" tamanho={18} /></span>{/if}
               </button>
             {/each}
           {/if}
@@ -218,7 +220,7 @@
   <details class="cartao" bind:open={cartoes.ajustes}>
     <summary>
       <span>{t("player.cartao_ajustes")}</span>
-      <span class="resumo">{resumoAjustes}</span>
+      <span class="direita"><span class="resumo">{resumoAjustes}</span><Icone nome={cartoes.ajustes ? "fechar" : "abrir"} tamanho={24} /></span>
     </summary>
     <div class="corpo">
       <div class="passo-linha">
@@ -227,13 +229,13 @@
           <button
             aria-label={t("player.diminuir", { item: t("player.andamento_rotulo").toLowerCase() })}
             disabled={!editavel || cfg.andamento <= ANDAMENTO_MIN}
-            onclick={() => mudarAndamento(-1)}>−</button
+            onclick={() => mudarAndamento(-1)}><Icone nome="menos" tamanho={24} /></button
           >
           <output aria-live="polite">{t("player.bpm", { n: cfg.andamento })}</output>
           <button
             aria-label={t("player.aumentar", { item: t("player.andamento_rotulo").toLowerCase() })}
             disabled={!editavel || cfg.andamento >= ANDAMENTO_MAX}
-            onclick={() => mudarAndamento(1)}>+</button
+            onclick={() => mudarAndamento(1)}><Icone nome="mais" tamanho={24} /></button
           >
         </div>
       </div>
@@ -244,7 +246,7 @@
           <button
             aria-label={t("player.diminuir", { item: t("player.transposicao").toLowerCase() })}
             disabled={!editavel || cfg.transposicao <= -TRANSPOSICAO_MAX}
-            onclick={() => mudarTom(-1)}>−</button
+            onclick={() => mudarTom(-1)}><Icone nome="menos" tamanho={24} /></button
           >
           <output aria-live="polite">
             {i18n.tn("plural.semitons", Math.abs(cfg.transposicao), { n: sinal(cfg.transposicao) })}
@@ -252,7 +254,7 @@
           <button
             aria-label={t("player.aumentar", { item: t("player.transposicao").toLowerCase() })}
             disabled={!editavel || cfg.transposicao >= TRANSPOSICAO_MAX}
-            onclick={() => mudarTom(1)}>+</button
+            onclick={() => mudarTom(1)}><Icone nome="mais" tamanho={24} /></button
           >
         </div>
       </div>
@@ -266,7 +268,7 @@
   <details class="cartao" bind:open={cartoes.vozes}>
     <summary>
       <span>{t("player.vozes")}</span>
-      <span class="resumo">{resumoVozes}</span>
+      <span class="direita"><span class="resumo"><Icone nome="som" tamanho={16} /> {resumoVozes}</span><Icone nome={cartoes.vozes ? "fechar" : "abrir"} tamanho={24} /></span>
     </summary>
     <div class="corpo">
       <div class="vozes" role="group" aria-label={t("player.vozes")}>
@@ -282,7 +284,7 @@
                 aoMudarVoz(i);
               }}
             >
-              {cfg.mudas[i] ? "🔇" : "🔊"}
+              <Icone nome={cfg.mudas[i] ? "mudo" : "som"} tamanho={24} />
             </button>
             <div class="identidade">
               <span class="nome">{nomeVoz(v.nome)}</span>
@@ -311,7 +313,7 @@
   <details class="cartao" bind:open={cartoes.instrumentos}>
     <summary>
       <span>{t("player.instrumentos")}</span>
-      <span class="resumo">{resumoInstrumentos}</span>
+      <span class="direita"><span class="resumo">{resumoInstrumentos}</span><Icone nome={cartoes.instrumentos ? "fechar" : "abrir"} tamanho={24} /></span>
     </summary>
     <div class="corpo">
       {#each hino.vozes as v, i}
@@ -347,6 +349,7 @@
 <style>
   .player { display: grid; gap: 1rem; }
   .principal { display: flex; gap: 0.5rem; }
+  .principal :global(.botao) { gap: 0.5rem; }
   .tocar { flex: 1; min-height: 56px; font-size: 1.15rem; }
   .parar { min-height: 56px; }
   .progresso { height: 8px; border-radius: 4px; background: var(--borda); overflow: hidden; }
@@ -358,6 +361,7 @@
   .rotulo { font-size: 0.95rem; }
   .passo { display: flex; align-items: center; gap: 0.4rem; }
   .passo button {
+    display: inline-flex; align-items: center; justify-content: center; padding: 0;
     width: 48px; height: 48px; font-size: 1.4rem; border-radius: 12px; line-height: 1; cursor: pointer;
     border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
@@ -388,8 +392,10 @@
     display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 48px;
     padding: 0 0.9rem; font-weight: 600;
   }
-  summary { cursor: pointer; }
-  .resumo { font-weight: 400; color: var(--suave); font-size: 0.9rem; text-align: end; }
+  summary { cursor: pointer; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  .direita { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
+  .resumo { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 400; color: var(--suave); font-size: 0.9rem; text-align: end; }
   .corpo { display: grid; gap: 0.8rem; padding: 0.2rem 0.9rem 0.9rem; }
   /* minmax(0, 1fr) + largura limitada: sem isso, o nome mais longo ("Órgão de palhetas gravado (teste)") alarga o
      seletor e ele passa da borda do painel. */

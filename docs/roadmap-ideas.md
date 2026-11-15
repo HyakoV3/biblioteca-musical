@@ -687,6 +687,14 @@ ajustes novos, em vez de retomar o agendamento antigo:
 
 ## I-11 — Ícones em SVG local (subset), no lugar de emojis e símbolos
 
+> **Situação: feita** (2026-11-14), com o conjunto **`ic`** (a recomendação do assistente; o responsável contava com a
+> troca e não pediu outro conjunto). `Icone.svelte` lê `src/lib/icones.json` (13 ícones, **1,9 KB**), gerado por
+> `tools/gerar-icones.mjs` (busca no Iconify uma vez). Trocados: tocar, pausar, parar, música (introdução), bandeira
+> (final), alto-falante ligado e mudo, voltar, ok, mais, menos e a seta dos cards (que muda de baixo para cima quando o
+> card abre). Ficam como letra o `!` e o `i` dos avisos de erro e informação. **Para trocar de conjunto:** mude
+> `CONJUNTO` e os nomes em `tools/gerar-icones.mjs` e rode `node tools/gerar-icones.mjs --escrever`. Os créditos da
+> licença estão em `docs/licencas-de-terceiros.md`.
+
 > **Origem:** o responsável acha os ícones atuais "zuados" e sugeriu usar o sistema de ícones de outro projeto do responsável
 > (lista de ícones e `icons-subset.json` locais).
 
