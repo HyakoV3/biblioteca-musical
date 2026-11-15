@@ -26,6 +26,8 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
       **falham** no conversor (formatação do `main.rs` e duas sugestões do clippy sobre `if` que podem ser juntados),
       então ficaram de fora do CI para ele não nascer vermelho. Formatar e corrigir num PR à parte, e depois ligar os dois.
 - [ ] Se o teste de ponta a ponta ficar lento ou instável, restringi-lo à `main` e ao disparo manual.
+- [ ] **APK no GitHub, sob demanda e em release (tag `v*`):** rascunho em
+      [`release-e-apk-no-github.md`](release-e-apk-no-github.md), para revisar antes de construir.
 - [ ] **APK de teste no GitHub** (Android): JDK 21, SDK e NDK, `npm run tauri android build -- --apk --target aarch64`,
       APK como artefato do *workflow*.
       **Sem conteúdo embutido:** o `BMCCB_PACOTE` (hinos de terceiros) nunca entra no CI nem em *release* público. Só o
