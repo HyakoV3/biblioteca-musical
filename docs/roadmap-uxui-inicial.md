@@ -5,7 +5,8 @@ Este documento é a referência de prioridades. Atualize-o ao concluir uma etapa
 
 Legenda: `[x]` feito · `[ ]` a fazer · **(a validar)** decisão ainda não confirmada pelo responsável.
 
-Ideias e pedidos que ainda não entraram no plano: [`roadmap-ideas.md`](roadmap-ideas.md).
+Ideias e pedidos que ainda não entraram no plano: [`roadmap-ideas.md`](roadmap-ideas.md); as já implementadas, em
+[`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md).
 A fase 1 (UX) está **concluída**; a continuação está em [`roadmap-fase-2.md`](roadmap-fase-2.md).
 
 ---
@@ -174,18 +175,19 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
 ## 4. Plataformas e distribuição
 
 - [x] Desktop (Linux) e Android (emulador).
-- [ ] Teste em celular Android real; gerar APK (`npm run tauri android build`).
+- [x] Teste em celular Android real; gerar APK (`npm run tauri android build`): feito, zips 004 a 012 em `docs/apk-de-teste.md`.
 - [ ] Verificar comportamento do áudio com a tela apagada (Android). **Não prometer** áudio em segundo plano
       sem validar.
 - [ ] iOS: exige Mac com Xcode (ou CI com macOS); distribuição exige Apple Developer Program.
       Alternativa a avaliar: versão web instalável (PWA).
-- [ ] Publicar o código no GitHub (repositório ainda sem remote).
+- [x] Publicar o código no GitHub: <https://github.com/HyakoV3/biblioteca-musical-ccb> (público).
 - [x] Mensagens de erro da importação traduzidas pela interface (códigos do Rust + `src/lib/erros.ts`; ver `docs/TRADUCOES.md`).
 
 ## 5. Melhorias de áudio (depois do redesenho)
 
-- [ ] Ajustar níveis de volume entre instrumentos (ajuste fino por ouvido).
-- [ ] SoundFont opcional para timbres mais realistas (aumenta o tamanho do app).
+- [x] Ajustar níveis de volume entre instrumentos: `ganho` de cada gravado no mesmo nível médio no ouvido (`src/lib/realista.ts`,
+      `tools/analisar-timbres.py --calibrar`).
+- [x] SoundFont opcional para timbres mais realistas: pacote de sons gravados opcional, fora do app (I-07; `docs/pacote-de-sons.md`).
 - [ ] Editar notas dentro do app (hoje: editar o `hinario.json` e importar de novo).
 
 ## 6. Registro de decisões

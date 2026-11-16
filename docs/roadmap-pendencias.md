@@ -1,7 +1,8 @@
 # Pendências fora do produto
 
 O que falta além das funções do app: publicação, automação (CI/CD), revisão de código e testes. As etapas do produto
-estão em [`roadmap-fase-2.md`](roadmap-fase-2.md); as ideias, em [`roadmap-ideas.md`](roadmap-ideas.md).
+estão em [`roadmap-fase-2.md`](roadmap-fase-2.md); as ideias abertas, em [`roadmap-ideas.md`](roadmap-ideas.md); as já implementadas, no sumário
+[`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md).
 
 Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o item.
 
@@ -69,12 +70,13 @@ mesmo conjunto de fluxos que o responsável já usa em outros projetos.
 
 ## 4. Testes automatizados
 
-- [x] **Testes do app no repositório** (`tests/`, executor Vitest): `npm test`. 68 testes em 9 arquivos, só com dados
+- [x] **Testes do app no repositório** (`tests/`, executor Vitest): `npm test`. 95 testes em 12 arquivos, só com dados
       **fictícios** (`tests/amostras.ts`; nenhum hino real entra no Git): partes e vezes do hino (introdução, final,
       pausas), sintetizador (reagendar na pausa, tempo audível, filtro de abertura dos metais, uma onda por altura),
       timbres por altura (interpolação das medidas, volume preservado; `tests/timbres.test.ts`), karaokê (validação e escolha da sílaba), pacote de
       sons (zips sintéticos adulterados, truncados e "bomba"), catálogo de sons gravados x manifesto, número do hino e
-      preferências. Os tipos dos testes passam por `npm run check`.
+      preferências, créditos e licenças, tamanho e alinhamento da letra e a tradução dos erros do Rust. Os tipos dos testes
+      passam por `npm run check`.
 - [x] Regressão do `smplr`: `parar()` tem de esvaziar a fila do agendador (`tests/sintetizador.test.ts`). Conferido: sem
       a correção, o teste falha.
 - [x] **Ponta a ponta do karaokê** (`npm run test:e2e`, `tests/e2e/karaoke.mjs`): sobe o Vite e um Chrome mudo, entrega
@@ -101,3 +103,30 @@ Feito: **karaokê, fase A** (a letra acompanhando a música), os **timbres sinte
 gravados para o GeneralUser GS**, os **créditos e licenças** em Ajustes e o teste das 4 vozes gravadas no celular. Depois:
 partitura (I-08) e, por último, o conteúdo completo. Detalhes em
 [`roadmap-fase-2.md`](roadmap-fase-2.md).
+
+## 7. Pendências vindas das ideias já implementadas
+
+O que ficou em aberto **dentro** de ideias concluídas (a ideia em si está em [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md)).
+Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
+
+- [ ] **I-01 (passada do final):** ouvir o hino 457 (final e introdução) e conferir. Outras estruturas (três casas de volta, D.C.,
+      coda) caem em "estrutura não reconhecida" e **precisam de amostra real**. A ligadura que atravessa o corte entre
+      passadas não é tratada. Confirmar o que o `*` marca no hinário impresso. **(depende do responsável)**
+- [ ] **I-02 e I-14 (estilos de cor):** ver no celular; o quanto o pergaminho é amarelado e os nomes nos três idiomas.
+- [ ] **I-04 (letra):** ver no celular; o **justificado com hinos reais** (abre espaços largos nos versos que quebram); alinhamento
+      à direita para idiomas da direita para a esquerda (hoje não tratado). Ver também a I-19 (organização da letra), em
+      [`roadmap-ideas.md`](roadmap-ideas.md).
+- [ ] **I-07 (sons gravados):** hospedar também no **GitHub Releases** (hoje o pacote está no File Browser do responsável, com
+      limite de banda de ~500 KB/s); **flugelhorn e bombardino gravados** (nenhum banco livre tem os dois: hoje só sintetizados);
+      registrar o teste de baixar, instalar e remover o pacote (o uso nos zips 004 a 012 é a evidência, sem roteiro).
+- [ ] **I-09 e I-10 (partes e pausa):** ver no aparelho; trocar o **instrumento com a música tocando** (hoje os controles ficam
+      travados): decisão do responsável.
+- [ ] **I-12 (karaokê, fase A):** ver no aparelho; **mudar o andamento na pausa** mantendo o lugar do destaque não tem teste
+      automatizado. A fase B (partitura) está em [`roadmap-ideas.md`](roadmap-ideas.md) e depende da I-08.
+- [ ] **I-15 (timbres):** ouvir os sintéticos novos de **flauta doce, violino, clarinete, viola, violoncelo, contrabaixo e trompa** e
+      dizer se algum ficou fraco; o teste cego com o gravado (critério de aceitação) não foi feito; **4 vozes de metal ao mesmo
+      tempo no celular** (custo de um filtro a mais por nota).
+- [ ] **Recentes, no celular:** a interface em `rem` com a **fonte do sistema maior**; toque e arraste no slider de avançar e
+      retroceder (faixa de toque do miniplayer e do ponto); o botão de tamanho e alinhamento da letra.
+- [x] ~~**I-07:** testar as 4 vozes gravadas ao mesmo tempo no celular~~ e ~~aceitar o tamanho do pacote (36 MB)~~: feitos e aprovados
+      pelo responsável em 2026-11-15.
