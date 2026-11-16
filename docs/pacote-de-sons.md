@@ -65,22 +65,22 @@ Saem os `*-mp3.js` e um `manifesto.json` (instrumento, notas, bytes e SHA-256 de
 
 - **Agora (testes):** uma **pasta dedicada** só com os sons, no **File Browser** que o responsável hospeda
   (`https://fb.hm.hv2.xyz`, **hv2**), com **link público de leitura** (sem senha, sem validade). Decisão de 2026-11-15:
-  **sem o Nextcloud**. A pasta é `BibliotecaMusical/` no servidor (**renomeada para `BibliotecaMusicalSons/` em 2026-11-16**, depois do upgrade do File Browser; o link
-  público continuou o mesmo), com o pacote em
-  `BibliotecaMusical/sons-001/` (3 instrumentos e o manifesto; arquivos copiados e conferidos pelo SHA-256 no servidor).
-  **Só a pasta `BibliotecaMusical` é compartilhada**; nada mais fica exposto.
+  **sem o Nextcloud**. A pasta é **`BibliotecaMusicalSons/`** no servidor (chamava-se `BibliotecaMusical/` até 2026-11-16, quando o responsável a
+  renomeou depois do upgrade do File Browser para a 2.0.2; o link público continuou o mesmo). Hoje ela tem `orgao/`, `madeiras/`, `metais/` e
+  `cordas/`, cada uma com o `manifesto.json` e os `*-mp3.js` (o banco GeneralUser GS, de 2026-11-15); o primeiro pacote de teste, com `sons-001/`,
+  foi substituído por ele. **Só a pasta `BibliotecaMusicalSons` é compartilhada**; nada mais fica exposto.
 - **Estado (2026-11-15):** pasta, arquivos e **link público criados e testados**. O link expõe só a pasta
-  `BibliotecaMusical` (conferido pela API pública). O endereço do link fica na configuração do app, não neste documento.
+  (então `BibliotecaMusical`, hoje `BibliotecaMusicalSons`; conferido pela API pública). O endereço do link fica na configuração do app, não neste documento.
 
 ### O que o link público do File Browser permite (testado)
 
 - **Baixa a pasta compartilhada inteira em um `.zip`:** `https://fb.hm.hv2.xyz/public/api/resources/download?hash=<hash>`.
-  Resultado: 5,5 MB em 9,9 s, e os 3 arquivos de dentro conferem com o SHA-256 do manifesto. Dentro do zip os
-  arquivos vêm com o prefixo `BibliotecaMusical/sons-001/` (o app precisa ignorar o prefixo).
+  Resultado (no teste de 2026-11-15, com o primeiro pacote): 5,5 MB em 9,9 s, e os 3 arquivos de dentro conferem com o SHA-256 do manifesto. Dentro
+  do zip os arquivos vêm com o prefixo da pasta (naquela época `BibliotecaMusical/sons-001/`; hoje `BibliotecaMusicalSons/`), que o app ignora.
 - **Não baixa um arquivo avulso:** cinco formas de endereço (`raw` e `resources/download`, com `path` ou `files`)
   devolveram **sempre a pasta inteira em zip**, ignorando o arquivo pedido.
 - **Listagem:** `.../public/api/resources?path=/&hash=<hash>` devolve o conteúdo em JSON.
-- **Limite de banda do link:** ~500 KB/s (aparece como `maxBandwidth: 500` e foi o que se mediu). Um pacote de 2 MB
+- **Limite de banda do link:** ~500 KB/s no teste de 2026-11-15 (`maxBandwidth: 500`); depois subiu para **750 KB/s**, que é o de hoje (medido: ~0,8 MB/s). Um pacote de 2 MB
   leva ~4 s; o conjunto todo (~23 MB), ~46 s. Dá para aumentar nas opções do compartilhamento.
 
 **Consequência para o desenho:** o app baixa **um zip por compartilhamento**, então **cada grupo é uma pasta

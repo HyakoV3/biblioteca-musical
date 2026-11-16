@@ -13,17 +13,16 @@ O pacote é um `.zip` só com `partituras/hino-<número>.svg` e, opcional, `part
 
 - **Pasta no servidor:** `/mnt/downloads/BibliotecaMusicalPartituras/`, **fora** da dos sons (`BibliotecaMusicalSons/`, renomeada pelo responsável depois do
   upgrade do File Browser para a 2.0.2; o link dos sons continuou valendo e conferido). Compartilhamento próprio (a pedido do responsável, que criou a pasta
-  e o link). Tem **três** zips:
-  - `partituras-001.zip` (155.108 bytes, SHA-256 `35acf55f…f0ac`): a primeira versão, com a letra e largura 700. **Fica** porque os APKs 020 e 021
-    procuram por ele.
-  - `partituras-002.zip` (125.130 bytes, SHA-256 `253500de…bd0f`): **sem letra, largura 500**, uma versão só, o do APK 022. A largura 500 deu 1
-    compasso por linha ("cortando", no relato do responsável), por isso o 003.
+  e o link). Tem **só um** zip:
   - `partituras-003.zip` (228.343 bytes, SHA-256 `f39cbe13…9087`): **sem letra, com duas versões de cada hino**: retrato (largura 700, ~1,6 compasso
-    por linha) e paisagem (1200, ~3 compassos por linha), o do APK 023. É o que o manifesto do app aponta.
+    por linha) e paisagem (1200, ~3 compassos por linha), o do APK 023 em diante. É o que o manifesto do app aponta.
 
-  O link da pasta baixa os três juntos (510 KB), e o app acha o seu pelo nome. Quando nenhum APK em uso precisar do 001 e do 002, apagar.
+  Os anteriores foram **apagados em 2026-11-16, a pedido do responsável**, então os **APKs 020 a 022 não conseguem mais baixar partituras** (o
+  link não traz mais o zip que eles procuram). O 001 tinha letra e largura 700; o 002, sem letra e largura 500, que deu 1 compasso por linha
+  ("cortando", no relato do responsável), motivo do 003. Eram zips reproduzíveis: dá para regerar de `content/amostras` com `tools/gerar-partituras.py`
+  (as larguras estão no cabeçalho dele) e `tools/montar-pacote.py`.
 - **Link do app:** `https://fb.hm.hv2.xyz/public/api/resources/download?hash=<hash do compartilhamento>`, no manifesto do app. Conferido contra os bytes
-  reais do servidor: o zip da pasta traz os três (`BibliotecaMusicalPartituras/partituras-00N.zip`), e o app, com o manifesto novo, acha o 003 e confere o tamanho e o SHA-256.
+  reais do servidor: o zip da pasta traz o `BibliotecaMusicalPartituras/partituras-003.zip`, e o app extrai esse zip e confere o tamanho e o SHA-256 do manifesto (verificado de novo depois de apagar o 001 e o 002).
 - **O link está no manifesto, que está no repositório público:** quem lê o código pode baixar as 5 partituras de teste. É o mesmo que já acontece com
   o link dos sons, mas com um agravante: as partituras são das transcrições do Enéias, cuja autorização ainda não veio (ver "Direitos" acima). Antes
   de publicar o conjunto completo, esperar a resposta dele.
@@ -46,13 +45,13 @@ python3 tools/gerar-partituras.py <pasta dos hino-N.mscx> <pasta dos svg>
 # 2. o zip (só partituras/hino-N.svg e hino-N-paisagem.svg, reproduzível; os timemap não entram)
 python3 tools/montar-pacote.py <pasta dos svg> partituras-NNN.zip
 
-# 3. no servidor de arquivos (o mesmo dos sons): uma pasta PRÓPRIA, fora de BibliotecaMusical/, com o zip dentro, e o link público só dela;
+# 3. no servidor de arquivos (o mesmo dos sons): uma pasta PRÓPRIA, fora de BibliotecaMusicalSons/, com o zip dentro, e o link público só dela;
 #    depois o manifesto do app, com o nome, o tamanho e o SHA-256 do zip
 python3 tools/montar-manifesto-partituras.py <link público da pasta> partituras-NNN.zip
 ```
 
-**Pasta própria, fora de `BibliotecaMusical/`:** o link público do File Browser baixa a **pasta inteira em zip** (não há download de arquivo
-avulso por esse tipo de link). Se o zip das partituras ficasse dentro de `BibliotecaMusical/` (a pasta dos sons), o download dos sons o traria
+**Pasta própria, fora de `BibliotecaMusicalSons/`:** o link público do File Browser baixa a **pasta inteira em zip** (não há download de arquivo
+avulso por esse tipo de link). Se o zip das partituras ficasse dentro de `BibliotecaMusicalSons/` (a pasta dos sons), o download dos sons o traria
 junto e o das partituras traria os 38 MB de sons. Numa pasta só dele, o servidor entrega uma pasta em zip com o `partituras-001.zip` dentro; o app
 a abre, acha o zip **pelo nome**, e confere o **tamanho e o SHA-256 do zip de dentro** (o de fora não é reproduzível). Se o link for do próprio
 arquivo, o app também aceita (usa o que veio, se bater).

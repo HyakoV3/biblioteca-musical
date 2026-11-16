@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Testes da parte pura de tools/gerar-icones.py (não precisam do Inkscape nem do `tauri icon`).
+"""Testes da parte pura de tools/gerar-icone-do-app.py (não precisam do Inkscape nem do `tauri icon`).
 
-Uso:  python3 tools/test_gerar_icones.py
+Uso:  python3 tools/test_gerar_icone_do_app.py
 """
 import contextlib
 import importlib.util
@@ -16,7 +16,7 @@ from unittest import mock
 from PIL import Image, ImageDraw
 
 AQUI = Path(__file__).resolve().parent
-spec = importlib.util.spec_from_file_location("gerar_icones", AQUI / "gerar-icones.py")
+spec = importlib.util.spec_from_file_location("gerar_icone_do_app", AQUI / "gerar-icone-do-app.py")
 g = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(g)
 
@@ -93,7 +93,7 @@ class SepararCamadas(unittest.TestCase):
             g.separar_camadas(CABECA + '<path fill="#fff" d="M0 0"/></svg>')
 
     def test_o_desenho_do_responsavel_passa(self):
-        fonte = AQUI.parent / "src-tauri" / "icons" / "fonte" / "icone.svg"
+        fonte = AQUI.parent / "design" / "icone" / "icone.svg"
         if not fonte.exists():
             self.skipTest("sem o SVG-fonte")
         _, placa, simbolo = g.separar_camadas(fonte.read_text(encoding="utf-8"))
@@ -149,11 +149,11 @@ class Desenhar(unittest.TestCase):
 
 class Principal(unittest.TestCase):
     def roda(self, **patches):
-        fonte = AQUI.parent / "src-tauri" / "icons" / "fonte" / "icone.svg"
+        fonte = AQUI.parent / "design" / "icone" / "icone.svg"
         if not fonte.exists():
             self.skipTest("sem o SVG-fonte")
         erro = io.StringIO()
-        with mock.patch.object(sys, "argv", ["gerar-icones.py", str(fonte)]), mock.patch.object(g.shutil, "which", return_value="/usr/bin/x"), \
+        with mock.patch.object(sys, "argv", ["gerar-icone-do-app.py", str(fonte)]), mock.patch.object(g.shutil, "which", return_value="/usr/bin/x"), \
                 mock.patch.object(g, "desenhar", **patches), contextlib.redirect_stderr(erro):
             return g.principal(), erro.getvalue()
 
@@ -168,7 +168,7 @@ class Principal(unittest.TestCase):
             ruim = Path(t) / "ruim.svg"
             ruim.write_text(CABECA + "<g fill='none'>", encoding="utf-8")  # truncado
             erro = io.StringIO()
-            with mock.patch.object(sys, "argv", ["gerar-icones.py", str(ruim)]), mock.patch.object(g.shutil, "which", return_value="/x"), \
+            with mock.patch.object(sys, "argv", ["gerar-icone-do-app.py", str(ruim)]), mock.patch.object(g.shutil, "which", return_value="/x"), \
                     contextlib.redirect_stderr(erro):
                 self.assertEqual(g.principal(), 2)
             self.assertIn("erro:", erro.getvalue())

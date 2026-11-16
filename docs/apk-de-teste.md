@@ -70,6 +70,9 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 
 ### Histórico dos zips
 
+> **Os zips 020, 021 e 022 não baixam mais partituras:** os pacotes `partituras-001.zip` e `partituras-002.zip`, que eles procuram, foram apagados
+> do servidor em 2026-11-16 (só o `partituras-003.zip` ficou, o do 023 em diante). O resto deles funciona como antes.
+
 | Zip | Versão (commit) | Data | Conteúdo | SHA-256 |
 |---|---|---|---|---|
 | **023** | 0.3.0 (6999e4e) | 2026-11-16 | **Partitura em duas versões, retrato e paisagem** (PR #46): o 022 deixava 1 compasso por linha e "cortava". Agora cada hino tem a versão de **retrato** (largura 700, ~2 a 3 compassos por linha nos hinos de amostra) e a de **paisagem** (1200, ~4 compassos por linha); o app escolhe pela largura da tela, **troca sozinho ao girar o celular**, e na tela deitada a partitura usa a largura toda. Baixa o `partituras-003.zip` (228 KB, as mesmas 5 partituras). **Toque em Remover e Baixar de novo** (o app não troca o que já está instalado). Compilado do ramo do PR #46, ainda não mergeado. **A ver no celular**: o retrato ficou bom de ler? deitado, os 4 compassos por linha ficam pequenos demais? o zoom (+/−) ainda serve nas duas? Entregue em `<pasta de entrega dos zips>/` | `b6cf2cb3…75f0` |
