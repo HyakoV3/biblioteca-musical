@@ -5,7 +5,7 @@
 // desligar o botão apaga tudo. Depois confere a aba Partitura (I-08): quando aparece, o SVG embutido seguindo o tema, o zoom, a
 // fonte Leipzig e o aviso para Ajustes. Precisa de um Chrome ou Chromium instalado (variável CHROME para indicar o caminho).
 import { spawn, execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, truncateSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, truncateSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
@@ -607,7 +607,13 @@ async function principal() {
   await dormir(600);
   const card2 = await av(`(() => { const c = document.querySelector('#partituras'); return { removeu: window.__removeu ?? 0, texto: c.innerText, botoes: c.querySelectorAll('button').length, entradaArquivo: c.querySelectorAll('input[type="file"]').length }; })()`);
   confere(card2.removeu === 1, `Remover chama o comando que apaga só as partituras (1 vez): ${card2.removeu}`);
-  confere(/not yet available|ainda não|aún no/i.test(card2.texto) && card2.botoes === 0 && card2.entradaArquivo === 0, `sem partituras e sem pacote publicado: "ainda não disponíveis", sem Baixar e sem importar arquivo: ${JSON.stringify({ botoes: card2.botoes, arquivo: card2.entradaArquivo })}`);
+  // O que o card mostra depois de remover depende de haver pacote publicado no manifesto do app (src/lib/partituras/manifesto.json):
+  //  - sem pacote (`null`): "ainda não disponíveis" e nenhum botão; com pacote: "Não instaladas" e o botão Baixar. Em nenhum dos dois há importação de arquivo.
+  const publicado = JSON.parse(readFileSync(join(RAIZ, "src/lib/partituras/manifesto.json"), "utf-8")).pacote !== null;
+  const esperado = publicado
+    ? /not installed|não instaladas|no instaladas/i.test(card2.texto) && card2.botoes === 1
+    : /not yet available|ainda não|aún no/i.test(card2.texto) && card2.botoes === 0;
+  confere(esperado && card2.entradaArquivo === 0, `sem partituras (${publicado ? "com pacote publicado: Não instaladas e o botão Baixar" : "sem pacote publicado: ainda não disponíveis e nenhum botão"}), sem importar arquivo: ${JSON.stringify({ botoes: card2.botoes, arquivo: card2.entradaArquivo, texto: card2.texto.slice(-60) })}`);
   ws.close();
 
   // 6. análise: trocas de sílaba antes da pausa

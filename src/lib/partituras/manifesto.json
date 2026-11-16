@@ -1,4 +1,9 @@
 {
  "versao": 1,
- "pacote": null
+ "pacote": {
+  "url": "https://fb.hm.hv2.xyz/public/api/resources/download?hash=I36ztAr2CHOJi_3hrmbs1Q",
+  "arquivo": "partituras-001.zip",
+  "bytes": 155108,
+  "sha256": "35acf55fc0c196a1629f0ce9de837afeb0a2f24e3aaa00f3429b23f66d45f0ac"
+ }
 }
