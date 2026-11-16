@@ -63,8 +63,12 @@ uma, o aviso diz quantas havia) e `comentario` (para você; é ignorado).
 ## Erros no arquivo de correções
 
 O conversor **recusa** o arquivo (e não converte) se houver chave desconhecida, dois verbos na mesma correção, `trocar` sem `por`,
-número de sílabas diferente, `estrofe` ou `ocorrencia` menor que 1 ou `versao` diferente de 1. A mensagem diz o hino e o número
-da correção. Isso é de propósito: um arquivo do responsável não deve falhar em silêncio.
+número de sílabas diferente, `juntar` ou `separar` com uma sílaba só (a ligação é entre sílabas vizinhas), `estrofe` ou
+`ocorrencia` menor que 1 ou grande demais, ou `versao` diferente de 1. A mensagem diz o hino e o número da correção. A opção
+`--correcoes` sem o caminho do arquivo também é erro. Isso é de propósito: um arquivo do responsável não deve falhar em silêncio.
+
+Se um hino tem correções listadas mas a partitura dele **não tem letra**, nenhuma pode ser tentada, e a conversão avisa
+("NÃO aplicada(s), porque a partitura não tem letra").
 
 ## Dica: achar os suspeitos
 

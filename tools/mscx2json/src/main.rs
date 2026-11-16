@@ -959,6 +959,7 @@ pub fn converter_com(
     let mut estrutura = Estrutura::default();
     let mut plano: Option<Plano> = None;
     let mut asteriscos: Vec<f64> = vec![];
+    let mut correcoes_tentadas = false;
 
     let pautas = score
         .children()
@@ -1036,6 +1037,7 @@ pub fn converter_com(
         }
 
         if letra.is_empty() && !silabas.is_empty() {
+            correcoes_tentadas = true;
             avisos.extend(correcoes::aplicar(&mut silabas, numero_hino, ajustes));
             if let Some(&(a2, _)) = plano.as_ref().and_then(|p| p.final_.last()) {
                 coro_para_a_ultima_estrofe(&mut silabas, estrutura.inicios[a2]);
@@ -1120,6 +1122,12 @@ pub fn converter_com(
         }
     }
 
+    if !ajustes.is_empty() && !correcoes_tentadas {
+        avisos.push(format!(
+            "hino {numero_hino}: {} correção(ões) da letra NÃO aplicada(s), porque a partitura não tem letra",
+            ajustes.len()
+        ));
+    }
     if let Some(p) = &plano {
         avisos.push(format!(
             "estrutura de repetição reconhecida: {}",
@@ -1322,7 +1330,12 @@ fn executar(args: Vec<String>) -> Result<(), String> {
             "--nome" => nome = it.next(),
             "--nomes-originais" => renomear = false,
             "--idioma" => idioma = it.next(),
-            "--correcoes" => arquivo_correcoes = it.next().map(PathBuf::from),
+            "--correcoes" => {
+                let c = it
+                    .next()
+                    .ok_or("--correcoes precisa do caminho do arquivo")?;
+                arquivo_correcoes = Some(PathBuf::from(c));
+            }
             "-h" | "--ajuda" => {
                 println!("{AJUDA}");
                 return Ok(());
@@ -1951,6 +1964,38 @@ mod testes {
         // Sem o arquivo, o texto fica como o autor escreveu.
         let sem = converter(&xml, 1).unwrap();
         assert_eq!(sem.letra, vec!["1. al fa bta. Gama delta"]);
+    }
+
+    #[test]
+    fn correcoes_de_um_hino_sem_letra_avisam_em_vez_de_sumir() {
+        // Partitura sem <Lyrics>: nenhuma correção pode ser tentada, e o responsável tem de saber.
+        let c = correcoes::ler(r#"{ "hinos": { "1": [ { "estrofe": 1, "juntar": "al fa" } ] } }"#)
+            .unwrap();
+        let h = converter_com(&hino_com_final(), 1, &c[&1]).unwrap();
+        assert!(h.letra.is_empty());
+        assert!(
+            h.avisos
+                .iter()
+                .any(|a| a.contains("NÃO aplicada") && a.contains("não tem letra")),
+            "{:?}",
+            h.avisos
+        );
+        // Sem correções listadas, nada a avisar.
+        let sem = converter_com(&hino_com_final(), 1, &[]).unwrap();
+        assert!(
+            !sem.avisos.iter().any(|a| a.contains("correç")),
+            "{:?}",
+            sem.avisos
+        );
+    }
+
+    #[test]
+    fn correcoes_sem_o_caminho_do_arquivo_e_erro() {
+        let args = ["--id", "x", "--nome", "y", "--correcoes"]
+            .map(String::from)
+            .to_vec();
+        let e = executar(args).unwrap_err();
+        assert!(e.contains("--correcoes precisa do caminho"), "{e}");
     }
 
     #[test]

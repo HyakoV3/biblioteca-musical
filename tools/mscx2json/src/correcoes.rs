@@ -64,6 +64,17 @@ fn palavras(v: &Value, onde: &str, chave: &str) -> Result<Vec<String>, String> {
     Ok(p)
 }
 
+/// `juntar` e `separar` mexem na ligação ENTRE sílabas: com uma só, não teriam efeito e o aviso mentiria.
+fn duas_ou_mais(v: &Value, onde: &str, chave: &str) -> Result<Vec<String>, String> {
+    let p = palavras(v, onde, chave)?;
+    if p.len() < 2 {
+        return Err(format!(
+            "{onde}: \"{chave}\" precisa de pelo menos 2 sílabas (a ligação é entre sílabas vizinhas)"
+        ));
+    }
+    Ok(p)
+}
+
 fn inteiro_positivo(v: &Value, onde: &str, chave: &str) -> Result<u64, String> {
     match v.get(chave).map(Value::as_u64) {
         Some(Some(n)) if n >= 1 => Ok(n),
@@ -105,14 +116,15 @@ pub fn ler(texto: &str) -> Result<Correcoes, String> {
                     CHAVES.join(", ")
                 ));
             }
-            let estrofe = inteiro_positivo(item, &onde, "estrofe")? as u32;
+            let estrofe = u32::try_from(inteiro_positivo(item, &onde, "estrofe")?)
+                .map_err(|_| format!("{onde}: \"estrofe\" grande demais"))?;
             let verbos: Vec<&str> = ["juntar", "separar", "trocar", "quebrar_antes"]
                 .into_iter()
                 .filter(|v| obj.contains_key(*v))
                 .collect();
             let acao = match verbos.as_slice() {
-                ["juntar"] => Acao::Juntar(palavras(item, &onde, "juntar")?),
-                ["separar"] => Acao::Separar(palavras(item, &onde, "separar")?),
+                ["juntar"] => Acao::Juntar(duas_ou_mais(item, &onde, "juntar")?),
+                ["separar"] => Acao::Separar(duas_ou_mais(item, &onde, "separar")?),
                 ["quebrar_antes"] => Acao::QuebrarAntes(palavras(item, &onde, "quebrar_antes")?),
                 ["trocar"] => {
                     let de = palavras(item, &onde, "trocar")?;
@@ -136,7 +148,10 @@ pub fn ler(texto: &str) -> Result<Correcoes, String> {
                 return Err(format!("{onde}: \"por\" só vale junto de \"trocar\""));
             }
             let ocorrencia = match obj.contains_key("ocorrencia") {
-                true => Some(inteiro_positivo(item, &onde, "ocorrencia")? as usize),
+                true => Some(
+                    usize::try_from(inteiro_positivo(item, &onde, "ocorrencia")?)
+                        .map_err(|_| format!("{onde}: \"ocorrencia\" grande demais"))?,
+                ),
                 false => None,
             };
             saida.entry(numero).or_default().push(Correcao {
@@ -334,6 +349,27 @@ mod testes {
             .contains("a partir de 1")
         );
         assert!(erro(&com(r#"{ "estrofe": 1, "juntar": "  " }"#)).contains("vazio"));
+    }
+
+    #[test]
+    fn numero_grande_demais_e_recusado_em_vez_de_truncar() {
+        let com = |item: &str| format!(r#"{{ "hinos": {{ "7": [ {item} ] }} }}"#);
+        // 4294967297 = 2^32 + 1: com `as u32` viraria a estrofe 1.
+        let e = ler(&com(r#"{ "estrofe": 4294967297, "juntar": "a b" }"#)).unwrap_err();
+        assert!(e.contains("grande demais"), "{e}");
+        assert!(ler(&com(r#"{ "estrofe": 4294967295, "juntar": "a b" }"#)).is_ok());
+    }
+
+    #[test]
+    fn juntar_e_separar_exigem_pelo_menos_duas_silabas() {
+        let com = |item: &str| format!(r#"{{ "hinos": {{ "7": [ {item} ] }} }}"#);
+        for verbo in ["juntar", "separar"] {
+            let e = ler(&com(&format!(r#"{{ "estrofe": 1, "{verbo}": "al" }}"#))).unwrap_err();
+            assert!(e.contains("pelo menos 2 sílabas"), "{e}");
+        }
+        // Os outros verbos aceitam uma sílaba só.
+        assert!(ler(&com(r#"{ "estrofe": 1, "quebrar_antes": "al" }"#)).is_ok());
+        assert!(ler(&com(r#"{ "estrofe": 1, "trocar": "al", "por": "bl" }"#)).is_ok());
     }
 
     #[test]
