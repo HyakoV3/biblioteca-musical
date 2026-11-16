@@ -195,7 +195,7 @@
           {#if parte === "intro"}
             {t("vez.intro_curta")}
           {:else}
-            {rotuloCurtoDaVez(parte)}{#if comFinalDisponivel && parte === totalVezes}<span class="flag"><Icone nome="bandeira" tamanho={18} /></span>{/if}
+            {rotuloCurtoDaVez(parte)}{#if comFinalDisponivel && parte === totalVezes}<span class="bandeira-final"><Icone nome="bandeira" tamanho={18} /></span>{/if}
           {/if}
         {/snippet}
         <div class="vezes" role="group" aria-label={t("vez.grupo")}>

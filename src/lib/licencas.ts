@@ -1,9 +1,9 @@
 // Créditos e licenças de terceiros mostrados em Ajustes ("Créditos e licenças"). A fonte de cada dado está em
 // docs/licencas-de-terceiros.md. Nomes, autoria e textos de licença ficam no original; só a descrição do uso é traduzida
 // (chave `licencas.uso.<id>`).
-import { TEXTO_APACHE_2, TEXTO_GENERALUSER, TEXTO_MIT } from "./licencas-textos";
+import { TEXTO_APACHE_2, TEXTO_GENERALUSER, TEXTO_MIT, TEXTO_OFL } from "./licencas-textos";
 
-export type TipoTexto = "mit" | "apache2" | "generaluser";
+export type TipoTexto = "mit" | "apache2" | "generaluser" | "ofl";
 
 export type Credito = {
   id: string;
@@ -58,6 +58,19 @@ export const CREDITOS: readonly Credito[] = [
     textos: [{ tipo: "mit", direitos: "Copyright (c) 2016-2025 Svelte Contributors (Svelte)\nCopyright (c) 2020 SvelteKit contributors (SvelteKit)" }],
   },
   {
+    id: "leipzig",
+    nome: "Leipzig",
+    autoria: "Etienne Darbellay, Jean-François Marti, Laurent Pugin",
+    licenca: "SIL Open Font License 1.1",
+    url: "https://github.com/rism-digital/leipzig",
+    textos: [
+      {
+        tipo: "ofl",
+        direitos: "Copyright (c) 2014, Etienne Darbellay, Jean-Francois Marti and Laurent Pugin (info@rism.digital),\nwith Reserved Font Name \"Leipzig\".",
+      },
+    ],
+  },
+  {
     id: "tauri",
     nome: "Tauri",
     autoria: "Tauri Apps Contributors",
@@ -76,5 +89,7 @@ export function textoDaLicenca(t: Credito["textos"][number]): string {
       return TEXTO_APACHE_2;
     case "generaluser":
       return TEXTO_GENERALUSER;
+    case "ofl":
+      return `${t.direitos ?? ""}\n\n${TEXTO_OFL}`;
   }
 }

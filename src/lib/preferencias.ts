@@ -4,6 +4,7 @@
 
 import { INSTRUMENTOS, ORGAOS, PADRAO, instrumentosDaVoz, tipoDaVoz, type InstrumentoId } from "./instrumentos";
 import { leituraPadrao, normalizarLeitura, type Leitura } from "./leitura";
+import { ZOOM_PADRAO, normalizarZoom } from "./partitura";
 import { IDS_REALISTAS, ehRealista } from "./realista";
 
 export type PrefVoz = { instrumento: InstrumentoId; volume: number; muda: boolean };
@@ -126,5 +127,24 @@ export function salvarVozes(lista: { nome: string; pref: PrefVoz }[]) {
     localStorage.setItem(CHAVE, JSON.stringify(tudo));
   } catch {
     /* sem armazenamento: as escolhas valem só nesta sessão */
+  }
+}
+
+// Zoom da partitura (I-08): o passo (ver ESCALAS_PARTITURA), igual em todos os hinos.
+const CHAVE_PARTITURA = "prefs.partitura";
+
+export function lerZoomPartitura(): number {
+  try {
+    const v = localStorage.getItem(CHAVE_PARTITURA);
+    return v === null ? ZOOM_PADRAO : normalizarZoom(JSON.parse(v));
+  } catch {
+    return ZOOM_PADRAO;
+  }
+}
+export function salvarZoomPartitura(zoom: number) {
+  try {
+    localStorage.setItem(CHAVE_PARTITURA, JSON.stringify({ zoom }));
+  } catch {
+    /* sem armazenamento: vale só nesta sessão */
   }
 }

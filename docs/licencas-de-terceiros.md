@@ -9,6 +9,24 @@ O código deste projeto é MIT (`LICENSE`). Alguns materiais de terceiros acompa
 - **Licença:** [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). A licença pede que o aviso de copyright e o
   texto da licença acompanhem a redistribuição; este arquivo registra a origem. Os desenhos não foram alterados.
 
+## Fonte Leipzig, dos símbolos de texto das partituras (I-08)
+
+- **Onde:** `src/lib/fonts/Leipzig.woff2` (43.824 bytes), carregada por `src/lib/partitura.css` só na aba Partitura. O SVG das
+  partituras traz texto em `font-family="Leipzig"` (a figura de nota do andamento, por exemplo); notas, pautas e claves são
+  desenhos e não dependem dela.
+- **Origem do arquivo:** o woff2 que o **Verovio 6.4.1** distribui como "Leipzig" (`data/Leipzig.css` do pacote Python; é o mesmo
+  que ele embutia em cada SVG). Não foi alterado por nós. *Não foi possível provar daqui que é byte a byte o `Leipzig.woff2`
+  do repositório `rism-digital/leipzig` (não baixei o arquivo de lá); os dois têm os mesmos autores, e a OFL permite redistribuir
+  o arquivo sem modificação.*
+- **Autoria e licença:** Etienne Darbellay, Jean-François Marti e Laurent Pugin (RISM Digital / Verovio), **SIL Open Font License
+  1.1**, com **nome reservado "Leipzig"** (o que a licença proíbe é chamar de "Leipzig" uma versão **modificada**; o app só
+  redistribui o arquivo como veio). O README do repositório confirma a OFL 1.1; o texto padrão mostrado em Ajustes ("Créditos e
+  licenças") veio de um arquivo `OFL-1.1.txt` real (26/02/2007) e a linha de copyright foi lida no `LICENSE.txt` do repositório
+  por um agente de leitura de páginas ("Copyright (c) 2014, Etienne Darbellay, Jean-Francois Marti[ ]and Laurent Pugin
+  (info@rism.digital)"; no arquivo, a palavra "and" aparece colada a "Marti", e o app a mostra com o espaço). **A conferir pelo
+  responsável**, num clique: <https://github.com/rism-digital/leipzig/blob/master/LICENSE.txt>.
+- **Ferramentas que só geram o conteúdo (não vão no app):** MuseScore 4 (GPL-3.0) e Verovio (LGPL-3.0).
+
 ## Sons gravados (pacote opcional, ver I-07)
 
 **Banco atual (desde 2026-11-15): GeneralUser GS v2.0.3**, de S. Christian Collins (repositório oficial
