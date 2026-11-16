@@ -16,7 +16,7 @@
   // Celular deitado: pouca altura. Tablets e telas altas ficam com a barra embaixo.
   let trilho = $state(false);
   $effect(() => {
-    const mq = matchMedia("(orientation: landscape) and (max-height: 520px)");
+    const mq = matchMedia("(orientation: landscape) and (max-height: 32.5em)");
     trilho = mq.matches;
     const mudou = (e: MediaQueryListEvent) => (trilho = e.matches);
     mq.addEventListener("change", mudou);
@@ -81,21 +81,21 @@
   /* Barra inferior: ocupa a largura toda e respeita a barra de gestos. */
   .abas {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; display: flex;
-    background: var(--fundo); border-top: 1px solid var(--borda);
+    background: var(--fundo); border-top: 0.0625rem solid var(--borda);
     padding-bottom: env(safe-area-inset-bottom);
   }
   button {
-    flex: 1; min-height: 56px; padding: 0 0.75rem; font-size: 1rem; background: transparent; color: var(--suave);
-    border: 0; border-top: 3px solid transparent; cursor: pointer;
+    flex: 1; min-height: 3.5rem; padding: 0 0.75rem; font-size: 1rem; background: transparent; color: var(--suave);
+    border: 0; border-top: 0.1875rem solid transparent; cursor: pointer;
   }
   button[aria-selected="true"] { color: var(--texto); font-weight: 600; border-top-color: var(--ouro-linha); }
 
   /* Barra lateral (celular deitado): à esquerda, na altura toda, com as abas empilhadas no meio. */
   .abas.trilho {
     right: auto; top: 0; flex-direction: column; justify-content: center; width: max-content; min-width: 5.5rem;
-    border-top: 0; border-right: 1px solid var(--borda);
+    border-top: 0; border-right: 0.0625rem solid var(--borda);
     padding-bottom: 0; padding-left: env(safe-area-inset-left);
   }
-  .trilho button { flex: none; border-top: 0; border-left: 3px solid transparent; }
+  .trilho button { flex: none; border-top: 0; border-left: 0.1875rem solid transparent; }
   .trilho button[aria-selected="true"] { border-top-color: transparent; border-left-color: var(--ouro-linha); }
 </style>

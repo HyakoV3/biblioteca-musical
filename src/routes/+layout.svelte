@@ -38,36 +38,36 @@
     background: var(--fundo);
   }
   /* --largura-trilho: a barra lateral de abas (celular deitado) ocupa o lado esquerdo; a página inteira se afasta dela. */
-  :global(body) { margin: 0; -webkit-text-size-adjust: 100%; padding-left: var(--largura-trilho, 0px); }
+  :global(body) { margin: 0; -webkit-text-size-adjust: 100%; padding-left: var(--largura-trilho, 0rem); }
   /* Anel de foco visível para teclado e leitores de tela com navegação por foco. */
-  :global(:focus-visible) { outline: 3px solid var(--foco); outline-offset: 2px; }
+  :global(:focus-visible) { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
   :global(a) { color: var(--acento); }
   /* Coluna central; respeita o recorte da câmera e a barra de gestos (viewport-fit=cover). */
   :global(.coluna) {
-    max-width: 640px; margin: 0 auto; box-sizing: border-box;
+    max-width: 40rem; margin: 0 auto; box-sizing: border-box;
     padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));
   }
   :global(.conteudo) {
     padding-top: 1rem;
     /* --altura-miniplayer e --altura-navegacao (barra de abas) são definidas por quem as mostra. */
     padding-bottom: calc(
-      var(--altura-miniplayer, 0px) + var(--altura-navegacao, 0px) + max(1.5rem, env(safe-area-inset-bottom))
+      var(--altura-miniplayer, 0rem) + var(--altura-navegacao, 0rem) + max(1.5rem, env(safe-area-inset-bottom))
     );
   }
   :global(.meta) { color: var(--suave); font-size: 0.9rem; }
   /* Texto só para leitores de tela. */
   :global(.so-leitor) {
-    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+    position: absolute; width: 0.0625rem; height: 0.0625rem; margin: -0.0625rem; padding: 0; overflow: hidden;
     clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
   :global(.botao) {
-    display: inline-flex; align-items: center; justify-content: center; min-height: 48px; box-sizing: border-box;
-    padding: 0 1rem; font-size: 1rem; text-decoration: none; border-radius: 12px;
-    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; min-height: 3rem; box-sizing: border-box;
+    padding: 0 1rem; font-size: 1rem; text-decoration: none; border-radius: 0.75rem;
+    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); cursor: pointer;
   }
   :global(.botao.primario) { background: var(--acento); color: var(--acento-texto); border-color: var(--acento); font-weight: 600; }
   /* A parte do hino que está tocando: dourado. O contorno escuro dá contraste também no tema claro. */
-  :global(.botao.tocando) { background: var(--ouro); color: var(--ouro-sobre); border: 2px solid var(--ouro-linha); font-weight: 600; }
+  :global(.botao.tocando) { background: var(--ouro); color: var(--ouro-sobre); border: 0.125rem solid var(--ouro-linha); font-weight: 600; }
   :global(.flag) { color: var(--ouro-linha); font-weight: 700; }
   :global(.botao.tocando .flag) { color: inherit; }
   :global(.botao.perigo) { color: var(--perigo); border-color: var(--perigo); }

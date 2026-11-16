@@ -93,25 +93,25 @@
 <style>
   .busca { position: relative; margin-bottom: 0.8rem; }
   input[type="search"] {
-    width: 100%; box-sizing: border-box; min-height: 48px; padding: 0.7rem 3rem 0.7rem 0.9rem;
+    width: 100%; box-sizing: border-box; min-height: 3rem; padding: 0.7rem 3rem 0.7rem 0.9rem;
     font-size: 1rem; color: var(--texto); background: var(--superficie);
-    border: 1px solid var(--borda-controle); border-radius: 12px;
+    border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem;
     -webkit-appearance: none; appearance: none;
   }
   input[type="search"]::placeholder { color: var(--suave); opacity: 1; }
   input[type="search"]::-webkit-search-cancel-button { display: none; }
   .limpar {
-    position: absolute; right: 0; top: 0; width: 48px; height: 48px; font-size: 1.1rem;
+    position: absolute; right: 0; top: 0; width: 3rem; height: 3rem; font-size: 1.1rem;
     background: transparent; border: 0; color: var(--suave); cursor: pointer;
   }
   ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
   li > a {
-    min-height: 56px; box-sizing: border-box; display: flex; align-items: center; gap: 0.8rem;
+    min-height: 3.5rem; box-sizing: border-box; display: flex; align-items: center; gap: 0.8rem;
     padding: 0.5rem 0.9rem; text-decoration: none; color: var(--texto);
-    background: var(--superficie); border: 1px solid var(--borda-controle); border-radius: 12px;
+    background: var(--superficie); border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem;
   }
   /* Três dígitos com zeros à esquerda e algarismos de mesma largura: os números alinham em coluna. */
-  .botao-icone { min-width: 48px; padding: 0; }
+  .botao-icone { min-width: 3rem; padding: 0; }
   .num { font-weight: 700; min-width: 2.8rem; font-variant-numeric: tabular-nums; }
   .zeros { color: var(--suave); font-weight: 400; }
   .titulo { flex: 1; min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; }

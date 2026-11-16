@@ -19,8 +19,8 @@
   .estado { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; padding: 2rem 1rem; text-align: center; }
   p { margin: 0; color: var(--suave); line-height: 1.5; }
   .giro {
-    width: 28px; height: 28px; border-radius: 50%;
-    border: 3px solid var(--borda); border-top-color: var(--acento);
+    width: 1.75rem; height: 1.75rem; border-radius: 50%;
+    border: 0.1875rem solid var(--borda); border-top-color: var(--acento);
     animation: gira 0.9s linear infinite;
   }
   @keyframes gira { to { transform: rotate(360deg); } }
