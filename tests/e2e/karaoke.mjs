@@ -272,16 +272,29 @@ async function principal() {
       tocando: /pause|pausar/i.test(document.querySelector('.mini .acao')?.getAttribute('aria-label') ?? ''),
       valor: document.querySelector('.mini .busca-entrada')?.getAttribute('aria-valuetext') ?? null,
     })`);
-  // A área de toque do slider do miniplayer tem de ficar DENTRO do miniplayer e livre dos outros controles: se invadisse a linha de
-  // cima (botões e link do hino) ou a barra de abas embaixo, roubaria toques deles.
+  // A área de toque do slider do miniplayer tem de ficar DENTRO do miniplayer e livre dos outros controles: se invadisse a linha
+  // dos botões e do link do hino ou a barra de abas, roubaria toques deles. Ele fica EM CIMA da linha dos botões (I-21): embaixo, o
+  // dourado dele ficava a ~0,5rem do traço dourado da aba ativa e se confundia com a barra de abas. Com abas embaixo, ele tem de
+  // ficar bem longe delas (pelo menos 2,5rem; no teste são ~3,5rem).
   const geo = await av(`(() => {
     const m = document.querySelector('.mini').getBoundingClientRect();
     const i = document.querySelector('.mini .busca-entrada').getBoundingClientRect();
     const cruza = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
     const outros = [...document.querySelectorAll('.mini .acao, .mini .info, [role="tablist"] [role="tab"]')].map((e) => e.getBoundingClientRect());
-    return { dentro: i.top >= m.top - 0.5 && i.bottom <= m.bottom + 0.5, livre: outros.every((r) => !cruza(i, r)), altura: Math.round(i.height) };
+    const linha = document.querySelector('.mini .linha').getBoundingClientRect();
+    const abas = document.querySelector('[role="tablist"]')?.getBoundingClientRect();
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize); // as medidas do app são em rem; o navegador devolve px
+    return {
+      dentro: i.top >= m.top - 0.5 && i.bottom <= m.bottom + 0.5,
+      livre: outros.every((r) => !cruza(i, r)),
+      altura: Math.round(i.height),
+      emCima: i.bottom <= linha.top + 0.5,
+      distanciaDasAbas: abas && abas.top >= i.bottom ? Math.round(((abas.top - i.bottom) / rem) * 100) / 100 : null, // em rem; null: sem abas embaixo (barra lateral)
+    };
   })()`);
   confere(geo.dentro && geo.livre && geo.altura >= 20, `a área de toque do slider do miniplayer fica dentro dele e não cobre outros controles: ${JSON.stringify(geo)}`);
+  confere(geo.emCima, `o slider do miniplayer fica EM CIMA da linha dos botões: ${JSON.stringify(geo)}`);
+  confere(geo.distanciaDasAbas === null || geo.distanciaDasAbas >= 2.5, `o slider fica longe da barra de abas (>= 2,5rem) para não se confundir com ela: ${geo.distanciaDasAbas}rem`);
   // Voltar com a música PAUSADA (estava na 2ª estrofe): vai para 0:03 e continua pausada.
   confere(await buscar(".mini .busca-entrada", 3), "slider do miniplayer encontrado e usado (voltar para 0:03 com a música pausada)");
   await dormir(600);
