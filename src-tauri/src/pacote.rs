@@ -63,10 +63,29 @@ pub struct Importacao {
     pub recusadas: Vec<Recusada>,
 }
 
+/// Cada partitura tem até duas versões, desenhadas para larguras de tela diferentes (o SVG é pré-desenhado: as quebras de linha são fixas,
+/// então um celular em pé e um deitado pedem larguras de página diferentes). O retrato é obrigatório; a paisagem é opcional.
+/// A ordem (retrato antes de paisagem) importa: a paisagem só entra se o retrato do mesmo hino entrou.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Variante {
+    Retrato,
+    Paisagem,
+}
+
+impl Variante {
+    /// O nome do arquivo no disco e dentro do zip (sem a pasta): `hino-283.svg` ou `hino-283-paisagem.svg`.
+    fn arquivo(self, numero: u32) -> String {
+        match self {
+            Variante::Retrato => format!("hino-{numero}.svg"),
+            Variante::Paisagem => format!("hino-{numero}-paisagem.svg"),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 enum Entrada {
     Pasta,
-    Svg(u32),
+    Svg(u32, Variante),
 }
 
 /// Só estes nomes valem num pacote. O número é o canônico (sem zero à esquerda, de 1 a 9 dígitos).
@@ -74,15 +93,18 @@ fn classificar(nome: &str) -> Option<Entrada> {
     match nome {
         "partituras/" => Some(Entrada::Pasta),
         _ => {
-            let n = nome
-                .strip_prefix("partituras/hino-")?
-                .strip_suffix(".svg")?;
+            let resto = nome.strip_prefix("partituras/hino-")?;
+            // a paisagem primeiro: "5-paisagem.svg" também termina em ".svg", mas "5-paisagem" não é um número
+            let (n, variante) = match resto.strip_suffix("-paisagem.svg") {
+                Some(n) => (n, Variante::Paisagem),
+                None => (resto.strip_suffix(".svg")?, Variante::Retrato),
+            };
             let canonico = !n.is_empty()
                 && n.len() <= 9
                 && n.bytes().all(|b| b.is_ascii_digit())
                 && !n.starts_with('0');
             if canonico {
-                n.parse().ok().map(Entrada::Svg)
+                n.parse().ok().map(|n| Entrada::Svg(n, variante))
             } else {
                 None
             }
@@ -178,7 +200,7 @@ pub fn importar_zip_com(dir: &Path, bytes: &[u8], lim: &Limites) -> Result<Impor
     }
 
     // 1ª passada: só os nomes e os tamanhos declarados, sem descompactar nada.
-    let mut svgs: Vec<(u32, usize)> = Vec::new();
+    let mut svgs: Vec<(u32, Variante, usize)> = Vec::new();
     let mut declarado: u64 = 0;
     for i in 0..zip.len() {
         let f = zip.by_index_raw(i).map_err(invalido)?;
@@ -196,7 +218,7 @@ pub fn importar_zip_com(dir: &Path, bytes: &[u8], lim: &Limites) -> Result<Impor
         declarado = declarado.saturating_add(f.size());
         match tipo {
             Entrada::Pasta => {}
-            Entrada::Svg(n) => svgs.push((n, i)),
+            Entrada::Svg(n, v) => svgs.push((n, v, i)),
         }
     }
     if declarado > lim.descompactado {
@@ -268,7 +290,7 @@ pub fn importar_zip_com(dir: &Path, bytes: &[u8], lim: &Limites) -> Result<Impor
 /// Limpa cada SVG e grava os aceitos na pasta de preparo (um por vez, para não segurar tudo na memória).
 fn preparar(
     zip: &mut ZipArchive<Cursor<&[u8]>>,
-    svgs: &[(u32, usize)],
+    svgs: &[(u32, Variante, usize)],
     hinos: &HashSet<u32>,
     novo: &Path,
     marca: &str,
@@ -277,15 +299,26 @@ fn preparar(
 ) -> Result<(Vec<u32>, Vec<Recusada>), String> {
     sem_erro_se_nao_existe(std::fs::remove_dir_all(novo)).map_err(gravar)?; // sobra de uma importação interrompida
     std::fs::create_dir(novo).map_err(gravar)?;
-    let mut aceitas = Vec::new();
+    let mut aceitas = Vec::new(); // os hinos cujo RETRATO entrou (é o que conta como "partitura instalada")
     let mut recusadas = Vec::new();
     let mut lido = ja_lido;
-    let mut ordem: Vec<(u32, usize)> = svgs.to_vec();
-    ordem.sort_unstable();
-    for (n, i) in ordem {
-        let recusa = |motivo: String| Recusada { numero: n, motivo };
+    let mut ordem: Vec<(u32, Variante, usize)> = svgs.to_vec();
+    ordem.sort_unstable(); // por hino e, dentro dele, o retrato antes da paisagem
+    for (n, variante, i) in ordem {
+        // A recusa da paisagem diz que é a paisagem (o mesmo número de hino pode aparecer duas vezes na lista).
+        let recusa = |motivo: String| Recusada {
+            numero: n,
+            motivo: match variante {
+                Variante::Retrato => motivo,
+                Variante::Paisagem => format!("(paisagem) {motivo}"),
+            },
+        };
         if !hinos.contains(&n) {
             recusadas.push(recusa("o hinário não tem esse hino".into()));
+            continue;
+        }
+        if variante == Variante::Paisagem && !aceitas.contains(&n) {
+            recusadas.push(recusa("falta a versão de retrato deste hino".into()));
             continue;
         }
         let bytes = match ler_entrada(zip, i, lim.svg) {
@@ -306,8 +339,10 @@ fn preparar(
         };
         match svg::limpar(&texto) {
             Ok(limpo) => {
-                std::fs::write(novo.join(format!("hino-{n}.svg")), limpo).map_err(gravar)?;
-                aceitas.push(n);
+                std::fs::write(novo.join(variante.arquivo(n)), limpo).map_err(gravar)?;
+                if variante == Variante::Retrato {
+                    aceitas.push(n);
+                }
             }
             Err(motivo) => recusadas.push(recusa(motivo)),
         }
@@ -341,7 +376,7 @@ pub fn numeros(dir: &Path, id: &str) -> Result<Vec<u32>, String> {
     let mut v = Vec::new();
     for entrada in std::fs::read_dir(&pasta).map_err(falha)? {
         let nome = entrada.map_err(falha)?.file_name();
-        if let Some(Entrada::Svg(n)) =
+        if let Some(Entrada::Svg(n, Variante::Retrato)) =
             classificar(&format!("partituras/{}", nome.to_string_lossy()))
         {
             v.push(n);
@@ -371,31 +406,37 @@ pub fn remover_partituras(dir: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// O SVG (já limpo na importação, e limpo de novo aqui: o arquivo fica numa pasta que o app não é o único a poder tocar)
-/// do hino `numero`. O arquivo é aberto uma vez e lido só até o limite (nada de olhar o tamanho e ler depois: ele pode mudar
-/// entre as duas coisas).
-pub fn ler_partitura(dir: &Path, numero: u32) -> Result<String, String> {
-    let arquivo = dir.join("partituras").join(format!("hino-{numero}.svg"));
+/// O SVG (já limpo na importação, e limpo de novo aqui: o arquivo fica numa pasta que o app não é o único a poder tocar) do hino
+/// `numero`, na versão da tela: `paisagem` pede a versão larga, e se o pacote não a trouxe vale a de retrato. O arquivo é aberto uma
+/// vez e lido só até o limite (nada de olhar o tamanho e ler depois: ele pode mudar entre as duas coisas).
+pub fn ler_partitura(dir: &Path, numero: u32, paisagem: bool) -> Result<String, String> {
     let limite = Limites::default().svg;
-    let falha = |e: std::io::Error| erro("ler", &[format!("{}: {e}", arquivo.display())]);
-    let aberto = match std::fs::File::open(&arquivo) {
-        Ok(f) => f,
-        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-            return Err(erro("sem_partitura", &[numero.to_string()]));
-        }
-        Err(e) => return Err(falha(e)),
+    let ordem: &[Variante] = if paisagem {
+        &[Variante::Paisagem, Variante::Retrato]
+    } else {
+        &[Variante::Retrato]
     };
-    let invalida = |motivo: String| erro("partitura_invalida", &[numero.to_string(), motivo]);
-    let mut bytes = Vec::new();
-    aberto
-        .take(limite + 1)
-        .read_to_end(&mut bytes)
-        .map_err(falha)?;
-    if bytes.len() as u64 > limite {
-        return Err(invalida(format!("passa de {} MiB", limite / MIB)));
+    for variante in ordem {
+        let arquivo = dir.join("partituras").join(variante.arquivo(numero));
+        let falha = |e: std::io::Error| erro("ler", &[format!("{}: {e}", arquivo.display())]);
+        let aberto = match std::fs::File::open(&arquivo) {
+            Ok(f) => f,
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(e) => return Err(falha(e)),
+        };
+        let invalida = |motivo: String| erro("partitura_invalida", &[numero.to_string(), motivo]);
+        let mut bytes = Vec::new();
+        aberto
+            .take(limite + 1)
+            .read_to_end(&mut bytes)
+            .map_err(falha)?;
+        if bytes.len() as u64 > limite {
+            return Err(invalida(format!("passa de {} MiB", limite / MIB)));
+        }
+        let texto = String::from_utf8(bytes).map_err(|_| invalida("o texto não é UTF-8".into()))?;
+        return svg::limpar(&texto).map_err(invalida);
     }
-    let texto = String::from_utf8(bytes).map_err(|_| invalida("o texto não é UTF-8".into()))?;
-    svg::limpar(&texto).map_err(invalida)
+    Err(erro("sem_partitura", &[numero.to_string()]))
 }
 
 #[cfg(test)]
@@ -405,6 +446,8 @@ mod testes {
     use zip::write::SimpleFileOptions;
 
     const SVG: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><g class="a"><path d="M0 0L1 1"/></g></svg>"##;
+    /// Outro desenho (a versão larga), para saber qual das duas foi lida.
+    const SVG_LARGO: &str = r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 10"><g class="larga"><path d="M0 0L9 9"/></g></svg>"##;
     const JSON: &str = r#"{"versao":1,"hinario":{"id":"x","nome":"X"},"hinos":[{"numero":1,"titulo":"A"},{"numero":2,"titulo":"B"},{"numero":283,"titulo":"C"}]}"#;
 
     fn dir_teste(nome: &str) -> std::path::PathBuf {
@@ -443,6 +486,16 @@ mod testes {
         w.finish().unwrap().into_inner()
     }
 
+    /// O mesmo pacote, com a versão de paisagem de cada partitura.
+    fn pacote_com_paisagem() -> Vec<u8> {
+        zip_de(&[
+            ("partituras/hino-1.svg", SVG),
+            ("partituras/hino-1-paisagem.svg", SVG_LARGO),
+            ("partituras/hino-283.svg", SVG),
+            ("partituras/hino-283-paisagem.svg", SVG_LARGO),
+        ])
+    }
+
     fn pacote_ok() -> Vec<u8> {
         zip_de(&[
             ("partituras/", ""),
@@ -477,17 +530,46 @@ mod testes {
 
     #[test]
     fn classifica_so_os_nomes_exatos() {
+        // a versão de paisagem (opcional), do mesmo jeito: número canônico
+        assert_eq!(
+            classificar("partituras/hino-1-paisagem.svg"),
+            Some(Entrada::Svg(1, Variante::Paisagem))
+        );
+        assert_eq!(
+            classificar("partituras/hino-283-paisagem.svg"),
+            Some(Entrada::Svg(283, Variante::Paisagem))
+        );
+        for ruim in [
+            "partituras/hino-0-paisagem.svg",
+            "partituras/hino-01-paisagem.svg",
+            "partituras/hino--paisagem.svg",
+            "partituras/hino-1-Paisagem.svg",
+            "partituras/hino-1-paisagem.SVG",
+            "partituras/hino-1-paisagem.svg.bak",
+            "partituras/hino-1-retrato.svg",
+            "partituras/hino-1-paisagem-paisagem.svg",
+            "partituras/hino-1paisagem.svg",
+            "partituras/hino-1_paisagem.svg",
+            "partituras/hino-1-paisagem",
+            "partituras/sub/hino-1-paisagem.svg",
+            "partituras/hino-1000000000-paisagem.svg",
+        ] {
+            assert_eq!(classificar(ruim), None, "{ruim:?}");
+        }
         // o zip é só de partituras: o hinario.json NÃO é um nome aceito
         assert_eq!(classificar("hinario.json"), None);
         assert_eq!(classificar("partituras/"), Some(Entrada::Pasta));
-        assert_eq!(classificar("partituras/hino-1.svg"), Some(Entrada::Svg(1)));
+        assert_eq!(
+            classificar("partituras/hino-1.svg"),
+            Some(Entrada::Svg(1, Variante::Retrato))
+        );
         assert_eq!(
             classificar("partituras/hino-283.svg"),
-            Some(Entrada::Svg(283))
+            Some(Entrada::Svg(283, Variante::Retrato))
         );
         assert_eq!(
             classificar("partituras/hino-999999999.svg"),
-            Some(Entrada::Svg(999_999_999))
+            Some(Entrada::Svg(999_999_999, Variante::Retrato))
         );
         for ruim in [
             "",
@@ -863,6 +945,253 @@ mod testes {
         assert!(!d.join("partituras.novo").exists());
         assert!(!d.join("partituras/hino-9.svg").exists());
         assert!(!d.join("hinario.json.tmp").exists());
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    // ---- versões de retrato e de paisagem ----
+
+    #[test]
+    fn importa_as_duas_versoes_e_a_contagem_e_de_hinos() {
+        let d = dir_com_hinario("variantes");
+        let r = importar_zip(&d, &pacote_com_paisagem()).unwrap();
+        assert_eq!(
+            r.partituras, 2,
+            "duas partituras (hinos), e não quatro arquivos"
+        );
+        assert_eq!(r.pacote.partituras, vec![1, 283]);
+        assert!(r.recusadas.is_empty());
+        assert_eq!(
+            arquivos(&d),
+            [
+                "hinario.json",
+                "partituras",
+                "partituras/.hinario",
+                "partituras/hino-1-paisagem.svg",
+                "partituras/hino-1.svg",
+                "partituras/hino-283-paisagem.svg",
+                "partituras/hino-283.svg"
+            ]
+        );
+        // o app relê do disco: a lista de hinos não duplica
+        assert_eq!(
+            hinario::carregar(Some(&d)).unwrap().partituras,
+            vec![1, 283]
+        );
+        assert_eq!(numeros(&d, "x").unwrap(), vec![1, 283]);
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn le_a_versao_pedida_e_a_paisagem_ausente_volta_para_o_retrato() {
+        let d = dir_com_hinario("le_variante");
+        importar_zip(&d, &pacote_com_paisagem()).unwrap();
+        let retrato = ler_partitura(&d, 1, false).unwrap();
+        let paisagem = ler_partitura(&d, 1, true).unwrap();
+        assert!(
+            retrato.contains("viewBox=\"0 0 10 10\"") && !retrato.contains("larga"),
+            "{retrato}"
+        );
+        assert!(
+            paisagem.contains("viewBox=\"0 0 30 10\"") && paisagem.contains("larga"),
+            "{paisagem}"
+        );
+        // sem a paisagem no pacote: a de retrato serve nas duas telas
+        importar_zip(&d, &zip_de(&[("partituras/hino-2.svg", SVG)])).unwrap();
+        assert_eq!(
+            ler_partitura(&d, 2, true).unwrap(),
+            ler_partitura(&d, 2, false).unwrap()
+        );
+        // e sem o hino, nenhuma das duas
+        for paisagem in [false, true] {
+            assert_eq!(
+                codigo(&ler_partitura(&d, 1, paisagem).unwrap_err()),
+                "sem_partitura"
+            );
+        }
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn so_com_a_paisagem_a_partitura_e_recusada_e_o_retrato_nao_e_inventado() {
+        let d = dir_com_hinario("so_paisagem");
+        let z = zip_de(&[
+            ("partituras/hino-1-paisagem.svg", SVG_LARGO),
+            ("partituras/hino-2.svg", SVG),
+        ]);
+        let r = importar_zip(&d, &z).unwrap();
+        assert_eq!(r.pacote.partituras, vec![2]);
+        assert_eq!(r.recusadas.len(), 1);
+        assert_eq!(r.recusadas[0].numero, 1);
+        assert!(
+            r.recusadas[0].motivo.starts_with("(paisagem)"),
+            "{:?}",
+            r.recusadas
+        );
+        assert!(
+            r.recusadas[0].motivo.contains("retrato"),
+            "{:?}",
+            r.recusadas
+        );
+        assert!(!d.join("partituras/hino-1-paisagem.svg").exists());
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn paisagem_que_nao_passa_na_limpeza_e_recusada_mas_o_retrato_entra() {
+        let d = dir_com_hinario("paisagem_ruim");
+        let z = zip_de(&[
+            ("partituras/hino-1.svg", SVG),
+            (
+                "partituras/hino-1-paisagem.svg",
+                r#"<svg xmlns="http://www.w3.org/2000/svg"><script>x</script></svg>"#,
+            ),
+        ]);
+        let r = importar_zip(&d, &z).unwrap();
+        assert_eq!(r.pacote.partituras, vec![1]);
+        assert_eq!(r.recusadas.len(), 1);
+        assert!(
+            r.recusadas[0].motivo.starts_with("(paisagem)")
+                && r.recusadas[0].motivo.contains("<script>"),
+            "{:?}",
+            r.recusadas
+        );
+        assert!(
+            d.join("partituras/hino-1.svg").exists()
+                && !d.join("partituras/hino-1-paisagem.svg").exists()
+        );
+        // sem a paisagem, a leitura em tela larga cai no retrato
+        assert_eq!(
+            ler_partitura(&d, 1, true).unwrap(),
+            ler_partitura(&d, 1, false).unwrap()
+        );
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn paisagem_de_hino_que_o_hinario_nao_tem_e_recusada() {
+        let d = dir_com_hinario("paisagem_sem_hino");
+        let z = zip_de(&[
+            ("partituras/hino-1.svg", SVG),
+            ("partituras/hino-77.svg", SVG),
+            ("partituras/hino-77-paisagem.svg", SVG),
+        ]);
+        let r = importar_zip(&d, &z).unwrap();
+        assert_eq!(r.pacote.partituras, vec![1]);
+        assert_eq!(r.recusadas.len(), 2);
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn a_paisagem_tambem_e_limpa_na_leitura_e_tem_o_limite_de_tamanho() {
+        let d = dir_com_hinario("paisagem_adulterada");
+        importar_zip(&d, &pacote_com_paisagem()).unwrap();
+        std::fs::write(
+            d.join("partituras/hino-1-paisagem.svg"),
+            r#"<svg xmlns="http://www.w3.org/2000/svg"><script>x</script></svg>"#,
+        )
+        .unwrap();
+        let e = ler_partitura(&d, 1, true).unwrap_err();
+        assert_eq!(codigo(&e), "partitura_invalida");
+        std::fs::write(
+            d.join("partituras/hino-283-paisagem.svg"),
+            vec![b'x'; (Limites::default().svg + 1) as usize],
+        )
+        .unwrap();
+        let e = ler_partitura(&d, 283, true).unwrap_err();
+        assert!(args(&e)[2].contains("passa de"), "{e}");
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn paisagem_solta_no_disco_sem_o_retrato_nao_conta_como_partitura() {
+        // um arquivo de paisagem sem o retrato do mesmo hino (adulterado ou sobra) não faz o hino "ter partitura": a aba apareceria e a
+        // leitura em retrato falharia
+        let d = dir_com_hinario("paisagem_solta");
+        importar_zip(&d, &pacote_com_paisagem()).unwrap();
+        std::fs::write(d.join("partituras/hino-2-paisagem.svg"), SVG_LARGO).unwrap();
+        assert_eq!(numeros(&d, "x").unwrap(), vec![1, 283]);
+        std::fs::remove_file(d.join("partituras/hino-1.svg")).unwrap();
+        assert_eq!(
+            numeros(&d, "x").unwrap(),
+            vec![283],
+            "a paisagem do hino 1 continua lá, mas sozinha não conta"
+        );
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn importar_de_novo_troca_as_duas_versoes_e_remover_apaga_tudo() {
+        let d = dir_com_hinario("troca_variantes");
+        importar_zip(&d, &pacote_com_paisagem()).unwrap();
+        // um pacote só com retratos tira as paisagens antigas
+        importar_zip(&d, &zip_de(&[("partituras/hino-1.svg", SVG)])).unwrap();
+        assert_eq!(
+            arquivos(&d),
+            [
+                "hinario.json",
+                "partituras",
+                "partituras/.hinario",
+                "partituras/hino-1.svg"
+            ]
+        );
+        importar_zip(&d, &pacote_com_paisagem()).unwrap();
+        assert!(
+            hinario::remover_partituras(&d)
+                .unwrap()
+                .partituras
+                .is_empty()
+        );
+        assert_eq!(arquivos(&d), ["hinario.json"]);
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn os_limites_contam_os_dois_arquivos_de_cada_hino() {
+        let d = dir_com_hinario("lim_variantes");
+        let z = pacote_com_paisagem(); // 4 arquivos
+        assert!(
+            importar_zip_com(
+                &d,
+                &z,
+                &Limites {
+                    entradas: 4,
+                    ..pequenos()
+                }
+            )
+            .is_ok()
+        );
+        let e = importar_zip_com(
+            &d,
+            &z,
+            &Limites {
+                entradas: 3,
+                ..pequenos()
+            },
+        )
+        .unwrap_err();
+        assert_eq!(codigo(&e), "zip_muitos_arquivos");
+        let total = (SVG.len() * 2 + SVG_LARGO.len() * 2) as u64;
+        assert!(
+            importar_zip_com(
+                &d,
+                &z,
+                &Limites {
+                    descompactado: total,
+                    ..pequenos()
+                }
+            )
+            .is_ok()
+        );
+        let e = importar_zip_com(
+            &d,
+            &z,
+            &Limites {
+                descompactado: total - 1,
+                ..pequenos()
+            },
+        )
+        .unwrap_err();
+        assert_eq!(codigo(&e), "zip_descompactado_grande");
         std::fs::remove_dir_all(&d).ok();
     }
 
@@ -1274,13 +1603,13 @@ mod testes {
     fn le_a_partitura_pelo_numero() {
         let d = dir_com_hinario("ler");
         importar_zip(&d, &pacote_ok()).unwrap();
-        let svg = ler_partitura(&d, 283).unwrap();
+        let svg = ler_partitura(&d, 283, false).unwrap();
         assert!(
             svg.starts_with("<svg xmlns=") && svg.contains("<path d=\"M0 0L1 1\"></path>"),
             "{svg}"
         );
         assert_eq!(
-            args(&ler_partitura(&d, 2).unwrap_err()),
+            args(&ler_partitura(&d, 2, false).unwrap_err()),
             vec!["sem_partitura".to_string(), "2".to_string()]
         );
         std::fs::remove_dir_all(&d).ok();
@@ -1295,7 +1624,7 @@ mod testes {
             r#"<svg xmlns="http://www.w3.org/2000/svg"><script>x</script></svg>"#,
         )
         .unwrap();
-        let e = ler_partitura(&d, 1).unwrap_err();
+        let e = ler_partitura(&d, 1, false).unwrap_err();
         let a = args(&e);
         assert_eq!((a[0].as_str(), a[1].as_str()), ("partitura_invalida", "1"));
         assert!(a[2].contains("<script>"), "{e}");
@@ -1305,7 +1634,7 @@ mod testes {
             vec![b'x'; (Limites::default().svg + 1) as usize],
         )
         .unwrap();
-        let e = ler_partitura(&d, 283).unwrap_err();
+        let e = ler_partitura(&d, 283, false).unwrap_err();
         assert_eq!(codigo(&e), "partitura_invalida");
         assert!(args(&e)[2].contains("passa de"), "{e}"); // pelo tamanho, antes de tentar ler
         std::fs::remove_dir_all(&d).ok();
@@ -1338,10 +1667,27 @@ mod testes {
         assert!(r.partituras > 0, "o pacote não tem nenhuma partitura");
         let carregado = hinario::carregar(Some(&d)).unwrap();
         assert_eq!(carregado.partituras, r.pacote.partituras);
+        let mut com_paisagem = 0;
         for n in &carregado.partituras {
-            let svg = ler_partitura(&d, *n).unwrap();
-            assert!(svg.starts_with("<svg xmlns="), "hino {n}");
+            let retrato = ler_partitura(&d, *n, false).unwrap();
+            assert!(retrato.starts_with("<svg xmlns="), "hino {n}");
+            let paisagem = ler_partitura(&d, *n, true).unwrap();
+            assert!(paisagem.starts_with("<svg xmlns="), "hino {n} (paisagem)");
+            // se o pacote trouxe a paisagem, ela é outro desenho (outra largura de página); se não, vale o retrato
+            if d.join("partituras")
+                .join(Variante::Paisagem.arquivo(*n))
+                .exists()
+            {
+                com_paisagem += 1;
+                assert_ne!(paisagem, retrato, "hino {n}: a paisagem é igual ao retrato");
+            } else {
+                assert_eq!(paisagem, retrato, "hino {n}");
+            }
         }
+        println!(
+            "{com_paisagem} de {} com versão de paisagem",
+            carregado.partituras.len()
+        );
         std::fs::remove_dir_all(&d).ok();
     }
 }

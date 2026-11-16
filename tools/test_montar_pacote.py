@@ -33,22 +33,31 @@ SVG = '<svg xmlns="http://www.w3.org/2000/svg"><g/></svg>'
 
 class NumeroDoSvg(unittest.TestCase):
     def test_nomes_que_o_app_aceita(self):
-        self.assertEqual(m.numero_do_svg("hino-1.svg"), 1)
-        self.assertEqual(m.numero_do_svg("hino-283.svg"), 283)
-        self.assertEqual(m.numero_do_svg("hino-999999999.svg"), 999999999)
+        self.assertEqual(m.numero_do_svg("hino-1.svg"), (1, False))
+        self.assertEqual(m.numero_do_svg("hino-283.svg"), (283, False))
+        self.assertEqual(m.numero_do_svg("hino-999999999.svg"), (999999999, False))
+        self.assertEqual(m.numero_do_svg("hino-1-paisagem.svg"), (1, True))
+        self.assertEqual(m.numero_do_svg("hino-283-paisagem.svg"), (283, True))
 
     def test_nomes_que_o_app_recusaria(self):
         for nome in ("hino-0.svg", "hino-01.svg", "hino-1.SVG", "hino-1.svg.bak", "hino-.svg", "hino-1000000000.svg",
-                     "hino-1.timemap.json", "x-hino-1.svg", "hino-1a.svg", "hino-١.svg", "Leipzig.woff2", "hinario.json"):
+                     "hino-1.timemap.json", "hino-1-paisagem.timemap.json", "x-hino-1.svg", "hino-1a.svg", "hino-١.svg", "Leipzig.woff2",
+                     "hinario.json", "hino-0-paisagem.svg", "hino-01-paisagem.svg", "hino--paisagem.svg", "hino-1-Paisagem.svg",
+                     "hino-1-retrato.svg", "hino-1-paisagem-paisagem.svg", "hino-1paisagem.svg", "hino-1-paisagem.svg.bak"):
             self.assertIsNone(m.numero_do_svg(nome), nome)
+
+    def test_o_nome_no_zip_e_o_que_o_rust_le(self):
+        self.assertEqual(m.nome_no_zip(283, False), "partituras/hino-283.svg")
+        self.assertEqual(m.nome_no_zip(283, True), "partituras/hino-283-paisagem.svg")
 
 
 class Zip(unittest.TestCase):
-    def monta(self, tmp: Path, numeros_svg, extra=()):
+    def monta(self, tmp: Path, nomes_svg, extra=()):
         pasta = tmp / "svgs"
         pasta.mkdir()
-        for n in numeros_svg:
-            (pasta / f"hino-{n}.svg").write_text(SVG, encoding="utf-8")
+        for nome in nomes_svg:
+            nome = nome if isinstance(nome, str) else f"hino-{nome}.svg"
+            (pasta / nome).write_text(SVG + nome, encoding="utf-8")  # conteúdo diferente por arquivo
         for nome in extra:
             (pasta / nome).write_text(SVG, encoding="utf-8")
         saida = tmp / "saida" / "pacote.zip"
@@ -65,14 +74,47 @@ class Zip(unittest.TestCase):
             with zipfile.ZipFile(saida) as z:
                 self.assertEqual(z.namelist(), ["partituras/hino-1.svg", "partituras/hino-276.svg", "partituras/hino-283.svg"])
                 self.assertIsNone(z.testzip())
-                self.assertEqual(z.read("partituras/hino-1.svg").decode(), SVG)
-            self.assertIn("3 partituras", out)
+                self.assertEqual(z.read("partituras/hino-1.svg").decode(), SVG + "hino-1.svg")
+            self.assertIn("3 partituras (0 com versão de paisagem)", out)
+
+    def test_leva_o_retrato_e_a_paisagem_de_cada_hino_na_ordem_certa(self):
+        with tempfile.TemporaryDirectory() as t:
+            codigo, saida, out, err = self.monta(Path(t), ["hino-283-paisagem.svg", "hino-283.svg", "hino-1.svg", "hino-1-paisagem.svg", "hino-276.svg"])
+            self.assertEqual(codigo, 0, err)
+            with zipfile.ZipFile(saida) as z:
+                self.assertEqual(z.namelist(), ["partituras/hino-1.svg", "partituras/hino-1-paisagem.svg", "partituras/hino-276.svg",
+                                                "partituras/hino-283.svg", "partituras/hino-283-paisagem.svg"])
+                # cada nome leva o arquivo certo (a paisagem não troca de lugar com o retrato)
+                self.assertEqual(z.read("partituras/hino-283-paisagem.svg").decode(), SVG + "hino-283-paisagem.svg")
+                self.assertEqual(z.read("partituras/hino-283.svg").decode(), SVG + "hino-283.svg")
+            self.assertIn("3 partituras (2 com versão de paisagem)", out)
+
+    def test_paisagem_sem_o_retrato_e_ignorada_com_aviso(self):
+        with tempfile.TemporaryDirectory() as t:
+            codigo, saida, out, err = self.monta(Path(t), ["hino-1.svg", "hino-2-paisagem.svg"])
+            self.assertEqual(codigo, 0)
+            with zipfile.ZipFile(saida) as z:
+                self.assertEqual(z.namelist(), ["partituras/hino-1.svg"])
+            self.assertIn("hino-2-paisagem.svg ignorado (falta o hino-2.svg", err)
+            self.assertIn("1 partituras (0 com versão de paisagem)", out)
+
+    def test_so_paisagens_nao_geram_pacote(self):
+        with tempfile.TemporaryDirectory() as t:
+            codigo, saida, _, _ = self.monta(Path(t), ["hino-1-paisagem.svg"])
+            self.assertEqual(codigo, 2)
+            self.assertFalse(saida.exists())
 
     def test_e_reproduzivel(self):
         with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
-            _, s1, _, _ = self.monta(Path(a), [1, 2])
-            _, s2, _, _ = self.monta(Path(b), [1, 2])
+            _, s1, _, _ = self.monta(Path(a), ["hino-1.svg", "hino-1-paisagem.svg", "hino-2.svg"])
+            _, s2, _, _ = self.monta(Path(b), ["hino-1.svg", "hino-1-paisagem.svg", "hino-2.svg"])
             self.assertEqual(s1.read_bytes(), s2.read_bytes())
+
+    def test_nao_leva_o_timemap(self):
+        with tempfile.TemporaryDirectory() as t:
+            _, saida, _, err = self.monta(Path(t), [1], extra=["hino-1.timemap.json", "hino-1-paisagem.timemap.json"])
+            with zipfile.ZipFile(saida) as z:
+                self.assertEqual(z.namelist(), ["partituras/hino-1.svg"])
 
     def test_avisa_e_ignora_nome_ruim(self):
         with tempfile.TemporaryDirectory() as t:

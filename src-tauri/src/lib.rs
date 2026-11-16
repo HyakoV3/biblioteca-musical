@@ -41,10 +41,10 @@ fn remover_partituras(app: tauri::AppHandle) -> Result<hinario::Pacote, String> 
     hinario::remover_partituras(&pasta_conteudo(&app)?)
 }
 
-/// O SVG da partitura do hino `numero` (já conferido pela limpeza de `svg.rs`).
+/// O SVG da partitura do hino `numero` (já conferido pela limpeza de `svg.rs`), na versão para a tela: `paisagem` pede a larga.
 #[tauri::command]
-fn ler_partitura(app: tauri::AppHandle, numero: u32) -> Result<String, String> {
-    pacote::ler_partitura(&pasta_conteudo(&app)?, numero)
+fn ler_partitura(app: tauri::AppHandle, numero: u32, paisagem: bool) -> Result<String, String> {
+    pacote::ler_partitura(&pasta_conteudo(&app)?, numero, paisagem)
 }
 
 /// Apaga o conteúdo importado e volta ao pacote de exemplo.

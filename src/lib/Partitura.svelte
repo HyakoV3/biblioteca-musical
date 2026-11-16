@@ -5,7 +5,7 @@
   import Estado from "./Estado.svelte";
   import { traduzirErro } from "./erros";
   import { i18n } from "./i18n/index.svelte";
-  import { ESCALAS_PARTITURA, ZOOM_PADRAO, escalaDoZoom, limitarZoom, type EstadoPartitura } from "./partitura";
+  import { CONSULTA_PAISAGEM, ESCALAS_PARTITURA, ZOOM_PADRAO, escalaDoZoom, limitarZoom, varianteDaTela, type EstadoPartitura, type Variante } from "./partitura";
   import { lerZoomPartitura, salvarZoomPartitura } from "./preferencias";
 
   // O painel da aba Partitura (I-08). Com a partitura do hino instalada, mostra o SVG que o Rust entrega (já conferido na
@@ -22,28 +22,43 @@
     salvarZoomPartitura(passo);
   }
 
-  // --- Carga: sozinha só na primeira vez que a aba é aberta (o SVG tem até algumas centenas de KB). Se falhar, o aviso de erro traz
-  // o botão "Tentar de novo" (não repete sozinha ao trocar de aba: isso esconderia o erro). ---
+  // --- Versão: o SVG é pré-desenhado (quebras de linha fixas), então há uma versão para a tela estreita (retrato) e outra para a larga
+  // (paisagem). Segue a janela: ao virar o celular a outra versão entra. ---
+  let larga = $state(false);
+  $effect(() => {
+    const consulta = matchMedia(CONSULTA_PAISAGEM);
+    larga = consulta.matches;
+    const mudou = (e: MediaQueryListEvent) => (larga = e.matches);
+    consulta.addEventListener("change", mudou);
+    return () => consulta.removeEventListener("change", mudou);
+  });
+  const variante = $derived<Variante>(varianteDaTela(larga));
+
+  // --- Carga: sozinha só na primeira vez que cada versão é preciso (o SVG tem até algumas centenas de KB); a que já foi lida fica guardada,
+  // então virar o celular de volta não lê de novo. Se falhar, o aviso de erro traz o botão "Tentar de novo" (não repete sozinha ao
+  // trocar de aba: isso esconderia o erro). ---
   type Carga = { svg: string } | { erro: string };
-  let carga = $state<Carga | null>(null);
-  let pediu = false;
-  let lendo = false; // uma leitura de cada vez (o botão não dispara outra enquanto uma está em andamento)
-  async function carregar() {
-    if (lendo) return;
-    lendo = true;
-    carga = null; // volta ao "Carregando..."
+  let cargas = $state<Record<Variante, Carga | null>>({ retrato: null, paisagem: null });
+  const pediu: Record<Variante, boolean> = { retrato: false, paisagem: false };
+  const lendo: Record<Variante, boolean> = { retrato: false, paisagem: false }; // uma leitura de cada vez por versão
+  const carga = $derived(cargas[variante]);
+  async function carregar(v: Variante) {
+    if (lendo[v]) return;
+    lendo[v] = true;
+    cargas[v] = null; // volta ao "Carregando..."
     try {
-      carga = { svg: await biblioteca.lerPartitura(numero) };
+      cargas[v] = { svg: await biblioteca.lerPartitura(numero, v === "paisagem") };
     } catch (e) {
-      carga = { erro: traduzirErro(String(e), t) };
+      cargas[v] = { erro: traduzirErro(String(e), t) };
     } finally {
-      lendo = false;
+      lendo[v] = false;
     }
   }
   $effect(() => {
-    if (estado !== "tem" || !ativa || pediu) return;
-    pediu = true;
-    void carregar();
+    const v = variante;
+    if (estado !== "tem" || !ativa || pediu[v]) return;
+    pediu[v] = true;
+    void carregar(v);
   });
 </script>
 
@@ -69,13 +84,13 @@
     <Estado tipo="carregando" texto={t("partitura.carregando")} />
   {:else if "erro" in carga}
     <Aviso tipo="erro">{t("partitura.erro", { erro: carga.erro })}</Aviso>
-    <button class="botao tentar" onclick={carregar}>{t("erro.tentar")}</button>
+    <button class="botao tentar" onclick={() => carregar(variante)}>{t("erro.tentar")}</button>
   {:else}
     {#if escala > 1}<p class="dica">{t("partitura.dica")}</p>{/if}
     <!-- Uma região que rola para os lados precisa receber o foco do teclado (quem não usa toque não alcançaria o resto). -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div class="rolagem" role="region" aria-label={t("partitura.rolagem", { numero })} tabindex="0">
-      <div class="folha" role="img" aria-label={t("partitura.aria", { numero })} style:--zoom={escala}>
+      <div class="folha" role="img" aria-label={t("partitura.aria", { numero })} data-variante={variante} style:--zoom={escala}>
         <!-- O SVG vem do Rust já limpo (src-tauri/src/svg.rs: lista de permitidos, sem CSS nem script, ids com prefixo). -->
         {@html carga.svg}
       </div>

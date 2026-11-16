@@ -171,8 +171,16 @@ O pacote é um `.zip` com **só** estes nomes (nada de `hinario.json`: as partit
 de hino aceitos):
 
 ```
-partituras/hino-<número>.svg  a partitura do hino, uma página (um por hino)
+partituras/hino-<número>.svg           a partitura do hino para a tela em pé (retrato), uma página: obrigatória
+partituras/hino-<número>-paisagem.svg  a mesma partitura desenhada mais larga, para a tela deitada: opcional
 ```
+
+**Duas versões, porque o SVG é pré-desenhado:** as quebras de linha são fixas, então virar o celular só redimensiona o desenho (compassos
+miúdos demais, ou cortados). O retrato (largura 700 do Verovio) tem ~1,6 compasso por linha; a paisagem (1200), ~3. O app escolhe pela
+largura da janela (`min-width: 36rem`; em `rem`, para acompanhar a fonte do sistema) e **segue a tela ao girar**; a versão já lida fica na
+memória, então girar de volta não lê de novo. Na aba Partitura, a coluna deixa de ser limitada a 40rem (vai a 64rem) para a paisagem usar a
+largura. **A paisagem só vale com o retrato do mesmo hino** (sem ele é recusada, com o motivo `(paisagem) falta a versão de retrato…`), e
+**sem a paisagem o retrato serve nas duas telas**. "Partitura instalada" é o hino que tem o retrato; só a paisagem solta no disco não conta.
 
 O app manda o zip ao Rust como **texto base64** (`invoke("importar_partituras", { zip })`), e não como corpo binário: **no Android o Tauri
 não entrega corpo binário** (só o `postMessage`, que é texto). O tamanho do texto é conferido antes de decodificar. Num pacote de 15 MB
@@ -183,7 +191,7 @@ O Rust confere tudo antes de gravar:
   (`partituras_nenhuma`). O SVG de um hino que o hinário não tem é recusado.
 - **Nomes exatos.** Qualquer outro nome (`hinario.json`, `..`, caminho absoluto, subpasta, maiúscula, zero à esquerda, `\`, nome repetido)
   **recusa o pacote inteiro**, sem tocar no conteúdo atual. Nenhum nome do zip vira caminho no disco: o app grava sempre
-  `partituras/hino-<número>.svg`, montado por ele.
+  `partituras/hino-<número>.svg` ou `partituras/hino-<número>-paisagem.svg`, montado por ele.
 - **Limites.** 150 MB de zip, 2000 arquivos, 300 MB descompactados, 8 MB por SVG. Valem também quando o cabeçalho do zip declara um tamanho
   errado (a leitura é cortada no limite).
 - **O SVG é limpo, não copiado.** O app lê o SVG com um parser XML, confere cada elemento, atributo e valor contra uma **lista de

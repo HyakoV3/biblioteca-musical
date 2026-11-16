@@ -18,6 +18,20 @@ export function estadoDaPartitura(partituras: readonly number[], numero: number)
 export const temAbaPartitura = (estado: EstadoPartitura): boolean => estado !== "nao_tem";
 
 /**
+ * Duas versões de cada partitura, desenhadas para larguras de tela diferentes: o SVG é pré-desenhado, então as quebras de linha são
+ * FIXAS (virar o celular ou diminuir o zoom só redimensiona, não reorganiza os compassos). `retrato` tem ~1,6 compasso por linha e
+ * `paisagem` ~3 (tools/gerar-partituras.py); a paisagem é opcional no pacote, e sem ela o Rust devolve o retrato.
+ */
+export type Variante = "retrato" | "paisagem";
+
+/** A partir de que largura de janela vale a versão de paisagem: 36rem (576 px com a fonte padrão). Em `rem`, então com a fonte do sistema
+ *  maior a janela precisa ser mais larga em px: o texto e a partitura crescem juntos. Celular em pé (~26rem) fica no retrato; celular
+ *  deitado, tablet e computador, na paisagem. */
+export const CONSULTA_PAISAGEM = "(min-width: 36rem)";
+
+export const varianteDaTela = (larga: boolean): Variante => (larga ? "paisagem" : "retrato");
+
+/**
  * Tamanhos da partitura, de 50% a 400% da largura da tela, em 9 passos: o 100% (o padrão) cabe na largura, sem rolar de lado; abaixo dele
  * a partitura fica mais estreita que a tela (e centralizada), e acima dela rola para os lados. É a ESCALA que se guarda no aparelho, e não
  * o índice, para mudar os degraus um dia não embaralhar o que já estava salvo.

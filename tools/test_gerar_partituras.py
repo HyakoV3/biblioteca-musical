@@ -129,8 +129,20 @@ class OpcoesVerovio(unittest.TestCase):
         for chave in o:
             self.assertNotIn("lyric", chave.lower(), chave)
 
-    def test_a_largura_padrao_e_500(self):
-        self.assertEqual(g.LARGURA_PADRAO, 500)
+    def test_as_larguras_padrao_sao_700_no_retrato_e_1200_na_paisagem(self):
+        # medido nos hinos de amostra (ver o cabeçalho de tools/gerar-partituras.py): 500 dava 1 compasso por linha
+        self.assertEqual((g.LARGURA_RETRATO, g.LARGURA_PAISAGEM), (700, 1200))
+        self.assertLess(g.LARGURA_RETRATO, g.LARGURA_PAISAGEM)
+
+    def test_o_nome_da_paisagem_e_o_que_o_app_le(self):
+        self.assertEqual(g.SUFIXO_PAISAGEM, "-paisagem")  # src-tauri/src/pacote.rs: hino-<n>-paisagem.svg
+
+
+class Versoes(unittest.TestCase):
+    def test_retrato_e_paisagem_por_padrao_e_so_retrato_se_pedido(self):
+        self.assertEqual(g.versoes(700, 1200), [("", 700), ("-paisagem", 1200)])
+        self.assertEqual(g.versoes(700, None), [("", 700)])
+        self.assertEqual(g.versoes(650, 1300), [("", 650), ("-paisagem", 1300)])
 
 
 class UltimasLinhas(unittest.TestCase):
@@ -213,37 +225,38 @@ class MscxParaMusicxml(unittest.TestCase):
 
 
 class Gravar(unittest.TestCase):
-    def test_grava_os_dois_arquivos_sem_deixar_temporario(self):
+    def test_grava_todos_os_arquivos_sem_deixar_temporario(self):
         with tempfile.TemporaryDirectory() as t:
             saida = Path(t)
-            g.gravar(saida, 7, b"<svg/>", "[1,2]")
+            g.gravar(saida, {"hino-7.svg": b"<svg/>", "hino-7.timemap.json": b"[1,2]", "hino-7-paisagem.svg": b"<g/>"})
             self.assertEqual((saida / "hino-7.svg").read_bytes(), b"<svg/>")
-            self.assertEqual((saida / "hino-7.timemap.json").read_text(), "[1,2]")
-            self.assertEqual(sorted(p.name for p in saida.iterdir()), ["hino-7.svg", "hino-7.timemap.json"])
+            self.assertEqual((saida / "hino-7.timemap.json").read_bytes(), b"[1,2]")
+            self.assertEqual((saida / "hino-7-paisagem.svg").read_bytes(), b"<g/>")
+            self.assertEqual(sorted(p.name for p in saida.iterdir()), ["hino-7-paisagem.svg", "hino-7.svg", "hino-7.timemap.json"])
 
     def test_substitui_o_que_ja_existia(self):
         with tempfile.TemporaryDirectory() as t:
             saida = Path(t)
             (saida / "hino-7.svg").write_bytes(b"velho")
-            g.gravar(saida, 7, b"novo", "[]")
+            g.gravar(saida, {"hino-7.svg": b"novo"})
             self.assertEqual((saida / "hino-7.svg").read_bytes(), b"novo")
 
-    def test_falha_na_escrita_nao_deixa_svg_sem_timemap_nem_temporario(self):
+    def test_falha_na_escrita_no_meio_nao_deixa_arquivo_nem_temporario(self):
         with tempfile.TemporaryDirectory() as t:
             saida = Path(t)
             original = Path.write_bytes
             chamadas = []
 
-            def falha_na_segunda(self, dados):
+            def falha_na_terceira(self, dados):
                 chamadas.append(self.name)
-                if len(chamadas) == 2:
+                if len(chamadas) == 3:
                     raise OSError("disco cheio")
                 return original(self, dados)
 
-            with mock.patch.object(Path, "write_bytes", falha_na_segunda):
+            with mock.patch.object(Path, "write_bytes", falha_na_terceira):
                 with self.assertRaises(OSError):
-                    g.gravar(saida, 7, b"<svg/>", "[]")
-            self.assertEqual(list(saida.iterdir()), [], "não pode sobrar nem o .svg, nem o .tmp")
+                    g.gravar(saida, {"a.svg": b"1", "b.svg": b"2", "c.svg": b"3", "d.svg": b"4"})
+            self.assertEqual(list(saida.iterdir()), [], "não pode sobrar nenhum dos quatro, nem o .tmp")
 
 
 class FalsoToolkit:
@@ -251,23 +264,30 @@ class FalsoToolkit:
 
     def __init__(self, le=True, paginas=1):
         self.le, self.paginas, self.lido = le, paginas, None
+        self.largura = None
+        self.larguras_vistas = []
+
+    def setOptions(self, opcoes):
+        self.largura = opcoes["pageWidth"]
 
     def loadData(self, texto):
         self.lido = texto
+        self.larguras_vistas.append(self.largura)
         return self.le
 
     def getPageCount(self):
         return self.paginas
 
     def renderToSVG(self, pagina):
-        return "<svg>é</svg>"
+        return f"<svg w={self.largura}>é</svg>"
 
     def renderToTimemap(self, opcoes):
         return [{"qstamp": 0}]
 
 
 class GerarHino(unittest.TestCase):
-    def roda(self, tk, musicxml="<score/>", tempo=5):
+    def roda(self, tk, musicxml="<score/>", tempo=5, versoes=None, escala=40):
+        versoes = versoes if versoes is not None else [("", 700), ("-paisagem", 1200)]
         with tempfile.TemporaryDirectory() as t:
             trabalho, saida = Path(t) / "trab", Path(t) / "out"
             trabalho.mkdir()
@@ -278,28 +298,71 @@ class GerarHino(unittest.TestCase):
                     Path(cmd[cmd.index("-o") + 1]).write_bytes(musicxml if isinstance(musicxml, bytes) else musicxml.encode())
                 return subprocess.CompletedProcess(cmd, 0, "", "")
 
-            with mock.patch.object(g.subprocess, "run", run):
-                resultado = g.gerar_hino(tk, ["mscore"], 5, Path("hino-5.mscx"), trabalho, saida, tempo)
-            return resultado, sorted(p.name for p in saida.iterdir())
+            try:
+                with mock.patch.object(g.subprocess, "run", run):
+                    resultado = g.gerar_hino(tk, ["mscore"], 5, Path("hino-5.mscx"), trabalho, saida, escala, versoes, tempo)
+            finally:
+                self.arquivos = {p.name: p.read_bytes() for p in saida.iterdir()}
+            return resultado, sorted(self.arquivos)
 
-    def test_sucesso_grava_os_arquivos_e_devolve_os_tamanhos(self):
-        (svg, gz, tm), arquivos = self.roda(FalsoToolkit())
-        self.assertEqual(svg, len("<svg>é</svg>".encode()))  # bytes UTF-8, não caracteres
-        self.assertGreater(gz, 0)
+    def test_sucesso_grava_as_duas_versoes_com_o_seu_timemap_e_devolve_os_tamanhos(self):
+        medidas, arquivos = self.roda(FalsoToolkit())
+        self.assertEqual(arquivos, ["hino-5-paisagem.svg", "hino-5-paisagem.timemap.json", "hino-5.svg", "hino-5.timemap.json"])
+        self.assertEqual(len(medidas), 2)
+        (svg_r, gz_r, tm_r), (svg_p, gz_p, tm_p) = medidas
+        self.assertEqual(svg_r, len("<svg w=700>é</svg>".encode()))  # bytes UTF-8, não caracteres
+        self.assertEqual(svg_p, len("<svg w=1200>é</svg>".encode()))
+        self.assertGreater(gz_r, 0)
+        self.assertGreater(tm_r, 0)
+
+    def test_cada_versao_e_desenhada_na_sua_largura_e_o_arquivo_certo_leva_o_desenho_certo(self):
+        tk = FalsoToolkit()
+        self.roda(tk)
+        self.assertEqual(tk.larguras_vistas, [700, 1200], "o Verovio desenha de novo, na largura de cada versão")
+        self.assertEqual(self.arquivos["hino-5.svg"], "<svg w=700>é</svg>".encode())
+        self.assertEqual(self.arquivos["hino-5-paisagem.svg"], "<svg w=1200>é</svg>".encode())
+
+    def test_so_retrato_nao_gera_a_paisagem(self):
+        tk = FalsoToolkit()
+        medidas, arquivos = self.roda(tk, versoes=[("", 700)])
         self.assertEqual(arquivos, ["hino-5.svg", "hino-5.timemap.json"])
+        self.assertEqual((len(medidas), tk.larguras_vistas), (1, [700]))
 
-    def test_o_verovio_recebe_o_xml_sem_a_letra(self):
+    def test_a_escala_e_a_largura_chegam_ao_verovio(self):
+        class Espiao(FalsoToolkit):
+            def setOptions(self, opcoes):
+                super().setOptions(opcoes)
+                self.escalas = getattr(self, "escalas", []) + [opcoes["scale"]]
+
+        tk = Espiao()
+        self.roda(tk, escala=33)
+        self.assertEqual(tk.escalas, [33, 33])
+
+    def test_o_verovio_recebe_o_xml_sem_a_letra_nas_duas_versoes(self):
         tk = FalsoToolkit()
         self.roda(tk, musicxml="<n><lyric><text>nho</text></lyric><pitch/></n>")
         self.assertEqual(tk.lido, "<n><pitch/></n>")
+        self.assertEqual(len(tk.larguras_vistas), 2)
 
-    def test_verovio_que_nao_le_e_erro_do_hino(self):
+    def test_verovio_que_nao_le_e_erro_do_hino_e_nao_grava_nada(self):
         with self.assertRaisesRegex(g.ErroHino, "Verovio não leu"):
             self.roda(FalsoToolkit(le=False))
+        self.assertEqual(self.arquivos, {})
 
     def test_mais_de_uma_pagina_e_erro_do_hino(self):
         with self.assertRaisesRegex(g.ErroHino, "2 páginas"):
             self.roda(FalsoToolkit(paginas=2))
+
+    def test_falha_so_na_paisagem_nao_deixa_o_retrato_sozinho(self):
+        # o hino sai inteiro ou não sai: um retrato sem a paisagem do mesmo lote seria um pacote pela metade
+        class FalhaNaSegunda(FalsoToolkit):
+            def loadData(self, texto):
+                super().loadData(texto)
+                return len(self.larguras_vistas) < 2
+
+        with self.assertRaisesRegex(g.ErroHino, r"Verovio não leu o MusicXML \(paisagem\)"):
+            self.roda(FalhaNaSegunda())
+        self.assertEqual(self.arquivos, {}, "nem o retrato, que deu certo, fica no disco")
 
     def test_falha_do_musescore_vira_erro_do_hino_com_o_motivo(self):
         with self.assertRaisesRegex(g.ErroHino, "não gerou o MusicXML"):
@@ -311,22 +374,36 @@ class GerarHino(unittest.TestCase):
 
 
 class Processar(unittest.TestCase):
+    VERSOES = [("", 700), ("-paisagem", 1200)]
+
     def test_um_hino_ruim_nao_para_os_outros_e_conta_a_falha(self):
-        def falso(tk, musescore, n, mscx, trabalho, saida, tempo):
+        def falso(tk, musescore, n, mscx, trabalho, saida, escala, versoes, tempo):
             if n == 2:
                 raise g.ErroHino("deu ruim")
-            return 100 * n, 10, 5
+            return [(100 * n, 10, 5), (200 * n, 20, 5)]
 
         erro = io.StringIO()
         with mock.patch.object(g, "gerar_hino", falso), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(erro):
-            falhas, total = g.processar(None, ["mscore"], [(1, Path("a")), (2, Path("b")), (3, Path("c"))], Path("t"), Path("s"))
+            falhas, total = g.processar(None, ["mscore"], [(1, Path("a")), (2, Path("b")), (3, Path("c"))], Path("t"), Path("s"), 40, self.VERSOES)
         self.assertEqual(falhas, 1)
-        self.assertEqual(total, 100 + 300, "soma só os que deram certo")
+        self.assertEqual(total, 100 + 200 + 300 + 600, "soma as duas versões só dos que deram certo")
         self.assertIn("2  FALHOU: deu ruim", erro.getvalue())
 
-    def test_tudo_certo_nao_conta_falhas(self):
-        with mock.patch.object(g, "gerar_hino", lambda *a, **k: (50, 5, 1)), contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(g.processar(None, ["m"], [(1, Path("a")), (2, Path("b"))], Path("t"), Path("s")), (0, 100))
+    def test_tudo_certo_nao_conta_falhas_e_a_tabela_mostra_as_duas_versoes(self):
+        saida = io.StringIO()
+        with mock.patch.object(g, "gerar_hino", lambda *a, **k: [(50, 5, 1), (80, 8, 1)]), contextlib.redirect_stdout(saida):
+            r = g.processar(None, ["m"], [(1, Path("a")), (2, Path("b"))], Path("t"), Path("s"), 40, self.VERSOES)
+        self.assertEqual(r, (0, 260))
+        cabecalho = saida.getvalue().splitlines()[0]
+        self.assertIn("SVG retrato", cabecalho)
+        self.assertIn("SVG paisagem", cabecalho)
+
+    def test_so_retrato_mostra_so_uma_coluna(self):
+        saida = io.StringIO()
+        with mock.patch.object(g, "gerar_hino", lambda *a, **k: [(50, 5, 1)]), contextlib.redirect_stdout(saida):
+            r = g.processar(None, ["m"], [(1, Path("a"))], Path("t"), Path("s"), 40, [("", 700)])
+        self.assertEqual(r, (0, 50))
+        self.assertNotIn("paisagem", saida.getvalue())
 
 
 if __name__ == "__main__":
