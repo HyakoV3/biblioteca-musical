@@ -393,6 +393,47 @@ gravador (I-03).
 
 ---
 
+## I-20 — Metrônomo embutido
+
+- **Status:** anotada
+- **Origem:** pedido do responsável, 2026-11-16: "fazer um metrônomo também, embutido".
+- **Prioridade:** a definir
+
+### O problema
+Quem estuda uma voz precisa de um pulso firme, e hoje o app só dá o pulso dentro da música tocada. Para praticar sem o hino
+tocando, ou para entrar no tempo certo, é preciso outro aplicativo.
+
+### O que se deseja
+Um **metrônomo dentro do app**: um clique regular no andamento do hino (e ajustável), com o primeiro tempo do compasso
+acentuado, que se liga e desliga.
+
+### Perguntas em aberto
+1. **Compasso:** o formato do hino traz o `andamento` (bpm), mas **não o compasso** (2/4, 3/4, 4/4, 6/8). Para acentuar o 1º
+   tempo, o conversor teria de ler o compasso da partitura e gravá-lo no `hinario.json` (ver `docs/FORMATO.md`), ou a pessoa
+   escolhe o número de tempos no próprio metrônomo.
+2. **Sozinho ou junto com a música?** Só como ferramenta de estudo (sem o hino tocando), também **tocando por cima da música**
+   (para quem quer o pulso marcado), ou com uma **contagem inicial** de um compasso antes de a música começar?
+3. **Onde fica?** Um card no player (junto de "Andamento e Tom"), uma tela própria, ou um botão no miniplayer?
+4. **Aviso visual:** além do som, um pisca na tela (útil com o celular no mudo ou para quem tem dificuldade de ouvir o clique).
+5. **O andamento é o do hino ou independente?** Mudar o andamento do player (−5 −1 +1 +5) muda o do metrônomo junto?
+6. **Que som?** Um clique sintetizado curto (o mais leve, sem baixar nada) ou amostras de madeira e sino.
+
+### Impacto técnico (hipóteses, não verificadas)
+- **Pesquisar antes de construir** (regra do projeto): metrônomo em Web Audio é um problema conhecido, e o padrão é agendar os
+  cliques com **antecedência** no relógio do `AudioContext`, e não com `setInterval`, que oscila. Registrar o que for lido.
+- Compartilhar o `AudioContext` do sintetizador (`src/lib/sintetizador.ts`) para o clique ficar **alinhado à música**, e o `volume`
+  independente do das vozes.
+- Reaproveitar o que já existe: o `andamento` do hino e o reagendamento a partir de uma posição (`reproducao.irPara`).
+- Um oscilador curto com envoltória rápida basta para o clique (o 1º tempo, mais agudo ou mais forte); nada novo para baixar.
+
+### Critérios de aceitação (propostos)
+- O intervalo entre cliques fica estável (medir o desvio no teste de ponta a ponta, como o do karaokê faz com as sílabas).
+- Mudar o andamento com o metrônomo ligado vale na hora e sem estalo; o primeiro tempo é audivelmente diferente dos outros.
+- Ligar e desligar o metrônomo não interrompe nem desalinha a música que está tocando.
+- Respeita o tema, o `rem` e o movimento reduzido no aviso visual (o pisca não pode ser a única indicação).
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
