@@ -5,7 +5,7 @@
 // desligar o botão apaga tudo. Depois confere a aba Partitura (I-08): quando aparece, o SVG embutido seguindo o tema, o zoom, a
 // fonte Leipzig e o aviso para Ajustes. Precisa de um Chrome ou Chromium instalado (variável CHROME para indicar o caminho).
 import { spawn, execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, truncateSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, truncateSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
@@ -62,10 +62,10 @@ const STUB = `window.__TAURI_INTERNALS__ = {
       const sem = sessionStorage.getItem("e2e-sem-partituras") === "1";
       return { hinario: ${JSON.stringify(hinario)}, exemplo: false, partituras: sem ? [] : [999] };
     }
-    if (cmd === "importar_pacote") {
-      // Como o Tauri no ANDROID: não existe corpo binário, só o que passa por JSON. Guarda o argumento para o teste conferir.
-      window.__zipRecebido = args;
-      return { pacote: { hinario: ${JSON.stringify(hinario)}, exemplo: false, partituras: [999] }, partituras: 1, recusadas: [] };
+    if (cmd === "remover_partituras") {
+      window.__removeu = (window.__removeu ?? 0) + 1;
+      sessionStorage.setItem("e2e-sem-partituras", "1"); // depois de remover, o Rust devolve o pacote sem partituras
+      return { hinario: ${JSON.stringify(hinario)}, exemplo: false, partituras: [] };
     }
     if (cmd === "ler_partitura") {
       if (args.numero === 999) {
@@ -580,42 +580,40 @@ async function principal() {
   const refeito = await av(`({ alerta: !!document.querySelector('#painel-partitura [role="alert"]'), svg: !!document.querySelector('#painel-partitura svg'), botao: !!document.querySelector('#painel-partitura .tentar') })`);
   confere(!refeito.alerta && refeito.svg && !refeito.botao, `"Tentar de novo" lê a partitura outra vez e ela aparece: ${JSON.stringify(refeito)}`);
 
-  // Importar um .zip pelo seletor de Ajustes (o bug do Android: "a chamada não trouxe os bytes do arquivo"). O arquivo é um "zip" de
-  // mentira (só a assinatura PK\x03\x04 e os 256 valores de byte), porque o que se confere aqui é o ENVIO: o app tem de mandar TEXTO
-  // base64 com os mesmos bytes do arquivo, e nunca bytes soltos (o Android não os entrega).
-  const bytesDoZip = Uint8Array.from([0x50, 0x4b, 0x03, 0x04, ...Array.from({ length: 256 }, (_, i) => i), 0xff, 0x00]);
-  const caminhoZip = join(perfil, "pacote-de-teste.zip");
-  writeFileSync(caminhoZip, bytesDoZip);
+  // Ajustes: "Importar hinário" aceita SÓ .json (o hinário vai deixar de ser importado; as partituras têm o card próprio).
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes` });
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('input[type="file"]')`)); ) await dormir(250);
+  const aceita = await av(`document.querySelector('input[type="file"]').getAttribute('accept')`);
+  confere(/json/.test(aceita) && !/zip/i.test(aceita), `Importar hinário aceita só .json: accept="${aceita}"`);
+
+  // Arquivo acima de 20 MB: recusado pelo tamanho, sem ser lido. O arquivo é ESPARSO (só o tamanho conta, não ocupa disco).
   const raiz = (await enviar("DOM.getDocument", {})).result.root.nodeId;
   const entrada = (await enviar("DOM.querySelector", { nodeId: raiz, selector: 'input[type="file"]' })).result.nodeId;
   confere(entrada > 0, "o seletor de arquivo de Ajustes foi encontrado");
-  await enviar("DOM.setFileInputFiles", { nodeId: entrada, files: [caminhoZip] });
-  await dormir(1200);
-  const envio = await av(`(() => {
-    const a = window.__zipRecebido;
-    if (!a) return { chamou: false };
-    const texto = typeof a.zip === 'string' ? a.zip : null;
-    const volta = texto === null ? null : Array.from(atob(texto), (c) => c.charCodeAt(0));
-    return { chamou: true, chaves: Object.keys(a), tipo: typeof a.zip, base64: texto !== null && /^[A-Za-z0-9+/]*={0,2}$/.test(texto), volta };
-  })()`);
-  confere(envio.chamou && envio.tipo === "string" && envio.chaves.join() === "zip", `importar o .zip manda o argumento \`zip\` como TEXTO (e só ele): ${JSON.stringify({ chamou: envio.chamou, tipo: envio.tipo, chaves: envio.chaves })}`);
-  confere(envio.base64, "o texto enviado é base64 válido");
-  confere(JSON.stringify(envio.volta) === JSON.stringify(Array.from(bytesDoZip)), `decodificado, o texto tem exatamente os ${bytesDoZip.length} bytes do arquivo`);
-  const resultado = await av(`document.body.innerText`);
-  confere(/Teste e2e/.test(resultado) && !/could not|não foi possível/i.test(resultado), "a tela mostra o resultado da importação, sem erro");
-
-  // Arquivo acima do limite (150 MiB): recusado pelo tamanho, sem ser lido nem enviado. O arquivo é ESPARSO (só o tamanho conta, não ocupa disco).
-  const caminhoGrande = join(perfil, "pacote-enorme.zip");
-  writeFileSync(caminhoGrande, Buffer.from([0x50, 0x4b, 0x03, 0x04]));
-  truncateSync(caminhoGrande, 151 * 1024 * 1024);
-  // Espia a leitura do arquivo: o `importarZip` também recusa pelo tamanho, então só "nada foi lido" prova que o tamanho foi conferido ANTES.
-  await av("window.__zipRecebido = undefined; window.__leu = false; const lerOriginal = Blob.prototype.arrayBuffer; Blob.prototype.arrayBuffer = function () { window.__leu = true; return lerOriginal.call(this); }; 1");
+  const caminhoGrande = join(perfil, "hinario-enorme.json");
+  writeFileSync(caminhoGrande, "{");
+  truncateSync(caminhoGrande, 21 * 1024 * 1024);
+  await av("window.__leu = false; for (const m of ['text', 'arrayBuffer']) { const o = Blob.prototype[m]; Blob.prototype[m] = function () { window.__leu = true; return o.call(this); }; } 1");
   await enviar("DOM.setFileInputFiles", { nodeId: entrada, files: [caminhoGrande] });
   await dormir(1500);
-  const grande = await av(`({ enviou: window.__zipRecebido !== undefined, leu: window.__leu, texto: document.body.innerText })`);
-  confere(!grande.enviou && !grande.leu && /150 MB/.test(grande.texto), `arquivo de 151 MiB: recusado pelo tamanho, sem ser lido nem enviado: ${JSON.stringify({ enviou: grande.enviou, leu: grande.leu, tem150MB: /150 MB/.test(grande.texto) })}`);
+  const grande = await av(`({ leu: window.__leu, texto: document.body.innerText })`);
+  confere(!grande.leu && /20 MB/.test(grande.texto), `hinário de 21 MiB: recusado pelo tamanho, sem ser lido: ${JSON.stringify({ leu: grande.leu, tem20MB: /20 MB/.test(grande.texto) })}`);
+
+  // O card Partituras (no molde dos sons gravados): com partituras instaladas mostra "Instaladas" e Remover; remover chama só o comando
+  // de remover partituras; depois, sem pacote publicado (manifesto vazio), não há botão Baixar nem importação manual.
+  const card1 = await av(`(() => { const c = document.querySelector('#partituras'); return { achou: !!c, texto: c?.innerText ?? '', botoes: [...(c?.querySelectorAll('button') ?? [])].map((b) => b.textContent.trim()) }; })()`);
+  confere(card1.achou && /installed|instaladas|instaladas/i.test(card1.texto) && card1.botoes.length === 1, `card Partituras com partituras instaladas: estado e um só botão (Remover): ${JSON.stringify({ botoes: card1.botoes })}`);
+  await av(`document.querySelector('#partituras button').click(); 1`);
+  await dormir(600);
+  const card2 = await av(`(() => { const c = document.querySelector('#partituras'); return { removeu: window.__removeu ?? 0, texto: c.innerText, botoes: c.querySelectorAll('button').length, entradaArquivo: c.querySelectorAll('input[type="file"]').length }; })()`);
+  confere(card2.removeu === 1, `Remover chama o comando que apaga só as partituras (1 vez): ${card2.removeu}`);
+  // O que o card mostra depois de remover depende de haver pacote publicado no manifesto do app (src/lib/partituras/manifesto.json):
+  //  - sem pacote (`null`): "ainda não disponíveis" e nenhum botão; com pacote: "Não instaladas" e o botão Baixar. Em nenhum dos dois há importação de arquivo.
+  const publicado = JSON.parse(readFileSync(join(RAIZ, "src/lib/partituras/manifesto.json"), "utf-8")).pacote !== null;
+  const esperado = publicado
+    ? /not installed|não instaladas|no instaladas/i.test(card2.texto) && card2.botoes === 1
+    : /not yet available|ainda não|aún no/i.test(card2.texto) && card2.botoes === 0;
+  confere(esperado && card2.entradaArquivo === 0, `sem partituras (${publicado ? "com pacote publicado: Não instaladas e o botão Baixar" : "sem pacote publicado: ainda não disponíveis e nenhum botão"}), sem importar arquivo: ${JSON.stringify({ botoes: card2.botoes, arquivo: card2.entradaArquivo, texto: card2.texto.slice(-60) })}`);
   ws.close();
 
   // 6. análise: trocas de sílaba antes da pausa

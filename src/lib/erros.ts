@@ -24,7 +24,8 @@ export const ERROS_DO_RUST: Readonly<Record<string, readonly string[]>> = {
   zip_descompactado_grande: [],
   zip_inesperado: ["nome"],
   zip_repetido: [],
-  zip_sem_json: [],
+  partituras_nenhuma: [],
+  partituras_sem_hinario: [],
   sem_partitura: ["numero"],
   partitura_invalida: ["numero", "motivo"],
 };

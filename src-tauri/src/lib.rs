@@ -24,12 +24,21 @@ fn importar_hinario(app: tauri::AppHandle, json: String) -> Result<hinario::Paco
     hinario::importar(&pasta_conteudo(&app)?, &json)
 }
 
-/// Importa um pacote `.zip` (`hinario.json` + `partituras/hino-N.svg`) que a interface manda em **base64** (`zip`). Não pode ser
-/// corpo binário: no Android o Tauri não entrega `InvokeBody::Raw` (ver `pacote::importar_base64`). É `async` para rodar fora da
-/// thread da interface.
+/// Importa o pacote de partituras (`.zip` só com `partituras/hino-N.svg`, que o app baixou) que a interface manda em **base64**
+/// (`zip`), para o hinário já instalado. Não pode ser corpo binário: no Android o Tauri não entrega `InvokeBody::Raw` (ver
+/// `pacote::importar_base64`). É `async` para rodar fora da thread da interface.
 #[tauri::command]
-async fn importar_pacote(app: tauri::AppHandle, zip: String) -> Result<pacote::Importacao, String> {
+async fn importar_partituras(
+    app: tauri::AppHandle,
+    zip: String,
+) -> Result<pacote::Importacao, String> {
     pacote::importar_base64(&pasta_conteudo(&app)?, &zip)
+}
+
+/// Apaga só as partituras importadas (o hinário fica).
+#[tauri::command]
+fn remover_partituras(app: tauri::AppHandle) -> Result<hinario::Pacote, String> {
+    hinario::remover_partituras(&pasta_conteudo(&app)?)
 }
 
 /// O SVG da partitura do hino `numero` (já conferido pela limpeza de `svg.rs`).
@@ -52,7 +61,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             carregar_hinario,
             importar_hinario,
-            importar_pacote,
+            importar_partituras,
+            remover_partituras,
             ler_partitura,
             remover_conteudo
         ])

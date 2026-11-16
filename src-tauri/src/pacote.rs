@@ -31,12 +31,10 @@ pub struct Limites {
     /// Bytes do próprio `.zip`.
     pub zip: usize,
     pub entradas: usize,
-    /// Soma dos bytes descompactados (o `hinario.json` e todos os SVG).
+    /// Soma dos bytes descompactados (todos os SVG).
     pub descompactado: u64,
     /// Bytes de cada SVG.
     pub svg: u64,
-    /// Bytes do `hinario.json`.
-    pub json: u64,
 }
 
 impl Default for Limites {
@@ -46,7 +44,6 @@ impl Default for Limites {
             entradas: 2_000,
             descompactado: 300 * MIB,
             svg: 8 * MIB,
-            json: hinario::LIMITE_BYTES as u64,
         }
     }
 }
@@ -68,7 +65,6 @@ pub struct Importacao {
 
 #[derive(Debug, PartialEq)]
 enum Entrada {
-    Json,
     Pasta,
     Svg(u32),
 }
@@ -76,7 +72,6 @@ enum Entrada {
 /// Só estes nomes valem num pacote. O número é o canônico (sem zero à esquerda, de 1 a 9 dígitos).
 fn classificar(nome: &str) -> Option<Entrada> {
     match nome {
-        "hinario.json" => Some(Entrada::Json),
         "partituras/" => Some(Entrada::Pasta),
         _ => {
             let n = nome
@@ -183,7 +178,6 @@ pub fn importar_zip_com(dir: &Path, bytes: &[u8], lim: &Limites) -> Result<Impor
     }
 
     // 1ª passada: só os nomes e os tamanhos declarados, sem descompactar nada.
-    let mut json_idx = None;
     let mut svgs: Vec<(u32, usize)> = Vec::new();
     let mut declarado: u64 = 0;
     for i in 0..zip.len() {
@@ -201,7 +195,6 @@ pub fn importar_zip_com(dir: &Path, bytes: &[u8], lim: &Limites) -> Result<Impor
         let tipo = classificar(&nome).ok_or_else(|| erro("zip_inesperado", &[curto(&nome)]))?;
         declarado = declarado.saturating_add(f.size());
         match tipo {
-            Entrada::Json => json_idx = Some(i),
             Entrada::Pasta => {}
             Entrada::Svg(n) => svgs.push((n, i)),
         }
@@ -209,27 +202,23 @@ pub fn importar_zip_com(dir: &Path, bytes: &[u8], lim: &Limites) -> Result<Impor
     if declarado > lim.descompactado {
         return Err(erro("zip_descompactado_grande", &[]));
     }
+    if svgs.is_empty() {
+        return Err(erro("partituras_nenhuma", &[]));
+    }
 
-    let json_idx = json_idx.ok_or_else(|| erro("zip_sem_json", &[]))?;
-    let json = match ler_entrada(&mut zip, json_idx, lim.json) {
-        Ok(b) => String::from_utf8(b)
-            .map_err(|_| erro("json_invalido", &["UTF-8 inválido".to_string()]))?,
-        Err(Falha::GrandeDemais) => return Err(erro("grande_demais", &[])),
-        Err(Falha::Zip(e)) => return Err(invalido(e)),
-    };
-    let hinario = hinario::validar(&json)?;
+    // As partituras valem para o hinário que já está instalado: é dele que vêm os números de hino aceitos e a marca da pasta.
+    let hinario = hinario::instalado(dir)?.ok_or_else(|| erro("partituras_sem_hinario", &[]))?;
     let hinos: HashSet<u32> = hinario.hinos.iter().map(|h| h.numero).collect();
 
     std::fs::create_dir_all(dir).map_err(gravar)?;
     let novo = dir.join("partituras.novo");
-    let tmp = dir.join("hinario.json.tmp");
     let preparo = preparar(
         &mut zip,
         &svgs,
         &hinos,
         &novo,
         &marca(&hinario.hinario.id),
-        json.len() as u64,
+        0,
         lim,
     );
     let (mut aceitas, recusadas) = match preparo {
@@ -240,30 +229,37 @@ pub fn importar_zip_com(dir: &Path, bytes: &[u8], lim: &Limites) -> Result<Impor
         }
     };
 
-    // Troca: o que já havia só sai agora que tudo o que vai entrar está pronto.
-    let troca = (|| -> Result<(), String> {
-        std::fs::write(&tmp, &json).map_err(gravar)?;
-        sem_erro_se_nao_existe(std::fs::remove_dir_all(dir.join("partituras"))).map_err(gravar)?;
-        if aceitas.is_empty() {
-            sem_erro_se_nao_existe(std::fs::remove_dir_all(&novo)).map_err(gravar)?;
-        } else {
-            std::fs::rename(&novo, dir.join("partituras")).map_err(gravar)?;
+    // Troca: o que já havia só sai agora que tudo o que vai entrar está pronto. Se nenhuma partitura foi aceita (todas recusadas), as
+    // que já estavam instaladas ficam como estão.
+    if aceitas.is_empty() {
+        sem_erro_se_nao_existe(std::fs::remove_dir_all(&novo)).map_err(gravar)?;
+    } else {
+        let troca = (|| -> Result<(), String> {
+            sem_erro_se_nao_existe(std::fs::remove_dir_all(dir.join("partituras")))
+                .map_err(gravar)?;
+            std::fs::rename(&novo, dir.join("partituras")).map_err(gravar)
+        })();
+        if let Err(e) = troca {
+            std::fs::remove_dir_all(&novo).ok();
+            return Err(e);
         }
-        std::fs::rename(&tmp, dir.join("hinario.json")).map_err(gravar)
-    })();
-    if let Err(e) = troca {
-        std::fs::remove_dir_all(&novo).ok();
-        std::fs::remove_file(&tmp).ok();
-        return Err(e);
     }
 
     aceitas.sort_unstable();
+    // Depois da troca, o que está instalado é EXATAMENTE o que foi aceito: não se relê o disco (uma falha de leitura aqui devolveria erro
+    // com as partituras novas já no lugar, e a tela ficaria diferente do que está instalado). Só quando nada foi trocado (todas recusadas)
+    // é preciso ler o que já havia, e aí nada mudou no disco.
+    let instaladas = if aceitas.is_empty() {
+        numeros(dir, &hinario.hinario.id)?
+    } else {
+        aceitas.clone()
+    };
     Ok(Importacao {
         partituras: aceitas.len() as u32,
         pacote: Pacote {
             hinario,
             exemplo: false,
-            partituras: aceitas,
+            partituras: instaladas,
         },
         recusadas,
     })
@@ -417,6 +413,13 @@ mod testes {
         d
     }
 
+    /// Um diretório com o hinário (`JSON`, id "x", hinos 1, 2 e 283) já instalado: as partituras só entram para um hinário instalado.
+    fn dir_com_hinario(nome: &str) -> std::path::PathBuf {
+        let d = dir_teste(nome);
+        hinario::importar(&d, JSON).unwrap();
+        d
+    }
+
     fn args(e: &str) -> Vec<String> {
         serde_json::from_str(e).unwrap_or_else(|_| panic!("erro não é um JSON de códigos: {e}"))
     }
@@ -442,7 +445,6 @@ mod testes {
 
     fn pacote_ok() -> Vec<u8> {
         zip_de(&[
-            ("hinario.json", JSON),
             ("partituras/", ""),
             ("partituras/hino-1.svg", SVG),
             ("partituras/hino-283.svg", SVG),
@@ -475,7 +477,8 @@ mod testes {
 
     #[test]
     fn classifica_so_os_nomes_exatos() {
-        assert_eq!(classificar("hinario.json"), Some(Entrada::Json));
+        // o zip é só de partituras: o hinario.json NÃO é um nome aceito
+        assert_eq!(classificar("hinario.json"), None);
         assert_eq!(classificar("partituras/"), Some(Entrada::Pasta));
         assert_eq!(classificar("partituras/hino-1.svg"), Some(Entrada::Svg(1)));
         assert_eq!(
@@ -525,7 +528,7 @@ mod testes {
 
     #[test]
     fn importa_json_e_partituras() {
-        let d = dir_teste("ok");
+        let d = dir_com_hinario("ok");
         let r = importar_zip(&d, &pacote_ok()).unwrap();
         assert_eq!(r.partituras, 2);
         assert!(r.recusadas.is_empty());
@@ -555,9 +558,9 @@ mod testes {
 
     #[test]
     fn o_que_fica_no_disco_e_o_svg_reescrito_e_nao_o_original() {
-        let d = dir_teste("reescrito");
+        let d = dir_com_hinario("reescrito");
         let original = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n  <g>\n    <path d=\"M0 0\"/>\n  </g>\n</svg>\n".to_string();
-        let z = zip_de(&[("hinario.json", JSON), ("partituras/hino-1.svg", &original)]);
+        let z = zip_de(&[("partituras/hino-1.svg", &original)]);
         importar_zip(&d, &z).unwrap();
         let gravado = std::fs::read_to_string(d.join("partituras/hino-1.svg")).unwrap();
         assert_eq!(gravado, svg::limpar(&original).unwrap());
@@ -572,7 +575,7 @@ mod testes {
 
     #[test]
     fn importa_o_zip_em_base64() {
-        let d = dir_teste("base64_ok");
+        let d = dir_com_hinario("base64_ok");
         let texto = STANDARD.encode(pacote_ok());
         let r = importar_base64(&d, &texto).unwrap();
         assert_eq!(r.partituras, 2);
@@ -586,7 +589,7 @@ mod testes {
 
     #[test]
     fn base64_aceita_espaco_nas_pontas_e_recusa_o_que_nao_e_base64() {
-        let d = dir_teste("base64_forma");
+        let d = dir_com_hinario("base64_forma");
         let texto = STANDARD.encode(pacote_ok());
         assert!(importar_base64(&d, &format!("  {texto}\n")).is_ok());
         for ruim in [
@@ -596,7 +599,7 @@ mod testes {
             "Zm9v!",
             "\u{e9}\u{e9}\u{e9}\u{e9}",
         ] {
-            let e = importar_base64(&dir_teste("base64_ruim"), ruim).unwrap_err();
+            let e = importar_base64(&dir_com_hinario("base64_ruim"), ruim).unwrap_err();
             assert_eq!(codigo(&e), "zip_invalido", "{ruim:?} -> {e}");
         }
         // vazio decodifica para zero bytes, que não são um zip
@@ -609,7 +612,7 @@ mod testes {
 
     #[test]
     fn base64_confere_o_tamanho_do_texto_antes_de_decodificar() {
-        let d = dir_teste("base64_tamanho");
+        let d = dir_com_hinario("base64_tamanho");
         let lim = Limites {
             zip: 10,
             ..Limites::default()
@@ -617,7 +620,7 @@ mod testes {
         // 200 caracteres que NÃO são base64: se decodificasse primeiro, o erro seria zip_invalido
         let e = importar_base64_com(&d, &"@".repeat(200), &lim).unwrap_err();
         assert_eq!(codigo(&e), "zip_grande_demais");
-        assert!(!d.exists(), "nada é tocado");
+        assert_eq!(arquivos(&d), ["hinario.json"], "nada é tocado");
     }
 
     #[test]
@@ -628,7 +631,7 @@ mod testes {
             zip: 30,
             ..Limites::default()
         };
-        let d = dir_teste("gate_borda");
+        let d = dir_com_hinario("gate_borda");
         let ate = |n: usize| importar_base64_com(&d, &"@".repeat(n), &lim).unwrap_err();
         assert_eq!(
             codigo(&ate(44)),
@@ -646,7 +649,7 @@ mod testes {
 
     #[test]
     fn base64_no_limite_do_zip_passa_e_um_byte_a_mais_nao() {
-        let d = dir_teste("base64_limite");
+        let d = dir_com_hinario("base64_limite");
         let z = pacote_ok();
         let lim = Limites {
             zip: z.len(),
@@ -654,26 +657,31 @@ mod testes {
         };
         assert!(importar_base64_com(&d, &STANDARD.encode(&z), &lim).is_ok());
         let mais = [z.clone(), vec![0]].concat();
-        let e = importar_base64_com(&dir_teste("base64_limite2"), &STANDARD.encode(&mais), &lim)
-            .unwrap_err();
+        let e = importar_base64_com(
+            &dir_com_hinario("base64_limite2"),
+            &STANDARD.encode(&mais),
+            &lim,
+        )
+        .unwrap_err();
         assert_eq!(codigo(&e), "zip_grande_demais");
         std::fs::remove_dir_all(&d).ok();
     }
 
     #[test]
-    fn zip_so_com_o_json_importa_sem_partituras() {
-        let d = dir_teste("so_json");
-        let r = importar_zip(&d, &zip_de(&[("hinario.json", JSON)])).unwrap();
-        assert_eq!(r.partituras, 0);
+    fn zip_sem_nenhuma_partitura_e_recusado() {
+        let d = dir_com_hinario("sem_svg");
+        for z in [zip_de(&[]), zip_de(&[("partituras/", "")])] {
+            let e = importar_zip(&d, &z).unwrap_err();
+            assert_eq!(codigo(&e), "partituras_nenhuma", "{e}");
+        }
         assert_eq!(arquivos(&d), ["hinario.json"]);
         std::fs::remove_dir_all(&d).ok();
     }
 
     #[test]
     fn svg_que_nao_passa_na_limpeza_e_recusado_e_o_resto_entra() {
-        let d = dir_teste("recusa");
+        let d = dir_com_hinario("recusa");
         let z = zip_de(&[
-            ("hinario.json", JSON),
             ("partituras/hino-1.svg", SVG),
             (
                 "partituras/hino-2.svg",
@@ -702,9 +710,8 @@ mod testes {
 
     #[test]
     fn svg_de_hino_que_o_hinario_nao_tem_e_recusado() {
-        let d = dir_teste("sem_hino");
+        let d = dir_com_hinario("sem_hino");
         let z = zip_de(&[
-            ("hinario.json", JSON),
             ("partituras/hino-1.svg", SVG),
             ("partituras/hino-77.svg", SVG),
         ]);
@@ -722,8 +729,8 @@ mod testes {
 
     #[test]
     fn nenhuma_partitura_aceita_nao_deixa_pasta_nem_marca() {
-        let d = dir_teste("nenhuma");
-        let z = zip_de(&[("hinario.json", JSON), ("partituras/hino-1.svg", "x")]);
+        let d = dir_com_hinario("nenhuma");
+        let z = zip_de(&[("partituras/hino-1.svg", "x")]);
         let r = importar_zip(&d, &z).unwrap();
         assert_eq!(r.partituras, 0);
         assert_eq!(r.recusadas.len(), 1);
@@ -744,34 +751,26 @@ mod testes {
             "partituras\\hino-1.svg",
             "leia-me.txt",
             "partituras/hino-1.timemap.json",
+            "hinario.json",
         ] {
-            let d = dir_teste("inesperado");
-            let z = zip_de(&[
-                ("hinario.json", JSON),
-                ("partituras/hino-1.svg", SVG),
-                (ruim, "x"),
-            ]);
+            let d = dir_com_hinario("inesperado");
+            let z = zip_de(&[("partituras/hino-1.svg", SVG), (ruim, "x")]);
             let e = importar_zip(&d, &z).unwrap_err();
             assert_eq!(
                 args(&e),
                 vec!["zip_inesperado".to_string(), ruim.to_string()],
                 "{ruim}"
             );
-            assert!(
-                !d.exists() || arquivos(&d).is_empty(),
-                "{ruim}: {:?}",
-                arquivos(&d)
-            );
+            assert_eq!(arquivos(&d), ["hinario.json"], "{ruim}");
             std::fs::remove_dir_all(&d).ok();
         }
     }
 
     #[test]
     fn nome_repetido_recusa_o_pacote() {
-        let d = dir_teste("repetido");
+        let d = dir_com_hinario("repetido");
         // "hino-2" e "hino-1" têm o mesmo tamanho: trocar os bytes do nome (na entrada e no diretório central) duplica a entrada.
         let z = zip_de(&[
-            ("hinario.json", JSON),
             ("partituras/hino-1.svg", SVG),
             ("partituras/hino-2.svg", SVG),
         ]);
@@ -787,53 +786,44 @@ mod testes {
         assert_eq!(achou, 2, "o nome aparece na entrada e no diretório central");
         let e = importar_zip(&d, &z).unwrap_err();
         assert_eq!(codigo(&e), "zip_repetido", "{e}");
-        assert!(!d.exists() || arquivos(&d).is_empty());
+        assert_eq!(arquivos(&d), ["hinario.json"]);
         std::fs::remove_dir_all(&d).ok();
     }
 
     #[test]
-    fn sem_json_ou_zip_ruim_nao_grava_nada() {
-        let d = dir_teste("sem_json");
-        assert_eq!(
-            codigo(&importar_zip(&d, &zip_de(&[("partituras/hino-1.svg", SVG)])).unwrap_err()),
-            "zip_sem_json"
-        );
-        assert_eq!(
-            codigo(&importar_zip(&d, &zip_de(&[])).unwrap_err()),
-            "zip_sem_json"
-        );
+    fn zip_ruim_nao_grava_nada() {
+        let d = dir_com_hinario("zip_ruim");
         for lixo in [&b""[..], b"nao e zip", b"PK\x03\x04quebrado", &[0u8; 64]] {
             assert_eq!(codigo(&importar_zip(&d, lixo).unwrap_err()), "zip_invalido");
         }
-        assert!(!d.exists() || arquivos(&d).is_empty());
+        assert_eq!(arquivos(&d), ["hinario.json"]);
         std::fs::remove_dir_all(&d).ok();
     }
 
     #[test]
-    fn json_invalido_no_zip_nao_substitui_o_que_ja_havia() {
-        let d = dir_teste("json_ruim");
+    fn sem_hinario_instalado_nao_importa_e_nao_grava_nada() {
+        // as partituras valem para um hinário: sem ele não há como saber a que hinos pertencem
+        let d = dir_teste("sem_hinario");
+        let e = importar_zip(&d, &pacote_ok()).unwrap_err();
+        assert_eq!(codigo(&e), "partituras_sem_hinario", "{e}");
+        assert!(!d.exists() || arquivos(&d).is_empty(), "{:?}", arquivos(&d));
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn importar_partituras_nao_mexe_no_hinario_instalado() {
+        let d = dir_com_hinario("hinario_intacto");
+        let antes = std::fs::read(d.join("hinario.json")).unwrap();
         importar_zip(&d, &pacote_ok()).unwrap();
-        let antes = arquivos(&d);
-        for ruim in [
-            "{ quebrado",
-            r#"{"versao":1,"hinario":{"id":"x","nome":"X"},"hinos":[]}"#,
-        ] {
-            let z = zip_de(&[("hinario.json", ruim), ("partituras/hino-2.svg", SVG)]);
-            assert!(importar_zip(&d, &z).is_err());
-        }
-        assert_eq!(arquivos(&d), antes);
-        assert_eq!(
-            hinario::carregar(Some(&d)).unwrap().partituras,
-            vec![1, 283]
-        );
+        assert_eq!(std::fs::read(d.join("hinario.json")).unwrap(), antes);
         std::fs::remove_dir_all(&d).ok();
     }
 
     #[test]
     fn importar_de_novo_troca_as_partituras_antigas() {
-        let d = dir_teste("troca");
+        let d = dir_com_hinario("troca");
         importar_zip(&d, &pacote_ok()).unwrap();
-        let z = zip_de(&[("hinario.json", JSON), ("partituras/hino-2.svg", SVG)]);
+        let z = zip_de(&[("partituras/hino-2.svg", SVG)]);
         let r = importar_zip(&d, &z).unwrap();
         assert_eq!(r.pacote.partituras, vec![2]);
         assert_eq!(
@@ -845,15 +835,28 @@ mod testes {
                 "partituras/hino-2.svg"
             ]
         );
-        // um zip sem nenhuma partitura limpa as antigas
-        importar_zip(&d, &zip_de(&[("hinario.json", JSON)])).unwrap();
-        assert_eq!(arquivos(&d), ["hinario.json"]);
+        // um zip sem nenhuma partitura é recusado e as que já estavam ficam
+        assert_eq!(
+            codigo(&importar_zip(&d, &zip_de(&[])).unwrap_err()),
+            "partituras_nenhuma"
+        );
+        assert_eq!(numeros(&d, "x").unwrap(), vec![2]);
+        // todas as partituras do zip recusadas: também ficam as que já estavam
+        let ruim = zip_de(&[
+            ("partituras/hino-77.svg", SVG),
+            ("partituras/hino-1.svg", "nao e svg"),
+        ]);
+        let r = importar_zip(&d, &ruim).unwrap();
+        assert_eq!((r.partituras, r.recusadas.len()), (0, 2));
+        assert_eq!(r.pacote.partituras, vec![2]);
+        assert_eq!(numeros(&d, "x").unwrap(), vec![2]);
+        assert!(!d.join("partituras.novo").exists());
         std::fs::remove_dir_all(&d).ok();
     }
 
     #[test]
     fn sobra_de_importacao_interrompida_e_limpa() {
-        let d = dir_teste("sobra");
+        let d = dir_com_hinario("sobra");
         std::fs::create_dir_all(d.join("partituras.novo")).unwrap();
         std::fs::write(d.join("partituras.novo/hino-9.svg"), "lixo").unwrap();
         importar_zip(&d, &pacote_ok()).unwrap();
@@ -871,13 +874,12 @@ mod testes {
             entradas: 4,
             descompactado: 5_000,
             svg: 1_000,
-            json: 2_000,
         }
     }
 
     #[test]
     fn zip_grande_demais() {
-        let d = dir_teste("lim_zip");
+        let d = dir_com_hinario("lim_zip");
         let z = pacote_ok();
         let lim = Limites {
             zip: z.len() - 1,
@@ -897,9 +899,8 @@ mod testes {
 
     #[test]
     fn arquivos_demais() {
-        let d = dir_teste("lim_entradas");
+        let d = dir_com_hinario("lim_entradas");
         let z = zip_de(&[
-            ("hinario.json", JSON),
             ("partituras/hino-1.svg", SVG),
             ("partituras/hino-2.svg", SVG),
             ("partituras/hino-3.svg", SVG),
@@ -909,7 +910,7 @@ mod testes {
                 &d,
                 &z,
                 &Limites {
-                    entradas: 4,
+                    entradas: 3,
                     ..pequenos()
                 }
             )
@@ -919,7 +920,7 @@ mod testes {
             &d,
             &z,
             &Limites {
-                entradas: 3,
+                entradas: 2,
                 ..pequenos()
             },
         )
@@ -930,9 +931,9 @@ mod testes {
 
     #[test]
     fn total_descompactado_alto_demais_recusa_antes_de_descompactar() {
-        let d = dir_teste("lim_total");
+        let d = dir_com_hinario("lim_total");
         let z = pacote_ok();
-        let total = (JSON.len() + SVG.len() * 2) as u64;
+        let total = (SVG.len() * 2) as u64;
         assert!(
             importar_zip_com(
                 &d,
@@ -959,13 +960,12 @@ mod testes {
 
     #[test]
     fn svg_acima_do_limite_e_recusado_so_ele() {
-        let d = dir_teste("lim_svg");
+        let d = dir_com_hinario("lim_svg");
         let grande = format!(
             r#"<svg xmlns="http://www.w3.org/2000/svg"><desc>{}</desc></svg>"#,
             "x".repeat(2_000)
         );
         let z = zip_de(&[
-            ("hinario.json", JSON),
             ("partituras/hino-1.svg", SVG),
             ("partituras/hino-2.svg", &grande),
         ]);
@@ -987,7 +987,7 @@ mod testes {
 
     #[test]
     fn svg_no_limite_exato_entra_e_um_byte_a_mais_nao() {
-        let d = dir_teste("lim_exato");
+        let d = dir_com_hinario("lim_exato");
         let lim = Limites {
             descompactado: 10_000,
             ..pequenos()
@@ -1001,7 +1001,7 @@ mod testes {
         };
         let exato = com_tamanho(lim.svg as usize);
         assert_eq!(exato.len() as u64, lim.svg);
-        let passa = zip_de(&[("hinario.json", JSON), ("partituras/hino-1.svg", &exato)]);
+        let passa = zip_de(&[("partituras/hino-1.svg", &exato)]);
         assert_eq!(
             importar_zip_com(&d, &passa, &lim)
                 .unwrap()
@@ -1010,38 +1010,10 @@ mod testes {
             vec![1]
         );
         let passou = com_tamanho(lim.svg as usize + 1);
-        let nao = zip_de(&[("hinario.json", JSON), ("partituras/hino-1.svg", &passou)]);
+        let nao = zip_de(&[("partituras/hino-1.svg", &passou)]);
         let r = importar_zip_com(&d, &nao, &lim).unwrap();
         assert_eq!(r.partituras, 0);
         assert_eq!(r.recusadas.len(), 1);
-        std::fs::remove_dir_all(&d).ok();
-    }
-
-    #[test]
-    fn json_acima_do_limite_recusa_o_pacote() {
-        let d = dir_teste("lim_json");
-        let z = zip_de(&[("hinario.json", JSON)]);
-        let e = importar_zip_com(
-            &d,
-            &z,
-            &Limites {
-                json: JSON.len() as u64 - 1,
-                ..pequenos()
-            },
-        )
-        .unwrap_err();
-        assert_eq!(codigo(&e), "grande_demais");
-        assert!(
-            importar_zip_com(
-                &d,
-                &z,
-                &Limites {
-                    json: JSON.len() as u64,
-                    ..pequenos()
-                }
-            )
-            .is_ok()
-        );
         std::fs::remove_dir_all(&d).ok();
     }
 
@@ -1050,12 +1022,12 @@ mod testes {
         // O tamanho declarado do SVG é trocado por 1 (no cabeçalho local e no diretório central), mas o conteúdo continua grande.
         // A biblioteca do zip recusa a entrada ("maior que o tamanho declarado"); se um dia deixasse passar, `ler_entrada` ainda
         // corta a leitura no limite (coberto por `svg_acima_do_limite_e_recusado_so_ele`). Em nenhum caso o SVG entra inteiro.
-        let d = dir_teste("mentira");
+        let d = dir_com_hinario("mentira");
         let grande = format!(
             r#"<svg xmlns="http://www.w3.org/2000/svg"><desc>{}</desc></svg>"#,
             "x".repeat(3_000)
         );
-        let mut z = zip_de(&[("hinario.json", JSON), ("partituras/hino-1.svg", &grande)]);
+        let mut z = zip_de(&[("partituras/hino-1.svg", &grande)]);
         let real = (grande.len() as u32).to_le_bytes();
         let falso = 1u32.to_le_bytes();
         let mut trocas = 0;
@@ -1076,15 +1048,36 @@ mod testes {
         let e = importar_zip_com(&d, &z, &lim).unwrap_err();
         assert_eq!(codigo(&e), "zip_invalido", "{e}");
         assert!(!d.join("partituras/hino-1.svg").exists());
-        assert!(!d.join("hinario.json").exists(), "nada é gravado");
+        assert_eq!(arquivos(&d), ["hinario.json"], "nada é gravado");
         std::fs::remove_dir_all(&d).ok();
     }
 
     // ---- JSON sozinho, remoção e leitura ----
 
     #[test]
+    fn remover_so_as_partituras_mantem_o_hinario() {
+        let d = dir_com_hinario("remover_so_partituras");
+        importar_zip(&d, &pacote_ok()).unwrap();
+        let p = hinario::remover_partituras(&d).unwrap();
+        assert!(p.partituras.is_empty());
+        assert!(!p.exemplo, "o hinário importado continua");
+        assert_eq!(p.hinario.hinario.id, "x");
+        assert_eq!(arquivos(&d), ["hinario.json"]);
+        // sem partituras (ou chamado de novo) também dá certo
+        assert!(
+            hinario::remover_partituras(&d)
+                .unwrap()
+                .partituras
+                .is_empty()
+        );
+        // e dá para importar de novo
+        assert_eq!(importar_zip(&d, &pacote_ok()).unwrap().partituras, 2);
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
     fn importar_json_do_mesmo_hinario_mantem_as_partituras() {
-        let d = dir_teste("json_mesmo");
+        let d = dir_com_hinario("json_mesmo");
         importar_zip(&d, &pacote_ok()).unwrap();
         let p = hinario::importar(&d, JSON).unwrap();
         assert_eq!(p.partituras, vec![1, 283]);
@@ -1093,7 +1086,7 @@ mod testes {
 
     #[test]
     fn importar_json_de_outro_hinario_apaga_as_partituras() {
-        let d = dir_teste("json_outro");
+        let d = dir_com_hinario("json_outro");
         importar_zip(&d, &pacote_ok()).unwrap();
         let outro = JSON.replace(r#""id":"x""#, r#""id":"y""#);
         let p = hinario::importar(&d, &outro).unwrap();
@@ -1104,7 +1097,7 @@ mod testes {
 
     #[test]
     fn remover_apaga_as_partituras_e_volta_ao_exemplo() {
-        let d = dir_teste("remover");
+        let d = dir_com_hinario("remover");
         importar_zip(&d, &pacote_ok()).unwrap();
         let p = hinario::remover(&d).unwrap();
         assert!(p.exemplo && p.partituras.is_empty());
@@ -1115,7 +1108,7 @@ mod testes {
 
     #[test]
     fn numeros_ignora_marca_de_outro_hinario_e_arquivos_estranhos() {
-        let d = dir_teste("numeros");
+        let d = dir_com_hinario("numeros");
         importar_zip(&d, &pacote_ok()).unwrap();
         std::fs::write(d.join("partituras/hino-5.svg.bak"), "x").unwrap();
         std::fs::write(d.join("partituras/leia-me.txt"), "x").unwrap();
@@ -1131,7 +1124,8 @@ mod testes {
     fn id_com_caracteres_estranhos_funciona_como_marca() {
         let d = dir_teste("id_estranho");
         let json = JSON.replace(r#""id":"x""#, r#""id":" a\nb\"c ""#);
-        let z = zip_de(&[("hinario.json", &json), ("partituras/hino-1.svg", SVG)]);
+        hinario::importar(&d, &json).unwrap();
+        let z = zip_de(&[("partituras/hino-1.svg", SVG)]);
         let r = importar_zip(&d, &z).unwrap();
         assert_eq!(r.pacote.partituras, vec![1]);
         assert_eq!(hinario::carregar(Some(&d)).unwrap().partituras, vec![1]);
@@ -1152,7 +1146,7 @@ mod testes {
 
     #[test]
     fn marca_ilegivel_nao_apaga_as_partituras_e_o_erro_sobe() {
-        let d = dir_teste("marca_ilegivel");
+        let d = dir_com_hinario("marca_ilegivel");
         importar_zip(&d, &pacote_ok()).unwrap();
         estraga_a_marca(&d);
         // alinhar (importar um JSON de outro hinário) NÃO pode tratar "não consegui ler" como "é de outro hinário"
@@ -1172,7 +1166,7 @@ mod testes {
 
     #[test]
     fn sem_marca_e_sem_pasta_e_so_ausencia_e_nao_erro() {
-        let d = dir_teste("sem_marca");
+        let d = dir_com_hinario("sem_marca");
         assert!(numeros(&d, "x").unwrap().is_empty()); // nem a pasta existe
         std::fs::create_dir_all(d.join("partituras")).unwrap();
         std::fs::write(d.join("partituras/hino-1.svg"), SVG).unwrap();
@@ -1186,7 +1180,7 @@ mod testes {
     #[test]
     fn pasta_de_partituras_que_nao_da_para_listar_e_erro_e_nao_lista_vazia() {
         use std::os::unix::fs::PermissionsExt;
-        let d = dir_teste("sem_listar");
+        let d = dir_com_hinario("sem_listar");
         importar_zip(&d, &pacote_ok()).unwrap();
         let pasta = d.join("partituras");
         // só "x": dá para abrir o .hinario pelo caminho, mas não listar a pasta
@@ -1208,18 +1202,23 @@ mod testes {
     /// Roda `f` numa thread enquanto a tranca está presa aqui: ela tem de esperar (não acabar e não tocar em `d`), e só depois de
     /// a tranca ser solta é que termina.
     fn espera_a_tranca<T: Send + 'static>(d: &Path, f: impl FnOnce() -> T + Send + 'static) -> T {
+        let antes = arquivos(d);
         let guarda = hinario::trancar();
         let t = std::thread::spawn(f);
         std::thread::sleep(std::time::Duration::from_millis(300));
         assert!(!t.is_finished(), "tem de esperar a tranca");
-        assert!(!d.exists(), "e não pode ter tocado em nada enquanto espera");
+        assert_eq!(
+            arquivos(d),
+            antes,
+            "e não pode ter tocado em nada enquanto espera"
+        );
         drop(guarda);
         t.join().unwrap()
     }
 
     #[test]
     fn importar_zip_espera_a_tranca() {
-        let d = dir_teste("tranca_zip");
+        let d = dir_com_hinario("tranca_zip");
         let (d2, z) = (d.clone(), pacote_ok());
         let r = espera_a_tranca(&d, move || importar_zip(&d2, &z));
         assert_eq!(r.unwrap().partituras, 2);
@@ -1228,7 +1227,7 @@ mod testes {
 
     #[test]
     fn importar_json_espera_a_tranca() {
-        let d = dir_teste("tranca_json");
+        let d = dir_com_hinario("tranca_json");
         let d2 = d.clone();
         let r = espera_a_tranca(&d, move || hinario::importar(&d2, JSON));
         assert!(r.is_ok());
@@ -1237,7 +1236,7 @@ mod testes {
 
     #[test]
     fn remover_espera_a_tranca() {
-        let d = dir_teste("tranca_remover");
+        let d = dir_com_hinario("tranca_remover");
         let d2 = d.clone();
         let r = espera_a_tranca(&d, move || hinario::remover(&d2));
         assert!(r.unwrap().exemplo);
@@ -1246,9 +1245,9 @@ mod testes {
 
     #[test]
     fn importacoes_em_paralelo_deixam_o_disco_consistente() {
-        let d = dir_teste("paralelo");
-        let a = zip_de(&[("hinario.json", JSON), ("partituras/hino-1.svg", SVG)]);
-        let b = zip_de(&[("hinario.json", JSON), ("partituras/hino-2.svg", SVG)]);
+        let d = dir_com_hinario("paralelo");
+        let a = zip_de(&[("partituras/hino-1.svg", SVG)]);
+        let b = zip_de(&[("partituras/hino-2.svg", SVG)]);
         let mut threads = Vec::new();
         for i in 0..8 {
             let (d2, z) = (d.clone(), if i % 2 == 0 { a.clone() } else { b.clone() });
@@ -1273,7 +1272,7 @@ mod testes {
 
     #[test]
     fn le_a_partitura_pelo_numero() {
-        let d = dir_teste("ler");
+        let d = dir_com_hinario("ler");
         importar_zip(&d, &pacote_ok()).unwrap();
         let svg = ler_partitura(&d, 283).unwrap();
         assert!(
@@ -1289,7 +1288,7 @@ mod testes {
 
     #[test]
     fn leitura_limpa_de_novo_e_recusa_arquivo_adulterado() {
-        let d = dir_teste("adulterado");
+        let d = dir_com_hinario("adulterado");
         importar_zip(&d, &pacote_ok()).unwrap();
         std::fs::write(
             d.join("partituras/hino-1.svg"),
@@ -1312,14 +1311,19 @@ mod testes {
         std::fs::remove_dir_all(&d).ok();
     }
 
-    /// Importa um pacote de verdade (não versionado): `BMCCB_PACOTE_ZIP=caminho/pacote.zip cargo test pacote_real -- --ignored --nocapture`.
+    /// Importa um pacote de partituras de verdade (não versionado), para o hinário real:
+    /// `BMCCB_HINARIO=hinario.json BMCCB_PACOTE_ZIP=partituras.zip cargo test pacote_real -- --ignored --nocapture`.
     /// Confere que nada foi recusado e que cada partitura importada pode ser lida de volta.
     #[test]
-    #[ignore = "defina BMCCB_PACOTE_ZIP=caminho/para/pacote.zip"]
+    #[ignore = "defina BMCCB_HINARIO=hinario.json e BMCCB_PACOTE_ZIP=caminho/para/partituras.zip"]
     fn pacote_real_e_importado_e_lido_de_volta() {
         let caminho = std::env::var("BMCCB_PACOTE_ZIP").expect("defina BMCCB_PACOTE_ZIP");
         let bytes = std::fs::read(&caminho).unwrap();
+        let json =
+            std::fs::read_to_string(std::env::var("BMCCB_HINARIO").expect("defina BMCCB_HINARIO"))
+                .unwrap();
         let d = dir_teste("real");
+        hinario::importar(&d, &json).unwrap();
         let inicio = std::time::Instant::now();
         let r = importar_zip(&d, &bytes).unwrap();
         println!(

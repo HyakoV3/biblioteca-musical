@@ -72,6 +72,7 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 
 | Zip | Versão (commit) | Data | Conteúdo | SHA-256 |
 |---|---|---|---|---|
+| **020** | 0.3.0 (3dd1dfc) | 2026-11-16 | **Card Partituras em Ajustes com Baixar e Remover** (PR #42), no molde dos sons gravados: o app baixa o pacote do servidor (`BibliotecaMusicalPartituras/partituras-001.zip`, 155 KB, as 5 partituras de teste), confere o tamanho e o SHA-256 e instala. **Importar hinário agora só aceita `.json`** (o zip com partituras não é mais aceito, e o pacote antigo do 018/019 não serve). Compilado do ramo do PR #42, ainda não mergeado. **A ver no celular** (roteiro abaixo; precisa de internet para baixar). Entregue em `<pasta de entrega dos zips>/` | `1d6188df…d3ea` |
 | **019** | 0.3.0 (ea939a2) | 2026-11-16 | **Corrige o importar do `.zip` no Android** (PR #40): no 018 ele recusava tudo com "a chamada não trouxe os bytes do arquivo", porque o Android não entrega corpo binário ao Rust; agora o zip vai como **texto base64**. O resto igual ao 018 (aba Partitura, hino 283 corrigido). **Usa o mesmo `BibliotecaMusical-CCB-pacote-partituras-018.zip`** (continua na pasta; não precisa de outro). Compilado do ramo do PR #40, ainda não mergeado. **A ver no celular** (roteiro abaixo; o pacote chega a ~0,2 MB, então a primeira prova é só se o importar funciona). Entregue em `<pasta de entrega dos zips>/` | `b0c4fda2…495d` |
 | **018** | 0.3.0 (72b22f8) | 2026-11-16 | **Aba Partitura** (I-08, PRs #35 a #37): o app importa um **pacote `.zip`** (hinário + partituras em SVG), mostra a partitura de cada hino numa aba (zoom de 100% a 400%, nos temas claro, escuro e alto contraste, com a fonte Leipzig) e, sem nenhuma partitura instalada, mostra a aba com um aviso e um botão para Ajustes. **Hino 283** com as correções da foto (versos separados, "esplendor", "Contigo ao céu"). O resto igual ao 017. Compilado da `main`. **O importar do `.zip` falhou no Android (corrigido no 019).** **Acompanha o `BibliotecaMusical-CCB-pacote-partituras-018.zip`** (os mesmos 5 hinos com partituras; SHA-256 `775b7fc6…2741`, 165.629 bytes), que **não** deve ser aberto: é importado em Ajustes. **A ver no celular** (roteiro abaixo). Entregue em `<pasta de entrega dos zips>/` | `fafa75f6…b6bd` |
 | **017** | 0.3.0 (b3615ac) | 2026-11-16 | **Alto contraste em amarelo vivo sobre preto** (PR #33), como o Alto contraste do site da Tokai: no 016 era preto sobre amarelo claro, e o responsável pediu o inverso. Fundo preto; texto, bordas e acento em `#ffff00`; foco branco; trilha da barra em oliva. O resto igual ao 016 (slider do miniplayer em cima, letra com as 12 correções). Compilado da `main`. **A ver no celular** e com quem tem baixa visão. Entregue em `<pasta de entrega dos zips>/` | `25b2d8ee…e8be` |
@@ -92,23 +93,24 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 | **003** | 0.2.0 (238a103) | 2026-11-14 | Ajustes: "Sobre o app" num card fechado, aviso de independência à parte e versão centralizada fora do card; tema "Automático"; botões "Importar hinário" e "Remover importação"; seletor de idioma na largura toda | `52ceec38…01e50` |
 | **002** | 0.2.0 (bc7ba9b) | 2026-11-14 | Nome "Biblioteca Musical CCB"; ícones SVG (conjunto `ic`); cards em grupo (abrir um fecha os outros); "Redefinir vozes" e "Redefinir instrumentos" separados; lista com 001, 002; Ajustes como botão hambúrguer | `47944215…0a665` |
 
-### Roteiro das partituras (APK **019**; o pacote de partituras é o do 018)
+### Roteiro das partituras (APK **020**)
 
-**No 018 o importar do `.zip` FALHOU no Android** ("Não foi possível importar: o pacote .zip não pôde ser lido: a chamada não trouxe os
-bytes do arquivo"), como o roteiro já temia: o app mandava os bytes ao Rust como corpo binário da chamada (`invoke`), e **o Android não
-entrega corpo binário** (o Tauri só usa o `postMessage` lá, que é texto; a documentação dele manda passar bytes como base64). Isso só
-tinha sido testado em Chrome com uma simulação. **Corrigido no 019:** o zip vai como texto base64, em todas as plataformas. **Os passos
-abaixo usam o APK 019** (o 018 não serve para o passo 2).
-1. Instale o **019** (`BibliotecaMusical-CCB-teste-019.zip`) e abra um hino. A aba **Partitura** aparece (em todos os hinos) com o aviso "Este hinário não tem partituras instaladas" e o
-   botão **Abrir Ajustes**. Conferir que o botão leva a Ajustes.
-2. Em **Ajustes → Importar hinário**, escolha o `BibliotecaMusical-CCB-pacote-partituras-018.zip` (é o **mesmo pacote** do 018, que ficou com
-   esse nome; o seletor de arquivos precisa mostrar o `.zip`). Deve aparecer "Importado: 5 hinos de “Amostra de teste (5 hinos)”, com 5 partituras." Se aparecer "Partituras que não entraram",
-   anote o hino e o motivo.
-3. Abra os hinos 1, 276, 283, 398 e 457: a aba Partitura mostra a partitura. Conferir: **notas, letra e o andamento** ("♩ = 58", com a figura
-   da nota) legíveis; as **bandeirolas** das colcheias na mesma cor das notas; o **zoom** (− / 100% / +) e **rolar para os lados** quando
-   ampliada; trocar para o tema **escuro** e o **Alto contraste** em Ajustes.
+Precisa de **internet** (o pacote vem do servidor). O hinário de teste (5 hinos) já vem no app, então o pré-requisito está cumprido.
+1. Instale o **020** (`BibliotecaMusical-CCB-teste-020.zip`, extraia o `.apk`) e abra um hino. A aba **Partitura** aparece com o aviso e o botão
+   **Abrir Ajustes**, que deve levar a Ajustes.
+2. Em **Ajustes**, ache o card **Partituras**: "0,2 MB · Não instaladas" e o botão **Baixar (0,2 MB)**. Toque nele: aparece o progresso, depois
+   "Conferindo o arquivo…" e "Instalando…", e o card passa a "Instaladas: 5 partituras" com o botão **Remover**. Se aparecer um erro, **anote o
+   texto exato** (ele diz a etapa: rede, arquivo que não confere, ou o motivo de uma partitura recusada).
+3. Abra os hinos 1, 276, 283, 398 e 457: a aba Partitura mostra a partitura. Conferir: **notas, letra e o andamento** ("♩ = 58", com a figura da
+   nota) legíveis; as **bandeirolas** das colcheias na mesma cor das notas; o **zoom** (− / 100% / +) e **rolar para os lados** quando ampliada;
+   trocar para o tema **escuro** e o **Alto contraste** em Ajustes.
 4. Com a **fonte do sistema grande**, a aba continua utilizável? E com o celular **deitado** (barra de abas na lateral)?
-5. **Remover importação** em Ajustes apaga também as partituras (a aba volta ao aviso).
+5. **Remover** no card apaga só as partituras (o hinário fica): a aba volta ao aviso e o card a "Não instaladas".
+6. **Importar hinário** só mostra arquivos `.json` agora.
+
+**Histórico (018 e 019):** o 018 falhou ao importar o zip no Android ("a chamada não trouxe os bytes do arquivo": o Android não entrega corpo
+binário ao Rust) e o 019 corrigiu isso mandando o zip em base64; o 020 troca esse fluxo pelo download automático, e o pacote combinado
+(com `hinario.json`) **não funciona mais**.
 
 ## Instalar no celular
 

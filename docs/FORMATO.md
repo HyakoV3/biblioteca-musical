@@ -155,36 +155,42 @@ qualquer). Todos os campos além de `numero` e `titulo` são opcionais.
 
 ## Importar
 
-Em **Ajustes**, o botão **Importar hinário** escolhe um arquivo `.json` ou um pacote `.zip` (o app distingue pelos primeiros
-bytes, não pelo nome).
+**Hinário.** Em **Ajustes**, o botão **Importar hinário** escolhe um arquivo **`.json`** (só `.json`: o hinário vai deixar de ser importado e
+virar um pacote baixado, como os sons). O app valida (versão, ao menos um hino, números de hino sem repetição, limite de 20 MB, conferido
+pelo `file.size` **antes de ler o arquivo**) e só então grava em `content/hinario.json`, de forma atômica: um arquivo inválido nunca
+substitui o conteúdo atual. As partituras já instaladas só ficam se o novo JSON for do mesmo hinário (mesmo `hinario.id`); com outro `id`,
+são apagadas, porque os números não combinariam. **Remover importação** apaga o `hinario.json` e as partituras e volta ao pacote de exemplo.
 
-**`.json`:** o app valida (versão, ao menos um hino, números de hino sem repetição, limite de 20 MB) e só então grava em
-`content/hinario.json`, de forma atômica: um arquivo inválido nunca substitui o conteúdo atual. As partituras já importadas só
-ficam se o novo JSON for do mesmo hinário (mesmo `hinario.id`); com outro `id`, são apagadas, porque os números não combinariam.
+**Partituras (I-08).** Têm o **card próprio "Partituras"** em Ajustes, no molde dos sons gravados: estado ("Instaladas: N" ou "Não
+instaladas"), **Baixar (tamanho)**, progresso, **Remover** (só as partituras; o hinário fica). Não há importação manual. O app baixa o pacote
+do servidor, confere o **tamanho e o SHA-256 contra o manifesto** (`src/lib/partituras/manifesto.json`, gerado por
+`tools/montar-manifesto-partituras.py`; sem pacote publicado, `"pacote": null`, e o botão Baixar não aparece) e só então o entrega ao Rust.
+O processo de publicar está em [`pacote-de-partituras.md`](pacote-de-partituras.md).
 
-**`.zip` (I-08, partituras):** o pacote tem **só** estes nomes:
+O pacote é um `.zip` com **só** estes nomes (nada de `hinario.json`: as partituras valem para o hinário já instalado, de onde vêm os números
+de hino aceitos):
 
 ```
-hinario.json                  o mesmo JSON de cima (obrigatório)
-partituras/hino-<número>.svg  a partitura do hino, uma página (opcional, um por hino)
+partituras/hino-<número>.svg  a partitura do hino, uma página (um por hino)
 ```
 
-O app manda o zip ao Rust como **texto base64** (`invoke("importar_pacote", { zip })`), e não como corpo binário: **no Android o Tauri
-não entrega corpo binário** (só o `postMessage`, que é texto). O tamanho do texto é conferido antes de decodificar, e o front recusa um
-arquivo acima de 150 MiB já pelo `file.size`, **antes de lê-lo para a memória** (e de novo antes de montar o base64). Num pacote de 15 MB isso são ~20 MB de texto na chamada.
-`tools/montar-pacote.py hinario.json pasta-dos-svg pacote.zip` monta o zip (e preenche `partitura` em cada hino que tem SVG); os
-SVG vêm de `tools/gerar-partituras.py`. O app confere tudo antes de gravar:
+O app manda o zip ao Rust como **texto base64** (`invoke("importar_partituras", { zip })`), e não como corpo binário: **no Android o Tauri
+não entrega corpo binário** (só o `postMessage`, que é texto). O tamanho do texto é conferido antes de decodificar. Num pacote de 15 MB
+isso são ~20 MB de texto na chamada. `tools/montar-pacote.py pasta-dos-svg pacote.zip` monta o zip; os SVG vêm de `tools/gerar-partituras.py`.
+O Rust confere tudo antes de gravar:
 
-- **Nomes exatos.** Qualquer outro nome (`..`, caminho absoluto, subpasta, maiúscula, zero à esquerda, `\`, nome repetido) **recusa
-  o pacote inteiro**, sem tocar no conteúdo atual. Nenhum nome do zip vira caminho no disco: o app grava sempre
+- **Hinário instalado.** Sem hinário importado, a instalação é recusada (`partituras_sem_hinario`); um zip sem nenhum SVG também
+  (`partituras_nenhuma`). O SVG de um hino que o hinário não tem é recusado.
+- **Nomes exatos.** Qualquer outro nome (`hinario.json`, `..`, caminho absoluto, subpasta, maiúscula, zero à esquerda, `\`, nome repetido)
+  **recusa o pacote inteiro**, sem tocar no conteúdo atual. Nenhum nome do zip vira caminho no disco: o app grava sempre
   `partituras/hino-<número>.svg`, montado por ele.
-- **Limites.** 150 MB de zip, 2000 arquivos, 300 MB descompactados, 8 MB por SVG, 20 MB de `hinario.json`. Valem também quando o
-  cabeçalho do zip declara um tamanho errado (a leitura é cortada no limite).
+- **Limites.** 150 MB de zip, 2000 arquivos, 300 MB descompactados, 8 MB por SVG. Valem também quando o cabeçalho do zip declara um tamanho
+  errado (a leitura é cortada no limite).
 - **O SVG é limpo, não copiado.** O app lê o SVG com um parser XML, confere cada elemento, atributo e valor contra uma **lista de
   permitidos** e o **reescreve**; é essa versão que fica no disco e que a tela mostra, embutida na página. Ficam de fora `script`,
   `foreignObject`, `image`, `a`, animações, `url(...)` em qualquer valor, `@import`, escapes de CSS (`\`), atributos `on*`,
   `style`, `href` que não seja `#id`, `xlink:href`, DOCTYPE, comentários e instruções. O que não passa é **recusado e informado**
-  (hino e motivo), e o resto do pacote entra. O SVG de um hino que o `hinario.json` não tem também é recusado.
+  (hino e motivo, no card), e o resto do pacote entra.
 - **Nenhum CSS do pacote entra.** Um `<style>` dentro de um SVG embutido na página vale para o **documento inteiro**, não só para
   o SVG: um pacote malicioso poderia esconder ou falsificar botões do app (`.botao{position:fixed;inset:0}`). Por isso o `<style>`
   do Verovio é **descartado** (com o que tiver dentro) e o atributo `style` é recusado. O que o `<style>` do Verovio fazia é
@@ -203,21 +209,18 @@ SVG vêm de `tools/gerar-partituras.py`. O app confere tudo antes de gravar:
   do app não o confunde. O `<svg>` raiz, que é o que o layout da página enxerga, não pode ter `class` (puxaria uma regra do app,
   como `position:fixed`) nem `transform`, e sai sempre com `overflow="hidden"` (o desenho não passa por cima da interface). Quem
   embute o SVG também deve recortá-lo (`overflow: hidden` no contêiner).
-- **Tudo ou nada.** Os SVG são gravados numa pasta de preparo, e só quando tudo está pronto ela troca a `partituras/` anterior. O
-  `hinario.json` é o último a ser trocado. (Uma queda no meio da troca pode deixar o JSON antigo com as partituras novas: como elas
-  são lidas pelo número, nada quebra, e importar de novo conserta.)
+- **Tudo ou nada.** Os SVG são gravados numa pasta de preparo, e só quando tudo está pronto ela troca a `partituras/` anterior; o
+  `hinario.json` nunca é tocado. Se **nenhuma** partitura do zip for aceita (todas recusadas), as que já estavam instaladas ficam.
 - **Fonte.** O SVG sai **sem** a fonte Leipzig (o `tools/gerar-partituras.py` desliga a que o Verovio embute, 58 KB por hino, em
   `url(data:...)`, que a limpeza recusaria). O texto do SVG usa `font-family="Leipzig"`, então o **app a traz uma vez só**
   (`src/lib/fonts/Leipzig.woff2`, carregada por `src/lib/partitura.css`; licença OFL 1.1, nos créditos de Ajustes).
 - **Na tela (aba Partitura).** O SVG é embutido na página (`{@html}`, já limpo) dentro de `.folha`, com o CSS acima e `color` do
   tema; o zoom (100% a 400%, 6 passos, lembrado no aparelho) muda a largura da folha, e a região rola para os lados. A aba
   Partitura aparece nos hinos que têm partitura; enquanto **nenhum** hino tem partitura instalada, aparece em todos, com um aviso e
-  um botão para Ajustes; num pacote que tem partituras, não aparece nos hinos que não têm.
+  um botão para Ajustes (o card Partituras); num pacote que tem partituras, não aparece nos hinos que não têm.
 
-As partituras ficam em `content/partituras/`, com a marca `.hinario` (o `id` do hinário a que pertencem). Sem pacote `.zip`
-importado, `partituras` na resposta do app é vazio. Cada partitura é lida pelo número do hino e **limpa de novo** na leitura.
-
-**Remover importação** apaga o `hinario.json` e as partituras e volta ao pacote de exemplo.
+As partituras ficam em `content/partituras/`, com a marca `.hinario` (o `id` do hinário a que pertencem). Sem partituras instaladas,
+`partituras` na resposta do app é vazio. Cada partitura é lida pelo número do hino e **limpa de novo** na leitura.
 
 ## Onde o app lê
 

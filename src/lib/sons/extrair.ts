@@ -20,7 +20,7 @@ export class ErroPacote extends Error {
   }
 }
 
-async function sha256Hex(dados: Uint8Array): Promise<string> {
+export async function sha256Hex(dados: Uint8Array): Promise<string> {
   const h = await crypto.subtle.digest("SHA-256", dados as BufferSource);
   return [...new Uint8Array(h)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
