@@ -328,6 +328,16 @@ async function principal() {
   confere(geo.dentro && geo.livre && geo.altura >= 20, `a área de toque do slider do miniplayer fica dentro dele e não cobre outros controles: ${JSON.stringify(geo)}`);
   confere(geo.emCima, `o slider do miniplayer fica EM CIMA da linha dos botões: ${JSON.stringify(geo)}`);
   confere(geo.distanciaDasAbas === null || geo.distanciaDasAbas >= 2.5, `o slider fica longe da barra de abas (>= 2,5rem) para não se confundir com ela: ${geo.distanciaDasAbas}rem`);
+  // Sem linha separando o miniplayer do resto do app: a divisa é a trilha do slider, no topo dele (pedido do responsável: mais elegante).
+  const semLinha = await av(`(() => {
+    const m = document.querySelector('.mini');
+    const c = getComputedStyle(m);
+    const trilho = m.querySelector('.trilho').getBoundingClientRect();
+    return { bordaTopo: c.borderTopWidth, bordas: [c.borderRightWidth, c.borderBottomWidth, c.borderLeftWidth], topoDaTrilha: Math.round(((trilho.top - m.getBoundingClientRect().top) / parseFloat(getComputedStyle(document.documentElement).fontSize)) * 100) / 100, // em rem
+      larguraDaTrilha: Math.round(trilho.width), larguraDoMini: Math.round(m.getBoundingClientRect().width) };
+  })()`);
+  confere(semLinha.bordaTopo === "0px" && semLinha.bordas.every((b) => b === "0px"), `o miniplayer não tem borda (sem linha de separação): ${JSON.stringify(semLinha)}`);
+  confere(semLinha.larguraDaTrilha === semLinha.larguraDoMini && semLinha.topoDaTrilha <= 0.55, `a trilha do slider faz a divisa: largura toda do miniplayer e logo no topo (${semLinha.topoDaTrilha}rem do topo): ${JSON.stringify(semLinha)}`);
   // Voltar com a música PAUSADA (estava na 2ª estrofe): vai para 0:03 e continua pausada.
   confere(await buscar(".mini .busca-entrada", 3), "slider do miniplayer encontrado e usado (voltar para 0:03 com a música pausada)");
   await dormir(600);
@@ -630,6 +640,18 @@ async function principal() {
   await dormir(700);
   const refeito = await av(`({ alerta: !!document.querySelector('#painel-partitura [role="alert"]'), svg: !!document.querySelector('#painel-partitura svg'), botao: !!document.querySelector('#painel-partitura .tentar') })`);
   confere(!refeito.alerta && refeito.svg && !refeito.botao, `"Tentar de novo" lê a partitura outra vez e ela aparece: ${JSON.stringify(refeito)}`);
+
+  // Tela inicial: a logo do app tem o tamanho do botão de Ajustes (o hambúrguer/engrenagem), e a barra não cresce por causa dela.
+  await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('.barra .logo') && !!document.querySelector('.barra .acao a')`)); ) await dormir(250);
+  const marca = await av(`(() => {
+    const r = (e) => { const b = e.getBoundingClientRect(); return { l: Math.round(b.width * 100) / 100, a: Math.round(b.height * 100) / 100 }; };
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
+    return { logo: r(document.querySelector('.barra .logo')), botao: r(document.querySelector('.barra .acao a')), barraRem: Math.round((document.querySelector('.barra').getBoundingClientRect().height / rem) * 100) / 100,
+      carregou: document.querySelector('.barra .logo').naturalWidth > 0 };
+  })()`);
+  confere(marca.logo.l === marca.botao.l && marca.logo.a === marca.botao.a, `a logo tem o tamanho do botão de Ajustes: ${JSON.stringify(marca)}`);
+  confere(marca.carregou && marca.barraRem <= 3.6, `a imagem da logo carrega e a barra continua com ~3,5rem (${marca.barraRem}rem)`);
 
   // Ajustes: "Importar hinário" aceita SÓ .json (o hinário vai deixar de ser importado; as partituras têm o card próprio).
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes` });
