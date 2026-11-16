@@ -64,10 +64,11 @@
   .mini {
     /* Sobe acima da barra de abas (--altura-navegacao) ou se afasta da barra lateral (--largura-trilho), quando existem. */
     position: fixed; left: var(--largura-trilho, 0rem); right: 0; bottom: var(--altura-navegacao, 0rem); z-index: 20;
-    background: var(--superficie); border-top: 0.0625rem solid var(--borda-controle);
+    /* Sem linha de separação em cima: a divisa é a própria trilha do slider (0,25rem, na largura toda), que fica no topo. */
+    background: var(--superficie);
     padding-bottom: var(--inset-miniplayer, env(safe-area-inset-bottom));
   }
-  .linha { display: flex; align-items: center; gap: 0.5rem; min-height: 3.5rem; } /* + 1,25rem do slider (em cima) = 4,75rem, mais a borda */
+  .linha { display: flex; align-items: center; gap: 0.5rem; min-height: 3.5rem; } /* + 1,25rem do slider (em cima) = 4,75rem */
   .acao {
     flex: none; width: 3rem; height: 3rem; font-size: 1.2rem; border-radius: 0.75rem;
     border: 0; background: transparent; color: var(--texto); cursor: pointer;
