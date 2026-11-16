@@ -460,12 +460,81 @@ mas há relatos de que **a WebView sozinha pode não ser coberta por esse servi�
 
 ## I-23 — Equalizar o volume dos sons gravados, para encaixarem no conjunto
 
-- **Status:** anotada, **rascunho** (a revisar com o subagente Opus antes de qualquer implementação)
+- **Status:** anotada, **revisada em 2026-11-16** pelo subagente Opus 5 (seção "Revisão", abaixo): **não está pronta para implementar**; o próximo passo é medir, e o rascunho tem fatos a corrigir
 - **Origem:** pedido do responsável, 2026-11-16: "com os sons gravados precisamos ter uma espécie de equalização nos volumes para encaixar bem... algo que não é necessário nos sintetizados".
 - **Prioridade:** a definir (mexe na qualidade percebida de **toda** audição com sons gravados)
 
 > **Aviso do rascunho:** nada aqui foi **medido**. As amostras do banco ficam fora do Git (`sons-fonte/`) e não estavam à mão; o que vem
 > do código está dito como fato, o resto está marcado como **hipótese**. A primeira etapa proposta é justamente medir.
+
+### Revisão (2026-11-16, subagente Opus 5)
+
+**Como foi feita.** Leitura crítica do rascunho contra o código, mais uma **medição offline do revisor** nas amostras locais (`sons-fonte/`, fora do Git): `ffmpeg` e as
+funções do próprio `tools/analisar-timbres.py`, janela de 0,45 a 1,2 s, curva A, ganho do app, **todas as notas** da faixa de vozes dos 16 gravados. Os números
+abaixo são dessa medição e **não foram reproduzidos** por quem escreveu este doc. Quatro pontos centrais foram **conferidos no código** depois: o compressor é
+criado sem parâmetros e o mestre é 0,9 (`sintetizador.ts:167-170`); o smplr soma um `extraGain` de 5 por padrão e o app **não** passa `loadLoopData`; cada nota é
+renderizada com 2,6 s segurada + 0,5 s de cauda (`tools/renderizar-banco.mjs`); e andamento, tom e instrumento só mudam com a música parada ou pausada (`Player.svelte`).
+
+**Veredito.** Não está pronta para virar tarefa. O diagnóstico parte de uma **cadeia de saída incompleta** (faltam os +3,8 dB do smplr, o ganho de compensação
+automático do compressor, a referência de pico e a duração das amostras). Precisa de medição, que já dá para fazer em parte.
+
+**Fatos do rascunho que estão errados ou imprecisos**
+- **Nível do sintetizado "vem de medidas":** o `nivel` é `base.nivel × fator`, e o `fator` só corrige o fator de crista para manter o RMS da tabela antiga (limite 0,5 a 2;
+  `timbres.ts:117-124`). O que foi medido é o **timbre**, não a sonoridade, e no **FluidR3**, enquanto os gravados de hoje são do **GeneralUser GS**. Os órgãos não têm timbre.
+- **"Trecho de 0,75 s depois do ataque":** a janela vai de 0,45 a 1,2 s depois do **início** (5% do pico), e o nível é uma média de potência de 3 alturas, dominada pela mais forte
+  (a flauta ficou com mediana −26,6 dB, 2 dB abaixo do alvo).
+- **Cadeia do gravado:** velocity 90 → ganho `vel²/16129` (0,50) → canal com `extraGain` 5 e volume `100²/16129` (0,62) → pan → ganho do instrumento → ganho da voz → mestre 0,9 →
+  compressor. O smplr soma **+3,8 dB (×1,557)**, que a calibração ignora. O pico real de uma voz na entrada do compressor é ≈ 0,85 × 1,557 × 0,9 ≈ **1,19** (acima de 0 dBFS), e não 0,85;
+  com o banco atual o limite de pico nem atua (maior pico×ganho medido: 0,41, trompa).
+- **"Contrabaixo mudo acima da 59":** valia para o FluidR3. No GeneralUser GS **não há nota muda** nas faixas de voz dos 16 instrumentos. (O próprio script se contradiz: linha 44 diz "até a 57", linha 311 diz 59.)
+- **Os comentários do código discordam sobre a referência de volume:** `sintetizador.ts:140` ("iguala ao da síntese equivalente"), `realista.ts:13-16` (alvo absoluto de curva A) e
+  `timbres.ts:116` ("calibrados contra a síntese"). Alguém precisa decidir qual é a referência.
+- **"Ao vivo" (no descarte do LUFS):** só o **volume e o mudo** mudam ao vivo; andamento, tom e instrumento só parados ou pausados. O descarte continua certo (CPU, memória, karaokê), mas o argumento muda.
+- **A ferramenta mede o banco errado por padrão:** `analisar-timbres.py` usa o FluidR3 (`FONTE`). Toda medição da I-23 precisa de `--fonte sons-fonte/GeneralUserGS/amostras`.
+
+**Hipóteses**
+1. **Variação dentro do instrumento: sustentada em parte.** Amplitude entre notas na faixa das vozes (curva A, dB): trompete 2,5 · violino 3,1 · viola 4,0 · trombone 4,4 · fagote 4,9 · trompa 4,9 ·
+   clarinete 5,6 · violoncelo 5,6 · oboé 6,1 · sax tenor 6,1 · tuba 6,9 · contrabaixo 7,6 · sax alto 8,4 · órgão 8,7 · flauta doce 8,8 · **flauta 10,0**. O maior salto entre notas vizinhas fica em 1,2 a
+   2,5 dB (só o sax tenor passa, com 3,1). Ou seja, é uma **inclinação** (o agudo mais forte; flauta e órgão têm o máximo na nota 81), **não** notas que saltam. Falta ouvir para confirmar.
+2. **Entre instrumentos: não dá para concluir.** As medianas ficaram entre −24,5 e −26,6 dB A (nível médio razoavelmente igual). Região, ataque e mascaramento pedem a mistura renderizada e o ouvido.
+3. **Compressor: fortemente sustentada pela aritmética.** Padrões do Web Audio (limiar −24 dB, joelho 30, razão 12, ataque 3 ms, soltura 250 ms), mais um **ganho de compensação automático**
+   (`makeupGain`, estimado em ~+5 dB, **não verificado no navegador**) e 6 ms de atraso. Uma voz sustentada chega a ≈ −22 dB A (já no joelho) e 4 vozes a ≈ −16 dB: o compressor atua **sempre**, também
+   no sintetizado. O que muda entre os modos é o envelope.
+4. **Volume por voz muda o balanço: sustentada.** O volume e o mudo entram **antes** do mestre; como o compressor não é linear, baixar ou silenciar uma voz **aumenta as outras**. A calibração supõe volume 1 e uma voz sozinha.
+
+**Lacunas que o rascunho não via**
+- **As amostras acabam cedo (o candidato mais forte a "sumir").** São 2,6 s segurada + 0,5 s de cauda, **sem laço** (`loadLoopData` falso, e o README do smplr o marca "experimental, can produce clicks"). Uma mínima a
+  40 bpm (3 s) ou uma semibreve a 90 bpm (2,67 s) se apaga antes de acabar, e **nenhum mapa de ganho resolve isso**. Alguns instrumentos também caem durante a nota segurada (trompete até −6,1 dB; sax tenor −2,5; trompa −2,7).
+- **Notas curtas:** a janela da medida pula o ataque, e uma colcheia a 90 bpm (0,33 s) é quase só ataque; o nível sustentado não a representa.
+- **Transposição:** o mapa precisa ser indexado pela altura que **soa** (`midi + transposição`, ±6), nas amostras 30 a 86, com o valor da borda nas pontas.
+- **Ganho por nota pela `velocity`:** o `NoteEvent` do smplr não tem campo de ganho, então **não precisa de um `GainNode` por nota**: `velocity = 90·√g`, **limitada a 127** (acima disso a nota some: o casamento de regiões
+  exige `velocity <= 127`), o que dá no máximo +6 dB a partir de 90.
+- **As etapas C e D mexem no sintetizado também** (a cadeia é compartilhada). Trocar o compressor por um limitador tira o ganho de compensação automático (~+5 dB, estimado): **regressão provável do volume geral** nos dois modos.
+- **Falta o critério** "alternar entre Sintetizado e Gravado não muda o volume" (a referência hoje é contraditória, ver acima).
+- **Vazamento pequeno:** cada `tocar()` cria compressor e mestre novos, e `parar()` desconecta só o mestre.
+- **Memória (já existe, fora da I-23):** o cache por (instrumento, voz) decodifica o mesmo instrumento uma vez por voz (órgão em 4 vozes ≈ 130 MB estimados).
+
+**Plano revisado (a ordem muda)**
+0. **Medir.** Dispersão por nota **já feita** pelo revisor (falta acrescentar notas curtas com ataque, a queda de 0 a 3 s e `ffmpeg ebur128` contra a curva A). A **mistura de 4 vozes e a redução do compressor só saem com o motor real**:
+   estender `tools/previas-timbres.mjs` (Chrome headless **mudo**, `OfflineAudioContext`, código do app com o smplr, `ctx.suspend(t)` amostrando `reduction`), rodando em **dois motores** (Chromium e WebKit).
+   Limiares a acrescentar: **inclinação** (dB por oitava) e **queda de nota longa** (por exemplo, mais de 6 dB antes do fim).
+0b. **Decidir o laço ou a cauda maior** das notas longas (`loadLoopData` ou `renderizar-banco.mjs`): hoje é o jeito concreto de a voz "sumir".
+C. **Cadeia de saída** (alvo explícito, sem o ganho de compensação implícito, limitador com margem), **antes** de A e B: o compressor muda o nível de tudo, e calibrar notas antes de fixá-lo mede sobre um alvo móvel.
+A. **Mapa por nota** (uma inclinação, ou âncoras a cada 3 semitons: os saltos entre vizinhas são pequenos).
+B. **Encaixe entre vozes**, de ouvido.
+D. Equalizador por frequência **só** se houver mascaramento.
+
+**Perguntas em aberto: o que o revisor recomenda**
+1. **Só volume**, sem timbre (decisão técnica, pode ser do projeto).
+2. **Balanço:** todas iguais, com um parâmetro opcional de +1 a +2 dB para o soprano. **Só o responsável decide.**
+3. **Onde se ouviu o problema:** **só o responsável responde.** Vale perguntar se foi em **nota longa ou hino lento** (separa "a amostra acabou" de "o nível está errado").
+4. **Alvo de volume:** manter o percebido atual, compensando o ganho de compensação que se perder ao trocar o compressor; subir o volume no celular é decisão de ouvido **do responsável**.
+5. **Saída:** curva A como base e conferir no celular (a ferramenta mede os dois); priorizar o celular **se o responsável confirmar** que é o uso principal.
+
+**O que não foi verificado:** o valor exato do ganho de compensação no Chromium e no WebKit; os filtros `ebur128` e `loudnorm` do `ffmpeg` na prática; boas práticas de limitador em Web Audio.
+
+**Primeiro passo concreto:** estender o `previas-timbres.mjs` para renderizar 2 ou 3 hinos com 4 vozes gravadas e com o sintetizado, gravando o nível ao longo do tempo, a redução do compressor e a queda das notas com mais de 2,6 s; juntar com a tabela por nota já
+medida e **perguntar ao responsável onde ouviu o problema**. Só então escolher entre laço/cauda, cadeia de saída e mapa por nota.
 
 ### O problema
 **O que o código já mostra (fatos):**
