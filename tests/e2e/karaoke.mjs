@@ -2,7 +2,8 @@
 //
 // Sobe o servidor de desenvolvimento do Vite e um Chrome, entrega ao app um hino FICTÍCIO (por um `invoke` simulado
 // do Tauri) e confere, na aba Letra: a sílaba acesa acompanha o tempo da sincronia, a pausa congela o destaque e
-// desligar o botão apaga tudo. Precisa de um Chrome ou Chromium instalado (variável CHROME para indicar o caminho).
+// desligar o botão apaga tudo. Depois confere a aba Partitura (I-08): quando aparece, o SVG embutido seguindo o tema, o zoom, a
+// fonte Leipzig e o aviso para Ajustes. Precisa de um Chrome ou Chromium instalado (variável CHROME para indicar o caminho).
 import { spawn, execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -36,8 +37,14 @@ const hinario = {
         ],
       },
     },
+    // Só letra e sem partitura: serve para conferir que a aba Partitura não aparece num hino sem ela.
+    { numero: 998, titulo: "Hino só com letra", letra: ["1. la la", "la la"], vozes: [] }, // o Rust sempre envia `vozes` (lista vazia por padrão)
   ],
 };
+// Partitura FICTÍCIA (nada de hino real): cinco linhas de pauta, uma "nota" (elipse) e um texto na fonte Leipzig, com um id para
+// conferir o prefixo e o <svg> aninhado com color="black" como o do Verovio. No app de verdade, quem entrega o SVG
+// é o Rust, já limpo; aqui o `invoke` simulado devolve o que o Rust devolveria.
+const SVG_PARTITURA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" overflow="hidden"><svg class="definition-scale" color="black" viewBox="0 0 400 120"><g id="bmccb-p-folha">${[20, 35, 50, 65, 80].map((y) => `<path d="M10 ${y} L390 ${y}"></path>`).join("")}<ellipse cx="60" cy="50" rx="10" ry="7"></ellipse><rect x="90" y="30" width="6" height="40"></rect><text x="120" y="110" font-family="Leipzig" font-size="30px">&#xE1D5; = 58</text></g></svg></svg>`;
 // Sílabas esperadas na 1ª vez (estrofe 1) e na 2ª (estrofe 2), com o início de cada uma em batidas.
 const ESPERADO_VEZ1 = [["do", 0], ["re", 2], ["mi", 4], ["fa", 6], ["sol", 8]];
 const ESPERADO_VEZ2 = [["la", 0], ["si", 2], ["do", 4], ["re", 6], ["mi", 8]];
@@ -48,8 +55,19 @@ const BATIDAS_ESTROFE = 10;
 const PAUSA_BATIDAS = (2 * BPM) / 60;
 const INICIO_VEZ2 = BATIDAS_ESTROFE + PAUSA_BATIDAS;
 
+// `sessionStorage["e2e-sem-partituras"]` faz o app começar como se nenhum pacote com partituras tivesse sido importado.
 const STUB = `window.__TAURI_INTERNALS__ = {
-  invoke: async (cmd) => (cmd === "carregar_hinario" ? { hinario: ${JSON.stringify(hinario)}, exemplo: false } : null),
+  invoke: async (cmd, args) => {
+    if (cmd === "carregar_hinario") {
+      const sem = sessionStorage.getItem("e2e-sem-partituras") === "1";
+      return { hinario: ${JSON.stringify(hinario)}, exemplo: false, partituras: sem ? [] : [999] };
+    }
+    if (cmd === "ler_partitura") {
+      if (args.numero === 999) return ${JSON.stringify(SVG_PARTITURA)};
+      throw JSON.stringify(["sem_partitura", String(args.numero)]);
+    }
+    return null;
+  },
   transformCallback: () => 0,
   metadata: { currentWindow: { label: "main" }, currentWebview: { label: "main", windowLabel: "main" } },
 };`;
@@ -431,6 +449,107 @@ async function principal() {
   }
   await av("clearInterval(window.__iv); 1");
   const am = await av("window.__am");
+
+  // 5c. Aba Partitura (I-08), no hino 999 (que tem áudio e partitura): as abas são Ouvir, Letra e Partitura.
+  const abas = await av("[...document.querySelectorAll('[role=\"tab\"]')].map((t) => t.id)");
+  confere(JSON.stringify(abas) === '["aba-ouvir","aba-letra","aba-partitura"]', `hino com áudio e partitura: abas ${JSON.stringify(abas)}`);
+  await av("document.getElementById('aba-partitura').click(); 1");
+  await dormir(800);
+  const p1 = await av(`(() => {
+    const svg = document.querySelector('#painel-partitura .folha svg');
+    const cor = (e, p) => getComputedStyle(e)[p];
+    return {
+      painelVisivel: !document.getElementById('painel-partitura').hidden,
+      svg: !!svg,
+      overflow: svg?.getAttribute('overflow') ?? null,
+      id: svg?.querySelector('g')?.id ?? null,
+      regiao: document.querySelector('#painel-partitura .rolagem')?.getAttribute('role') ?? null,
+      foco: document.querySelector('#painel-partitura .rolagem')?.tabIndex ?? null,
+      rotulo: document.querySelector('#painel-partitura .folha')?.getAttribute('aria-label') ?? null,
+      larguraDaFolha: Math.round(document.querySelector('#painel-partitura .folha').getBoundingClientRect().width),
+      larguraDaRegiao: Math.round(document.querySelector('#painel-partitura .rolagem').getBoundingClientRect().width),
+      paginaLargaDemais: document.documentElement.scrollWidth > window.innerWidth,
+      zoomSalvo: localStorage.getItem('prefs.partitura'),
+    };
+  })()`);
+  confere(p1.painelVisivel && p1.svg, `a partitura aparece no painel da aba: ${JSON.stringify({ painelVisivel: p1.painelVisivel, svg: p1.svg })}`);
+  confere(p1.overflow === "hidden" && (p1.id ?? "").startsWith("bmccb-p-"), `o SVG entregue tem overflow hidden e id com o prefixo do app: ${p1.overflow} / ${p1.id}`);
+  confere(p1.regiao === "region" && p1.foco === 0 && (p1.rotulo ?? "").includes("999"), `a região que rola é focável pelo teclado e tem nome: ${p1.regiao} / tabIndex ${p1.foco} / ${p1.rotulo}`);
+  confere(p1.larguraDaFolha <= p1.larguraDaRegiao + 1 && !p1.paginaLargaDemais, `a 100% a partitura cabe na tela, sem rolar de lado (folha ${p1.larguraDaFolha}, região ${p1.larguraDaRegiao})`);
+  // A fonte Leipzig (embarcada no app) é carregada quando o SVG pede o texto nela.
+  const fonte = await av(`(async () => { await document.fonts.ready; return [...document.fonts].filter((f) => f.family.includes('Leipzig')).map((f) => f.status); })()`);
+  confere(fonte.length === 1 && fonte[0] === "loaded", `a fonte Leipzig do app foi carregada: ${JSON.stringify(fonte)}`);
+
+  // Cor pelo tema: cada tema dá a cor do texto aos traços e ao preenchimento (o SVG vem com color="black" no arquivo).
+  const corDoTema = (tema, estilo = "normal") => av(`(() => {
+    const r = document.documentElement;
+    ${tema === null ? "delete r.dataset.tema;" : `r.dataset.tema = '${tema}';`}
+    ${estilo === "normal" ? "delete r.dataset.estilo;" : `r.dataset.estilo = '${estilo}';`}
+    const svg = document.querySelector('#painel-partitura .folha svg');
+    const alvo = getComputedStyle(document.querySelector('#painel-partitura .folha')).color; // = var(--texto) do tema
+    const traco = getComputedStyle(svg.querySelector('path')).stroke;
+    const preench = getComputedStyle(svg.querySelector('rect')).fill;
+    const texto = getComputedStyle(svg.querySelector('text')).fill;
+    const fundo = getComputedStyle(document.querySelector('#painel-partitura .rolagem')).backgroundColor;
+    delete r.dataset.tema; delete r.dataset.estilo;
+    return { alvo, traco, preench, texto, fundo };
+  })()`);
+  for (const [tema, esperado] of [["claro", null], ["escuro", null], ["alto-contraste", "rgb(255, 255, 0)"]]) {
+    const c = await corDoTema(tema);
+    confere(
+      c.traco === c.alvo && c.preench === c.alvo && c.texto === c.alvo && (esperado === null || c.alvo === esperado) && c.alvo !== c.fundo,
+      `tema ${tema}: traço, preenchimento e texto da partitura têm a cor do texto do tema (${JSON.stringify(c)})`,
+    );
+  }
+  const claro = await corDoTema("claro");
+  const escuro = await corDoTema("escuro");
+  confere(claro.alvo !== escuro.alvo && claro.fundo !== escuro.fundo, `claro e escuro dão cores diferentes à partitura: ${claro.alvo} no ${claro.fundo} / ${escuro.alvo} no ${escuro.fundo}`);
+
+  // Zoom: 125% passa da largura da tela e rola de lado; o passo fica salvo; "restaurar" volta a 100%.
+  const botoesZoom = await av(`[...document.querySelectorAll('#painel-partitura .barra-zoom button')].map((b) => b.getAttribute('aria-label'))`);
+  confere(botoesZoom.length === 3, `a barra de zoom tem 3 botões: ${JSON.stringify(botoesZoom)}`);
+  await av("document.querySelectorAll('#painel-partitura .barra-zoom button')[2].click(); 1");
+  await dormir(200);
+  const z1 = await av(`(() => {
+    const r = document.querySelector('#painel-partitura .rolagem');
+    return { rola: r.scrollWidth > r.clientWidth + 1, folha: document.querySelector('#painel-partitura .folha').getBoundingClientRect().width, regiao: r.clientWidth,
+      salvo: localStorage.getItem('prefs.partitura'), dica: !!document.querySelector('#painel-partitura .dica'), pagina: document.documentElement.scrollWidth > window.innerWidth };
+  })()`);
+  confere(z1.rola && Math.abs(z1.folha / z1.regiao - 1.25) < 0.02, `125%: a folha fica ${(z1.folha / z1.regiao).toFixed(2)}x a região e rola de lado`);
+  confere(z1.salvo === '{"zoom":1}' && z1.dica && !z1.pagina, `o zoom fica salvo, aparece a dica de arrastar e só a região rola (a página não): ${JSON.stringify({ salvo: z1.salvo, dica: z1.dica, pagina: z1.pagina })}`);
+  await av("document.querySelectorAll('#painel-partitura .barra-zoom button')[1].click(); 1");
+  await dormir(200);
+  const z0 = await av(`(() => { const r = document.querySelector('#painel-partitura .rolagem'); return { rola: r.scrollWidth > r.clientWidth + 1, salvo: localStorage.getItem('prefs.partitura') }; })()`);
+  confere(!z0.rola && z0.salvo === '{"zoom":0}', `restaurar volta a 100% sem rolar de lado: ${JSON.stringify(z0)}`);
+
+  const abrirHino = async (numero) => {
+    await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/hino/${numero}` });
+    for (let fim = Date.now() + 20000; Date.now() < fim; ) {
+      await dormir(250);
+      if (await av(`!!document.querySelector('#painel-letra .estrofe p')`)) return true;
+    }
+    return false;
+  };
+
+  // Hino sem partitura num pacote que tem partituras: não há aba Partitura (e, sem áudio, nenhuma barra de abas).
+  confere(await abrirHino(998), "hino 998 carregado (a letra apareceu)");
+  const h998 = await av(`({ abas: [...document.querySelectorAll('[role="tab"]')].map((t) => t.id), painel: !!document.getElementById('painel-partitura'), barra: !!document.querySelector('[role="tablist"]') })`);
+  confere(!h998.painel && h998.abas.length === 0 && !h998.barra, `hino sem partitura, num pacote com partituras: sem aba Partitura: ${JSON.stringify(h998)}`);
+
+  // Nenhum pacote com partituras importado (partituras = []): a aba aparece com o aviso e o botão para Ajustes.
+  await av("sessionStorage.setItem('e2e-sem-partituras', '1'); 1");
+  confere(await abrirHino(998), "hino 998 carregado de novo, sem partituras importadas");
+  await av("document.getElementById('aba-partitura')?.click(); 1");
+  await dormir(400); // o Svelte atualiza o DOM depois do clique
+  const aviso = await av(`(() => {
+    const aba = document.getElementById('aba-partitura');
+    if (!aba) return { aba: false };
+    const a = document.querySelector('#painel-partitura .sem-pacote a');
+    return { aba: true, abas: [...document.querySelectorAll('[role="tab"]')].map((t) => t.id), href: a?.getAttribute('href') ?? null, botao: a?.classList.contains('botao') ?? false,
+      svg: !!document.querySelector('#painel-partitura svg'), visivel: !document.getElementById('painel-partitura').hidden };
+  })()`);
+  confere(aviso.aba && aviso.href === "/ajustes" && aviso.botao && !aviso.svg && aviso.visivel, `sem pacote com partituras: a aba aparece com o aviso e o botão para Ajustes: ${JSON.stringify(aviso)}`);
+  await av("sessionStorage.removeItem('e2e-sem-partituras'); 1");
   ws.close();
 
   // 6. análise: trocas de sílaba antes da pausa

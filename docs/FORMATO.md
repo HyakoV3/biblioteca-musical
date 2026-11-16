@@ -204,8 +204,12 @@ SVG vêm de `tools/gerar-partituras.py`. O app confere tudo antes de gravar:
   `hinario.json` é o último a ser trocado. (Uma queda no meio da troca pode deixar o JSON antigo com as partituras novas: como elas
   são lidas pelo número, nada quebra, e importar de novo conserta.)
 - **Fonte.** O SVG sai **sem** a fonte Leipzig (o `tools/gerar-partituras.py` desliga a que o Verovio embute, 58 KB por hino, em
-  `url(data:...)`, que a limpeza recusaria). O texto do SVG usa `font-family="Leipzig"`, então a tela precisa trazer a fonte
-  (licença OFL 1.1) uma vez só.
+  `url(data:...)`, que a limpeza recusaria). O texto do SVG usa `font-family="Leipzig"`, então o **app a traz uma vez só**
+  (`src/lib/fonts/Leipzig.woff2`, carregada por `src/lib/partitura.css`; licença OFL 1.1, nos créditos de Ajustes).
+- **Na tela (aba Partitura).** O SVG é embutido na página (`{@html}`, já limpo) dentro de `.folha`, com o CSS acima e `color` do
+  tema; o zoom (100% a 400%, 6 passos, lembrado no aparelho) muda a largura da folha, e a região rola para os lados. A aba
+  Partitura aparece nos hinos que têm partitura; enquanto **nenhum** hino tem partitura instalada, aparece em todos, com um aviso e
+  um botão para Ajustes; num pacote que tem partituras, não aparece nos hinos que não têm.
 
 As partituras ficam em `content/partituras/`, com a marca `.hinario` (o `id` do hinário a que pertencem). Sem pacote `.zip`
 importado, `partituras` na resposta do app é vazio. Cada partitura é lida pelo número do hino e **limpa de novo** na leitura.

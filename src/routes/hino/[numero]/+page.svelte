@@ -11,6 +11,8 @@
   import { estrofes } from "$lib/letra";
   import { marcaEm, marcasDaVez, sincroniaCombina, type Marca } from "$lib/karaoke";
   import { usarVoltar } from "$lib/navegacao";
+  import Partitura from "$lib/Partitura.svelte";
+  import { estadoDaPartitura, temAbaPartitura } from "$lib/partitura";
   import Player from "$lib/Player.svelte";
   import { ESCALAS_LETRA, PASSO_PADRAO, escalaDoPasso, limitarPasso, type Alinhamento } from "$lib/leitura";
   import { lerKaraoke, lerLeitura, salvarKaraoke, salvarLeitura } from "$lib/preferencias";
@@ -20,13 +22,19 @@
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const voltar = usarVoltar();
 
-  type Aba = "letra" | "ouvir";
-  const ABAS: Aba[] = ["ouvir", "letra"];
+  type Aba = "letra" | "ouvir" | "partitura";
 
   const numero = $derived(Number(page.params.numero));
   const hino = $derived(biblioteca.hino(numero));
   const partes = $derived(hino ? estrofes(hino.letra) : []);
   const temAudio = $derived((hino?.vozes.length ?? 0) > 0);
+  // Partitura (I-08): a aba existe nos hinos que têm partitura importada e, enquanto nenhum pacote com partituras foi importado,
+  // em todos (com um aviso e um botão para Ajustes). Num pacote que tem partituras, não aparece nos hinos que não têm.
+  const estadoPartitura = $derived(estadoDaPartitura(biblioteca.pacote?.partituras ?? [], numero));
+  const temPartitura = $derived(temAbaPartitura(estadoPartitura));
+  // As abas deste hino, na ordem da barra. Com só a Letra não há barra.
+  const abas = $derived<Aba[]>([...(temAudio ? (["ouvir"] as const) : []), "letra", ...(temPartitura ? (["partitura"] as const) : [])]);
+  const ROTULOS = { ouvir: "hino.aba_ouvir", letra: "hino.aba_letra", partitura: "hino.aba_partitura" } as const;
   // Idioma do conteúdo (título e letra), quando o hinário o declara; a interface pode estar em outra língua.
   const idiomaConteudo = $derived(biblioteca.pacote?.hinario.hinario.idioma ?? undefined);
   // Linha de apoio sob o título: tonalidade e autoria, quando existirem.
@@ -200,7 +208,7 @@
 
   <main class="coluna conteudo">
     <!-- Os dois painéis ficam montados (só um visível): o som não para ao trocar de aba. -->
-    <div role="tabpanel" id="painel-letra" aria-labelledby={temAudio ? "aba-letra" : undefined} hidden={aba !== "letra"}>
+    <div role="tabpanel" id="painel-letra" aria-labelledby={abas.length > 1 ? "aba-letra" : undefined} hidden={aba !== "letra"}>
       {#if !temAudio}
         <Aviso tipo="info">{t("hino.sem_audio")}</Aviso>
       {/if}
@@ -252,12 +260,20 @@
         {/key}
       </div>
     {/if}
+
+    {#if temPartitura}
+      <div role="tabpanel" id="painel-partitura" aria-labelledby="aba-partitura" hidden={aba !== "partitura"}>
+        {#key hino.numero}
+          <Partitura numero={hino.numero} estado={estadoPartitura} ativa={aba === "partitura"} />
+        {/key}
+      </div>
+    {/if}
   </main>
 
   <!-- As abas ficam embaixo (ao alcance do polegar); com o celular deitado, numa barra lateral à esquerda. -->
-  {#if temAudio}
+  {#if abas.length > 1}
     <Abas
-      abas={ABAS.map((id) => ({ id, rotulo: t(id === "ouvir" ? "hino.aba_ouvir" : "hino.aba_letra") }))}
+      abas={abas.map((id) => ({ id, rotulo: t(ROTULOS[id]) }))}
       selecionada={aba}
       aoSelecionar={(id) => (aba = id as Aba)}
       rotulo={t("hino.abas")}

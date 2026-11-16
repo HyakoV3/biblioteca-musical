@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { pt } from "../src/lib/i18n/pt";
 import { CREDITOS, textoDaLicenca } from "../src/lib/licencas";
-import { TEXTO_APACHE_2, TEXTO_GENERALUSER, TEXTO_MIT } from "../src/lib/licencas-textos";
+import { TEXTO_APACHE_2, TEXTO_GENERALUSER, TEXTO_MIT, TEXTO_OFL } from "../src/lib/licencas-textos";
 
 describe("créditos e licenças", () => {
   it("ids únicos e cada crédito tem nome, autoria, licença e ao menos um texto", () => {
@@ -22,7 +22,7 @@ describe("créditos e licenças", () => {
 
   it("cobre o que o app usa: banco dos sons gravados, biblioteca de áudio e ícones", () => {
     const ids = CREDITOS.map((c) => c.id);
-    for (const esperado of ["generaluser", "smplr", "icones"]) expect(ids).toContain(esperado);
+    for (const esperado of ["generaluser", "smplr", "icones", "leipzig"]) expect(ids).toContain(esperado);
   });
 
   it("o MIT leva a linha de direitos e o texto padrão; a Apache 2.0 vem inteira", () => {
@@ -44,6 +44,20 @@ describe("créditos e licenças", () => {
     expect(textoDaLicenca(g.textos[0])).toBe(TEXTO_GENERALUSER);
     expect(TEXTO_GENERALUSER).toContain("GeneralUser GS v2.0.3");
     expect(TEXTO_GENERALUSER).toContain("Please feel free to use it in your software projects");
+  });
+
+  it("a Leipzig (fonte da partitura) leva a linha de direitos, o nome reservado e a OFL 1.1 inteira", () => {
+    const l = CREDITOS.find((c) => c.id === "leipzig")!;
+    const texto = textoDaLicenca(l.textos[0]);
+    expect(texto).toContain("Copyright (c) 2014");
+    expect(texto).toContain("Laurent Pugin");
+    expect(texto).toContain('with Reserved Font Name "Leipzig"');
+    expect(texto).toContain(TEXTO_OFL);
+    // a OFL em si, do começo ao fim
+    expect(TEXTO_OFL.startsWith("SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007")).toBe(true);
+    for (const parte of ["PREAMBLE", "DEFINITIONS", "PERMISSION & CONDITIONS", "TERMINATION", "DISCLAIMER"]) expect(TEXTO_OFL).toContain(parte);
+    expect(TEXTO_OFL.endsWith("OTHER DEALINGS IN THE FONT SOFTWARE.")).toBe(true);
+    expect(l.licenca).toContain("1.1");
   });
 
   it("o FluidR3 não aparece mais: nenhuma amostra dele está no app nem no pacote de sons", () => {

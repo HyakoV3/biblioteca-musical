@@ -1,0 +1,10 @@
+/* Fonte dos símbolos de TEXTO das partituras (I-08): o SVG que o app importa não traz fonte (o gerador desliga a que o Verovio
+   embute, e o app descarta qualquer CSS do pacote: ver docs/FORMATO.md), e o texto dele pede `font-family="Leipzig"`, por
+   exemplo para a figura de nota do andamento ("♩ = 58"). As notas, pautas e claves são desenhos e não dependem dela.
+   Leipzig: SIL Open Font License 1.1, nome reservado "Leipzig"; o arquivo é o que o Verovio distribui, sem alteração
+   (créditos em Ajustes e em docs/licencas-de-terceiros.md). */
+@font-face {
+  font-family: "Leipzig";
+  src: url("./fonts/Leipzig.woff2") format("woff2");
+  font-display: block;
+}

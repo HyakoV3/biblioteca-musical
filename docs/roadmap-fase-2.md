@@ -79,10 +79,11 @@ sem estalos; a licença de cada som está registrada; e o app base não cresceu.
 
 - [x] Primeiro teste: `tools/gerar-partituras.py` gera o SVG (MuseScore 4 → MusicXML → Verovio) e o timemap de cada hino; medido
       nos 5 hinos de amostra (~400 KB cada, ~36 MB num zip de 480). Decisões do responsável em
-      [`roadmap-ideas.md`](roadmap-ideas.md), I-08. **Falta mostrá-lo numa aba (PR 3).**
-- [ ] Pacote de **vários arquivos** (`.zip`) na importação, no lugar do JSON único (limite atual de 20 MB).
-- [ ] Aba **Partitura** com zoom e rolagem, nos temas claro, escuro e alto contraste; só nos hinos que têm partitura, e, sem
-      pacote importado, com um aviso e um botão para Ajustes.
+      [`roadmap-ideas.md`](roadmap-ideas.md), I-08. **A aba está na PR 3.**
+- [x] Pacote de **vários arquivos** (`.zip`) na importação, no lugar do JSON único (limite atual de 20 MB). **Feito (PR 2):
+      `hinario.json` + `partituras/hino-N.svg`, com limpeza do SVG, nomes exatos e limites.**
+- [x] Aba **Partitura** com zoom e rolagem, nos temas claro, escuro e alto contraste; só nos hinos que têm partitura, e, sem
+      pacote importado, com um aviso e um botão para Ajustes. **Feito (PR 3), falta ver no celular (APK, PR 4).**
 - [x] **Karaokê (I-12), fase A:** a **letra** acompanhando a música, com botão ligar/desligar na aba Letra (campo
       `sincronia` no formato, conversor e leitor). **Feito, falta ver no celular.**
 - [ ] **Karaokê (I-12), fase B:** cursor ou compasso na partitura, junto da I-08.
