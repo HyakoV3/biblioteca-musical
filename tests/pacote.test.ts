@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ehZip, listaCurta } from "../src/lib/pacote";
+import { LIMITE_ZIP_BYTES, bytesParaBase64, ehZip, listaCurta } from "../src/lib/pacote";
 
 const b = (...v: number[]) => new Uint8Array(v);
 
@@ -36,5 +36,48 @@ describe("ehZip", () => {
     ]) {
       expect(ehZip(bytes), Array.from(bytes).join(",")).toBe(false);
     }
+  });
+});
+
+describe("bytesParaBase64 (o zip vai ao Rust como texto: no Android não há corpo binário)", () => {
+  const texto = (s: string) => new TextEncoder().encode(s);
+
+  it("os vetores de teste da RFC 4648", () => {
+    const casos: [string, string][] = [["", ""], ["f", "Zg=="], ["fo", "Zm8="], ["foo", "Zm9v"], ["foob", "Zm9vYg=="], ["fooba", "Zm9vYmE="], ["foobar", "Zm9vYmFy"]];
+    for (const [entrada, esperado] of casos) expect(bytesParaBase64(texto(entrada)), JSON.stringify(entrada)).toBe(esperado);
+  });
+
+  it("os 256 valores de byte voltam iguais (nada se perde nos bytes altos nem no zero)", () => {
+    const todos = Uint8Array.from({ length: 256 }, (_, i) => i);
+    const volta = Uint8Array.from(atob(bytesParaBase64(todos)), (c) => c.charCodeAt(0));
+    expect(Array.from(volta)).toEqual(Array.from(todos));
+  });
+
+  it("o começo de um zip (PK\\x03\\x04) e bytes de controle", () => {
+    expect(bytesParaBase64(Uint8Array.of(0x50, 0x4b, 0x03, 0x04, 0, 0xff))).toBe("UEsDBAD/");
+  });
+
+  it("tamanhos em volta dos pedaços internos (32766 bytes) voltam iguais e sem preenchimento no meio", () => {
+    for (const n of [32764, 32765, 32766, 32767, 32768, 65531, 65532, 65533, 100000, 1_000_003]) {
+      const bytes = Uint8Array.from({ length: n }, (_, i) => (i * 31 + 7) & 0xff);
+      const b64 = bytesParaBase64(bytes);
+      expect(b64.length, `n=${n}`).toBe(Math.ceil(n / 3) * 4);
+      expect(b64.slice(0, -2).includes("="), `n=${n}: "=" no meio`).toBe(false);
+      const volta = atob(b64);
+      expect(volta.length, `n=${n}`).toBe(n);
+      let igual = true;
+      for (let i = 0; i < n && igual; i++) igual = volta.charCodeAt(i) === bytes[i];
+      expect(igual, `n=${n}`).toBe(true);
+    }
+  });
+
+  it("um arquivo de 15 MB (o pacote de 480 hinos) converte sem estourar a pilha", () => {
+    const bytes = new Uint8Array(15 * 1024 * 1024).fill(0xa5);
+    const b64 = bytesParaBase64(bytes);
+    expect(b64.length).toBe(Math.ceil(bytes.length / 3) * 4);
+  });
+
+  it("o limite do zip é o do Rust (150 MiB)", () => {
+    expect(LIMITE_ZIP_BYTES).toBe(150 * 1024 * 1024);
   });
 });

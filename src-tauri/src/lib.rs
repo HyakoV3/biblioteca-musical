@@ -24,21 +24,12 @@ fn importar_hinario(app: tauri::AppHandle, json: String) -> Result<hinario::Paco
     hinario::importar(&pasta_conteudo(&app)?, &json)
 }
 
-/// Importa um pacote `.zip` (`hinario.json` + `partituras/hino-N.svg`). Os bytes do zip chegam como corpo binário da chamada
-/// (`invoke("importar_pacote", bytes)`), sem passar por JSON, que seria pesado para dezenas de MB. É `async` para rodar fora
-/// da thread da interface.
+/// Importa um pacote `.zip` (`hinario.json` + `partituras/hino-N.svg`) que a interface manda em **base64** (`zip`). Não pode ser
+/// corpo binário: no Android o Tauri não entrega `InvokeBody::Raw` (ver `pacote::importar_base64`). É `async` para rodar fora da
+/// thread da interface.
 #[tauri::command]
-async fn importar_pacote(
-    app: tauri::AppHandle,
-    request: tauri::ipc::Request<'_>,
-) -> Result<pacote::Importacao, String> {
-    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
-        return Err(hinario::erro(
-            "zip_invalido",
-            &["a chamada não trouxe os bytes do arquivo".to_string()],
-        ));
-    };
-    pacote::importar_zip(&pasta_conteudo(&app)?, bytes)
+async fn importar_pacote(app: tauri::AppHandle, zip: String) -> Result<pacote::Importacao, String> {
+    pacote::importar_base64(&pasta_conteudo(&app)?, &zip)
 }
 
 /// O SVG da partitura do hino `numero` (já conferido pela limpeza de `svg.rs`).

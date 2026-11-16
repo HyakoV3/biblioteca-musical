@@ -17,6 +17,7 @@
 
 use crate::hinario::{self, Pacote, erro};
 use crate::svg;
+use base64::{Engine, engine::general_purpose::STANDARD};
 use serde::Serialize;
 use std::collections::HashSet;
 use std::io::{Cursor, Read};
@@ -142,6 +143,27 @@ fn marca(id: &str) -> String {
     serde_json::to_string(id).unwrap_or_default()
 }
 
+/// Importa o pacote que a interface manda como **texto base64**. Os bytes não podem ir como corpo binário da chamada: no Android o
+/// `InvokeBody::Raw` **não existe** (o WebView não entrega o corpo de uma requisição ao protocolo customizado, e o Tauri usa só o
+/// `postMessage`, que é texto), e o comando recebia sempre "a chamada não trouxe os bytes do arquivo". Texto base64 vale em todas as
+/// plataformas, e é a forma que a própria documentação do Tauri indica para bytes no Android.
+pub fn importar_base64(dir: &Path, texto: &str) -> Result<Importacao, String> {
+    importar_base64_com(dir, texto, &Limites::default())
+}
+
+pub fn importar_base64_com(dir: &Path, texto: &str, lim: &Limites) -> Result<Importacao, String> {
+    // A cada 3 bytes, 4 caracteres: o tamanho do texto já diz se o zip passaria do limite, antes de alocar os bytes.
+    if texto.len() > lim.zip.div_ceil(3) * 4 + 4 {
+        return Err(erro("zip_grande_demais", &[]));
+    }
+    let bytes = STANDARD
+        .decode(texto.trim())
+        .map_err(|e| invalido(format!("base64: {e}")))?;
+    importar_zip_com(dir, &bytes, lim)
+}
+
+/// Só os testes entram por aqui (com os bytes já prontos); o app entra por `importar_base64`.
+#[cfg(test)]
 pub fn importar_zip(dir: &Path, bytes: &[u8]) -> Result<Importacao, String> {
     importar_zip_com(dir, bytes, &Limites::default())
 }
@@ -543,6 +565,98 @@ mod testes {
             !gravado.contains("<?xml") && !gravado.contains("xlink") && !gravado.contains('\n'),
             "{gravado}"
         );
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    // ---- base64 (a forma como a interface manda o zip) ----
+
+    #[test]
+    fn importa_o_zip_em_base64() {
+        let d = dir_teste("base64_ok");
+        let texto = STANDARD.encode(pacote_ok());
+        let r = importar_base64(&d, &texto).unwrap();
+        assert_eq!(r.partituras, 2);
+        assert_eq!(r.pacote.partituras, vec![1, 283]);
+        assert_eq!(
+            hinario::carregar(Some(&d)).unwrap().partituras,
+            vec![1, 283]
+        );
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn base64_aceita_espaco_nas_pontas_e_recusa_o_que_nao_e_base64() {
+        let d = dir_teste("base64_forma");
+        let texto = STANDARD.encode(pacote_ok());
+        assert!(importar_base64(&d, &format!("  {texto}\n")).is_ok());
+        for ruim in [
+            "@@@@",
+            "abc",
+            "YWJj ZGVm",
+            "Zm9v!",
+            "\u{e9}\u{e9}\u{e9}\u{e9}",
+        ] {
+            let e = importar_base64(&dir_teste("base64_ruim"), ruim).unwrap_err();
+            assert_eq!(codigo(&e), "zip_invalido", "{ruim:?} -> {e}");
+        }
+        // vazio decodifica para zero bytes, que não são um zip
+        assert_eq!(
+            codigo(&importar_base64(&d, "").unwrap_err()),
+            "zip_invalido"
+        );
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn base64_confere_o_tamanho_do_texto_antes_de_decodificar() {
+        let d = dir_teste("base64_tamanho");
+        let lim = Limites {
+            zip: 10,
+            ..Limites::default()
+        };
+        // 200 caracteres que NÃO são base64: se decodificasse primeiro, o erro seria zip_invalido
+        let e = importar_base64_com(&d, &"@".repeat(200), &lim).unwrap_err();
+        assert_eq!(codigo(&e), "zip_grande_demais");
+        assert!(!d.exists(), "nada é tocado");
+    }
+
+    #[test]
+    fn o_gate_do_texto_base64_fica_exatamente_em_4_para_cada_3_bytes_mais_o_preenchimento() {
+        // zip de 30 bytes = 10 grupos de 3 = 40 caracteres, mais 4 de folga para o preenchimento "=": o gate é 44. Texto que NÃO é
+        // base64: passar do gate dá "zip_grande_demais" (recusado antes de decodificar); ficar nele dá "zip_invalido" (decodificou e falhou).
+        let lim = Limites {
+            zip: 30,
+            ..Limites::default()
+        };
+        let d = dir_teste("gate_borda");
+        let ate = |n: usize| importar_base64_com(&d, &"@".repeat(n), &lim).unwrap_err();
+        assert_eq!(
+            codigo(&ate(44)),
+            "zip_invalido",
+            "44 caracteres passam o gate"
+        );
+        assert_eq!(
+            codigo(&ate(45)),
+            "zip_grande_demais",
+            "45 já passam do gate"
+        );
+        assert_eq!(codigo(&ate(60)), "zip_grande_demais");
+        assert_eq!(codigo(&ate(1)), "zip_invalido");
+    }
+
+    #[test]
+    fn base64_no_limite_do_zip_passa_e_um_byte_a_mais_nao() {
+        let d = dir_teste("base64_limite");
+        let z = pacote_ok();
+        let lim = Limites {
+            zip: z.len(),
+            ..Limites::default()
+        };
+        assert!(importar_base64_com(&d, &STANDARD.encode(&z), &lim).is_ok());
+        let mais = [z.clone(), vec![0]].concat();
+        let e = importar_base64_com(&dir_teste("base64_limite2"), &STANDARD.encode(&mais), &lim)
+            .unwrap_err();
+        assert_eq!(codigo(&e), "zip_grande_demais");
         std::fs::remove_dir_all(&d).ok();
     }
 
