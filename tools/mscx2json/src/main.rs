@@ -409,6 +409,12 @@ const REVERENCIAIS: &[&str] = &[
     "Sua",
     "Suas",
     "Vós",
+    "Filho",
+    "Jeová",
+    "Criador",
+    "Consolador",
+    "Emanuel",
+    "Altíssimo",
 ];
 
 /// As letras da primeira palavra do texto (sem aspas, parênteses ou números na frente).
@@ -546,11 +552,8 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<Str
         let vista = vistas.entry(sil.verso).or_insert(0);
         if quebras > *vista {
             *vista = quebras;
-            if primeira_palavra(&palavras[i])
-                .chars()
-                .next()
-                .is_some_and(char::is_uppercase)
-            {
+            // Mesma condição de `comeca_verso`, sem a linha anterior (ainda não existe): nome reverencial não é pista.
+            if comeca_verso(&palavras[i], "") {
                 *maiusculas.entry(sil.verso).or_insert(0) += 1;
             }
         }
@@ -1707,6 +1710,42 @@ mod testes {
             estrofe_com_respiracoes(&["alfa", "beta", "gama", "delta", "eta", "teta"], &[2, 4]);
         let (letra, _) = montar_letra(silabas, respiracoes);
         assert_eq!(letra, vec!["1. alfa beta", "gama delta", "eta teta"]);
+    }
+
+    #[test]
+    fn nome_reverencial_nao_conta_como_pista_para_ligar_a_regra() {
+        // Estrofe em minúsculo, com duas respirações antes de nomes reverenciais (sem pontuação antes): não há pista de verso,
+        // e vale a quebra a cada respiração, e não uma linha só.
+        let (silabas, respiracoes) = estrofe_com_respiracoes(
+            &[
+                "alfa", "beta", "Jesus", "gama", "delta", "Senhor", "eta", "teta",
+            ],
+            &[2, 5],
+        );
+        let (letra, _) = montar_letra(silabas, respiracoes);
+        assert_eq!(
+            letra,
+            vec!["1. alfa beta", "Jesus gama delta", "Senhor eta teta"]
+        );
+    }
+
+    #[test]
+    fn outros_nomes_reverenciais_tambem_continuam_o_verso() {
+        let (silabas, respiracoes) = estrofe_com_respiracoes(
+            &[
+                "Alfa", "beta;", "Gama", "delta", "Filho", "eta;", "Teta", "iota", "Jeová", "kapa.",
+            ],
+            &[2, 4, 6, 8],
+        );
+        let (letra, _) = montar_letra(silabas, respiracoes);
+        assert_eq!(
+            letra,
+            vec![
+                "1. Alfa beta;",
+                "Gama delta Filho eta;",
+                "Teta iota Jeová kapa."
+            ]
+        );
     }
 
     #[test]
