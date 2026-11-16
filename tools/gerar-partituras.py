@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Gera a partitura de cada hino em SVG (I-08): .mscx -> MusicXML (MuseScore 4) -> SVG (Verovio).
 
-Uso:  python3 tools/gerar-partituras.py ENTRADA SAIDA [--largura 700] [--escala 40] [--musescore "CMD"]
+Uso:  python3 tools/gerar-partituras.py ENTRADA SAIDA [--largura 700] [--escala 40] [--musescore "CMD"] [--tempo 180]
 
 ENTRADA  pasta com arquivos hino-<número>.mscx (os mesmos que o conversor lê).
 SAIDA    pasta onde ficam hino-<número>.svg e hino-<número>.timemap.json (cria se não existir).
@@ -10,7 +10,8 @@ SAIDA    pasta onde ficam hino-<número>.svg e hino-<número>.timemap.json (cria
 resultado **não vai para o Git** (as partituras são do autor das transcrições, como as letras).
 
 O MuseScore é procurado, nesta ordem: --musescore, a variável BMCCB_MUSESCORE, os comandos mscore/musescore4/musescore
-no PATH e o Flatpak org.musescore.MuseScore. Ele roda sem janela (QT_QPA_PLATFORM=offscreen).
+no PATH e o Flatpak org.musescore.MuseScore. Ele roda sem janela (QT_QPA_PLATFORM=offscreen), com limite de tempo por hino
+(--tempo, em segundos). Se um hino falha, o motivo é impresso e o lote continua; o código de saída é 1 se algum falhou.
 
 O SVG sai numa **página só**, que termina onde acaba a música, com viewBox (escala com a largura do contêiner). A largura
 700 foi escolhida olhando um celular de 412 px: as notas ficam grandes e há poucos compassos por linha. O timemap guarda o
@@ -31,9 +32,16 @@ from pathlib import Path
 NOME = re.compile(r"^hino-(\d+)\.mscx$")
 
 # O MuseScore escreve o sinal de elisão (duas palavras numa nota só: "sempre_em") como um <text> solto numa fonte
-# privada ("MScore Text", caractere U+E550..E552 do padrão SMuFL). Nenhuma fonte comum tem esse caractere, e a página
+# privada ("MScore Text", caracteres U+E550 a U+E552 do padrão SMuFL). Nenhuma fonte comum tem esse caractere, e a página
 # mostra um quadrado. O MusicXML padrão tem o elemento <elision>, que o Verovio desenha conforme a opção lyricElision.
-ELISAO_MUSESCORE = re.compile(r'<text font-family="MScore Text">[-]</text>')
+GLIFOS_ELISAO = "".join(chr(c) for c in range(0xE550, 0xE553))
+ELISAO_MUSESCORE = re.compile(f'<text font-family="MScore Text">[{GLIFOS_ELISAO}]</text>')
+
+TEMPO_LIMITE = 180  # segundos por hino no MuseScore (nos hinos de amostra ele leva menos de 1 s)
+
+
+class ErroHino(Exception):
+    """Um hino que não deu certo; a mensagem diz o porquê e o lote continua."""
 
 
 def corrigir_elisao(xml: str) -> str:
@@ -45,6 +53,17 @@ def numero_do_hino(nome: str):
     """'hino-283.mscx' -> 283; qualquer outro nome -> None."""
     m = NOME.match(nome)
     return int(m.group(1)) if m else None
+
+
+def inteiro_positivo(texto: str) -> int:
+    """Para o argparse: --largura e --escala precisam ser inteiros maiores que zero."""
+    try:
+        valor = int(texto)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{texto}' não é um número inteiro") from None
+    if valor <= 0:
+        raise argparse.ArgumentTypeError(f"precisa ser maior que zero (veio {valor})")
+    return valor
 
 
 def achar_musescore(entrada: Path, trabalho: Path, escolhido: str | None):
@@ -63,19 +82,88 @@ def achar_musescore(entrada: Path, trabalho: Path, escolhido: str | None):
     return None
 
 
-def mscx_para_musicxml(musescore: list, mscx: Path, destino: Path) -> bool:
+def ultimas_linhas(texto: str, quantas: int = 3) -> str:
+    linhas = [l.strip() for l in (texto or "").splitlines() if l.strip()]
+    return " | ".join(linhas[-quantas:])
+
+
+def mscx_para_musicxml(musescore: list, mscx: Path, destino: Path, tempo: int = TEMPO_LIMITE):
+    """Roda o MuseScore. Devolve None se o MusicXML saiu, ou o motivo da falha (texto)."""
     ambiente = dict(os.environ, QT_QPA_PLATFORM="offscreen")
-    subprocess.run([*musescore, "-o", str(destino), str(mscx)], env=ambiente, capture_output=True)
-    return destino.exists() and destino.stat().st_size > 0
+    try:
+        r = subprocess.run([*musescore, "-o", str(destino), str(mscx)], env=ambiente, capture_output=True, text=True,
+                           errors="replace", timeout=tempo)
+    except subprocess.TimeoutExpired:
+        return f"o MuseScore passou de {tempo} s e foi interrompido"
+    except OSError as e:
+        return f"não consegui rodar o MuseScore ({' '.join(musescore)}): {e}"
+    if destino.exists() and destino.stat().st_size > 0:
+        return None
+    # Em caso de sucesso o MuseScore também escreve avisos inofensivos; só se mostram quando não saiu arquivo.
+    motivo = f"o MuseScore não gerou o MusicXML (código {r.returncode})"
+    detalhe = ultimas_linhas(r.stderr or r.stdout)
+    return f"{motivo}: {detalhe}" if detalhe else motivo
+
+
+def gravar(saida: Path, n: int, svg: bytes, tempo_json: str):
+    """Grava o SVG e o timemap do hino por arquivo temporário + troca, para não sobrar um sem o outro."""
+    pares = [(saida / f"hino-{n}.svg", svg), (saida / f"hino-{n}.timemap.json", tempo_json.encode("utf-8"))]
+    temporarios = [(d.with_name(d.name + ".tmp"), d) for d, _ in pares]
+    try:
+        for (tmp, _), (_, dados) in zip(temporarios, pares):
+            tmp.write_bytes(dados)
+        for tmp, destino in temporarios:
+            tmp.replace(destino)
+    finally:
+        for tmp, _ in temporarios:
+            tmp.unlink(missing_ok=True)
+
+
+def gerar_hino(tk, musescore: list, n: int, mscx: Path, trabalho: Path, saida: Path, tempo: int = TEMPO_LIMITE):
+    """Gera os arquivos de um hino. Devolve (bytes do SVG, bytes comprimidos, bytes do timemap) ou levanta ErroHino."""
+    xml = trabalho / f"hino-{n}.musicxml"
+    motivo = mscx_para_musicxml(musescore, mscx, xml, tempo)
+    if motivo:
+        raise ErroHino(motivo)
+    try:
+        texto = xml.read_text(encoding="utf-8")
+        if not tk.loadData(corrigir_elisao(texto)):
+            raise ErroHino("o Verovio não leu o MusicXML")
+        if tk.getPageCount() != 1:
+            raise ErroHino(f"saiu em {tk.getPageCount()} páginas (esperava 1)")
+        svg = tk.renderToSVG(1).encode("utf-8")
+        tempo_json = json.dumps(tk.renderToTimemap({"includeMeasures": True}), separators=(",", ":"))
+        gravar(saida, n, svg, tempo_json)
+    except (OSError, UnicodeError) as e:
+        raise ErroHino(f"{type(e).__name__}: {e}") from e
+    return len(svg), len(gzip.compress(svg, 9)), len(tempo_json.encode("utf-8"))
+
+
+def processar(tk, musescore: list, hinos: list, trabalho: Path, saida: Path, tempo: int = TEMPO_LIMITE):
+    """Gera todos os hinos, imprime a tabela e devolve (falhas, total de bytes de SVG). Um hino ruim não para os outros."""
+    falhas = 0
+    total = 0
+    print(f"{'hino':>5} {'SVG':>10} {'gzip':>9} {'timemap':>9}")
+    for n, mscx in hinos:
+        try:
+            svg, gz, tm = gerar_hino(tk, musescore, n, mscx, trabalho, saida, tempo)
+        except ErroHino as e:
+            print(f"{n:>5}  FALHOU: {e}", file=sys.stderr)
+            falhas += 1
+            continue
+        total += svg
+        print(f"{n:>5} {svg:>10,} {gz:>9,} {tm:>9,}")
+    return falhas, total
 
 
 def principal() -> int:
     ap = argparse.ArgumentParser(description="Gera a partitura (SVG) de cada hino-N.mscx.")
     ap.add_argument("entrada", type=Path)
     ap.add_argument("saida", type=Path)
-    ap.add_argument("--largura", type=int, default=700, help="largura da página, em unidades do Verovio (padrão 700)")
-    ap.add_argument("--escala", type=int, default=40, help="escala do Verovio, em %% (padrão 40)")
+    ap.add_argument("--largura", type=inteiro_positivo, default=700, help="largura da página, em unidades do Verovio (padrão 700)")
+    ap.add_argument("--escala", type=inteiro_positivo, default=40, help="escala do Verovio, em %% (padrão 40)")
     ap.add_argument("--musescore", help='comando do MuseScore, por exemplo "flatpak run org.musescore.MuseScore"')
+    ap.add_argument("--tempo", type=inteiro_positivo, default=TEMPO_LIMITE, help=f"limite de segundos por hino no MuseScore (padrão {TEMPO_LIMITE})")
     a = ap.parse_args()
 
     entrada = a.entrada.resolve()
@@ -110,8 +198,6 @@ def principal() -> int:
         "footer": "none",
     })
 
-    falhas = 0
-    total = 0
     with tempfile.TemporaryDirectory(prefix="bmccb-partitura-") as t:
         trabalho = Path(t)
         musescore = achar_musescore(entrada, trabalho, a.musescore)
@@ -119,30 +205,9 @@ def principal() -> int:
             print("erro: não achei o MuseScore (use --musescore ou instale o Flatpak org.musescore.MuseScore)", file=sys.stderr)
             return 2
         print(f"verovio {tk.getVersion()}  largura={a.largura} escala={a.escala}")
-        print(f"{'hino':>5} {'SVG':>10} {'gzip':>9} {'timemap':>9}")
-        for n, mscx in hinos:
-            xml = trabalho / f"hino-{n}.musicxml"
-            if not mscx_para_musicxml(musescore, mscx, xml):
-                print(f"{n:>5}  FALHOU: o MuseScore não gerou o MusicXML", file=sys.stderr)
-                falhas += 1
-                continue
-            if not tk.loadData(corrigir_elisao(xml.read_text(encoding="utf-8"))):
-                print(f"{n:>5}  FALHOU: o Verovio não leu o MusicXML", file=sys.stderr)
-                falhas += 1
-                continue
-            if tk.getPageCount() != 1:
-                print(f"{n:>5}  FALHOU: saiu em {tk.getPageCount()} páginas (esperava 1)", file=sys.stderr)
-                falhas += 1
-                continue
-            svg = tk.renderToSVG(1).encode("utf-8")
-            tempo = json.dumps(tk.renderToTimemap({"includeMeasures": True}), separators=(",", ":"))
-            (saida / f"hino-{n}.svg").write_bytes(svg)
-            (saida / f"hino-{n}.timemap.json").write_text(tempo, encoding="utf-8")
-            total += len(svg)
-            print(f"{n:>5} {len(svg):>10,} {len(gzip.compress(svg, 9)):>9,} {len(tempo):>9,}")
+        falhas, total = processar(tk, musescore, hinos, trabalho, saida, a.tempo)
 
-    feitos = len(hinos) - falhas
-    print(f"{feitos} de {len(hinos)} hinos; SVG somam {total:,} bytes")
+    print(f"{len(hinos) - falhas} de {len(hinos)} hinos; SVG somam {total:,} bytes")
     return 1 if falhas else 0
 
 
