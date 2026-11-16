@@ -96,6 +96,26 @@ O player permite silenciar vozes, mudar o andamento e transpor em semitons.
 `letra` é uma lista de linhas. Uma linha vazia (`""`) separa as estrofes, e a primeira linha
 de cada estrofe pode começar com o número ("1. ..."). O app mostra as linhas como estão.
 
+**Como o conversor decide as quebras de linha.** A linha da letra acompanha o **verso** do poema, como no hinário impresso, mas a
+partitura marca a respiração também **no meio do verso** (entre duas frases musicais). Por isso o `mscx2json` não quebra mais
+em toda respiração: quebra só naquelas em que a **próxima palavra começa em maiúscula**, que é como o autor escreve o começo
+de um verso (a continuação vem em minúscula). Duas ressalvas:
+- Nome reverencial ("Jesus", "Senhor", "Te"...) é maiúsculo em qualquer lugar; ele só começa verso se o trecho anterior
+  terminou em pontuação (`. ; ! ? : ,`). A lista fica em `REVERENCIAIS`, em `tools/mscx2json/src/main.rs`.
+- A regra só vale numa estrofe com **pelo menos duas respirações seguidas de maiúscula**. Se o autor escreveu tudo em
+  minúscula, não há pista, e vale a quebra a cada respiração (o comportamento antigo).
+
+**Erros de digitação que o conversor conserta sozinho**, sílaba a sílaba e antes de montar as linhas (`corrigir_silabas`, para
+as marcas do karaokê já nascerem do texto certo):
+- pronome colado ao verbo que termina em vogal acentuada, sem hífen (-lo, -la, -los, -las, -lhe, -lhes): ganha o hífen;
+- "I" maiúsculo no lugar de "l" no começo de uma sílaba que continua a palavra;
+- "~" literal vira espaço (como a elisão do MuseScore);
+- "ãc" vira "ãe" (nenhuma palavra do português tem "c" logo depois de "ã").
+
+O que a regra não resolve: verso que o autor escreveu **sem respiração** na partitura (dois versos colados na mesma linha) e
+**erros de digitação** que não seguem um padrão seguro. Esses casos pedem o arquivo de correções da I-05
+(`docs/roadmap-ideas.md`).
+
 ### Sincronia da letra (karaokê)
 
 Opcionalmente o hino ganha `sincronia`: o **instante em que cada sílaba é cantada**, para a aba Letra acender a

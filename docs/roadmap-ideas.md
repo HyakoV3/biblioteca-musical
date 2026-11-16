@@ -314,7 +314,8 @@ Botões "parte anterior" e "próxima parte" (Intro, 1ª, 2ª...) no miniplayer e
 
 ## I-19 — Organizar como os hinos aparecem na letra
 
-- **Status:** anotada (aguardando as fotos do hinário impresso)
+- **Status:** **em andamento**: as **quebras de verso** já foram corrigidas no conversor (2026-11-16); falta o **coro** e o resto
+  (ver "O que se descobriu")
 - **Origem:** pedido do responsável, 2026-11-16: organizar "como os hinos aparecem no hinário, na parte de letra", a partir de
   fotos que ele vai tirar.
 - **Prioridade:** a definir
@@ -322,6 +323,22 @@ Botões "parte anterior" e "próxima parte" (Intro, 1ª, 2ª...) no miniplayer e
 ### O que se deseja
 Que a aba Letra apresente cada hino como ele aparece no hinário impresso (ordem e numeração das estrofes, coro, quebras de
 verso, títulos). O desenho exato depende das fotos.
+
+### O que se descobriu (2026-11-16, com 4 fotos: hinos 1, 276, 398 e 457)
+- **Versos partidos:** o conversor quebrava a linha em **toda respiração** da partitura, mas o hinário imprime **um verso por
+  linha**, e a partitura respira também no meio do verso. Das quebras do conversor nos 4 hinos, só 36 de 57 eram fim de verso. A
+  pista confiável é o **texto**: o verso novo começa em maiúscula, e a continuação, em minúscula (com exceção dos nomes
+  reverenciais). Com essa regra, **46 dos 48 versos impressos** conferidos passaram a sair iguais, e as quebras acertaram 57
+  de 57. Descrita em `docs/FORMATO.md`. A regra foi ajustada olhando esses 4 hinos, então vale **validar com mais fotos**.
+- **Coro (refrão):** nos hinos 398 e 457 o hinário imprime o coro **em negrito e separado** da estrofe, sem número. No JSON ele
+  segue **dentro da estrofe 1**, sem marca nenhuma. O app não sabe onde o coro começa.
+- **Versos colados:** no hino 283 a partitura não tem respiração entre dois versos, e eles saem na mesma linha. A regra de
+  maiúscula não resolve (a letra tem frases com maiúscula no meio de um verso); fica para o arquivo de correções (I-05).
+- **Erros de digitação do autor** nos arquivos `.mscx`. **O conversor já conserta, por regra segura** (2026-11-16): pronome
+  colado sem hífen depois de vogal acentuada, "I" maiúsculo no lugar de "l", "~" literal e "ãc" no lugar de "ãe". **Continua para a
+  I-05:** sílaba sem o marcador de hífen (a palavra sai partida em duas) e outras letras trocadas, que não têm padrão seguro.
+- **A pauta no topo** de cada hino impresso é o **começo da melodia**, no tom e no compasso do hino; o tamanho dela é o do
+  primeiro verso. Não está no `.mscx`, então não serve de régua para as quebras.
 
 ### Perguntas em aberto
 1. Quais diferenças entre os hinos existem (coro, estribilho, estrofes numeradas ou não, repetições)?
