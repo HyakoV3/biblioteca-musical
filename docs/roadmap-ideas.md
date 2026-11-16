@@ -458,6 +458,100 @@ mas há relatos de que **a WebView sozinha pode não ser coberta por esse servi�
 
 ---
 
+## I-23 — Equalizar o volume dos sons gravados, para encaixarem no conjunto
+
+- **Status:** anotada, **rascunho** (a revisar com o subagente Opus antes de qualquer implementação)
+- **Origem:** pedido do responsável, 2026-11-16: "com os sons gravados precisamos ter uma espécie de equalização nos volumes para encaixar bem... algo que não é necessário nos sintetizados".
+- **Prioridade:** a definir (mexe na qualidade percebida de **toda** audição com sons gravados)
+
+> **Aviso do rascunho:** nada aqui foi **medido**. As amostras do banco ficam fora do Git (`sons-fonte/`) e não estavam à mão; o que vem
+> do código está dito como fato, o resto está marcado como **hipótese**. A primeira etapa proposta é justamente medir.
+
+### O problema
+**O que o código já mostra (fatos):**
+- O **sintetizado** nivela **por instrumento e por nota**: `perfilDaNota(id, midi).nivel` (`src/lib/timbres.ts`) vem de medidas, com uma âncora a
+  cada 3 semitons (`timbres.json`). Por construção, uma nota não salta mais que a vizinha.
+- O **gravado** tem **um único** `ganho` por instrumento (`src/lib/realista.ts`), calculado por `tools/analisar-timbres.py --calibrar` para
+  todos terem o **mesmo nível médio no ouvido** (curva A, alvo −24,6 dB), medido em **só 3 ou 4 alturas** por instrumento, num trecho de
+  0,75 s depois do ataque. O `velocity` é **fixo em 90** (`sintetizador.ts`). **Não há nenhuma compensação por nota.**
+- Cada voz pode ter um instrumento gravado **diferente** (I-09/I-10): o conjunto é uma mistura de até 4 instrumentos de bancos de amostras,
+  cada um com o seu jeito.
+- A cadeia de saída é: ganho da voz (o volume que a pessoa escolhe) → mestre (0,9) → um `DynamicsCompressor` **com os valores padrão** → saída.
+- O script já limita o ganho pelo **pico** (`PICO_MAXIMO` = 0,85 de amplitude numa voz sozinha, "acima disso, 4 vozes somadas passam do que o compressor segura"): o compressor já foi uma preocupação ao calibrar.
+- O próprio script registra que "o banco deixa algumas notas **mudas**" (por exemplo, o contrabaixo acima da nota 59): o banco **não é uniforme**.
+
+**Hipóteses (não medidas):**
+1. **Dentro de um instrumento**, o nível varia de nota para nota (camadas de amostras, regiões afinadas e gravadas em dias e microfones
+   diferentes). Um ganho único acerta a **média** e deixa notas que **saltam** ou **somem**, o que se ouve como uma voz "irregular".
+2. **Entre instrumentos**, "mesmo nível médio na curva A" não basta para **encaixar**: pesam também a **região** (o grave quase some no
+   alto-falante do celular: o script já tem a medida "celular", com os graves cortados), o **ataque** (percussivo x sustentado) e a
+   textura de **quatro vozes somadas**. Uma tuba e um violino no mesmo nível médio não se acomodam do mesmo jeito.
+3. O **compressor padrão** do Web Audio (valores da especificação: limiar −24 dB, joelho 30, razão 12, ataque 3 ms, soltura 250 ms; **conferir**)
+   pode estar **agindo de forma audível** quando as 4 vozes gravadas somam, "bombeando" o volume. Com sintetizado, as amplitudes mais
+   previsíveis talvez o evitem.
+4. O volume que a pessoa escolhe por voz **muda o balanço** que a calibração supôs.
+
+### O que se deseja
+Ouvir um hino com as vozes gravadas **sem nenhuma voz saltando ou sumindo**, em **qualquer combinação** de instrumentos escolhida, no alto-falante
+do celular e no fone, **sem que o volume geral do app mude de modo perceptível** (o alvo atual de −24,6 dB se mantém, salvo decisão em contrário).
+
+### Perguntas em aberto
+1. **"Equalizar" é igualar volumes** (por nota e entre instrumentos), **ou também mexer no timbre** (um equalizador por frequência em cada voz,
+   como numa mesa de mixagem)? Recomendação: **só volumes** primeiro; o filtro por voz só se a medição mostrar uma voz **mascarando** outra.
+2. **Que balanço entre as vozes?** Todas iguais, ou a melodia (soprano) um pouco à frente? É decisão de **ouvido**, do responsável.
+3. **Onde se ouviu o problema?** Um exemplo concreto (qual instrumento, qual nota ou hino, celular ou fone) encurta muito a medição.
+4. **Alvo de volume geral:** manter −24,6 dB ou subir (celular costuma soar baixo)?
+5. **Para qual saída calibrar:** alto-falante do celular, fone, ou os dois (a ferramenta já mede os dois)?
+
+### Caminhos possíveis (hipóteses, do mais barato ao mais caro)
+**Etapa 0, medir (sempre primeiro).** Estender `tools/analisar-timbres.py` (ou uma ferramenta irmã) para medir **cada nota** da faixa das vozes de
+cada gravado (curva A e "celular", janela do trecho sustentado) e relatar: a **dispersão entre notas** de cada instrumento (desvio, nota mais forte
+e mais fraca, notas mudas); o nível da **mistura de 4 vozes** de um hino de amostra, renderizada offline com o **mesmo grafo** do app; e a **redução de
+ganho do compressor** (`DynamicsCompressorNode.reduction`) durante a música. Só então decidir. Limiares **propostos** (a validar de ouvido): uma
+diferença de ~1 dB mal se nota e **mais de ~3 dB entre notas vizinhas** incomoda; o compressor que reduz **mais de ~3 dB** com frequência merece atenção.
+
+**A. Mapa de ganho por nota (offline).** Medir o nível de cada nota de cada gravado e guardar uma tabela de ganho por altura (todas as notas, ou
+âncoras a cada 3 semitons interpoladas, como o `timbres.json` do sintetizado), aplicada ao tocar. Mesmo desenho que o sintetizado já tem. A tabela
+é pequena e **mora no app** (não exige regerar o pacote de sons); a calibração roda por script e se refaz quando o banco mudar (a nota do
+`realista.ts` já pede isso). Cuidado com notas mudas ou artefatos: manter um **teto** (o script já limita o ganho pelo **pico**: `PICO_MAXIMO` = 0,85 de amplitude numa voz sozinha, para as 4 somadas não passarem do que o compressor segura). Depende de como o `smplr` aceita
+um ganho por nota (ver "Pesquisar").
+
+**B. Encaixe entre as vozes.** Ponderar a calibração entre instrumentos pela **região** e pelo **papel** (se a resposta à pergunta 2 for "melodia
+à frente"). É só números na mesma tabela da etapa A.
+
+**C. Cadeia de saída.** Trocar o compressor padrão por um **limitador transparente** (limiar perto do topo, razão alta, ataque curto) que só pegue os
+picos, e dar **margem** (headroom) à soma de 4 vozes em vez de comprimir. Medir antes e depois com os mesmos hinos.
+
+**D. Equalizador por frequência em cada voz** (só se a pergunta 1 pedir): filtros passa-alta abaixo da faixa da voz e uma prateleira leve; custo de CPU no
+celular por voz.
+
+**Descartada à partida: normalizar o hino inteiro para um alvo de loudness (LUFS).** Exigiria **renderizar o hino todo** antes de tocar, e hoje o som é
+gerado **em tempo real**, para mudar andamento, tom, instrumento e silenciar vozes ao vivo; renderizar de novo a cada mudança mexe no player e no karaokê
+(o mesmo custo já registrado na I-22).
+
+### Pesquisar antes de construir (regra do projeto)
+- Como o `smplr` (`Soundfont`) traduz `velocity` em ganho e se aceita **ganho por nota** (opções do `start`); sem isso, um `GainNode` por nota agendada.
+- Medida de loudness por padrão (**EBU R128 / ITU-R BS.1770**, ReplayGain): o `ffmpeg` que o script já usa tem os filtros `ebur128` e `loudnorm`, que
+  evitam reinventar a medida; comparar com a curva A que o script usa hoje.
+- Os parâmetros do `DynamicsCompressorNode` no padrão do Web Audio e boas práticas de limitador em Web Audio.
+- Registrar aqui o que for lido (fonte, data, o que serviu).
+
+### Impacto técnico (hipóteses)
+`src/lib/realista.ts` (tabela de ganho por nota, no lugar de um número), `src/lib/sintetizador.ts` (`real()` e o `start` de cada nota; a cadeia do
+mestre), `tools/analisar-timbres.py` (a medição) e `docs/pacote-de-sons.md` (o registro da calibração). **Sem mudança no pacote de sons** se a
+tabela morar no app. Relaciona-se com a **I-15** (o sintetizado já nivela por nota), a **I-07** (pacote de sons) e a **I-09/I-10** (trocar o
+instrumento por voz): quanto mais combinações possíveis, mais a calibração **por instrumento sozinha** deixa de bastar.
+
+### Critérios de aceitação (propostos)
+- **Por instrumento:** a dispersão de nível **entre notas** da faixa das vozes dele fica dentro de **±1,5 dB** (medida da etapa 0 repetida depois).
+- **Entre vozes:** num hino de amostra, com **qualquer par** de instrumentos gravados na mesma dinâmica, a diferença de nível (curva A e "celular")
+  fica dentro de **2 dB** (ou do balanço escolhido na pergunta 2).
+- **Volume geral:** o nível da mistura fica **dentro de ±1 dB do atual** (ou do novo alvo, se a pergunta 4 mudar).
+- **Compressor:** nos hinos de amostra, a redução de ganho fica **abaixo de ~3 dB** na maior parte do tempo (ou o compressor é substituído).
+- **De ouvido, no celular e no fone:** o responsável ouve 5 hinos com 3 combinações de instrumentos e **não aponta nenhuma voz saltando ou sumindo**.
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
