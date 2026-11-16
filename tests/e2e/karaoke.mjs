@@ -306,8 +306,25 @@ async function principal() {
   await dormir(600);
   const tempoOuvir = await av("document.querySelector('#painel-ouvir .tempos span')?.textContent ?? null");
   confere(tempoOuvir === "0:02", `o tempo da aba Ouvir acompanha o slider: ${JSON.stringify(tempoOuvir)} (esperado "0:02")`);
+  // A barra tem de usar as cores do TEMA (`--ouro-linha` no preenchimento e no ponto, `--borda` na trilha), e não o azul do controle
+  // nativo do sistema: as cores mudam em cada tema, então a conferência é contra as variáveis, não contra um valor fixo.
+  const cores = await av(`(() => {
+    const cor = (v) => { const d = document.createElement('i'); d.style.color = v; document.body.append(d); const c = getComputedStyle(d).color; d.remove(); return c; };
+    const fundo = (s) => { const e = document.querySelector(s); return e ? getComputedStyle(e).backgroundColor : null; };
+    return { ouro: cor('var(--ouro-linha)'), borda: cor('var(--borda)'), preenchimento: fundo('#painel-ouvir .busca .preenchido'),
+             ponto: fundo('#painel-ouvir .busca .ponto'), trilha: fundo('#painel-ouvir .busca .trilho'),
+             mini: fundo('.mini .busca .preenchido') };
+  })()`);
+  confere(
+    cores.preenchimento === cores.ouro && cores.ponto === cores.ouro && cores.trilha === cores.borda,
+    `a barra de progresso usa as cores do tema (preenchimento e ponto = ouro-linha, trilha = borda): ${JSON.stringify(cores)}`,
+  );
   await av("document.getElementById('aba-letra').click(); 1");
   await dormir(400);
+  confere(
+    (await av(`(() => { const e = document.querySelector('.mini .busca .preenchido'); return e ? getComputedStyle(e).backgroundColor : null; })()`)) === cores.ouro,
+    "o fio do miniplayer usa o ouro-linha do tema",
+  );
   await av("document.querySelector('.chave-karaoke')?.click(); 1"); // desliga
   await dormir(400);
   confere((await av("document.querySelectorAll('.trecho').length")) === 0, "com o botão desligado nada fica aceso");

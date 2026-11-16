@@ -1,7 +1,9 @@
 <script lang="ts">
-  // Barra de progresso que também avança e retrocede: um <input type="range"> nativo (toque, arraste, teclado e leitor de
-  // tela de graça). Enquanto a pessoa arrasta, mostra o ponto escolhido; o som só muda ao SOLTAR, porque reposicionar a
-  // música inteira a cada pixel pesaria no celular.
+  // Barra de progresso que também avança e retrocede. O que se VÊ é a mesma barra de sempre (trilha `--borda`, preenchimento
+  // `--ouro-linha`, as cores de cada tema); por cima fica um <input type="range"> nativo e transparente, que dá o toque, o
+  // arraste, o teclado e o leitor de tela sem ter cor própria (o controle nativo usaria o azul do sistema, fora do tema).
+  // Enquanto a pessoa arrasta, mostra o ponto escolhido; o som só muda ao SOLTAR, porque reposicionar a música inteira a cada
+  // pixel pesaria no celular.
   import { i18n } from "$lib/i18n/index.svelte";
   import { formatarTempo, fracao } from "./tempo";
 
@@ -18,7 +20,7 @@
     habilitado: boolean;
     /** Chamado ao soltar, com o ponto escolhido em segundos. */
     aoBuscar: (segundos: number) => void;
-    /** Versão do miniplayer: um fio de 4 px à vista, com uma área de toque (20 px) reservada no layout e invisível por cima. */
+    /** Versão do miniplayer: fio de 4 px, sem o ponto de arrastar, numa faixa de toque menor. */
     fino?: boolean;
     /** O ponto que a pessoa está arrastando (nulo quando não arrasta), para quem mostra o tempo ao lado. */
     previa?: number | null;
@@ -37,10 +39,9 @@
   }
 </script>
 
-<div class="busca" class:fino>
-  {#if fino}
-    <div class="fio" aria-hidden="true"><div class="preenchido" style:width={`${fracao(mostrado, duracao) * 100}%`}></div></div>
-  {/if}
+<div class="busca" class:fino class:desabilitado={!habilitado} style:--f={fracao(mostrado, duracao)}>
+  <div class="trilho"><div class="preenchido"></div></div>
+  {#if !fino}<span class="ponto" aria-hidden="true"></span>{/if}
   <input
     class="busca-entrada"
     type="range"
@@ -59,15 +60,28 @@
 </div>
 
 <style>
-  .busca { position: relative; }
-  .busca-entrada { display: block; width: 100%; margin: 0; min-height: 48px; accent-color: var(--acento); }
-  .busca-entrada:disabled { opacity: 0.5; }
+  /* A faixa de toque é um espaço RESERVADO no layout (40 px; 20 px no miniplayer): não sobe sobre os controles de cima nem
+     desce sobre a barra de abas, então não rouba toques de ninguém. */
+  .busca { position: relative; display: flex; align-items: center; height: 40px; --ponto: 22px; }
+  .busca.fino { height: 20px; }
+  .busca.desabilitado { opacity: 0.5; }
 
-  /* Miniplayer: o fio de 4 px é o que se vê, e a área de toque (20 px) é um espaço RESERVADO no layout, com o input transparente
-     preenchendo-o. Não sobe sobre os botões da linha de cima nem desce sobre a barra de abas, então não rouba toques de ninguém. */
-  .fino { height: 20px; display: flex; align-items: center; }
-  .fino .fio { width: 100%; height: 4px; background: var(--borda); }
-  .fino .preenchido { height: 100%; background: var(--ouro-linha); }
-  .fino .busca-entrada { position: absolute; inset: 0; height: 100%; min-height: 0; opacity: 0; cursor: pointer; }
-  .fino:has(.busca-entrada:focus-visible) .fio { outline: 2px solid var(--acento); outline-offset: 2px; }
+  /* Mesmo desenho de antes: trilha `--borda` com preenchimento `--ouro-linha` (as cores de cada tema). O preenchimento termina
+     no centro do ponto, que nunca passa das pontas da barra. */
+  .trilho { width: 100%; height: 8px; border-radius: 4px; background: var(--borda); overflow: hidden; }
+  .fino .trilho { height: 4px; border-radius: 0; }
+  .preenchido { height: 100%; width: calc(var(--ponto) / 2 + (100% - var(--ponto)) * var(--f)); background: var(--ouro-linha); }
+  .fino .preenchido { width: calc(100% * var(--f)); }
+  .ponto {
+    position: absolute; top: 50%; left: calc((100% - var(--ponto)) * var(--f)); margin-top: calc(var(--ponto) / -2);
+    width: var(--ponto); height: var(--ponto); box-sizing: border-box; border-radius: 50%;
+    background: var(--ouro-linha); border: 3px solid var(--superficie); box-shadow: 0 0 0 1px var(--ouro-linha);
+  }
+
+  .busca-entrada { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .busca-entrada:disabled { cursor: default; }
+
+  /* Foco: o input é transparente, então o anel (o do app: 3 px de `--foco`) vai na barra e no ponto. */
+  .busca:has(.busca-entrada:focus-visible) .trilho,
+  .busca:has(.busca-entrada:focus-visible) .ponto { outline: 3px solid var(--foco); outline-offset: 2px; }
 </style>
