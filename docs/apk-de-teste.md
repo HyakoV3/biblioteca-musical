@@ -92,17 +92,17 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 | **003** | 0.2.0 (238a103) | 2026-11-14 | Ajustes: "Sobre o app" num card fechado, aviso de independência à parte e versão centralizada fora do card; tema "Automático"; botões "Importar hinário" e "Remover importação"; seletor de idioma na largura toda | `52ceec38…01e50` |
 | **002** | 0.2.0 (bc7ba9b) | 2026-11-14 | Nome "Biblioteca Musical CCB"; ícones SVG (conjunto `ic`); cards em grupo (abrir um fecha os outros); "Redefinir vozes" e "Redefinir instrumentos" separados; lista com 001, 002; Ajustes como botão hambúrguer | `47944215…0a665` |
 
-### Roteiro do 018 (partituras)
+### Roteiro das partituras (APK **019**; o pacote de partituras é o do 018)
 
 **No 018 o importar do `.zip` FALHOU no Android** ("Não foi possível importar: o pacote .zip não pôde ser lido: a chamada não trouxe os
 bytes do arquivo"), como o roteiro já temia: o app mandava os bytes ao Rust como corpo binário da chamada (`invoke`), e **o Android não
 entrega corpo binário** (o Tauri só usa o `postMessage` lá, que é texto; a documentação dele manda passar bytes como base64). Isso só
-tinha sido testado em Chrome com uma simulação. **Corrigido no 019:** o zip vai como texto base64, em todas as plataformas. O roteiro
-abaixo vale para o 019.
-1. Instale o 018 e abra um hino. A aba **Partitura** aparece (em todos os hinos) com o aviso "Este hinário não tem partituras instaladas" e o
+tinha sido testado em Chrome com uma simulação. **Corrigido no 019:** o zip vai como texto base64, em todas as plataformas. **Os passos
+abaixo usam o APK 019** (o 018 não serve para o passo 2).
+1. Instale o **019** (`BibliotecaMusical-CCB-teste-019.zip`) e abra um hino. A aba **Partitura** aparece (em todos os hinos) com o aviso "Este hinário não tem partituras instaladas" e o
    botão **Abrir Ajustes**. Conferir que o botão leva a Ajustes.
-2. Em **Ajustes → Importar hinário**, escolha o `BibliotecaMusical-CCB-pacote-partituras-018.zip` (o seletor de arquivos precisa mostrar o
-   `.zip`). Deve aparecer "Importado: 5 hinos de “Amostra de teste (5 hinos)”, com 5 partituras." Se aparecer "Partituras que não entraram",
+2. Em **Ajustes → Importar hinário**, escolha o `BibliotecaMusical-CCB-pacote-partituras-018.zip` (é o **mesmo pacote** do 018, que ficou com
+   esse nome; o seletor de arquivos precisa mostrar o `.zip`). Deve aparecer "Importado: 5 hinos de “Amostra de teste (5 hinos)”, com 5 partituras." Se aparecer "Partituras que não entraram",
    anote o hino e o motivo.
 3. Abra os hinos 1, 276, 283, 398 e 457: a aba Partitura mostra a partitura. Conferir: **notas, letra e o andamento** ("♩ = 58", com a figura
    da nota) legíveis; as **bandeirolas** das colcheias na mesma cor das notas; o **zoom** (− / 100% / +) e **rolar para os lados** quando

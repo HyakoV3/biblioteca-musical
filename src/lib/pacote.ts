@@ -1,8 +1,9 @@
 // Pacote de hinário em .zip (hinario.json + partituras/hino-N.svg): o que a tela de importação decide antes de chamar o Rust.
 // O conteúdo do zip é conferido no Rust (src-tauri/src/pacote.rs); aqui só se distingue um zip de um JSON e se prepara o envio.
 
-/** Tamanho máximo do zip, em bytes. É o mesmo limite do Rust (`Limites::zip`, 150 MiB): conferido aqui ANTES de montar o texto base64
- *  (4/3 do tamanho) e de mandá-lo, para um arquivo enorme não encher a memória do aparelho só para ser recusado. */
+/** Tamanho máximo do zip, em bytes. É o mesmo limite do Rust (`Limites::zip`, 150 MiB). Conferido em dois pontos: na tela de Ajustes, pelo
+ *  `file.size`, ANTES de ler o arquivo para a memória (aí um arquivo enorme nem é aberto), e de novo em `importarZip`, antes de montar o
+ *  texto base64 (4/3 do tamanho) e a cópia dele no `postMessage`. */
 export const LIMITE_ZIP_BYTES = 150 * 1024 * 1024;
 
 /**

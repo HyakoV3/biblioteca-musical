@@ -5,7 +5,7 @@
 // desligar o botão apaga tudo. Depois confere a aba Partitura (I-08): quando aparece, o SVG embutido seguindo o tema, o zoom, a
 // fonte Leipzig e o aviso para Ajustes. Precisa de um Chrome ou Chromium instalado (variável CHROME para indicar o caminho).
 import { spawn, execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, truncateSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
@@ -605,6 +605,17 @@ async function principal() {
   confere(JSON.stringify(envio.volta) === JSON.stringify(Array.from(bytesDoZip)), `decodificado, o texto tem exatamente os ${bytesDoZip.length} bytes do arquivo`);
   const resultado = await av(`document.body.innerText`);
   confere(/Teste e2e/.test(resultado) && !/could not|não foi possível/i.test(resultado), "a tela mostra o resultado da importação, sem erro");
+
+  // Arquivo acima do limite (150 MiB): recusado pelo tamanho, sem ser lido nem enviado. O arquivo é ESPARSO (só o tamanho conta, não ocupa disco).
+  const caminhoGrande = join(perfil, "pacote-enorme.zip");
+  writeFileSync(caminhoGrande, Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+  truncateSync(caminhoGrande, 151 * 1024 * 1024);
+  // Espia a leitura do arquivo: o `importarZip` também recusa pelo tamanho, então só "nada foi lido" prova que o tamanho foi conferido ANTES.
+  await av("window.__zipRecebido = undefined; window.__leu = false; const lerOriginal = Blob.prototype.arrayBuffer; Blob.prototype.arrayBuffer = function () { window.__leu = true; return lerOriginal.call(this); }; 1");
+  await enviar("DOM.setFileInputFiles", { nodeId: entrada, files: [caminhoGrande] });
+  await dormir(1500);
+  const grande = await av(`({ enviou: window.__zipRecebido !== undefined, leu: window.__leu, texto: document.body.innerText })`);
+  confere(!grande.enviou && !grande.leu && /150 MB/.test(grande.texto), `arquivo de 151 MiB: recusado pelo tamanho, sem ser lido nem enviado: ${JSON.stringify({ enviou: grande.enviou, leu: grande.leu, tem150MB: /150 MB/.test(grande.texto) })}`);
   ws.close();
 
   // 6. análise: trocas de sílaba antes da pausa

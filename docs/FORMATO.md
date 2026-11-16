@@ -171,7 +171,7 @@ partituras/hino-<número>.svg  a partitura do hino, uma página (opcional, um po
 
 O app manda o zip ao Rust como **texto base64** (`invoke("importar_pacote", { zip })`), e não como corpo binário: **no Android o Tauri
 não entrega corpo binário** (só o `postMessage`, que é texto). O tamanho do texto é conferido antes de decodificar, e o front recusa um
-arquivo acima de 150 MiB antes de montar o base64. Num pacote de 15 MB isso são ~20 MB de texto na chamada.
+arquivo acima de 150 MiB já pelo `file.size`, **antes de lê-lo para a memória** (e de novo antes de montar o base64). Num pacote de 15 MB isso são ~20 MB de texto na chamada.
 `tools/montar-pacote.py hinario.json pasta-dos-svg pacote.zip` monta o zip (e preenche `partitura` em cada hino que tem SVG); os
 SVG vêm de `tools/gerar-partituras.py`. O app confere tudo antes de gravar:
 

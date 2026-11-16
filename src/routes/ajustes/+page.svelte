@@ -13,7 +13,7 @@
   import { ESTILOS, TEMAS, estilo, tema } from "$lib/tema.svelte";
   import { CREDITOS, textoDaLicenca } from "$lib/licencas";
   import { traduzirErro } from "$lib/erros";
-  import { ehZip, listaCurta } from "$lib/pacote";
+  import { LIMITE_ZIP_BYTES, ehZip, listaCurta } from "$lib/pacote";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const voltar = usarVoltar();
@@ -39,6 +39,9 @@
     if (!arquivo) return;
     resultado = null;
     try {
+      // O tamanho vem do arquivo, antes de lê-lo para a memória: um arquivo enorme não é nem aberto. (O Rust ainda confere o limite de cada
+      // tipo: 20 MB para o .json e 150 MiB para o .zip.)
+      if (arquivo.size > LIMITE_ZIP_BYTES) throw JSON.stringify(["zip_grande_demais"]);
       const bytes = new Uint8Array(await arquivo.arrayBuffer());
       let texto: string;
       if (ehZip(bytes)) {
