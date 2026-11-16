@@ -21,7 +21,7 @@ haver uma amostra com licença livre. O responsável quer o bombardino gravado (
 
 | Fonte | Resultado |
 |---|---|
-| FluidR3_GM / MusyngKite (banco atual) | Não tem euphonium (só `tuba`, `trombone`, `french_horn`). |
+| FluidR3_GM / MusyngKite (banco anterior) e GeneralUser GS (banco atual) | Não têm euphonium nem flugelhorn (o padrão General MIDI não os inclui; só `tuba`, `trombone`, `french_horn` e `trumpet`). |
 | VCSL (CC0) | Lista de arquivos lida no repositório: **nenhum instrumento de metal**. |
 | Philharmonia Orchestra (amostras gratuitas) | Os termos oficiais permitem uso em obra comercial, mas **proíbem tornar as amostras disponíveis como estão ou como instrumento de amostras**; um espelho no GitHub diz CC BY-SA 3.0, o que **não bate** com o texto oficial. Não se confirmou que o euphonium esteja na biblioteca. **Não usar sem autorização por escrito.** |
 | MuseScore_General (MIT) | Tem um preset "Euphonium", mas é uma **tuba reprocessada** com a extensão ampliada, não um euphonium amostrado. A licença é clara; falta extrair o preset do arquivo SF3 (ferramenta ainda não escolhida). |
@@ -126,5 +126,5 @@ emulador ou no celular.
 - [ ] Testar o download, a instalação e a remoção no emulador e no celular.
 - [ ] Um link por grupo (`orgao`, `madeiras`, `metais`, `cordas`) no File Browser, e regerar o manifesto.
 - [ ] Aumentar o limite de banda do link (hoje ~500 KB/s: 29 MB levam ~60 s).
-- [ ] Texto de créditos com o aviso de copyright do FluidR3 (`docs/licencas-de-terceiros.md`).
+- [x] Créditos e licenças em Ajustes (GeneralUser GS com a licença do autor na íntegra; o FluidR3 saiu do card em 2026-11-15, ver `docs/licencas-de-terceiros.md`).
 - [ ] Substituto do flugelhorn e do bombardino (ver a busca de euphonium acima).

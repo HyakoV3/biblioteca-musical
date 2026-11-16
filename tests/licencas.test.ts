@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { pt } from "../src/lib/i18n/pt";
-import { AVISO_CCBY3, CREDITOS, textoDaLicenca } from "../src/lib/licencas";
+import { CREDITOS, textoDaLicenca } from "../src/lib/licencas";
 import { TEXTO_APACHE_2, TEXTO_GENERALUSER, TEXTO_MIT } from "../src/lib/licencas-textos";
 
 describe("créditos e licenças", () => {
@@ -20,15 +20,15 @@ describe("créditos e licenças", () => {
     for (const c of CREDITOS) expect(pt, c.id).toHaveProperty(`creditos.uso.${c.id}`);
   });
 
-  it("cobre o que o app usa: banco dos sons gravados, bancos medidos, biblioteca de áudio e ícones", () => {
+  it("cobre o que o app usa: banco dos sons gravados, biblioteca de áudio e ícones", () => {
     const ids = CREDITOS.map((c) => c.id);
-    for (const esperado of ["generaluser", "fluidr3", "soundfonts", "smplr", "icones"]) expect(ids).toContain(esperado);
+    for (const esperado of ["generaluser", "smplr", "icones"]) expect(ids).toContain(esperado);
   });
 
   it("o MIT leva a linha de direitos e o texto padrão; a Apache 2.0 vem inteira", () => {
-    const fluid = CREDITOS.find((c) => c.id === "fluidr3")!;
-    const mit = textoDaLicenca(fluid.textos[0]);
-    expect(mit).toContain("Frank Wen");
+    const fflate = CREDITOS.find((c) => c.id === "fflate")!;
+    const mit = textoDaLicenca(fflate.textos[0]);
+    expect(mit).toContain("Arjun Barrett");
     expect(mit).toContain("Permission is hereby granted, free of charge");
     expect(mit).toContain("The above copyright notice and this permission notice shall be included");
     expect(mit).toContain(TEXTO_MIT);
@@ -46,11 +46,11 @@ describe("créditos e licenças", () => {
     expect(TEXTO_GENERALUSER).toContain("Please feel free to use it in your software projects");
   });
 
-  it("as amostras do FluidR3 citam a CC BY 3.0, o autor, o link e dizem para que servem hoje", () => {
-    const g = CREDITOS.find((c) => c.id === "soundfonts")!;
-    expect(g.textos.map((t) => t.tipo)).toEqual(["mit", "ccby3"]);
-    expect(AVISO_CCBY3).toContain("Benjamin Gleitzman");
-    expect(AVISO_CCBY3).toContain("https://creativecommons.org/licenses/by/3.0/");
-    expect(AVISO_CCBY3).toContain("only to measure");
+  it("o FluidR3 não aparece mais: nenhuma amostra dele está no app nem no pacote de sons", () => {
+    const todos = JSON.stringify(CREDITOS).toLowerCase();
+    expect(todos).not.toContain("fluidr3");
+    expect(todos).not.toContain("gleitzman");
+    expect(todos).not.toContain("midi-js-soundfonts");
+    expect(todos).not.toContain("cc by");
   });
 });
