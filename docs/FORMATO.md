@@ -149,16 +149,51 @@ estrofe, a linha e a sílaba que está soando. O conversor `mscx2json` gera o ca
   estrutura malformada (tempo negativo, `de >= ate`, estrofe 0) é descartada **sem recusar o hino**.
 - Sem `sincronia`, o hino funciona como sempre e o botão "Karaokê" não aparece.
 
-`partitura` é um caminho relativo opcional dentro do pacote. Todos os campos além de
-`numero` e `titulo` são opcionais.
+`partitura` é opcional e vale `"partituras/hino-N.svg"` quando o pacote traz a partitura do hino. Ele só **informa**: o app lê a
+partitura pelo **número do hino**, nunca pelo caminho que o JSON traz (assim um JSON malicioso não aponta para um arquivo
+qualquer). Todos os campos além de `numero` e `titulo` são opcionais.
 
 ## Importar
 
-Na tela inicial, o botão **Importar hinário** escolhe o arquivo `.json`. O app valida
-(versão, ao menos um hino, números de hino sem repetição, limite de 20 MB) e só então grava em
-`content/hinario.json`, de forma atômica: um arquivo inválido nunca substitui o conteúdo atual.
-**Remover importação** apaga o arquivo e volta ao pacote de exemplo.
-Por enquanto só o `hinario.json` é importado; arquivos de partitura ainda não.
+Em **Ajustes**, o botão **Importar hinário** escolhe um arquivo `.json` ou um pacote `.zip` (o app distingue pelos primeiros
+bytes, não pelo nome).
+
+**`.json`:** o app valida (versão, ao menos um hino, números de hino sem repetição, limite de 20 MB) e só então grava em
+`content/hinario.json`, de forma atômica: um arquivo inválido nunca substitui o conteúdo atual. As partituras já importadas só
+ficam se o novo JSON for do mesmo hinário (mesmo `hinario.id`); com outro `id`, são apagadas, porque os números não combinariam.
+
+**`.zip` (I-08, partituras):** o pacote tem **só** estes nomes:
+
+```
+hinario.json                  o mesmo JSON de cima (obrigatório)
+partituras/hino-<número>.svg  a partitura do hino, uma página (opcional, um por hino)
+```
+
+`tools/montar-pacote.py hinario.json pasta-dos-svg pacote.zip` monta o zip (e preenche `partitura` em cada hino que tem SVG); os
+SVG vêm de `tools/gerar-partituras.py`. O app confere tudo antes de gravar:
+
+- **Nomes exatos.** Qualquer outro nome (`..`, caminho absoluto, subpasta, maiúscula, zero à esquerda, `\`, nome repetido) **recusa
+  o pacote inteiro**, sem tocar no conteúdo atual. Nenhum nome do zip vira caminho no disco: o app grava sempre
+  `partituras/hino-<número>.svg`, montado por ele.
+- **Limites.** 150 MB de zip, 2000 arquivos, 300 MB descompactados, 8 MB por SVG, 20 MB de `hinario.json`. Valem também quando o
+  cabeçalho do zip declara um tamanho errado (a leitura é cortada no limite).
+- **O SVG é limpo, não copiado.** O app lê o SVG com um parser XML, confere cada elemento, atributo e valor contra uma **lista de
+  permitidos** e o **reescreve**; é essa versão que fica no disco e que a tela mostra, embutida na página. Ficam de fora `script`,
+  `foreignObject`, `image`, `a`, animações, `url(...)` em qualquer valor, `@import` e qualquer regra com `@` no CSS, escapes de
+  CSS (`\`), atributos `on*`, `href` que não seja `#id`, `xlink:href`, DOCTYPE, comentários e instruções. O que não passa é
+  **recusado e informado** (hino e motivo), e o resto do pacote entra. O SVG de um hino que o `hinario.json` não tem também é
+  recusado.
+- **Tudo ou nada.** Os SVG são gravados numa pasta de preparo, e só quando tudo está pronto ela troca a `partituras/` anterior. O
+  `hinario.json` é o último a ser trocado. (Uma queda no meio da troca pode deixar o JSON antigo com as partituras novas: como elas
+  são lidas pelo número, nada quebra, e importar de novo conserta.)
+- **Fonte.** O SVG sai **sem** a fonte Leipzig (o `tools/gerar-partituras.py` desliga a que o Verovio embute, 58 KB por hino, em
+  `url(data:...)`, que a limpeza recusaria). O texto do SVG usa `font-family="Leipzig"`, então a tela precisa trazer a fonte
+  (licença OFL 1.1) uma vez só.
+
+As partituras ficam em `content/partituras/`, com a marca `.hinario` (o `id` do hinário a que pertencem). Sem pacote `.zip`
+importado, `partituras` na resposta do app é vazio. Cada partitura é lida pelo número do hino e **limpa de novo** na leitura.
+
+**Remover importação** apaga o `hinario.json` e as partituras e volta ao pacote de exemplo.
 
 ## Onde o app lê
 

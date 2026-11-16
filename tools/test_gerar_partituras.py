@@ -103,6 +103,25 @@ class AcharMusescore(unittest.TestCase):
             self.assertIsNone(g.achar_musescore(self.entrada, self.trabalho, None))
 
 
+class OpcoesVerovio(unittest.TestCase):
+    def test_repassa_largura_e_escala(self):
+        o = g.opcoes_verovio(700, 40)
+        self.assertEqual((o["pageWidth"], o["scale"]), (700, 40))
+        o = g.opcoes_verovio(900, 33)
+        self.assertEqual((o["pageWidth"], o["scale"]), (900, 33))
+
+    def test_saida_do_svg_e_a_que_o_app_aceita(self):
+        o = g.opcoes_verovio(700, 40)
+        # sem a fonte embutida (um @font-face com url(data:...) que o app recusa) e sem xlink:href
+        self.assertEqual(o["smuflTextFont"], "none")
+        self.assertIs(o["svgRemoveXlink"], True)
+        # uma página só, com viewBox, e sem indentação
+        self.assertIs(o["adjustPageHeight"], True)
+        self.assertIs(o["svgViewBox"], True)
+        self.assertIs(o["svgFormatRaw"], True)
+        self.assertEqual(o["lyricElision"], "unicode")
+
+
 class UltimasLinhas(unittest.TestCase):
     def test_pega_so_as_ultimas_e_ignora_linhas_vazias(self):
         self.assertEqual(g.ultimas_linhas("a\n\n b \nc\nd\n", 2), "c | d")

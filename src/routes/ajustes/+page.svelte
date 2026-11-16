@@ -13,6 +13,7 @@
   import { ESTILOS, TEMAS, estilo, tema } from "$lib/tema.svelte";
   import { CREDITOS, textoDaLicenca } from "$lib/licencas";
   import { traduzirErro } from "$lib/erros";
+  import { ehZip, listaCurta } from "$lib/pacote";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const voltar = usarVoltar();
@@ -38,12 +39,30 @@
     if (!arquivo) return;
     resultado = null;
     try {
-      const p = await biblioteca.importar(await arquivo.text());
+      const bytes = new Uint8Array(await arquivo.arrayBuffer());
+      let texto: string;
+      if (ehZip(bytes)) {
+        // Pacote .zip: o hinario.json e as partituras. O Rust confere tudo; as partituras que não passam na verificação do SVG
+        // ficam de fora e são listadas, e o resto entra.
+        const r = await biblioteca.importarZip(bytes);
+        texto = t("importar.ok_partituras", {
+          total: i18n.tn("plural.hinos", r.pacote.hinario.hinos.length),
+          nome: r.pacote.hinario.hinario.nome,
+          partituras: i18n.tn("plural.partituras", r.partituras),
+        });
+        if (r.recusadas.length > 0) {
+          texto += " " + t("importar.recusadas", {
+            total: r.recusadas.length,
+            lista: listaCurta(r.recusadas.map((x) => x.numero)),
+            motivo: r.recusadas[0].motivo,
+          });
+        }
+      } else {
+        const p = await biblioteca.importar(new TextDecoder().decode(bytes));
+        texto = t("importar.ok", { total: i18n.tn("plural.hinos", p.hinario.hinos.length), nome: p.hinario.hinario.nome });
+      }
       reproducao.limpar(); // o conteúdo mudou: para o som e esquece os ajustes dos hinos antigos
-      resultado = {
-        tipo: "sucesso",
-        texto: t("importar.ok", { total: i18n.tn("plural.hinos", p.hinario.hinos.length), nome: p.hinario.hinario.nome }),
-      };
+      resultado = { tipo: "sucesso", texto };
     } catch (err) {
       resultado = { tipo: "erro", texto: t("importar.erro", { erro: traduzirErro(String(err), t) }) };
     }
@@ -122,7 +141,7 @@
     <div class="acoes">
       <label class="botao primario">
         {t("importar.botao")}
-        <input type="file" accept=".json,application/json" onchange={importar} hidden />
+        <input type="file" accept=".json,.zip,application/json,application/zip,application/x-zip-compressed" onchange={importar} hidden />
       </label>
       {#if biblioteca.pacote && !biblioteca.pacote.exemplo}
         <button class="botao perigo" onclick={() => (confirmando = true)}>{t("importar.remover")}</button>
