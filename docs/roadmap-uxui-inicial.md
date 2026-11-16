@@ -138,7 +138,7 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
 **Etapa 5 — Polimento** — *fechada em 2026-11-14 (animações validadas pelo responsável; sobram duas decisões visuais, abaixo)*
 - [x] **Ícone** (a versão plana, ver `design/icone/README.md`): gerado com o comando oficial `tauri icon` e ajustado
       por `tools/ajustar-icones.py` (ícone adaptativo do Android com fundo e primeiro plano separados; ícones do iOS
-      sem canal alfa). Verificado em arquivo e em prévia sob máscaras redonda, arredondada e "squircle". Favicon trocado.
+      sem canal alfa; **substituído em 2026-11-16** por `tools/gerar-icone-do-app.py`, que parte do SVG). Verificado em arquivo e em prévia sob máscaras redonda, arredondada e "squircle". Favicon trocado.
 - [ ] **Ver o ícone no emulador** (o lançador e a lista de apps): falta reinstalar o app para o ícone novo aparecer.
 - [x] **Identidade visual: dourado adotado** (decisão do responsável, 2026-11-14). O azul fica para **ações** e o
       dourado do ícone (`#f8b000`) marca **onde se está na música**: parte que toca (Intro, 1ª, 2ª...), barra de

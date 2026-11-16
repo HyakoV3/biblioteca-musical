@@ -59,7 +59,7 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
 - [ ] Hospedar os arquivos nós mesmos (depende de o repositório ser público) e carregar do armazenamento do app.
 - [x] **Troca do banco dos gravados: FluidR3 → GeneralUser GS** (decisão do responsável após comparar os 16 de ouvido), com
       os ganhos recalculados para o mesmo nível médio. Ver `docs/pacote-de-sons.md`. O pacote novo está no servidor desde 2026-11-15
-      (pasta `BibliotecaMusical/` do File Browser) e vale do APK 010 em diante (`docs/apk-de-teste.md`).
+      (pasta `BibliotecaMusicalSons/` do File Browser, que se chamava `BibliotecaMusical/` até 2026-11-16) e vale do APK 010 em diante (`docs/apk-de-teste.md`).
 - [x] Créditos e licenças: card fechado em Ajustes (GeneralUser GS com a licença do autor na íntegra, smplr, ícones, fflate,
       Svelte e Tauri), com o texto de cada licença. O FluidR3 saiu do card em 2026-11-15 (nenhuma amostra dele está no app);
       a origem das medições do timbre sintético fica registrada em `docs/licencas-de-terceiros.md`.

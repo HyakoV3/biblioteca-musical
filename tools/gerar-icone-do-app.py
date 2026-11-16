@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Gera os ícones do app (Android, iOS, desktop, favicon) a partir do SVG do símbolo.
+"""Gera os ícones do APP (Android, iOS, desktop, favicon) a partir do SVG do símbolo.
 
-Uso:  python3 tools/gerar-icones.py [FONTE.svg]     (padrão: src-tauri/icons/fonte/icone.svg)
+(Não confundir com `tools/gerar-icones.mjs`, que gera os ícones da INTERFACE, em `src/lib/icones.json`.)
+
+Uso:  python3 tools/gerar-icone-do-app.py [FONTE.svg]     (padrão: design/icone/icone.svg)
 
 Precisa do Inkscape (desenha o SVG), do Pillow e do `tauri` do projeto (`npx tauri icon`). Rode da raiz do repositório. Sobrescreve
 `src-tauri/icons/**`, os ícones de `src-tauri/gen/**` (o que existir) e `static/favicon.png`.
@@ -32,7 +34,7 @@ from pathlib import Path
 from PIL import Image
 
 RAIZ = Path(__file__).resolve().parent.parent
-FONTE = RAIZ / "src-tauri" / "icons" / "fonte" / "icone.svg"
+FONTE = RAIZ / "design" / "icone" / "icone.svg"
 TAMANHO = 1024  # lado das imagens de trabalho
 ZONA_SEGURA = 66 / 108  # diâmetro do círculo seguro do ícone adaptativo, em fração da tela (o sistema recorta o resto)
 MARGEM_SEGURA = 0.93  # o símbolo ocupa 93% do círculo seguro, não 100%: sobra folga contra o recorte

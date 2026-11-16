@@ -32,13 +32,17 @@ jobs:
         run: npm run check
       - name: Testes (Vitest)
         run: npm test
-      - name: Traduções, movimento, contraste e ferramentas de partitura
+      - name: Traduções, movimento, contraste e ferramentas de partitura e de ícone
         run: |
           python3 tools/verificar-traducoes.py
           python3 tools/verificar-movimento.py
           python3 tools/contraste.py
           python3 tools/test_gerar_partituras.py
           python3 tools/test_montar_pacote.py
+          # o gerador de ícone usa o Pillow; num ambiente virtual, porque o Python do sistema recusa `pip install` direto (PEP 668)
+          python3 -m venv "$RUNNER_TEMP/venv-icones"
+          "$RUNNER_TEMP/venv-icones/bin/pip" install --quiet pillow
+          "$RUNNER_TEMP/venv-icones/bin/python" tools/test_gerar_icone_do_app.py
 
   conversor:
     name: Conversor de partituras (Rust)
