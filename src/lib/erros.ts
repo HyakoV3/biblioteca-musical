@@ -18,6 +18,15 @@ export const ERROS_DO_RUST: Readonly<Record<string, readonly string[]>> = {
   gravar: ["detalhe"],
   ler: ["detalhe"],
   remover: ["detalhe"],
+  zip_invalido: ["detalhe"],
+  zip_grande_demais: [],
+  zip_muitos_arquivos: [],
+  zip_descompactado_grande: [],
+  zip_inesperado: ["nome"],
+  zip_repetido: [],
+  zip_sem_json: [],
+  sem_partitura: ["numero"],
+  partitura_invalida: ["numero", "motivo"],
 };
 
 /** `["codigo", "arg", ...]` decodificado, ou null se o texto não tiver esse formato. */

@@ -1,4 +1,6 @@
 mod hinario;
+mod pacote;
+mod svg;
 
 use std::path::PathBuf;
 use tauri::Manager;
@@ -22,6 +24,29 @@ fn importar_hinario(app: tauri::AppHandle, json: String) -> Result<hinario::Paco
     hinario::importar(&pasta_conteudo(&app)?, &json)
 }
 
+/// Importa um pacote `.zip` (`hinario.json` + `partituras/hino-N.svg`). Os bytes do zip chegam como corpo binário da chamada
+/// (`invoke("importar_pacote", bytes)`), sem passar por JSON, que seria pesado para dezenas de MB. É `async` para rodar fora
+/// da thread da interface.
+#[tauri::command]
+async fn importar_pacote(
+    app: tauri::AppHandle,
+    request: tauri::ipc::Request<'_>,
+) -> Result<pacote::Importacao, String> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err(hinario::erro(
+            "zip_invalido",
+            &["a chamada não trouxe os bytes do arquivo".to_string()],
+        ));
+    };
+    pacote::importar_zip(&pasta_conteudo(&app)?, bytes)
+}
+
+/// O SVG da partitura do hino `numero` (já conferido pela limpeza de `svg.rs`).
+#[tauri::command]
+fn ler_partitura(app: tauri::AppHandle, numero: u32) -> Result<String, String> {
+    pacote::ler_partitura(&pasta_conteudo(&app)?, numero)
+}
+
 /// Apaga o conteúdo importado e volta ao pacote de exemplo.
 #[tauri::command]
 fn remover_conteudo(app: tauri::AppHandle) -> Result<hinario::Pacote, String> {
@@ -36,6 +61,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             carregar_hinario,
             importar_hinario,
+            importar_pacote,
+            ler_partitura,
             remover_conteudo
         ])
         .run(tauri::generate_context!())

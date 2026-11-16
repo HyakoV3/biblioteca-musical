@@ -3,6 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::sync::{Mutex, MutexGuard};
 
 const EXEMPLO: &str = include_str!("../exemplo/hinario.json");
 const VERSAO_SUPORTADA: u32 = 1;
@@ -119,16 +120,18 @@ pub struct Hinario {
     pub hinos: Vec<Hino>,
 }
 
-/// Resposta enviada à interface: o hinário e se ele é o pacote de exemplo.
+/// Resposta enviada à interface: o hinário, se ele é o pacote de exemplo e de quais hinos há partitura instalada.
 #[derive(Debug, Serialize)]
 pub struct Pacote {
     pub hinario: Hinario,
     pub exemplo: bool,
+    /// Números dos hinos com partitura (SVG) importada, em ordem. Vazio sem pacote `.zip` importado (ver `pacote.rs`).
+    pub partituras: Vec<u32>,
 }
 
 /// Erro que a interface traduz: um JSON `["codigo", "arg", ...]` (ver `src/lib/erros.ts`). JSON, e não texto separado por
 /// delimitador, porque os argumentos podem vir de dados importados (nomes de voz) e conter qualquer caractere.
-fn erro(codigo: &str, args: &[String]) -> String {
+pub(crate) fn erro(codigo: &str, args: &[String]) -> String {
     let mut v = vec![codigo.to_string()];
     v.extend_from_slice(args);
     serde_json::to_string(&v).unwrap_or_else(|_| codigo.to_string())
@@ -188,15 +191,19 @@ pub fn carregar(dir: Option<&Path>) -> Result<Pacote, String> {
         if arquivo.is_file() {
             let texto = std::fs::read_to_string(&arquivo)
                 .map_err(|e| erro("ler", &[format!("{}: {e}", arquivo.display())]))?;
+            let hinario = ler(&texto)?;
+            let partituras = crate::pacote::numeros(dir, &hinario.hinario.id)?;
             return Ok(Pacote {
-                hinario: ler(&texto)?,
+                hinario,
                 exemplo: false,
+                partituras,
             });
         }
     }
     Ok(Pacote {
         hinario: ler(EXEMPLO)?,
         exemplo: true,
+        partituras: Vec::new(),
     })
 }
 
@@ -232,11 +239,21 @@ fn semear(dir: &Path, incluso: &str) -> Result<(), String> {
         .map_err(|e| erro("gravar", &[format!("{}: {e}", marca.display())]))
 }
 
-const LIMITE_BYTES: usize = 20 * 1024 * 1024;
+pub(crate) const LIMITE_BYTES: usize = 20 * 1024 * 1024;
 
-/// Valida e grava o JSON como `<dir>/hinario.json`. A gravação é atômica
-/// (arquivo temporário + rename): um arquivo inválido nunca substitui o atual.
-pub fn importar(dir: &Path, json: &str) -> Result<Pacote, String> {
+static TRANCA: Mutex<()> = Mutex::new(());
+
+/// Uma importação ou remoção de cada vez. Os comandos `async` do Tauri rodam em paralelo, e todas essas operações usam os mesmos
+/// nomes de arquivo de preparo (`hinario.json.tmp`, `partituras.novo`): duas ao mesmo tempo se atropelariam e quebrariam o "tudo
+/// ou nada". Quem chama segura a guarda até acabar de trocar os arquivos. Não pode ser pega de novo na mesma thread (não é
+/// reentrante): por isso `carregar`, que pode chamar `importar` pelo `semear`, não a segura.
+pub(crate) fn trancar() -> MutexGuard<'static, ()> {
+    // Se uma thread caiu (panic) com a tranca, não há estado a recuperar: só os arquivos, que cada operação refaz.
+    TRANCA.lock().unwrap_or_else(|e| e.into_inner())
+}
+
+/// Confere um `hinario.json`: tamanho, estrutura, ao menos um hino e números sem repetição.
+pub(crate) fn validar(json: &str) -> Result<Hinario, String> {
     if json.len() > LIMITE_BYTES {
         return Err(erro("grande_demais", &[]));
     }
@@ -249,23 +266,39 @@ pub fn importar(dir: &Path, json: &str) -> Result<Pacote, String> {
     if let Some(par) = numeros.windows(2).find(|p| p[0] == p[1]) {
         return Err(erro("repetido", &[par[0].to_string()]));
     }
+    Ok(h)
+}
+
+/// Valida e grava o JSON como `<dir>/hinario.json`. A gravação é atômica
+/// (arquivo temporário + rename): um arquivo inválido nunca substitui o atual.
+/// As partituras já importadas só ficam se forem do mesmo hinário (mesmo `id`): senão os números de hino não combinariam.
+pub fn importar(dir: &Path, json: &str) -> Result<Pacote, String> {
+    let _tranca = trancar();
+    let h = validar(json)?;
     std::fs::create_dir_all(dir)
         .map_err(|e| erro("gravar", &[format!("{}: {e}", dir.display())]))?;
     let tmp = dir.join("hinario.json.tmp");
     std::fs::write(&tmp, json).map_err(|e| erro("gravar", &[e.to_string()]))?;
     std::fs::rename(&tmp, dir.join("hinario.json"))
         .map_err(|e| erro("gravar", &[e.to_string()]))?;
+    crate::pacote::alinhar(dir, &h.hinario.id)?;
+    let partituras = crate::pacote::numeros(dir, &h.hinario.id)?;
     Ok(Pacote {
         hinario: h,
         exemplo: false,
+        partituras,
     })
 }
 
-/// Remove o conteúdo importado; o app volta a mostrar o pacote de exemplo.
+/// Remove o conteúdo importado (o hinário e as partituras); o app volta a mostrar o pacote de exemplo.
 pub fn remover(dir: &Path) -> Result<Pacote, String> {
-    let arquivo = dir.join("hinario.json");
-    if arquivo.is_file() {
-        std::fs::remove_file(&arquivo).map_err(|e| erro("remover", &[e.to_string()]))?;
+    {
+        let _tranca = trancar(); // solta antes do `carregar`, que pode importar (semear) e pegá-la
+        let arquivo = dir.join("hinario.json");
+        if arquivo.is_file() {
+            std::fs::remove_file(&arquivo).map_err(|e| erro("remover", &[e.to_string()]))?;
+        }
+        crate::pacote::remover_partituras(dir)?;
     }
     carregar(Some(dir))
 }

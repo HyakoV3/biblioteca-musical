@@ -25,7 +25,15 @@ export type Hino = {
 export type Pacote = {
   hinario: { versao: number; hinario: { id: string; nome: string; idioma?: string | null }; hinos: Hino[] };
   exemplo: boolean;
+  /** Números dos hinos com partitura (SVG) importada, em ordem. Vazio sem pacote .zip importado. */
+  partituras: number[];
 };
+
+/** Uma partitura do .zip que não entrou (não passou na verificação do SVG) e o motivo, em texto do Rust. */
+export type Recusada = { numero: number; motivo: string };
+
+/** Resposta da importação de um pacote .zip. */
+export type Importacao = { pacote: Pacote; partituras: number; recusadas: Recusada[] };
 
 let pacote = $state<Pacote | null>(null);
 let erro = $state("");
@@ -65,6 +73,20 @@ export const biblioteca = {
     pacote = await invoke<Pacote>("importar_hinario", { json });
     busca = "";
     return pacote;
+  },
+
+  /** Importa um pacote .zip (hinario.json + partituras). Os bytes vão como corpo binário da chamada, sem passar por JSON.
+   *  Lança erro (texto do Rust) se o pacote for recusado; o conteúdo atual não muda. */
+  async importarZip(bytes: Uint8Array) {
+    const r = await invoke<Importacao>("importar_pacote", bytes);
+    pacote = r.pacote;
+    busca = "";
+    return r;
+  },
+
+  /** O SVG (já conferido no Rust) da partitura do hino. Lança erro se o hino não tiver partitura. */
+  lerPartitura(numero: number) {
+    return invoke<string>("ler_partitura", { numero });
   },
 
   async remover() {

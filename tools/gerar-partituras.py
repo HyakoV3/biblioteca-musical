@@ -82,6 +82,27 @@ def achar_musescore(entrada: Path, trabalho: Path, escolhido: str | None):
     return None
 
 
+def opcoes_verovio(largura: int, escala: int) -> dict:
+    """As opções do Verovio. As de saída do SVG importam para o app (ver src-tauri/src/svg.rs, que só aceita o que sai daqui)."""
+    return {
+        "pageWidth": largura,
+        "pageHeight": 60000,
+        "adjustPageHeight": True,  # a página termina onde acaba a música
+        "scale": escala,
+        "breaks": "auto",
+        "svgViewBox": True,  # o SVG escala com o contêiner
+        "svgRemoveXlink": True,  # href em vez de xlink:href (o app recusa xlink)
+        # Por padrão cada SVG leva a fonte Leipzig inteira embutida (58 KB em base64, num @font-face com url(data:...)), igual em
+        # todos os hinos. O app traz a fonte uma vez só; o SVG fica sem ela (e sem nenhum url(), que o app recusa).
+        "smuflTextFont": "none",
+        "svgFormatRaw": True,  # sem indentação: o arquivo cai para menos da metade
+        "lyricElision": "unicode",  # a ligação "‿", que qualquer fonte tem
+        "lyricWordSpace": 2.5,  # o padrão (1,2) cola as palavras onde duas vozes cantam letras diferentes ("bemu-")
+        "header": "none",
+        "footer": "none",
+    }
+
+
 def ultimas_linhas(texto: str, quantas: int = 3) -> str:
     linhas = [l.strip() for l in (texto or "").splitlines() if l.strip()]
     return " | ".join(linhas[-quantas:])
@@ -184,19 +205,7 @@ def principal() -> int:
     a.saida.mkdir(parents=True, exist_ok=True)
     saida = a.saida.resolve()
     tk = verovio.toolkit()
-    tk.setOptions({
-        "pageWidth": a.largura,
-        "pageHeight": 60000,
-        "adjustPageHeight": True,  # a página termina onde acaba a música
-        "scale": a.escala,
-        "breaks": "auto",
-        "svgViewBox": True,  # o SVG escala com o contêiner
-        "svgRemoveXlink": True,
-        "lyricElision": "unicode",  # a ligação "‿", que qualquer fonte tem
-        "lyricWordSpace": 2.5,  # o padrão (1,2) cola as palavras onde duas vozes cantam letras diferentes ("bemu-")
-        "header": "none",
-        "footer": "none",
-    })
+    tk.setOptions(opcoes_verovio(a.largura, a.escala))
 
     with tempfile.TemporaryDirectory(prefix="bmccb-partitura-") as t:
         trabalho = Path(t)
