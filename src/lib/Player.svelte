@@ -269,7 +269,8 @@
             <button
               aria-label={t("player.diminuir_n", { item: t("player.andamento_rotulo").toLowerCase(), n: -bpm })}
               disabled={!editavel || cfg.andamento <= ANDAMENTO_MIN}
-              onclick={() => mudarAndamento(bpm)}>−{-bpm}</button
+              onclick={() => mudarAndamento(bpm)}
+              >{#if -bpm === PASSO_FINO}<Icone nome="menos" tamanho={24} />{:else}−{-bpm}{/if}</button
             >
           {/each}
           <output aria-live="polite">{t("player.bpm", { n: cfg.andamento })}</output>
@@ -277,7 +278,8 @@
             <button
               aria-label={t("player.aumentar_n", { item: t("player.andamento_rotulo").toLowerCase(), n: bpm })}
               disabled={!editavel || cfg.andamento >= ANDAMENTO_MAX}
-              onclick={() => mudarAndamento(bpm)}>+{bpm}</button
+              onclick={() => mudarAndamento(bpm)}
+              >{#if bpm === PASSO_FINO}<Icone nome="mais" tamanho={24} />{:else}+{bpm}{/if}</button
             >
           {/each}
         </div>
