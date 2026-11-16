@@ -32,6 +32,15 @@
 
 {#if visivel && atual}
   <div class="mini" role="region" aria-label={t("mini.regiao")} bind:clientHeight={altura}>
+    <!-- O slider fica EM CIMA: embaixo, o dourado dele ficava a ~0,5rem do traço dourado da aba ativa e parecia parte da barra de abas. -->
+    <Busca
+      fino
+      decorrido={reproducao.decorrido}
+      duracao={reproducao.duracao}
+      habilitado={reproducao.duracao > 0}
+      aoBuscar={(s) => reproducao.irPara(s)}
+      bind:previa={previaBusca}
+    />
     <div class="coluna linha">
       <button
         class="acao"
@@ -48,14 +57,6 @@
       </a>
       <button class="acao" onclick={() => reproducao.parar()} aria-label={t("audio.parar")}><Icone nome="stop" tamanho={24} /></button>
     </div>
-    <Busca
-      fino
-      decorrido={reproducao.decorrido}
-      duracao={reproducao.duracao}
-      habilitado={reproducao.duracao > 0}
-      aoBuscar={(s) => reproducao.irPara(s)}
-      bind:previa={previaBusca}
-    />
   </div>
 {/if}
 
@@ -66,7 +67,7 @@
     background: var(--superficie); border-top: 0.0625rem solid var(--borda-controle);
     padding-bottom: var(--inset-miniplayer, env(safe-area-inset-bottom));
   }
-  .linha { display: flex; align-items: center; gap: 0.5rem; min-height: 3.5rem; } /* 3,5rem + 1,25rem do slider: só 0,5rem a mais que antes */
+  .linha { display: flex; align-items: center; gap: 0.5rem; min-height: 3.5rem; } /* + 1,25rem do slider (em cima) = 4,75rem, mais a borda */
   .acao {
     flex: none; width: 3rem; height: 3rem; font-size: 1.2rem; border-radius: 0.75rem;
     border: 0; background: transparent; color: var(--texto); cursor: pointer;

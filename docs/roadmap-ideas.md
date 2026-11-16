@@ -453,40 +453,6 @@ acentuado, que se liga e desliga.
 
 ---
 
-## I-21 — Slider do miniplayer em cima
-
-- **Status:** anotada
-- **Origem:** pedido do responsável, 2026-11-16: "o miniplayer, o slide dele fica embaixo... na janela colocar ele em cima".
-- **Prioridade:** a definir
-
-### O problema
-No miniplayer (`src/lib/Miniplayer.svelte`) a linha com o botão de tocar, o título e o botão de parar vem primeiro, e o slider de
-progresso (`Busca`, no modo `fino`) vem **embaixo** dela, colado à barra de abas. O responsável quer o slider **em cima**, e deu o
-motivo (2026-11-16): embaixo ele fica **muito perto da marcação das abas** e **confunde** (parece parte da barra de abas, e o dedo
-pode acertar uma coisa pensando na outra).
-
-### O que se deseja
-O slider de progresso no **topo** do miniplayer, acima da linha de botões e título (como a barra de progresso de muitos
-tocadores, que fica na borda superior da faixa).
-
-### Perguntas em aberto
-1. **"Na janela":** o motivo (colado às abas) existe onde há **barra de abas embaixo** (celular). Numa janela larga, a navegação
-   vai para a **barra lateral** (`--largura-trilho`) e o miniplayer não encosta nela por baixo. Então vale em **toda tela** (mais
-   simples e igual em todo lugar) ou só onde a barra de abas fica embaixo? A frase "na janela" pode ter os dois sentidos.
-2. **Toque:** em cima, o slider fica junto da borda superior do miniplayer, perto do conteúdo da página. Confirmar que o alvo de
-   toque continua confortável (a barra é fina) e que não dispara por engano ao rolar a página. A separação das abas deve **ficar
-   evidente** (o objetivo do pedido): conferir no celular.
-3. **Prévia do tempo:** a prévia da posição (`previaBusca`) hoje aparece junto do slider; em cima, precisa continuar legível e sem
-   sair da tela.
-
-### Impacto técnico (hipóteses, não verificadas)
-- Mudança de ordem no `Miniplayer.svelte` (mover o `<Busca fino …/>` para antes da `div.linha`) e o ajuste do `padding`/`min-height`
-  (hoje: 3,5rem da linha + 1,25rem do slider). A altura que o miniplayer reporta (`altura`, usada para reservar espaço na página)
-  não muda.
-- Só medidas em `rem` e cores do tema, como no resto do app. O teste de ponta a ponta `tests/e2e/karaoke.mjs` (perto da linha
-  275) já confere que a **área de toque do slider fica dentro do miniplayer e livre dos outros controles**; ele deve continuar
-  valendo com o slider em cima e é a base para checar a pergunta 2.
-
 ---
 
 ## Modelo para novas ideias
