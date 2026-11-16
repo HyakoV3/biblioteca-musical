@@ -59,6 +59,11 @@ rm BibliotecaMusical-CCB-teste.apk BibliotecaMusical-CCB-teste.apk.idsig     # o
 Os zips (e os pacotes de sons, `docs/pacote-de-sons.md`) vão **direto para a pasta de entrega**, a pedido do
 responsável (antes iam para `~/Downloads`, e ele os movia para lá).
 
+**Arrumação da pasta (pedido do responsável, 2026-11-16):** ficam **fora** só os **10 zips de APK mais recentes**; todo o resto
+(zips de APK mais antigos e materiais soltos, como as comparações de bancos e as prévias de timbres) vai para a subpasta
+**`archive/`**. Ao entregar um zip novo, o mais antigo que sobrar passa para `archive/` (só se move, nada se apaga). Um arquivo
+de teste que acompanha o APK (por exemplo o pacote de partituras) fica ao lado dele e segue a mesma regra depois.
+
 O **próximo número é o da última linha da tabela abaixo + 1**. A tabela, e não a pasta `~/Downloads`, é o contador,
 porque os arquivos são movidos para fora da pasta depois de baixados. **Acrescente a linha a cada build.** A versão e o
 commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
@@ -67,6 +72,7 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 
 | Zip | Versão (commit) | Data | Conteúdo | SHA-256 |
 |---|---|---|---|---|
+| **018** | 0.3.0 (72b22f8) | 2026-11-16 | **Aba Partitura** (I-08, PRs #35 a #37): o app importa um **pacote `.zip`** (hinário + partituras em SVG), mostra a partitura de cada hino numa aba (zoom de 100% a 400%, nos temas claro, escuro e alto contraste, com a fonte Leipzig) e, sem nenhuma partitura instalada, mostra a aba com um aviso e um botão para Ajustes. **Hino 283** com as correções da foto (versos separados, "esplendor", "Contigo ao céu"). O resto igual ao 017. Compilado da `main`. **Acompanha o `BibliotecaMusical-CCB-pacote-partituras-018.zip`** (os mesmos 5 hinos com partituras; SHA-256 `775b7fc6…2741`, 165.629 bytes), que **não** deve ser aberto: é importado em Ajustes. **A ver no celular** (roteiro abaixo). Entregue em `<pasta de entrega dos zips>/` | `fafa75f6…b6bd` |
 | **017** | 0.3.0 (b3615ac) | 2026-11-16 | **Alto contraste em amarelo vivo sobre preto** (PR #33), como o Alto contraste do site da Tokai: no 016 era preto sobre amarelo claro, e o responsável pediu o inverso. Fundo preto; texto, bordas e acento em `#ffff00`; foco branco; trilha da barra em oliva. O resto igual ao 016 (slider do miniplayer em cima, letra com as 12 correções). Compilado da `main`. **A ver no celular** e com quem tem baixa visão. Entregue em `<pasta de entrega dos zips>/` | `25b2d8ee…e8be` |
 | **016** | 0.3.0 (57b03a4) | 2026-11-16 | **Modo Alto contraste** (I-06, PR #31): em Ajustes → Aparência, 4º Modo, preto sobre amarelo bem claro, com foco, bordas e barra de progresso mais grossos; o estilo não vale nele. Mesmo conteúdo do 015: slider do miniplayer em cima, letra com as 12 correções explícitas e **sem** a regra automática "ãc" vira "ãe". Compilado da `main`. **A ver no celular**, com a fonte do sistema grande. Entregue em `<pasta de entrega dos zips>/` | `bb343aff…4786` |
 | **015** | 0.3.0 (fac50cb) | 2026-11-16 | **Slider do miniplayer em cima** (I-21, PR #27) e **letra com as correções explícitas** (I-05, PR #28): os 5 hinos de teste embutidos agora passam pelo arquivo de correções (12 correções: palavras partidas, "dar-nos", "mão", "servir"...), e **sem** a regra automática "ãc" vira "ãe", que errava (PR #30). Compilado do ramo do PR #30, ainda não mergeado. Entregue em `<pasta de entrega dos zips>/` | `fb91faed…d90f` |
@@ -84,6 +90,22 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 | **004** | 0.3.0 (0a4aa2a) | 2026-11-15 | **Sons gravados por download** (Ajustes, "Sons gravados": baixa o pacote do File Browser, confere o SHA-256 e guarda no aparelho) e alternador Sintetizado \| Gravado por voz; **sem sons embutidos** (o APK só leva os 5 hinos de teste); cabeçalho com logo; botão de Ajustes em engrenagem. Entregue em `<pasta de entrega dos zips>/` | `633d5d41…a23f5` |
 | **003** | 0.2.0 (238a103) | 2026-11-14 | Ajustes: "Sobre o app" num card fechado, aviso de independência à parte e versão centralizada fora do card; tema "Automático"; botões "Importar hinário" e "Remover importação"; seletor de idioma na largura toda | `52ceec38…01e50` |
 | **002** | 0.2.0 (bc7ba9b) | 2026-11-14 | Nome "Biblioteca Musical CCB"; ícones SVG (conjunto `ic`); cards em grupo (abrir um fecha os outros); "Redefinir vozes" e "Redefinir instrumentos" separados; lista com 001, 002; Ajustes como botão hambúrguer | `47944215…0a665` |
+
+### Roteiro do 018 (partituras)
+
+O **importador do `.zip` nunca rodou num Android de verdade**: o app envia os bytes do arquivo ao Rust como corpo binário da chamada
+(`invoke`), e isso só foi testado em Chrome com uma simulação e em testes do Rust. É o ponto mais incerto; se falhar, a mensagem de erro
+diz o que foi (por exemplo, "a chamada não trouxe os bytes do arquivo").
+1. Instale o 018 e abra um hino. A aba **Partitura** aparece (em todos os hinos) com o aviso "Este hinário não tem partituras instaladas" e o
+   botão **Abrir Ajustes**. Conferir que o botão leva a Ajustes.
+2. Em **Ajustes → Importar hinário**, escolha o `BibliotecaMusical-CCB-pacote-partituras-018.zip` (o seletor de arquivos precisa mostrar o
+   `.zip`). Deve aparecer "Importado: 5 hinos de “Amostra de teste (5 hinos)”, com 5 partituras." Se aparecer "Partituras que não entraram",
+   anote o hino e o motivo.
+3. Abra os hinos 1, 276, 283, 398 e 457: a aba Partitura mostra a partitura. Conferir: **notas, letra e o andamento** ("♩ = 58", com a figura
+   da nota) legíveis; as **bandeirolas** das colcheias na mesma cor das notas; o **zoom** (− / 100% / +) e **rolar para os lados** quando
+   ampliada; trocar para o tema **escuro** e o **Alto contraste** em Ajustes.
+4. Com a **fonte do sistema grande**, a aba continua utilizável? E com o celular **deitado** (barra de abas na lateral)?
+5. **Remover importação** em Ajustes apaga também as partituras (a aba volta ao aviso).
 
 ## Instalar no celular
 
