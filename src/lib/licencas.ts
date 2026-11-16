@@ -3,7 +3,7 @@
 // (chave `licencas.uso.<id>`).
 import { TEXTO_APACHE_2, TEXTO_GENERALUSER, TEXTO_MIT } from "./licencas-textos";
 
-export type TipoTexto = "mit" | "apache2" | "ccby3" | "generaluser";
+export type TipoTexto = "mit" | "apache2" | "generaluser";
 
 export type Credito = {
   id: string;
@@ -24,21 +24,6 @@ export const CREDITOS: readonly Credito[] = [
     licenca: "GeneralUser GS License v2.0",
     url: "https://github.com/mrbumpy409/GeneralUser-GS",
     textos: [{ tipo: "generaluser" }],
-  },
-  {
-    id: "fluidr3",
-    nome: "FluidR3_GM",
-    autoria: "Frank Wen",
-    licenca: "MIT",
-    textos: [{ tipo: "mit", direitos: "Copyright © 2000-2002, 2008 Frank Wen" }],
-  },
-  {
-    id: "soundfonts",
-    nome: "midi-js-soundfonts",
-    autoria: "Benjamin Gleitzman",
-    licenca: "MIT · CC BY 3.0",
-    url: "https://github.com/gleitz/midi-js-soundfonts",
-    textos: [{ tipo: "mit", direitos: "Copyright (C) 2012 Benjamin Gleitzman" }, { tipo: "ccby3" }],
   },
   {
     id: "smplr",
@@ -82,15 +67,6 @@ export const CREDITOS: readonly Credito[] = [
   },
 ] as const;
 
-/**
- * Atribuição da CC BY 3.0 para as amostras do FluidR3 em MP3 (o texto legal fica no link). Hoje elas só servem para MEDIR o
- * timbre dos instrumentos sintetizados (os sons gravados do pacote vêm do GeneralUser GS); a atribuição continua por honestidade.
- */
-export const AVISO_CCBY3 =
-  "Sound samples generated from FluidR3_GM by Benjamin Gleitzman (midi-js-soundfonts); the repository README labels them " +
-  "Creative Commons Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/us/). They are used by this app only to measure " +
-  "the timbre of the synthesized instruments (spectrum, attack); no FluidR3 sample is played or distributed by the app.";
-
 /** O texto de uma licença para um crédito (com a linha de direitos autorais, quando há). */
 export function textoDaLicenca(t: Credito["textos"][number]): string {
   switch (t.tipo) {
@@ -98,8 +74,6 @@ export function textoDaLicenca(t: Credito["textos"][number]): string {
       return `MIT License\n\n${t.direitos ?? ""}\n\n${TEXTO_MIT}`;
     case "apache2":
       return TEXTO_APACHE_2;
-    case "ccby3":
-      return AVISO_CCBY3;
     case "generaluser":
       return TEXTO_GENERALUSER;
   }

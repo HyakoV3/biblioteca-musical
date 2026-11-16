@@ -127,8 +127,6 @@ export const pt = {
   "creditos.licenca": "Licença: {licenca}",
   "creditos.ver": "Ver o texto da licença",
   "creditos.uso.generaluser": "Banco de sons de onde vêm as gravações dos instrumentos (sons gravados).",
-  "creditos.uso.fluidr3": "Banco de sons cujas gravações foram medidas para melhorar os instrumentos sintetizados.",
-  "creditos.uso.soundfonts": "Amostras do FluidR3 em MP3, usadas só nessas medições.",
   "creditos.uso.smplr": "Biblioteca que toca as amostras dos sons gravados.",
   "creditos.uso.icones": "Ícones da interface.",
   "creditos.uso.fflate": "Descompacta o pacote de sons baixado.",

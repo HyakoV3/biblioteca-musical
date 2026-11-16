@@ -127,8 +127,6 @@ export const en: Dicionario = {
   "creditos.licenca": "License: {licenca}",
   "creditos.ver": "View the license text",
   "creditos.uso.generaluser": "Sound bank the instrument recordings come from (recorded sounds).",
-  "creditos.uso.fluidr3": "Sound bank whose recordings were measured to improve the synthesized instruments.",
-  "creditos.uso.soundfonts": "FluidR3 samples in MP3, used only for those measurements.",
   "creditos.uso.smplr": "Library that plays the recorded-sound samples.",
   "creditos.uso.icones": "Interface icons.",
   "creditos.uso.fflate": "Unzips the downloaded sound pack.",
