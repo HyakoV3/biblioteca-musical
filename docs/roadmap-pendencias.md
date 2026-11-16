@@ -116,6 +116,10 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
 - [ ] **I-04 (letra):** ver no celular; o **justificado com hinos reais** (abre espaços largos nos versos que quebram); alinhamento
       à direita para idiomas da direita para a esquerda (hoje não tratado). Ver também a I-19 (organização da letra), em
       [`roadmap-ideas.md`](roadmap-ideas.md).
+- [ ] **I-05 (correções da letra):** escrever o `correcoes.json` dos hinos reais conforme os defeitos aparecem (o documento
+      [`correcoes-da-letra.md`](correcoes-da-letra.md) explica); o **hino 283** (versos colados) precisa da **foto do impresso**
+      para saber onde quebrar; decidir se vale uma ferramenta que liste os suspeitos (hoje: `aspell -l pt_BR list` e a comparação
+      com o impresso). **(depende do responsável)**
 - [ ] **I-07 (sons gravados):** hospedar também no **GitHub Releases** (hoje o pacote está no File Browser do responsável, com
       limite de banda de ~500 KB/s); **flugelhorn e bombardino gravados** (nenhum banco livre tem os dois: hoje só sintetizados);
       registrar o teste de baixar, instalar e remover o pacote (o uso nos zips 004 a 012 é a evidência, sem roteiro).

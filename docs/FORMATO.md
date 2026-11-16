@@ -113,8 +113,9 @@ as marcas do karaokê já nascerem do texto certo):
 - "ãc" vira "ãe" (nenhuma palavra do português tem "c" logo depois de "ã").
 
 O que a regra não resolve: verso que o autor escreveu **sem respiração** na partitura (dois versos colados na mesma linha) e
-**erros de digitação** que não seguem um padrão seguro. Esses casos pedem o arquivo de correções da I-05
-(`docs/roadmap-ideas.md`).
+**erros de digitação** que não seguem um padrão seguro. Esses casos se conseguem com o **arquivo de correções** da letra (opção
+`--correcoes` do conversor): trocas explícitas, escritas pelo responsável e mantidas fora do Git; ver
+[`correcoes-da-letra.md`](correcoes-da-letra.md).
 
 ### Sincronia da letra (karaokê)
 
