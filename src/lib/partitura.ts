@@ -17,10 +17,14 @@ export function estadoDaPartitura(partituras: readonly number[], numero: number)
 /** A aba Partitura existe neste hino? Sim quando tem partitura e quando nenhum pacote foi importado (aí é o aviso). */
 export const temAbaPartitura = (estado: EstadoPartitura): boolean => estado !== "nao_tem";
 
-/** Tamanhos da partitura, de 100% a 400% da largura da tela, em 6 passos (o 100% cabe na largura, sem rolar de lado). */
-export const ESCALAS_PARTITURA = [1, 1.25, 1.5, 2, 3, 4] as const;
+/**
+ * Tamanhos da partitura, de 50% a 400% da largura da tela, em 9 passos: o 100% (o padrão) cabe na largura, sem rolar de lado; abaixo dele
+ * a partitura fica mais estreita que a tela (e centralizada), e acima dela rola para os lados. É a ESCALA que se guarda no aparelho, e não
+ * o índice, para mudar os degraus um dia não embaralhar o que já estava salvo.
+ */
+export const ESCALAS_PARTITURA = [0.5, 0.65, 0.8, 1, 1.25, 1.5, 2, 3, 4] as const;
 /** Índice do tamanho padrão (100%). */
-export const ZOOM_PADRAO = 0;
+export const ZOOM_PADRAO = 3;
 
 /** Mantém o passo dentro dos limites; valor inválido (NaN, texto) volta ao padrão. */
 export function limitarZoom(p: unknown): number {
@@ -30,8 +34,15 @@ export function limitarZoom(p: unknown): number {
 
 export const escalaDoZoom = (passo: number): number => ESCALAS_PARTITURA[limitarZoom(passo)];
 
-/** Aceita o que veio do armazenamento (qualquer coisa) e devolve um passo válido. */
+/** O passo de uma escala guardada (`1.25` é o passo 4), ou o padrão se não for exatamente um dos degraus. */
+export function passoDaEscala(escala: unknown): number {
+  const i = ESCALAS_PARTITURA.findIndex((e) => e === escala);
+  return i < 0 ? ZOOM_PADRAO : i;
+}
+
+/** Aceita o que veio do armazenamento (qualquer coisa) e devolve um passo válido. Guardado como `{ escala }`; a chave antiga `zoom` (índice, de
+ *  quando os degraus eram outros) é ignorada. */
 export function normalizarZoom(bruto: unknown): number {
   if (typeof bruto !== "object" || bruto === null) return ZOOM_PADRAO;
-  return limitarZoom((bruto as Record<string, unknown>).zoom);
+  return passoDaEscala((bruto as Record<string, unknown>).escala);
 }

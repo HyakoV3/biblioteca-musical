@@ -528,11 +528,31 @@ async function principal() {
       salvo: localStorage.getItem('prefs.partitura'), dica: !!document.querySelector('#painel-partitura .dica'), pagina: document.documentElement.scrollWidth > window.innerWidth };
   })()`);
   confere(z1.rola && Math.abs(z1.folha / z1.regiao - 1.25) < 0.02, `125%: a folha fica ${(z1.folha / z1.regiao).toFixed(2)}x a região e rola de lado`);
-  confere(z1.salvo === '{"zoom":1}' && z1.dica && !z1.pagina, `o zoom fica salvo, aparece a dica de arrastar e só a região rola (a página não): ${JSON.stringify({ salvo: z1.salvo, dica: z1.dica, pagina: z1.pagina })}`);
+  confere(z1.salvo === '{"escala":1.25}' && z1.dica && !z1.pagina, `o zoom fica salvo, aparece a dica de arrastar e só a região rola (a página não): ${JSON.stringify({ salvo: z1.salvo, dica: z1.dica, pagina: z1.pagina })}`);
   await av("document.querySelectorAll('#painel-partitura .barra-zoom button')[1].click(); 1");
   await dormir(200);
   const z0 = await av(`(() => { const r = document.querySelector('#painel-partitura .rolagem'); return { rola: r.scrollWidth > r.clientWidth + 1, salvo: localStorage.getItem('prefs.partitura') }; })()`);
-  confere(!z0.rola && z0.salvo === '{"zoom":0}', `restaurar volta a 100% sem rolar de lado: ${JSON.stringify(z0)}`);
+  confere(!z0.rola && z0.salvo === '{"escala":1}', `restaurar volta a 100% sem rolar de lado: ${JSON.stringify(z0)}`);
+
+  // Diminuir: o padrão (100%) não é o menor tamanho. "−" dá 80%: a folha fica mais estreita que a região, CENTRALIZADA, sem rolar de lado.
+  await av("document.querySelectorAll('#painel-partitura .barra-zoom button')[0].click(); 1");
+  await dormir(200);
+  const zm = await av(`(() => {
+    const reg = document.querySelector('#painel-partitura .rolagem');
+    const r = reg.getBoundingClientRect();
+    const f = document.querySelector('#painel-partitura .folha').getBoundingClientRect();
+    return { razao: f.width / r.width, esquerda: f.left - r.left, direita: r.right - f.right, rola: reg.scrollWidth > reg.clientWidth + 1,
+      salvo: localStorage.getItem('prefs.partitura'), dica: !!document.querySelector('#painel-partitura .dica') };
+  })()`);
+  confere(Math.abs(zm.razao - 0.8) < 0.02 && !zm.rola && zm.salvo === '{"escala":0.8}' && !zm.dica, `"−" diminui para 80% (a folha é ${(zm.razao * 100).toFixed(0)}% da região), sem rolar de lado e sem a dica de arrastar: ${JSON.stringify({ salvo: zm.salvo, rola: zm.rola })}`);
+  confere(zm.esquerda > 5 && Math.abs(zm.esquerda - zm.direita) < 2, `a partitura menor fica centralizada (sobra ${zm.esquerda.toFixed(0)} px de cada lado)`);
+  // chega ao menor (50%) e o "−" desliga; depois volta ao padrão para não afetar o resto
+  for (let i = 0; i < 4; i++) await av("document.querySelectorAll('#painel-partitura .barra-zoom button')[0].click(); 1");
+  await dormir(200);
+  const min = await av(`({ salvo: localStorage.getItem('prefs.partitura'), menosDesligado: document.querySelectorAll('#painel-partitura .barra-zoom button')[0].disabled })`);
+  confere(min.salvo === '{"escala":0.5}' && min.menosDesligado, `o menor tamanho é 50% e o "−" desliga: ${JSON.stringify(min)}`);
+  await av("document.querySelectorAll('#painel-partitura .barra-zoom button')[1].click(); 1");
+  await dormir(200);
 
   const abrirHino = async (numero) => {
     await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/hino/${numero}` });

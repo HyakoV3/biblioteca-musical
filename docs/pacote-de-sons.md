@@ -65,7 +65,8 @@ Saem os `*-mp3.js` e um `manifesto.json` (instrumento, notas, bytes e SHA-256 de
 
 - **Agora (testes):** uma **pasta dedicada** só com os sons, no **File Browser** que o responsável hospeda
   (`https://fb.hm.hv2.xyz`, **hv2**), com **link público de leitura** (sem senha, sem validade). Decisão de 2026-11-15:
-  **sem o Nextcloud**. A pasta é `BibliotecaMusical/` no servidor, com o pacote em
+  **sem o Nextcloud**. A pasta é `BibliotecaMusical/` no servidor (**renomeada para `BibliotecaMusicalSons/` em 2026-11-16**, depois do upgrade do File Browser; o link
+  público continuou o mesmo), com o pacote em
   `BibliotecaMusical/sons-001/` (3 instrumentos e o manifesto; arquivos copiados e conferidos pelo SHA-256 no servidor).
   **Só a pasta `BibliotecaMusical` é compartilhada**; nada mais fica exposto.
 - **Estado (2026-11-15):** pasta, arquivos e **link público criados e testados**. O link expõe só a pasta

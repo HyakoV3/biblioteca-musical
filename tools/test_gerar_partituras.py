@@ -20,31 +20,37 @@ spec = importlib.util.spec_from_file_location("gerar_partituras", AQUI / "gerar-
 g = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(g)
 
-# Os glifos de elisão do SMuFL (faixa privada do Unicode, invisíveis no editor): estreita, normal e larga.
-ESTREITA, NORMAL, LARGA = chr(0xE550), chr(0xE551), chr(0xE552)
+class RemoverLetra(unittest.TestCase):
+    def test_tira_o_lyric_e_o_que_ha_dentro(self):
+        xml = '<note><pitch/><lyric number="1" default-y="-67"><syllabic>end</syllabic><text>nho,</text></lyric></note>'
+        self.assertEqual(g.remover_letra(xml), "<note><pitch/></note>")
 
+    def test_tira_todas_as_letras_de_varias_vozes_e_linhas(self):
+        xml = "<n><lyric number=\"1\"><text>a</text></lyric><lyric number=\"2\">\n<text>b</text>\n</lyric></n>"
+        self.assertEqual(g.remover_letra(xml), "<n></n>")
 
-def texto_elisao(glifo):
-    return f'<text font-family="MScore Text">{glifo}</text>'
+    def test_tira_o_sinal_de_elisao_que_vem_dentro_da_letra(self):
+        elisao = chr(0xE552)
+        xml = f'<lyric><text>nho,</text><text font-family="MScore Text">{elisao}</text><text>em</text></lyric>'
+        self.assertEqual(g.remover_letra(xml), "")
 
+    def test_lyric_vazio_de_uma_tag_so(self):
+        self.assertEqual(g.remover_letra('<a/><lyric number="1"/><b/>'), "<a/><b/>")
 
-class CorrigirElisao(unittest.TestCase):
-    def test_troca_o_texto_da_fonte_privada_pelo_elemento_padrao(self):
-        xml = f'<text>nho,</text>{texto_elisao(LARGA)}<text font-family="FreeSerif">em</text>'
-        self.assertEqual(g.corrigir_elisao(xml), '<text>nho,</text><elision> </elision><text font-family="FreeSerif">em</text>')
+    def test_nao_toca_nos_elementos_que_so_comecam_igual(self):
+        # <lyric-font> e <lyric-language> ficam em <defaults>; um padrão frouxo apagaria o trecho entre eles e o primeiro </lyric>
+        xml = ('<defaults><lyric-font font-family="FreeSerif" font-size="10"/><lyric-language xml:lang="pt"/></defaults>'
+               '<note><lyric><text>x</text></lyric></note><note2/>')
+        self.assertEqual(g.remover_letra(xml), '<defaults><lyric-font font-family="FreeSerif" font-size="10"/><lyric-language xml:lang="pt"/></defaults><note></note><note2/>')
 
-    def test_troca_as_tres_larguras_do_padrao_smufl(self):
-        for glifo in (ESTREITA, NORMAL, LARGA):
-            self.assertEqual(g.corrigir_elisao(texto_elisao(glifo)), "<elision> </elision>", hex(ord(glifo)))
+    def test_sem_letra_nada_muda(self):
+        xml = "<score><part><measure><note><pitch/></note></measure></part></score>"
+        self.assertEqual(g.remover_letra(xml), xml)
 
-    def test_troca_todas_as_ocorrencias(self):
-        um = texto_elisao(LARGA)
-        self.assertEqual(g.corrigir_elisao(um + "x" + um), "<elision> </elision>x<elision> </elision>")
-
-    def test_nao_mexe_em_outro_texto_nem_em_outra_fonte_nem_em_outro_glifo(self):
-        for xml in ("<text>nho,</text>", '<text font-family="FreeSerif">em</text>', '<text font-family="MScore Text">a</text>',
-                    f'<text font-family="Outra">{LARGA}</text>', texto_elisao(chr(0xE553)), texto_elisao(chr(0xE54F))):
-            self.assertEqual(g.corrigir_elisao(xml), xml)
+    def test_o_resto_da_partitura_fica_inteiro(self):
+        com = "".join(f'<note id="{i}"><pitch/><lyric><text>t{i}</text></lyric></note>' for i in range(50))
+        sem = "".join(f'<note id="{i}"><pitch/></note>' for i in range(50))
+        self.assertEqual(g.remover_letra(com), sem)
 
 
 class NumeroDoHino(unittest.TestCase):
@@ -119,7 +125,12 @@ class OpcoesVerovio(unittest.TestCase):
         self.assertIs(o["adjustPageHeight"], True)
         self.assertIs(o["svgViewBox"], True)
         self.assertIs(o["svgFormatRaw"], True)
-        self.assertEqual(o["lyricElision"], "unicode")
+        # a letra sai da partitura: as opções de letra do Verovio não existem mais
+        for chave in o:
+            self.assertNotIn("lyric", chave.lower(), chave)
+
+    def test_a_largura_padrao_e_500(self):
+        self.assertEqual(g.LARGURA_PADRAO, 500)
 
 
 class UltimasLinhas(unittest.TestCase):
@@ -277,10 +288,10 @@ class GerarHino(unittest.TestCase):
         self.assertGreater(gz, 0)
         self.assertEqual(arquivos, ["hino-5.svg", "hino-5.timemap.json"])
 
-    def test_o_verovio_recebe_o_xml_com_a_elisao_corrigida(self):
+    def test_o_verovio_recebe_o_xml_sem_a_letra(self):
         tk = FalsoToolkit()
-        self.roda(tk, musicxml=texto_elisao(LARGA))
-        self.assertEqual(tk.lido, "<elision> </elision>")
+        self.roda(tk, musicxml="<n><lyric><text>nho</text></lyric><pitch/></n>")
+        self.assertEqual(tk.lido, "<n><pitch/></n>")
 
     def test_verovio_que_nao_le_e_erro_do_hino(self):
         with self.assertRaisesRegex(g.ErroHino, "Verovio não leu"):

@@ -11,8 +11,14 @@ O pacote é um `.zip` só com `partituras/hino-<número>.svg` (formato e verific
 
 ## Estado publicado (2026-11-16)
 
-- **Pasta no servidor:** `/mnt/downloads/BibliotecaMusicalPartituras/`, **fora** de `BibliotecaMusical/` (a dos sons), com só o `partituras-001.zip`
-  (as 5 partituras de teste, 155.108 bytes, SHA-256 `35acf55f…f0ac`). Compartilhamento próprio (a pedido do responsável, que criou a pasta e o link).
+- **Pasta no servidor:** `/mnt/downloads/BibliotecaMusicalPartituras/`, **fora** da dos sons (`BibliotecaMusicalSons/`, renomeada pelo responsável depois do
+  upgrade do File Browser para a 2.0.2; o link dos sons continuou valendo e conferido). Compartilhamento próprio (a pedido do responsável, que criou a pasta
+  e o link). Tem **dois** zips:
+  - `partituras-001.zip` (155.108 bytes, SHA-256 `35acf55f…f0ac`): a primeira versão, com a letra e largura 700. **Fica** porque os APKs 020 e 021
+    procuram por ele.
+  - `partituras-002.zip` (125.130 bytes, SHA-256 `253500de…bd0f`): **sem letra, largura 500** (notas 1,4x maiores no celular em pé), o do APK 022.
+
+  O link da pasta baixa os dois juntos (280 KB), e o app acha o seu pelo nome. Quando nenhum APK em uso precisar do 001, apagar.
 - **Link do app:** `https://fb.hm.hv2.xyz/public/api/resources/download?hash=<hash do compartilhamento>`, no manifesto do app. Conferido contra os bytes
   reais do servidor: o zip da pasta traz `BibliotecaMusicalPartituras/partituras-001.zip` idêntico ao local (tamanho e SHA-256).
 - **O link está no manifesto, que está no repositório público:** quem lê o código pode baixar as 5 partituras de teste. É o mesmo que já acontece com
@@ -30,15 +36,15 @@ nos sons, desligar o visualizador. O `config.yaml` do contêiner já dá aos usu
 ## Gerar e publicar
 
 ```sh
-# 1. SVG de cada hino (precisa do MuseScore 4 e do pacote Python verovio; ver tools/gerar-partituras.py)
+# 1. SVG de cada hino, SEM a letra e na largura 500 (precisa do MuseScore 4 e do pacote Python verovio; ver tools/gerar-partituras.py)
 python3 tools/gerar-partituras.py <pasta dos hino-N.mscx> <pasta dos svg>
 
 # 2. o zip (só partituras/hino-N.svg, reproduzível)
-python3 tools/montar-pacote.py <pasta dos svg> partituras-001.zip
+python3 tools/montar-pacote.py <pasta dos svg> partituras-NNN.zip
 
 # 3. no servidor de arquivos (o mesmo dos sons): uma pasta PRÓPRIA, fora de BibliotecaMusical/, com o zip dentro, e o link público só dela;
 #    depois o manifesto do app, com o nome, o tamanho e o SHA-256 do zip
-python3 tools/montar-manifesto-partituras.py <link público da pasta> partituras-001.zip
+python3 tools/montar-manifesto-partituras.py <link público da pasta> partituras-NNN.zip
 ```
 
 **Pasta própria, fora de `BibliotecaMusical/`:** o link público do File Browser baixa a **pasta inteira em zip** (não há download de arquivo
