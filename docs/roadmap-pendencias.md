@@ -97,7 +97,7 @@ mesmo conjunto de fluxos que o responsável já usa em outros projetos.
 
 ## 6. Produto (resumo)
 
-Feito: **karaokê, fase A** (a letra acompanhando a música), a validar no celular, e os **timbres sintetizados** dos
-sete instrumentos reclamados (I-15), a conferir de ouvido. Depois: créditos do
-FluidR3, teste das 4 vozes gravadas no celular, partitura (I-08) e, por último, o conteúdo completo. Detalhes em
+Feito: **karaokê, fase A** (a letra acompanhando a música), os **timbres sintetizados** (I-15), a **troca dos sons
+gravados para o GeneralUser GS**, os **créditos e licenças** em Ajustes e o teste das 4 vozes gravadas no celular. Depois:
+partitura (I-08) e, por último, o conteúdo completo. Detalhes em
 [`roadmap-fase-2.md`](roadmap-fase-2.md).

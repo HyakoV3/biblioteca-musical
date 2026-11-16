@@ -52,8 +52,9 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
 - [x] **Troca do banco dos gravados: FluidR3 → GeneralUser GS** (decisão do responsável após comparar os 16 de ouvido), com
       os ganhos recalculados para o mesmo nível médio. Ver `docs/pacote-de-sons.md`. **Falta subir o pacote novo ao servidor**
       (pasta `BibliotecaMusical/` do File Browser) e gerar o APK 010; até lá o app deste ramo não baixa os sons.
-- [x] Créditos e licenças: card fechado em Ajustes (FluidR3, amostras do Gleitzman com a atribuição CC BY 3.0, smplr, ícones,
-      bibliotecas), com o texto de cada licença. Ver `docs/licencas-de-terceiros.md` (inclui a divergência MIT x CC BY 3.0).
+- [x] Créditos e licenças: card fechado em Ajustes (GeneralUser GS com a licença do autor na íntegra, smplr, ícones, fflate,
+      Svelte e Tauri), com o texto de cada licença. O FluidR3 saiu do card em 2026-11-15 (nenhuma amostra dele está no app);
+      a origem das medições do timbre sintético fica registrada em `docs/licencas-de-terceiros.md`.
 - [ ] Comparar de ouvido os órgãos do banco: `church_organ`, `reed_organ` (palhetas) e `drawbar_organ` (tirantes), os
       três já no APK de comparação (baixados em 2026-11-14, ~3 MB cada). Escolher o mais parecido com o da igreja e
       decidir o substituto do flugelhorn. **(depende do responsável)**

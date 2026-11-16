@@ -126,5 +126,5 @@ emulador ou no celular.
 - [ ] Testar o download, a instalação e a remoção no emulador e no celular.
 - [ ] Um link por grupo (`orgao`, `madeiras`, `metais`, `cordas`) no File Browser, e regerar o manifesto.
 - [ ] Aumentar o limite de banda do link (hoje ~500 KB/s: 29 MB levam ~60 s).
-- [ ] Texto de créditos com o aviso de copyright do FluidR3 (`docs/licencas-de-terceiros.md`).
+- [x] Créditos e licenças em Ajustes (GeneralUser GS com a licença do autor na íntegra; o FluidR3 saiu do card em 2026-11-15, ver `docs/licencas-de-terceiros.md`).
 - [ ] Substituto do flugelhorn e do bombardino (ver a busca de euphonium acima).

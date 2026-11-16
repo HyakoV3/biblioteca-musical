@@ -1,5 +1,5 @@
 // Textos integrais de licença (em inglês, como os originais: a tradução não tem valor jurídico).
-// MIT: o texto padrão (o mesmo nos arquivos de licença de fflate, Svelte, Tauri e dos demais). A linha de copyright de cada um fica em licencas.ts.
+// MIT: o texto padrão (o mesmo nos arquivos de licença de fflate, Svelte e Tauri; o smplr não publica arquivo de licença). A linha de copyright de cada um fica em licencas.ts.
 // GeneralUser GS: o LICENSE.txt do repositório oficial do autor (v2.0, banco v2.0.3), sem alterações.
 // Apache 2.0: copiado de https://www.apache.org/licenses/LICENSE-2.0.txt.
 

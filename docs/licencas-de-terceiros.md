@@ -20,12 +20,25 @@ Ressalvas dele: (1) a origem de algumas amostras é incerta (nenhuma veio de pac
 desde 2000); (2) não linkar o arquivo dele diretamente, e sim hospedar a própria cópia, o que fazemos. A renderização usa o
 `spessasynth_core` (Apache 2.0), instalado **fora do projeto**: é só ferramenta de manutenção, não vai no app.
 
-**O FluidR3 deixou de ser distribuído e foi retirado do card de créditos** (decisão do responsável, 2026-11-15): nenhuma
+### Créditos exibidos no app
+
+Ajustes, "Créditos e licenças" (`src/lib/licencas.ts`, textos em `src/lib/licencas-textos.ts`), com o autor, a licença e o
+texto integral da licença de cada item. A lista: GeneralUser GS, smplr, ícones Google Material (Apache 2.0, texto
+integral), fflate, Svelte e SvelteKit, e Tauri (linhas de copyright lidas nos arquivos de licença dos pacotes instalados).
+Os arquivos de som ficam fora do Git (`sons-fonte/`).
+
+- **Biblioteca que toca as amostras:** `smplr`, MIT (campo `license` do pacote e seção "License" do README). O pacote não
+  publica arquivo `LICENSE` nem linha de copyright; o app registra "Author: danigb", como o pacote declara.
+- **Fora desta lista, por ora:** as dependências indiretas do JavaScript e os crates do Rust do Tauri (cada uma com o seu
+  aviso). Se o app for publicado em loja, vale gerar essa lista por ferramenta (por exemplo `cargo about` e um gerador
+  de avisos do npm), em vez de mantê-la à mão.
+
+### FluidR3_GM: só o registro de origem das medições do timbre sintético (não aparece no app)
+
+O FluidR3 deixou de ser distribuído e **foi retirado do card de créditos** (decisão do responsável, 2026-11-15): nenhuma
 amostra dele está no app nem no pacote de sons. Ele só serviu, **uma vez e fora do app**, para MEDIR o timbre dos
 instrumentos sintetizados (espectro e ataque, salvos como números em `src/lib/timbres.json`). A origem dessas medições
 fica registrada **só aqui**, para o caso de a dúvida voltar.
-
-### FluidR3_GM (registro de origem das medições do timbre sintético; não aparece no app)
 
 - **Banco:** FluidR3_GM, de Frank Wen. O autor o libera sob a **licença MIT** (README original: "I hereby release Fluid
   under the MIT license"; aviso lido no arquivo de copyright do pacote `fluid-soundfont` da Debian, que cita o texto do
@@ -33,18 +46,10 @@ fica registrada **só aqui**, para o caso de a dúvida voltar.
 - **Amostras em MP3 por instrumento:** geradas do FluidR3 pelo repositório `midi-js-soundfonts`, de Benjamin Gleitzman. O
   código do repositório é **MIT** ("Copyright (C) 2012 Benjamin Gleitzman", `LICENSE.txt`), **mas o README dele rotula as
   amostras geradas do FluidR3 como Creative Commons Atribuição 3.0 (CC BY 3.0)**, o que diverge da licença MIT do autor
-  do banco. Como as duas pedem **atribuição**, o app cumpre as duas: credita o autor, cita a licença com o link e declara
-  as alterações (conversão em MP3 e corte às notas dos hinos). Se um dia a dúvida importar (por exemplo, publicação em
-  loja), vale perguntar ao Gleitzman qual vale.
-- **Biblioteca que toca as amostras:** `smplr`, MIT (campo `license` do pacote e seção "License" do README). O pacote não
-  publica arquivo `LICENSE` nem linha de copyright; o app registra "Author: danigb", como o pacote declara.
-- **Onde aparece:** Ajustes, "Créditos e licenças" (`src/lib/licencas.ts`, textos em `src/lib/licencas-textos.ts`), com o
-  texto da licença de cada item. Lista: GeneralUser GS, smplr, ícones Google Material (Apache 2.0, texto integral),
-  fflate, Svelte e SvelteKit, e Tauri (linhas de copyright lidas nos arquivos de licença dos pacotes
-  instalados). Os arquivos de som ficam fora do Git (`sons-fonte/`).
-- **Fora desta lista, por ora:** as dependências indiretas do JavaScript e os crates do Rust do Tauri (cada uma com o seu
-  aviso). Se o app for publicado em loja, vale gerar essa lista por ferramenta (por exemplo `cargo about` e um gerador
-  de avisos do npm), em vez de mantê-la à mão.
+  do banco. Como as duas pedem **atribuição**, o app as cumpria enquanto distribuía essas amostras (até 2026-11-15):
+  creditava o autor, citava a licença com o link e declarava as alterações (conversão em MP3 e corte às notas dos
+  hinos). Se um dia a dúvida importar (por exemplo, se alguém voltar a usar essas amostras), vale perguntar ao Gleitzman
+  qual licença vale.
 
 ## Conteúdo dos hinos
 
