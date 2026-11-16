@@ -110,7 +110,7 @@ describe("modo alto contraste", () => {
   it("o tema.css tem o bloco do modo, com todos os tokens do :root padrão", () => {
     expect(blocoAlto, "falta o bloco :root[data-tema=\"alto-contraste\"]").not.toBe("");
     expect(tokensDo(blocoAlto)).toEqual(tokensDo(blocoNormal));
-    expect(blocoAlto).toContain("color-scheme: light");
+    expect(blocoAlto).toContain("color-scheme: dark");
   });
 
   it("o bloco vem DEPOIS dos blocos dos estilos (empata na especificidade e vence pela ordem)", () => {
