@@ -22,17 +22,28 @@
     salvarZoomPartitura(passo);
   }
 
-  // --- Carga: só na primeira vez que a aba é aberta (o SVG tem até algumas centenas de KB). ---
+  // --- Carga: sozinha só na primeira vez que a aba é aberta (o SVG tem até algumas centenas de KB). Se falhar, o aviso de erro traz
+  // o botão "Tentar de novo" (não repete sozinha ao trocar de aba: isso esconderia o erro). ---
   type Carga = { svg: string } | { erro: string };
   let carga = $state<Carga | null>(null);
   let pediu = false;
+  let lendo = false; // uma leitura de cada vez (o botão não dispara outra enquanto uma está em andamento)
+  async function carregar() {
+    if (lendo) return;
+    lendo = true;
+    carga = null; // volta ao "Carregando..."
+    try {
+      carga = { svg: await biblioteca.lerPartitura(numero) };
+    } catch (e) {
+      carga = { erro: traduzirErro(String(e), t) };
+    } finally {
+      lendo = false;
+    }
+  }
   $effect(() => {
     if (estado !== "tem" || !ativa || pediu) return;
     pediu = true;
-    biblioteca
-      .lerPartitura(numero)
-      .then((svg) => (carga = { svg }))
-      .catch((e) => (carga = { erro: traduzirErro(String(e), t) }));
+    void carregar();
   });
 </script>
 
@@ -58,6 +69,7 @@
     <Estado tipo="carregando" texto={t("partitura.carregando")} />
   {:else if "erro" in carga}
     <Aviso tipo="erro">{t("partitura.erro", { erro: carga.erro })}</Aviso>
+    <button class="botao tentar" onclick={carregar}>{t("erro.tentar")}</button>
   {:else}
     {#if escala > 1}<p class="dica">{t("partitura.dica")}</p>{/if}
     <!-- Uma região que rola para os lados precisa receber o foco do teclado (quem não usa toque não alcançaria o resto). -->
@@ -84,6 +96,7 @@
     border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   .barra-zoom button:disabled { opacity: 0.5; cursor: default; }
+  .tentar { display: block; margin: 0 auto; }
   .dica { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--suave); }
 
   /* A folha é a partitura do tamanho escolhido; passando da largura da tela, rola para os lados. O que o SVG desenha fica dentro

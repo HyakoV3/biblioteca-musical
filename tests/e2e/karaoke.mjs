@@ -63,7 +63,14 @@ const STUB = `window.__TAURI_INTERNALS__ = {
       return { hinario: ${JSON.stringify(hinario)}, exemplo: false, partituras: sem ? [] : [999] };
     }
     if (cmd === "ler_partitura") {
-      if (args.numero === 999) return ${JSON.stringify(SVG_PARTITURA)};
+      if (args.numero === 999) {
+        // "e2e-falha-partitura": a PRÓXIMA leitura falha (um erro do Rust), e as seguintes dão certo.
+        if (sessionStorage.getItem("e2e-falha-partitura") === "1") {
+          sessionStorage.removeItem("e2e-falha-partitura");
+          throw JSON.stringify(["ler", "falha simulada"]);
+        }
+        return ${JSON.stringify(SVG_PARTITURA)};
+      }
       throw JSON.stringify(["sem_partitura", String(args.numero)]);
     }
     return null;
@@ -549,7 +556,24 @@ async function principal() {
       svg: !!document.querySelector('#painel-partitura svg'), visivel: !document.getElementById('painel-partitura').hidden };
   })()`);
   confere(aviso.aba && aviso.href === "/ajustes" && aviso.botao && !aviso.svg && aviso.visivel, `sem pacote com partituras: a aba aparece com o aviso e o botão para Ajustes: ${JSON.stringify(aviso)}`);
-  await av("sessionStorage.removeItem('e2e-sem-partituras'); 1");
+  await av("sessionStorage.removeItem('e2e-sem-partituras'); sessionStorage.setItem('e2e-falha-partitura', '1'); 1");
+
+  // Falha na leitura da partitura: o aviso de erro traz "Tentar de novo", e ele lê outra vez (não fica preso para sempre).
+  confere(await abrirHino(999), "hino 999 carregado para o teste de falha da partitura");
+  await av("document.getElementById('aba-partitura')?.click(); 1");
+  await dormir(600);
+  const falhou = await av(`({ alerta: !!document.querySelector('#painel-partitura [role="alert"]'), botao: !!document.querySelector('#painel-partitura .tentar'), svg: !!document.querySelector('#painel-partitura svg') })`);
+  confere(falhou.alerta && falhou.botao && !falhou.svg, `leitura que falha: aviso de erro com o botão de tentar de novo: ${JSON.stringify(falhou)}`);
+  // trocar de aba e voltar NÃO repete sozinho (o erro continua à vista)
+  await av("document.getElementById('aba-letra').click(); 1");
+  await dormir(200);
+  await av("document.getElementById('aba-partitura').click(); 1");
+  await dormir(400);
+  confere(await av(`!!document.querySelector('#painel-partitura [role="alert"]') && !document.querySelector('#painel-partitura svg')`), "trocar de aba e voltar não esconde o erro nem repete sozinho");
+  await av("document.querySelector('#painel-partitura .tentar')?.click(); 1");
+  await dormir(700);
+  const refeito = await av(`({ alerta: !!document.querySelector('#painel-partitura [role="alert"]'), svg: !!document.querySelector('#painel-partitura svg'), botao: !!document.querySelector('#painel-partitura .tentar') })`);
+  confere(!refeito.alerta && refeito.svg && !refeito.botao, `"Tentar de novo" lê a partitura outra vez e ela aparece: ${JSON.stringify(refeito)}`);
   ws.close();
 
   // 6. análise: trocas de sílaba antes da pausa
