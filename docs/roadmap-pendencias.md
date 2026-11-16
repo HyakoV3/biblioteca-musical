@@ -130,6 +130,9 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
 - [ ] **I-15 (timbres):** ouvir os sintéticos novos de **flauta doce, violino, clarinete, viola, violoncelo, contrabaixo e trompa** e
       dizer se algum ficou fraco; o teste cego com o gravado (critério de aceitação) não foi feito; **4 vozes de metal ao mesmo
       tempo no celular** (custo de um filtro a mais por nota).
+- [ ] **I-21 (slider do miniplayer em cima):** ver no celular: se o **polegar cobre o tempo** ("0:42 / 3:10", que fica na linha de
+      baixo) durante o arrasto; se **rolar a página perto do miniplayer** não dispara a busca sem querer; e se o slider ficou
+      **bem distinto das abas** (o objetivo do pedido). **Decisão a confirmar:** vale em toda tela (feito assim).
 - [ ] **Recentes, no celular:** a interface em `rem` com a **fonte do sistema maior**; toque e arraste no slider de avançar e
       retroceder (faixa de toque do miniplayer e do ponto); o botão de tamanho e alinhamento da letra.
 - [x] ~~**I-07:** testar as 4 vozes gravadas ao mesmo tempo no celular~~ e ~~aceitar o tamanho do pacote (36 MB)~~: feitos e aprovados

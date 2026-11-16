@@ -60,8 +60,8 @@
 </div>
 
 <style>
-  /* A faixa de toque é um espaço RESERVADO no layout (2,5rem; 1,25rem no miniplayer): não sobe sobre os controles de cima nem
-     desce sobre a barra de abas, então não rouba toques de ninguém. */
+  /* A faixa de toque é um espaço RESERVADO no layout (2,5rem; 1,25rem no miniplayer, onde fica no topo, acima dos botões):
+     não invade os controles vizinhos, então não rouba toques de ninguém. */
   .busca { position: relative; display: flex; align-items: center; height: 2.5rem; --ponto: 1.375rem; }
   .busca.fino { height: 1.25rem; --ponto: 0rem; } /* sem ponto desenhado: o polegar nativo também tem largura 0 */
   .busca.desabilitado { opacity: 0.5; }

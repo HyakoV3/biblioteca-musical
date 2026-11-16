@@ -24,6 +24,7 @@ descrito** (documentos, código, testes e PRs). Ele não repete esses detalhes.
 | **I-12 (fase A)** | Karaokê na letra | feita, a ver no aparelho | [`../FORMATO.md`](../FORMATO.md) (`sincronia`), `src/lib/karaoke.ts`, `tests/e2e/karaoke.mjs` |
 | **I-14** | Estilo de cor Marinho e ouro | feita, a ver no celular | [`../design-tokens.md`](../design-tokens.md), `src/lib/tema.css`, PR #4 |
 | **I-15** | Timbres sintetizados mais parecidos | feita, aprovada de ouvido em parte | `src/lib/timbres.ts`, `tools/analisar-timbres.py`, PRs #2, #6, #7 |
+| **I-21** | Slider do miniplayer em cima (embaixo, confundia com as abas) | feita, a ver no celular | `src/lib/Miniplayer.svelte`, `tests/e2e/karaoke.mjs`, PR #27 |
 
 ---
 
