@@ -1010,9 +1010,9 @@ sistema. **Não verificado:** se o WebView do Android e o do iOS repassam essa p
 
 ### Como ficou (2026-11-16)
 - Feito: 4º **Modo** "Alto contraste" em Ajustes (pt "Alto contraste", es "Alto contraste", en "High contrast"), paleta própria preto sobre
-  `#ffffcc` e `#ffffe0` com contraste AAA medido por `tools/contraste.py`, espessuras maiores de foco, bordas e barra de progresso, links
+  **amarelo vivo (`#ffff00`) sobre preto**, com contraste AAA medido por `tools/contraste.py`, espessuras maiores de foco, bordas e barra de progresso, links
   sempre sublinhados e destaques em bloco preto com texto amarelo. Detalhes e a tabela de contrastes em [`../design-tokens.md`](../design-tokens.md).
-- Respostas às perguntas acima: (1) amarelo `#ffffcc` no fundo e `#ffffe0` nos cartões, **a validar com quem tem baixa visão**; (2) a
+- Respostas às perguntas acima: (1) **amarelo vivo (`#ffff00`) sobre preto**, no padrão do Alto contraste do site da Tokai. A frase original da ideia dizia "preto sobre amarelo bem claro" e a primeira versão (APK 016) fez isso; o responsável, ao testar, mostrou o site da Tokai e confirmou que o que queria era o **amarelo vivo sobre preto**; **a validar com quem tem baixa visão**; (2) a
   versão invertida **não** entrou; (3) o modo **ignora o estilo** (o grupo Estilo fica desativado, com uma nota); (4) o nome é "Alto
   contraste" nos três idiomas; (5) o ícone do app e a barra de status do Android **não** mudam.
 - **Não feito:** o Automático seguir `prefers-contrast: more` (decisão: segunda etapa, depois de saber se a WebView repassa a preferência);

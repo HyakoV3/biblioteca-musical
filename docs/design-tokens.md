@@ -53,15 +53,17 @@ Prévias lado a lado (hino fictício, claro em cima e escuro embaixo, na ordem N
 
 ## Modo alto contraste (I-06)
 
-Quarto **Modo**, para baixa visão: **preto sobre amarelo bem claro** (`data-tema="alto-contraste"`). É uma paleta **própria, de um
-bloco só**: não tem versão escura e **ignora o estilo** (em Ajustes, o grupo Estilo fica desativado com uma nota explicando). Vale
-mesmo com o aparelho no escuro. O fundo é `#ffffcc` e os cartões `#ffffe0`; o texto é preto também no "suave"; a borda dos
-controles, o acento, o dourado (`--ouro`, `--ouro-linha`) e o preenchimento da barra de progresso são pretos; o foco é azul
-(`#0000cc`), que não some no contorno preto.
+Quarto **Modo**, para baixa visão: **amarelo vivo sobre preto** (`data-tema="alto-contraste"`), como o Alto contraste do site da Tokai. É uma paleta **própria, de um
+bloco só**: não tem versão clara e ignora o **estilo** (em Ajustes, o grupo Estilo fica desativado com uma nota explicando). Vale
+mesmo com o aparelho no claro. O fundo e os cartões são **pretos** (`#000000`); o texto, os títulos, as bordas dos controles, o acento
+e o dourado são **amarelo vivo** (`#ffff00`, 19,56:1 sobre o preto); o texto "suave" também é amarelo; o botão cheio e a parte que
+toca levam texto **preto** sobre o amarelo; o anel de foco é **branco** (21:1). A divisória e a trilha da barra de progresso usam um
+amarelo-oliva escuro (`#666600`), para a barra se distinguir do amarelo que a enche. Vermelho (`#ff7777`) e verde (`#66ff66`) só
+aparecem em avisos de erro e sucesso, sempre com texto.
 
 Além da cor: o anel de foco passa de 0,1875rem a **0,25rem**, a borda dos botões a **0,125rem**, os links ficam **sempre sublinhados**
-e a trilha da barra de progresso engrossa. Os destaques "dourados" (a sílaba do karaokê, a parte que toca) viram **bloco preto com
-texto amarelo**, e o sublinhado e o contorno que já existiam continuam, então nada depende só de cor.
+e a trilha da barra de progresso engrossa. Os destaques "dourados" (a sílaba do karaokê, a parte que toca) são **bloco amarelo com
+texto preto**, e o sublinhado e o contorno que já existiam continuam, então nada depende só de cor.
 
 **Decisões:** (1) o **Automático não liga o alto contraste sozinho** (`prefers-contrast: more`): não se sabe se a WebView do Android repassa
 essa preferência, e mudar a cor de quem não escolheu seria uma surpresa; fica para uma segunda etapa, depois de testar no aparelho. (2) A
@@ -160,24 +162,24 @@ borda decorativa.
 
 | Par (texto / fundo) | Uso | Meta | Contraste |
 |---|---|---|---|
-| `texto` / `fundo` | Texto principal sobre o fundo | 7.0:1 | 20.43:1 ✓ |
-| `texto` / `superficie` | Texto principal sobre cartões e campos | 7.0:1 | 20.63:1 ✓ |
-| `suave` / `fundo` | Texto secundário sobre o fundo | 7.0:1 | 20.43:1 ✓ |
-| `suave` / `superficie` | Texto secundário sobre cartões e campos | 7.0:1 | 20.63:1 ✓ |
-| `acento` / `fundo` | Links e destaques sobre o fundo | 7.0:1 | 20.43:1 ✓ |
-| `acento` / `superficie` | Links e destaques sobre cartões | 7.0:1 | 20.63:1 ✓ |
-| `acento-texto` / `acento` | Texto do botão principal | 7.0:1 | 20.63:1 ✓ |
-| `perigo` / `fundo` | Texto de ação destrutiva sobre o fundo | 7.0:1 | 9.74:1 ✓ |
-| `perigo` / `superficie` | Texto de ação destrutiva sobre cartões | 7.0:1 | 9.84:1 ✓ |
-| `sucesso` / `superficie` | Ícone de sucesso | 4.5:1 | 8.15:1 ✓ |
-| `borda-controle` / `fundo` | Limite de controles sobre o fundo | 4.5:1 | 20.43:1 ✓ |
-| `borda-controle` / `superficie` | Limite de controles sobre cartões | 4.5:1 | 20.63:1 ✓ |
-| `foco` / `fundo` | Anel de foco sobre o fundo | 4.5:1 | 10.91:1 ✓ |
-| `foco` / `superficie` | Anel de foco sobre cartões | 4.5:1 | 11.02:1 ✓ |
-| `ouro-linha` / `borda` | Preenchimento da barra de progresso sobre a trilha | 4.5:1 | 4.62:1 ✓ |
-| `ouro-linha` / `fundo` | Marca do final e aba selecionada sobre o fundo | 7.0:1 | 20.43:1 ✓ |
-| `ouro-linha` / `superficie` | Marca do final e contorno da parte que toca sobre cartões | 7.0:1 | 20.63:1 ✓ |
-| `ouro-sobre` / `ouro` | Texto da parte que está tocando | 7.0:1 | 20.63:1 ✓ |
+| `texto` / `fundo` | Texto principal sobre o fundo | 7.0:1 | 19.56:1 ✓ |
+| `texto` / `superficie` | Texto principal sobre cartões e campos | 7.0:1 | 19.56:1 ✓ |
+| `suave` / `fundo` | Texto secundário sobre o fundo | 7.0:1 | 19.56:1 ✓ |
+| `suave` / `superficie` | Texto secundário sobre cartões e campos | 7.0:1 | 19.56:1 ✓ |
+| `acento` / `fundo` | Links e destaques sobre o fundo | 7.0:1 | 19.56:1 ✓ |
+| `acento` / `superficie` | Links e destaques sobre cartões | 7.0:1 | 19.56:1 ✓ |
+| `acento-texto` / `acento` | Texto do botão principal | 7.0:1 | 19.56:1 ✓ |
+| `perigo` / `fundo` | Texto de ação destrutiva sobre o fundo | 7.0:1 | 8.16:1 ✓ |
+| `perigo` / `superficie` | Texto de ação destrutiva sobre cartões | 7.0:1 | 8.16:1 ✓ |
+| `sucesso` / `superficie` | Ícone de sucesso | 4.5:1 | 16.06:1 ✓ |
+| `borda-controle` / `fundo` | Limite de controles sobre o fundo | 4.5:1 | 19.56:1 ✓ |
+| `borda-controle` / `superficie` | Limite de controles sobre cartões | 4.5:1 | 19.56:1 ✓ |
+| `foco` / `fundo` | Anel de foco sobre o fundo | 4.5:1 | 21.00:1 ✓ |
+| `foco` / `superficie` | Anel de foco sobre cartões | 4.5:1 | 21.00:1 ✓ |
+| `ouro-linha` / `borda` | Preenchimento da barra de progresso sobre a trilha | 4.5:1 | 5.64:1 ✓ |
+| `ouro-linha` / `fundo` | Marca do final e aba selecionada sobre o fundo | 7.0:1 | 19.56:1 ✓ |
+| `ouro-linha` / `superficie` | Marca do final e contorno da parte que toca sobre cartões | 7.0:1 | 19.56:1 ✓ |
+| `ouro-sobre` / `ouro` | Texto da parte que está tocando | 7.0:1 | 19.56:1 ✓ |
 
 ## O que a medição não cobre
 

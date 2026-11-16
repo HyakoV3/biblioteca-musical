@@ -3,7 +3,7 @@
  * (prefers-color-scheme) ou quando a pessoa escolhe "Escuro" em Ajustes (data-tema="escuro").
  * Os dois blocos escuros precisam ter os mesmos valores.
  *
- * Alto contraste (I-06, data-tema="alto-contraste"): quarto modo de Ajustes, para baixa visão: preto sobre amarelo bem claro.
+ * Alto contraste (I-06, data-tema="alto-contraste"): quarto modo de Ajustes, para baixa visão: amarelo VIVO sobre preto (como o Alto contraste do site da Tokai).
  * É um bloco só, no FIM do arquivo (vence os claros dos estilos pela ordem, que têm a mesma especificidade), e ignora o estilo.
  * Os escuros "do sistema" excluem esse modo com :not(...), senão, com o aparelho no escuro, venceriam o bloco novo (0,3,0 x 0,2,0).
  *
@@ -205,26 +205,28 @@
 }
 
 /* ---------------------------------------------------------------------------------------------------------------- */
-/* Modo "alto contraste" (I-06): preto sobre amarelo bem claro, para baixa visão. Vale em qualquer estilo (que fica de  */
+/* Modo "alto contraste" (I-06): amarelo vivo (#ffff00) sobre preto, para baixa visão. Vale em qualquer estilo (que fica de  */
 /* lado) e em qualquer preferência do sistema. Metas AAA (tools/contraste.py): 7:1 no texto, 4,5:1 nos componentes.     */
-/* Sem tons intermediários: o texto "suave" também é preto, e os destaques "dourados" viram bloco preto com texto       */
-/* amarelo (o sublinhado e o contorno do karaokê e dos botões continuam, então nada depende só de cor).                  */
+/* Sem tons intermediários: o texto "suave" também é amarelo, as bordas são amarelas e o anel de foco é branco; os        */
+/* destaques "dourados" são blocos amarelos com texto preto (o sublinhado e o contorno do karaokê e dos botões continuam).  */
 /* ---------------------------------------------------------------------------------------------------------------- */
 :root[data-tema="alto-contraste"] {
-  color-scheme: light;
+  color-scheme: dark;
 
-  --fundo: #ffffcc;
-  --superficie: #ffffe0;
-  --texto: #000000;
-  --suave: #000000;
-  --borda: #767676;
-  --borda-controle: #000000;
-  --acento: #000000;
-  --acento-texto: #ffffe0;
-  --perigo: #8b0000;
-  --sucesso: #005c00;
-  --foco: #0000cc;
-  --ouro: #000000;
-  --ouro-sobre: #ffffe0;
-  --ouro-linha: #000000;
+  --fundo: #000000;
+  --superficie: #000000;
+  --texto: #ffff00;
+  --suave: #ffff00;
+  /* Divisória decorativa e trilha da barra de progresso: um amarelo-oliva escuro, que se vê sobre o preto (3,5:1) e fica bem
+     distinto do amarelo que enche a barra (5,6:1). */
+  --borda: #666600;
+  --borda-controle: #ffff00;
+  --acento: #ffff00;
+  --acento-texto: #000000;
+  --perigo: #ff7777;
+  --sucesso: #66ff66;
+  --foco: #ffffff;
+  --ouro: #ffff00;
+  --ouro-sobre: #000000;
+  --ouro-linha: #ffff00;
 }

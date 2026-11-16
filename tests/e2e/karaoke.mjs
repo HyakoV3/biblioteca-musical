@@ -427,7 +427,7 @@ async function principal() {
   await enviar("Emulation.setEmulatedMedia", { features: [] });
   confere(cascata.controleEscuro === "#10151d", `controle: com o aparelho no escuro e sem o modo, vale o escuro normal: ${cascata.controleEscuro}`);
   for (const estilo of ["normal", "pergaminho", "marinho"]) {
-    confere(cascata[estilo] === "#ffffcc #000000 #000000", `alto contraste vence o escuro do sistema no estilo ${estilo}: ${cascata[estilo]}`);
+    confere(cascata[estilo] === "#000000 #ffff00 #ffff00", `alto contraste vence o escuro do sistema no estilo ${estilo}: ${cascata[estilo]}`);
   }
   await av("clearInterval(window.__iv); 1");
   const am = await av("window.__am");
