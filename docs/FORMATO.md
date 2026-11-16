@@ -132,8 +132,10 @@ estrofe, a linha e a sílaba que está soando. O conversor `mscx2json` gera o ca
   trecho está na régua das notas daquela passada** (batidas, começando em 0, como `vozes` e `final.vozes`): o conversor
   já tira da passada do final o que ela não toca (a 1ª casa) e cola o resto sem buracos.
 - `estrofe` é o número como aparece na letra ("1." é 1). A vez N acende a estrofe N. Num hino com final, o texto do
-  trecho final costuma estar escrito sob uma estrofe só; depois da última sílaba da estrofe da vez, o destaque passa a
-  esse texto, onde ele está na letra.
+  trecho final (o coro, cantado só na última vez) costuma estar escrito pelo autor sob a estrofe 1. O conversor o **passa
+  para a última estrofe**, como no hinário impresso, onde o coro vem depois dela (só quando esse texto está todo sob uma
+  única estrofe; com mais de uma, ele fica como o autor escreveu). Se o texto do final continuar sob outra estrofe, depois da
+  última sílaba da estrofe da vez o destaque passa a ele, onde ele está na letra.
 - `linhas[i]` é a i-ésima linha da estrofe na `letra` (sem o "N. " do começo). Cada trecho é
   `[inicio_em_batidas, de, ate]`: o pedaço `de..ate` da linha começa a ser cantado em `inicio`. As posições contam
   **unidades UTF-16**, como o JavaScript indexa o texto. Uma linha sem trecho naquela passada é uma lista vazia, para o
