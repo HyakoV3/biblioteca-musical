@@ -313,10 +313,22 @@ fn preparar(
                 Variante::Paisagem => format!("(paisagem) {motivo}"),
             },
         };
+        // A paisagem de um hino cujo retrato veio no zip e NÃO entrou (o hinário não tem o hino, ou o retrato foi recusado por outro motivo)
+        // é pulada em silêncio: o retrato já deixou o hino nas recusadas, com o motivo verdadeiro. Contá-lo duas vezes aparece na tela como
+        // "hinos 77, 77".
+        if variante == Variante::Paisagem
+            && !aceitas.contains(&n)
+            && svgs
+                .iter()
+                .any(|&(m, v, _)| m == n && v == Variante::Retrato)
+        {
+            continue;
+        }
         if !hinos.contains(&n) {
             recusadas.push(recusa("o hinário não tem esse hino".into()));
             continue;
         }
+        // Chegou aqui uma paisagem SEM retrato no zip: recusada, e uma vez só.
         if variante == Variante::Paisagem && !aceitas.contains(&n) {
             recusadas.push(recusa("falta a versão de retrato deste hino".into()));
             continue;
@@ -1077,7 +1089,54 @@ mod testes {
         ]);
         let r = importar_zip(&d, &z).unwrap();
         assert_eq!(r.pacote.partituras, vec![1]);
-        assert_eq!(r.recusadas.len(), 2);
+        // o hino 77 aparece UMA vez (pelo retrato); a paisagem dele é pulada, não contada de novo
+        assert_eq!(r.recusadas.len(), 1);
+        assert_eq!(r.recusadas[0].numero, 77);
+        assert_eq!(r.recusadas[0].motivo, "o hinário não tem esse hino");
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn so_a_paisagem_de_hino_que_o_hinario_nao_tem_e_recusada_uma_vez() {
+        let d = dir_com_hinario("so_paisagem_sem_hino");
+        let z = zip_de(&[
+            ("partituras/hino-1.svg", SVG),
+            ("partituras/hino-77-paisagem.svg", SVG),
+        ]);
+        let r = importar_zip(&d, &z).unwrap();
+        assert_eq!(r.pacote.partituras, vec![1]);
+        assert_eq!(r.recusadas.len(), 1, "{:?}", r.recusadas);
+        assert_eq!(r.recusadas[0].numero, 77);
+        assert_eq!(
+            r.recusadas[0].motivo,
+            "(paisagem) o hinário não tem esse hino"
+        );
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn retrato_recusado_nao_gera_uma_segunda_recusa_pela_paisagem() {
+        // o retrato do hino 1 não passa na limpeza: uma recusa, com o motivo verdadeiro (e não "falta a versão de retrato")
+        let d = dir_com_hinario("retrato_ruim");
+        let z = zip_de(&[
+            (
+                "partituras/hino-1.svg",
+                r#"<svg xmlns="http://www.w3.org/2000/svg"><script>x</script></svg>"#,
+            ),
+            ("partituras/hino-1-paisagem.svg", SVG_LARGO),
+            ("partituras/hino-283.svg", SVG),
+        ]);
+        let r = importar_zip(&d, &z).unwrap();
+        assert_eq!(r.pacote.partituras, vec![283]);
+        assert_eq!(r.recusadas.len(), 1, "{:?}", r.recusadas);
+        assert_eq!(r.recusadas[0].numero, 1);
+        assert!(
+            r.recusadas[0].motivo.contains("<script>")
+                && !r.recusadas[0].motivo.contains("paisagem"),
+            "{:?}",
+            r.recusadas
+        );
+        assert!(!d.join("partituras/hino-1-paisagem.svg").exists());
         std::fs::remove_dir_all(&d).ok();
     }
 

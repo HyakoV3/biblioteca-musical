@@ -322,6 +322,47 @@ class GerarHino(unittest.TestCase):
         self.assertEqual(self.arquivos["hino-5.svg"], "<svg w=700>é</svg>".encode())
         self.assertEqual(self.arquivos["hino-5-paisagem.svg"], "<svg w=1200>é</svg>".encode())
 
+    def roda_sobre(self, tk, antigos, versoes):
+        """Como `roda`, mas a pasta de saída já tem arquivos de uma rodada anterior (nome -> bytes). Devolve o que ficou nela."""
+        with tempfile.TemporaryDirectory() as t:
+            trabalho, saida = Path(t) / "trab", Path(t) / "out"
+            trabalho.mkdir()
+            saida.mkdir()
+            for nome, dados in antigos.items():
+                (saida / nome).write_bytes(dados)
+
+            def run(cmd, **k):
+                Path(cmd[cmd.index("-o") + 1]).write_bytes(b"<score/>")
+                return subprocess.CompletedProcess(cmd, 0, "", "")
+
+            self.erro = None
+            try:
+                with mock.patch.object(g.subprocess, "run", run):
+                    g.gerar_hino(tk, ["mscore"], 5, Path("hino-5.mscx"), trabalho, saida, 40, versoes, 5)
+            except g.ErroHino as e:
+                self.erro = e
+            return {p.name: p.read_bytes() for p in saida.iterdir()}
+
+    def test_so_retrato_apaga_a_paisagem_e_o_timemap_dela_de_uma_rodada_anterior(self):
+        antigos = {"hino-5.svg": b"v", "hino-5.timemap.json": b"v", "hino-5-paisagem.svg": b"velha", "hino-5-paisagem.timemap.json": b"velho",
+                   "hino-6-paisagem.svg": b"de outro hino", "leia-me.txt": b"x"}
+        ficou = self.roda_sobre(FalsoToolkit(), antigos, [("", 700)])
+        self.assertEqual(sorted(ficou), ["hino-5.svg", "hino-5.timemap.json", "hino-6-paisagem.svg", "leia-me.txt"])
+        self.assertEqual(ficou["hino-5.svg"], "<svg w=700>é</svg>".encode(), "o retrato é o novo")
+        self.assertEqual(ficou["hino-6-paisagem.svg"], b"de outro hino", "só mexe nos arquivos do hino que está gerando")
+
+    def test_com_as_duas_versoes_nada_e_apagado_alem_do_que_e_regravado(self):
+        antigos = {"hino-5.svg": b"v", "hino-5-paisagem.svg": b"v", "hino-6.svg": b"outro"}
+        ficou = self.roda_sobre(FalsoToolkit(), antigos, [("", 700), ("-paisagem", 1200)])
+        self.assertEqual(sorted(ficou), ["hino-5-paisagem.svg", "hino-5-paisagem.timemap.json", "hino-5.svg", "hino-5.timemap.json", "hino-6.svg"])
+        self.assertEqual(ficou["hino-5-paisagem.svg"], "<svg w=1200>é</svg>".encode())
+
+    def test_se_o_desenho_falha_a_rodada_anterior_fica_como_estava(self):
+        antigos = {"hino-5.svg": b"v", "hino-5-paisagem.svg": b"velha", "hino-5-paisagem.timemap.json": b"velho"}
+        ficou = self.roda_sobre(FalsoToolkit(le=False), antigos, [("", 700)])
+        self.assertIsNotNone(self.erro, "o desenho falhou")
+        self.assertEqual(ficou, antigos, "uma rodada que falha não apaga nada (a paisagem antiga só sai quando o retrato novo foi gravado)")
+
     def test_so_retrato_nao_gera_a_paisagem(self):
         tk = FalsoToolkit()
         medidas, arquivos = self.roda(tk, versoes=[("", 700)])

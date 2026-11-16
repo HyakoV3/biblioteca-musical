@@ -141,7 +141,10 @@ def mscx_para_musicxml(musescore: list, mscx: Path, destino: Path, tempo: int = 
 
 
 def gravar(saida: Path, arquivos: dict):
-    """Grava os arquivos (nome -> bytes) por arquivo temporário + troca, para não sobrar um sem os outros se algo falhar no meio."""
+    """Grava os arquivos (nome -> bytes) por arquivo temporário + troca. Se algo falhar ENQUANTO se escrevem os temporários (disco cheio, por
+    exemplo), nenhum destino é tocado e nenhum temporário sobra. A troca em si (`replace`, um arquivo por vez, na mesma pasta) não é atômica
+    para o conjunto: se uma troca falhar no meio, os anteriores já valem. O hino é então dado como falho (código de saída 1) e basta rodar de
+    novo, que ele é gravado inteiro."""
     temporarios = [((saida / nome).with_name(nome + ".tmp"), saida / nome, dados) for nome, dados in arquivos.items()]
     try:
         for tmp, _, dados in temporarios:
@@ -163,7 +166,9 @@ def versoes(largura: int, largura_paisagem: int | None):
 
 def gerar_hino(tk, musescore: list, n: int, mscx: Path, trabalho: Path, saida: Path, escala: int, versoes_: list, tempo: int = TEMPO_LIMITE):
     """Gera os arquivos de um hino (todas as versões). Devolve, por versão, (bytes do SVG, bytes comprimidos, bytes do timemap), ou levanta
-    ErroHino. Nada é gravado se alguma versão falhar: o hino sai inteiro ou não sai."""
+    ErroHino. Nada é gravado se alguma versão falhar em ser DESENHADA (o MuseScore ou o Verovio falhando): o hino sai inteiro ou não sai. As
+    versões que NESTA rodada não foram pedidas (`--so-retrato`) são apagadas da pasta de saída, para não sobrar uma paisagem de uma rodada
+    anterior ao lado de um retrato novo."""
     xml = trabalho / f"hino-{n}.musicxml"
     motivo = mscx_para_musicxml(musescore, mscx, xml, tempo)
     if motivo:
@@ -184,6 +189,11 @@ def gerar_hino(tk, musescore: list, n: int, mscx: Path, trabalho: Path, saida: P
             arquivos[f"hino-{n}{sufixo}.timemap.json"] = tempo_json
             medidas.append((len(svg), len(gzip.compress(svg, 9)), len(tempo_json)))
         gravar(saida, arquivos)
+        # A versão não pedida nesta rodada não pode sobrar de uma rodada anterior: o montador de pacote empacotaria a paisagem velha ao lado
+        # do retrato novo, e o app mostraria desenhos diferentes ao girar o aparelho.
+        for sufixo in {"", SUFIXO_PAISAGEM} - {s for s, _ in versoes_}:
+            for extensao in (".svg", ".timemap.json"):
+                (saida / f"hino-{n}{sufixo}{extensao}").unlink(missing_ok=True)
     except (OSError, UnicodeError) as e:
         raise ErroHino(f"{type(e).__name__}: {e}") from e
     return medidas
