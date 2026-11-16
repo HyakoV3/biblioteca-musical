@@ -43,7 +43,8 @@ próprio faz a conversão na sua máquina e importa o arquivo em Ajustes.
 
 [`docs/roadmap-fase-2.md`](docs/roadmap-fase-2.md) (fase atual), [`docs/roadmap-uxui-inicial.md`](docs/roadmap-uxui-inicial.md)
 (fase 1, concluída), [`docs/roadmap-pendencias.md`](docs/roadmap-pendencias.md) (publicação, CI/CD, revisão e testes)
-e ideias futuras em [`docs/roadmap-ideas.md`](docs/roadmap-ideas.md).
+e ideias futuras em [`docs/roadmap-ideas.md`](docs/roadmap-ideas.md) (as já implementadas, em
+[`docs/archive/roadmap-implementadas.md`](docs/archive/roadmap-implementadas.md)).
 
 ## Desenvolvimento
 

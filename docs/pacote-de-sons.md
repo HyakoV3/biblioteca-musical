@@ -2,7 +2,7 @@
 
 Os sons gravados são **opcionais**: a síntese continua sendo o som padrão (leve, funciona offline desde o primeiro uso) e
 cada instrumento gravado é baixado só se a pessoa quiser. Decisão do responsável em 2026-11-14 (ver I-07 em
-`roadmap-ideas.md`). Banco de sons: **GeneralUser GS** desde 2026-11-15 (antes FluidR3_GM), ver `docs/licencas-de-terceiros.md`.
+`archive/ideias-implementadas.md`). Banco de sons: **GeneralUser GS** desde 2026-11-15 (antes FluidR3_GM), ver `docs/licencas-de-terceiros.md`.
 
 ## Divisão
 
