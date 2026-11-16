@@ -379,15 +379,120 @@ fn dividir_em_vozes(camadas: Vec<Vec<Acorde>>, limite: Option<usize>) -> (Vec<Ve
     (saida, omitidos)
 }
 
+/// Palavras que levam inicial maiúscula por reverência (nomes divinos e pronomes de tratamento), e não por começarem um verso.
+const REVERENCIAIS: &[&str] = &[
+    "Jesus",
+    "Deus",
+    "Senhor",
+    "Cristo",
+    "Salvador",
+    "Rei",
+    "Pai",
+    "Mestre",
+    "Redentor",
+    "Espírito",
+    "Santo",
+    "Cordeiro",
+    "Messias",
+    "Ele",
+    "Ti",
+    "Te",
+    "Teu",
+    "Teus",
+    "Tua",
+    "Tuas",
+    "Tu",
+    "Lhe",
+    "Lhes",
+    "Seu",
+    "Seus",
+    "Sua",
+    "Suas",
+    "Vós",
+];
+
+/// As letras da primeira palavra do texto (sem aspas, parênteses ou números na frente).
+fn primeira_palavra(texto: &str) -> String {
+    texto
+        .chars()
+        .skip_while(|c| !c.is_alphabetic())
+        .take_while(|c| c.is_alphabetic())
+        .collect()
+}
+
+/// A palavra que começa na sílaba `i`: ela mais as seguintes da mesma estrofe enquanto a palavra continua ("Je" + "sus").
+fn palavra_a_partir(silabas: &[Silaba], i: usize) -> String {
+    let mut palavra = silabas[i].texto.clone();
+    let mut atual = i;
+    while silabas[atual].continua {
+        let (verso, t) = (silabas[i].verso, silabas[atual].t);
+        match silabas[atual + 1..]
+            .iter()
+            .position(|x| x.verso == verso && x.t > t + 1e-6)
+        {
+            Some(d) => {
+                atual += 1 + d;
+                palavra.push_str(&silabas[atual].texto);
+            }
+            None => break,
+        }
+    }
+    palavra
+}
+
+fn termina_com_pontuacao(linha: &str) -> bool {
+    linha
+        .trim_end()
+        .chars()
+        .last()
+        .is_some_and(|c| ".;!?:,".contains(c))
+}
+
+/// Uma respiração, vista antes da palavra `palavra`, é fim de verso? No hinário impresso a linha acompanha o VERSO do poema, e a
+/// partitura respira também no MEIO do verso (entre duas frases musicais): "Alfa beta | Jesus gama;" é uma linha só (exemplo fictício).
+/// A pista está no texto: o verso novo começa em maiúscula, e a continuação do verso, em minúscula. Exceção: nome reverencial
+/// ("Jesus", "Senhor", "Te"...) é maiúsculo em qualquer lugar, então só começa verso se o trecho anterior terminou em pontuação.
+fn comeca_verso(palavra: &str, linha_anterior: &str) -> bool {
+    let p = primeira_palavra(palavra);
+    if !p.chars().next().is_some_and(char::is_uppercase) {
+        return false;
+    }
+    !(REVERENCIAIS.contains(&p.as_str()) && !termina_com_pontuacao(linha_anterior))
+}
+
 /// Monta a letra a partir das sílabas, **ordenadas pelo tempo da nota** (e não pela ordem no
 /// arquivo, onde as camadas de uma pauta vêm uma depois da outra). Cada estrofe (`<no>`,
-/// 0 = primeira) vira uma sequência de linhas, com quebra a cada respiração. Estrofes são
-/// separadas por uma linha vazia e a primeira linha de cada uma leva "N. ". Se duas camadas
-/// trazem sílaba para o mesmo instante e estrofe, vale a da voz mais alta (menor número).
+/// 0 = primeira) vira uma sequência de linhas, com quebra nas respirações que terminam um VERSO
+/// (ver `comeca_verso`). Se a estrofe não tem pelo menos duas respirações seguidas de maiúscula
+/// (o autor escreveu tudo em minúscula), não há como distinguir e vale a quebra a cada respiração.
+/// Estrofes são separadas por uma linha vazia e a primeira linha de cada uma leva "N. ". Se duas
+/// camadas trazem sílaba para o mesmo instante e estrofe, vale a da voz mais alta (menor número).
 fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<String>, Vec<Marca>) {
     const EPS: f64 = 1e-6;
     silabas.sort_by(|a, b| a.t.total_cmp(&b.t).then(a.voz.cmp(&b.voz)));
     respiracoes.sort_by(|a, b| a.total_cmp(b));
+
+    // Pré-passo: a palavra que cada sílaba abre e, por estrofe, quantas respirações são seguidas de maiúscula. Só com duas ou
+    // mais a maiúscula vale como pista de começo de verso.
+    let palavras: Vec<String> = (0..silabas.len())
+        .map(|i| palavra_a_partir(&silabas, i))
+        .collect();
+    let mut vistas: BTreeMap<u32, usize> = BTreeMap::new();
+    let mut maiusculas: BTreeMap<u32, usize> = BTreeMap::new();
+    for (i, sil) in silabas.iter().enumerate() {
+        let quebras = respiracoes.iter().filter(|&&r| r <= sil.t + EPS).count();
+        let vista = vistas.entry(sil.verso).or_insert(0);
+        if quebras > *vista {
+            *vista = quebras;
+            if primeira_palavra(&palavras[i])
+                .chars()
+                .next()
+                .is_some_and(char::is_uppercase)
+            {
+                *maiusculas.entry(sil.verso).or_insert(0) += 1;
+            }
+        }
+    }
 
     struct Estrofe {
         linhas: Vec<String>,
@@ -400,7 +505,7 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<Str
     let mut estrofes: BTreeMap<u32, Estrofe> = BTreeMap::new();
     let mut marcas: Vec<Marca> = vec![];
 
-    for sil in silabas {
+    for (i, sil) in silabas.into_iter().enumerate() {
         let e = estrofes.entry(sil.verso).or_insert_with(|| Estrofe {
             linhas: vec![String::new()],
             espaco: false,
@@ -433,7 +538,10 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<Str
         let quebras = respiracoes.iter().filter(|&&r| r <= sil.t + EPS).count();
         if quebras > e.quebra_vista {
             e.quebra_vista = quebras;
-            if !e.linhas.last().is_some_and(|l| l.is_empty()) {
+            let regra_do_verso = maiusculas.get(&sil.verso).copied().unwrap_or(0) >= 2;
+            let anterior = e.linhas.last().map(String::as_str).unwrap_or("");
+            let quebrar = !regra_do_verso || comeca_verso(&palavras[i], anterior);
+            if quebrar && !e.linhas.last().is_some_and(|l| l.is_empty()) {
                 e.linhas.push(String::new());
                 e.espaco = false;
             }
@@ -1439,6 +1547,145 @@ mod testes {
         );
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&c, ""))), 1).unwrap();
         assert_eq!(h.letra, vec!["1. a b c"]);
+    }
+
+    // --- Quebra de linha por VERSO (a partitura respira também no meio do verso). Tudo com texto fictício. ---
+
+    fn silaba_de(t: f64, texto: &str, continua: bool) -> Silaba {
+        Silaba {
+            t,
+            voz: 0,
+            verso: 0,
+            continua,
+            texto: texto.to_string(),
+        }
+    }
+
+    /// Sílabas de uma estrofe, de 1 em 1 batida, e as respirações logo antes das palavras de índice `antes` (em batidas - 0,5).
+    fn estrofe_com_respiracoes(palavras: &[&str], antes: &[usize]) -> (Vec<Silaba>, Vec<f64>) {
+        let silabas = palavras
+            .iter()
+            .enumerate()
+            .map(|(i, w)| silaba_de(i as f64, w, false))
+            .collect();
+        (silabas, antes.iter().map(|&i| i as f64 - 0.5).collect())
+    }
+
+    #[test]
+    fn respiracao_no_meio_do_verso_nao_quebra_a_linha() {
+        // "Alfa beta | gama delta;" é um verso só; "Épsilon zeta | eta teta." é outro. As respirações antes de "gama" e de "eta"
+        // seguem minúscula (continuam o verso); a antes de "Épsilon" e a antes de "Iota" seguem maiúscula (verso novo).
+        let (silabas, respiracoes) = estrofe_com_respiracoes(
+            &[
+                "Alfa", "beta", "gama", "delta;", "Épsilon", "zeta", "eta", "teta.", "Iota", "kapa",
+            ],
+            &[2, 4, 6, 8],
+        );
+        let (letra, _) = montar_letra(silabas, respiracoes);
+        assert_eq!(
+            letra,
+            vec![
+                "1. Alfa beta gama delta;",
+                "Épsilon zeta eta teta.",
+                "Iota kapa"
+            ]
+        );
+    }
+
+    #[test]
+    fn nome_reverencial_sem_pontuacao_antes_continua_o_verso() {
+        // "Alfa beta | Jesus gama;": "Jesus" é maiúsculo por reverência, e o trecho anterior não tem pontuação.
+        let (silabas, respiracoes) = estrofe_com_respiracoes(
+            &[
+                "Alfa", "beta;", "Gama", "delta", "Jesus", "eta;", "Teta", "iota.",
+            ],
+            &[2, 4, 6],
+        );
+        let (letra, _) = montar_letra(silabas, respiracoes);
+        assert_eq!(
+            letra,
+            vec!["1. Alfa beta;", "Gama delta Jesus eta;", "Teta iota."]
+        );
+    }
+
+    #[test]
+    fn nome_reverencial_depois_de_pontuacao_comeca_verso() {
+        // "Alfa beta, | Rei gama,": o trecho anterior termina em vírgula, então "Rei" abre um verso novo.
+        let (silabas, respiracoes) =
+            estrofe_com_respiracoes(&["Alfa", "beta,", "Rei", "gama,", "Delta", "eta."], &[2, 4]);
+        let (letra, _) = montar_letra(silabas, respiracoes);
+        assert_eq!(letra, vec!["1. Alfa beta,", "Rei gama,", "Delta eta."]);
+    }
+
+    #[test]
+    fn palavra_reverencial_em_varias_silabas_tambem_vale() {
+        // "Je" + "sus": a palavra inteira é que decide, não a primeira sílaba.
+        let silabas = vec![
+            silaba_de(0.0, "Alfa", false),
+            silaba_de(1.0, "beta", false),
+            silaba_de(2.0, "Gama", false),
+            silaba_de(3.0, "delta", false),
+            silaba_de(4.0, "Je", true),
+            silaba_de(5.0, "sus", false),
+            silaba_de(6.0, "eta;", false),
+            silaba_de(7.0, "Teta", false),
+            silaba_de(8.0, "iota.", false),
+        ];
+        let (letra, _) = montar_letra(silabas, vec![1.5, 3.5, 6.5]);
+        assert_eq!(
+            letra,
+            vec!["1. Alfa beta", "Gama delta Jesus eta;", "Teta iota."]
+        );
+    }
+
+    #[test]
+    fn sem_maiuscula_depois_das_respiracoes_vale_a_quebra_em_toda_respiracao() {
+        // O autor escreveu tudo em minúscula: não há pista, e fica o comportamento de sempre.
+        let (silabas, respiracoes) =
+            estrofe_com_respiracoes(&["alfa", "beta", "gama", "delta", "eta", "teta"], &[2, 4]);
+        let (letra, _) = montar_letra(silabas, respiracoes);
+        assert_eq!(letra, vec!["1. alfa beta", "gama delta", "eta teta"]);
+    }
+
+    #[test]
+    fn uma_unica_maiuscula_nao_basta_para_ligar_a_regra() {
+        let (silabas, respiracoes) =
+            estrofe_com_respiracoes(&["alfa", "beta", "Gama", "delta", "eta", "teta"], &[2, 4]);
+        let (letra, _) = montar_letra(silabas, respiracoes);
+        assert_eq!(letra, vec!["1. alfa beta", "Gama delta", "eta teta"]);
+    }
+
+    #[test]
+    fn as_marcas_do_karaoke_continuam_batendo_com_o_texto_da_linha() {
+        // A sincronia aponta para posições dentro da linha pronta: se uma respiração deixa de quebrar, as posições seguem certas.
+        let (silabas, respiracoes) = estrofe_com_respiracoes(
+            &[
+                "Alfa", "beta", "gama", "delta;", "Épsilon", "zeta", "eta", "teta.", "Iota", "kapa",
+            ],
+            &[2, 4, 6, 8],
+        );
+        let textos: Vec<String> = silabas.iter().map(|x| x.texto.clone()).collect();
+        let (letra, marcas) = montar_letra(silabas, respiracoes);
+        let linhas: Vec<String> = letra
+            .iter()
+            .enumerate()
+            .map(|(i, l)| {
+                if i == 0 {
+                    l.trim_start_matches("1. ").to_string()
+                } else {
+                    l.clone()
+                }
+            })
+            .collect();
+        assert_eq!(marcas.len(), textos.len());
+        for (m, esperado) in marcas.iter().zip(&textos) {
+            let utf16: Vec<u16> = linhas[m.linha].encode_utf16().collect();
+            assert_eq!(
+                &String::from_utf16(&utf16[m.de..m.ate]).unwrap(),
+                esperado,
+                "marca {m:?}"
+            );
+        }
     }
 
     #[test]
