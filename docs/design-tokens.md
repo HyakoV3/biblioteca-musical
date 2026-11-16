@@ -2,8 +2,8 @@
 
 O app tem duas escolhas de aparência, em **Ajustes → Aparência**, que se combinam:
 
-- **Modo:** **Automático** (padrão, segue o sistema com `prefers-color-scheme`), **Claro** ou **Escuro**
-  (forçam o tema, ignorando o sistema; `data-tema` no `<html>`).
+- **Modo:** **Automático** (padrão, segue o sistema com `prefers-color-scheme`), **Claro**, **Escuro**
+  (forçam o tema, ignorando o sistema; `data-tema` no `<html>`) ou **Alto contraste** (I-06, para baixa visão; veja abaixo).
 - **Estilo de cor:** **Normal** (o visual de sempre), **Pergaminho** (I-02) ou **Marinho e ouro** (I-14)
   (`data-estilo` no `<html>`; o normal não leva atributo). Cada estilo tem versão clara e escura, então o
   Automático continua funcionando em todos: são **6 paletas**.
@@ -51,12 +51,37 @@ original (`--borda-controle`, `--ouro-linha`), porque o sand e as bordas claras 
 Prévias lado a lado (hino fictício, claro em cima e escuro embaixo, na ordem Normal, Pergaminho e Marinho e ouro):
 [aba Ouvir](../design/identidade/previa-estilos-ouvir.png) e [aba Letra tocando](../design/identidade/previa-estilos-letra.png).
 
+## Modo alto contraste (I-06)
+
+Quarto **Modo**, para baixa visão: **preto sobre amarelo bem claro** (`data-tema="alto-contraste"`). É uma paleta **própria, de um
+bloco só**: não tem versão escura e **ignora o estilo** (em Ajustes, o grupo Estilo fica desativado com uma nota explicando). Vale
+mesmo com o aparelho no escuro. O fundo é `#ffffcc` e os cartões `#ffffe0`; o texto é preto também no "suave"; a borda dos
+controles, o acento, o dourado (`--ouro`, `--ouro-linha`) e o preenchimento da barra de progresso são pretos; o foco é azul
+(`#0000cc`), que não some no contorno preto.
+
+Além da cor: o anel de foco passa de 0,1875rem a **0,25rem**, a borda dos botões a **0,125rem**, os links ficam **sempre sublinhados**
+e a trilha da barra de progresso engrossa. Os destaques "dourados" (a sílaba do karaokê, a parte que toca) viram **bloco preto com
+texto amarelo**, e o sublinhado e o contorno que já existiam continuam, então nada depende só de cor.
+
+**Decisões:** (1) o **Automático não liga o alto contraste sozinho** (`prefers-contrast: more`): não se sabe se a WebView do Android repassa
+essa preferência, e mudar a cor de quem não escolheu seria uma surpresa; fica para uma segunda etapa, depois de testar no aparelho. (2) A
+**versão invertida** (amarelo sobre preto) ficou de fora por ora. (3) A cor foi escolhida pelo contraste medido; **falta a revisão de quem
+tem baixa visão**.
+
+Prévias (hino fictício, celular em pé): [aba Ouvir](../design/identidade/previa-alto-contraste-ouvir.png) e
+[aba Letra tocando](../design/identidade/previa-alto-contraste-letra.png), com o karaokê aceso e o miniplayer.
+
+Cuidado de CSS: o escuro "do sistema" de cada estilo tem seletor mais específico que o bloco do modo; por isso os três usam
+`:not([data-tema="claro"], [data-tema="alto-contraste"])`, e o bloco do modo fica no **fim** do `tema.css`. O teste de ponta a ponta
+(`tests/e2e/karaoke.mjs`) confere isso num Chrome emulado no escuro, nos três estilos.
+
 ## Contraste verificado
 
 Rode `python3 tools/contraste.py` depois de mexer em qualquer cor. Ele lê os tokens do `tema.css`, mede cada par
 usado **nos três estilos, claros e escuros**, falha (código de saída 1) se algum ficar abaixo da meta e confere que
 os dois blocos do escuro de cada estilo têm os mesmos valores. Metas: **4,5:1** para texto e **3:1** para componentes
-e ícones (WCAG 2.2, critérios 1.4.3 e 1.4.11). O CI roda esta verificação.
+e ícones (WCAG 2.2, critérios 1.4.3 e 1.4.11). O **modo alto contraste** tem metas mais rígidas, **AAA** (7:1 no texto e 4,5:1 nos
+componentes; critério 1.4.6). O CI roda esta verificação.
 
 #### Estilo `normal`
 
@@ -130,6 +155,29 @@ e ícones (WCAG 2.2, critérios 1.4.3 e 1.4.11). O CI roda esta verificação.
 A paleta de partida sugerida no início do redesenho tinha **bordas que reprovavam** como limite de
 componente (1,27:1 no claro e 1,59:1 no escuro). Por isso existe o token `--borda-controle`, separado da
 borda decorativa.
+
+#### Modo `alto-contraste` (metas AAA)
+
+| Par (texto / fundo) | Uso | Meta | Contraste |
+|---|---|---|---|
+| `texto` / `fundo` | Texto principal sobre o fundo | 7.0:1 | 20.43:1 ✓ |
+| `texto` / `superficie` | Texto principal sobre cartões e campos | 7.0:1 | 20.63:1 ✓ |
+| `suave` / `fundo` | Texto secundário sobre o fundo | 7.0:1 | 20.43:1 ✓ |
+| `suave` / `superficie` | Texto secundário sobre cartões e campos | 7.0:1 | 20.63:1 ✓ |
+| `acento` / `fundo` | Links e destaques sobre o fundo | 7.0:1 | 20.43:1 ✓ |
+| `acento` / `superficie` | Links e destaques sobre cartões | 7.0:1 | 20.63:1 ✓ |
+| `acento-texto` / `acento` | Texto do botão principal | 7.0:1 | 20.63:1 ✓ |
+| `perigo` / `fundo` | Texto de ação destrutiva sobre o fundo | 7.0:1 | 9.74:1 ✓ |
+| `perigo` / `superficie` | Texto de ação destrutiva sobre cartões | 7.0:1 | 9.84:1 ✓ |
+| `sucesso` / `superficie` | Ícone de sucesso | 4.5:1 | 8.15:1 ✓ |
+| `borda-controle` / `fundo` | Limite de controles sobre o fundo | 4.5:1 | 20.43:1 ✓ |
+| `borda-controle` / `superficie` | Limite de controles sobre cartões | 4.5:1 | 20.63:1 ✓ |
+| `foco` / `fundo` | Anel de foco sobre o fundo | 4.5:1 | 10.91:1 ✓ |
+| `foco` / `superficie` | Anel de foco sobre cartões | 4.5:1 | 11.02:1 ✓ |
+| `ouro-linha` / `borda` | Preenchimento da barra de progresso sobre a trilha | 4.5:1 | 4.62:1 ✓ |
+| `ouro-linha` / `fundo` | Marca do final e aba selecionada sobre o fundo | 7.0:1 | 20.43:1 ✓ |
+| `ouro-linha` / `superficie` | Marca do final e contorno da parte que toca sobre cartões | 7.0:1 | 20.63:1 ✓ |
+| `ouro-sobre` / `ouro` | Texto da parte que está tocando | 7.0:1 | 20.63:1 ✓ |
 
 ## O que a medição não cobre
 

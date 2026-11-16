@@ -7,6 +7,9 @@ Uso:  python3 tools/contraste.py            # imprime a tabela e falha (exit 1) 
 Lê os tokens do próprio CSS, um conjunto por estilo (normal, pergaminho, marinho; ver data-estilo). Em cada estilo há
 o tema claro (um bloco) e o escuro (dois blocos, que precisam ser idênticos: o de @media (prefers-color-scheme: dark)
 e o de [data-tema="escuro"]).
+
+O modo "alto contraste" (I-06, :root[data-tema="alto-contraste"]) é uma paleta à parte, de um bloco só, que vale em
+qualquer estilo. Ele é conferido com metas AAA (7:1 no texto e 4,5:1 nos componentes), mais rígidas que as do resto.
 """
 import re
 import sys
@@ -49,13 +52,19 @@ def razao(a, b):
     return (la + 0.05) / (lb + 0.05)
 
 
+def meta_alto_contraste(minimo):
+    """Meta do modo alto contraste (AAA): 7:1 onde o normal pede 4,5:1 (texto) e 4,5:1 onde pede 3:1 (componentes)."""
+    return 7.0 if minimo >= 4.5 else 4.5
+
+
 def ler_tokens(texto):
-    """Devolve {estilo: {"claro": {...}, "escuro": [{...}, {...}]}} percorrendo os blocos do CSS.
+    """Devolve ({estilo: {"claro": {...}, "escuro": [{...}, {...}]}}, {tokens do alto contraste}) percorrendo o CSS.
 
     O estilo vem de [data-estilo="x"] no seletor (sem ele, é o "normal"). O escuro de cada estilo tem dois blocos que
     precisam ser idênticos: um em @media (prefers-color-scheme: dark) e outro em [data-tema="escuro"]."""
     texto = re.sub(r"/\*.*?\*/", "", texto, flags=re.S)
     estilos = {}
+    alto = {}
     pilha = []  # seletores abertos
     for m in re.finditer(r"([^{};]*)\{|\}", texto):
         if m.group(0) == "}":
@@ -71,18 +80,23 @@ def ler_tokens(texto):
         if not tokens:
             continue
         contexto = " ".join(pilha)
+        # O bloco do alto contraste é UM bloco próprio. Os escuros "do sistema" só o citam dentro de :not(...), e esses
+        # ficam em @media, então o que o identifica é o seletor ser exatamente :root[data-tema="alto-contraste"].
+        if re.fullmatch(r':root\[data-tema="alto-contraste"\]', pilha[-1]):
+            alto.update(tokens)
+            continue
         achado = re.search(r'data-estilo="([\w-]+)"', contexto)
         estilo = estilos.setdefault(achado.group(1) if achado else "normal", {"claro": {}, "escuro": []})
         if "prefers-color-scheme: dark" in contexto or 'data-tema="escuro"' in contexto:
             estilo["escuro"].append(tokens)
         else:
             estilo["claro"].update(tokens)
-    return estilos
+    return estilos, alto
 
 
 def main():
     markdown = "--markdown" in sys.argv
-    estilos = ler_tokens(CSS.read_text(encoding="utf-8"))
+    estilos, alto = ler_tokens(CSS.read_text(encoding="utf-8"))
     falhas = 0
 
     if "normal" not in estilos:
@@ -137,6 +151,30 @@ def main():
                     f"{n}: {'sem token' if r is None else f'{r:5.2f}:1 ' + ('ok' if ok else 'FALHA')}" for n, r, ok in linha
                 )
                 print(f"{fg + ' / ' + bg:<32} (meta {minimo}:1)  {partes}")
+
+    # Modo alto contraste: uma paleta só, com metas AAA.
+    if markdown:
+        print("\n#### Modo `alto-contraste` (metas AAA)\n")
+        print("| Par (texto / fundo) | Uso | Meta | Contraste |")
+        print("|---|---|---|---|")
+    else:
+        print("\n== Modo alto contraste (metas AAA) ==")
+    if not alto:
+        print("ERRO: falta o bloco :root[data-tema=\"alto-contraste\"].")
+        falhas += 1
+    for fg, bg, minimo, desc in PARES if alto else []:
+        meta = meta_alto_contraste(minimo)
+        if fg not in alto or bg not in alto:
+            print(f"ERRO (alto-contraste): falta o token {fg if fg not in alto else bg}.")
+            falhas += 1
+            continue
+        r = razao(alto[fg], alto[bg])
+        ok = r >= meta
+        falhas += 0 if ok else 1
+        if markdown:
+            print(f"| `{fg}` / `{bg}` | {desc} | {meta}:1 | {r:.2f}:1 {'✓' if ok else '✗'} |")
+        else:
+            print(f"{fg + ' / ' + bg:<32} (meta {meta}:1)  {r:5.2f}:1 {'ok' if ok else 'FALHA'}")
 
     if not markdown:
         print("\nTudo dentro da meta." if falhas == 0 else f"\n{falhas} problema(s) encontrado(s).")

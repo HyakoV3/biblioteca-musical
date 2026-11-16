@@ -120,6 +120,10 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
       [`correcoes-da-letra.md`](correcoes-da-letra.md) explica); o **hino 283** (versos colados) precisa da **foto do impresso**
       para saber onde quebrar; decidir se vale uma ferramenta que liste os suspeitos (hoje: `aspell -l pt_BR list` e a comparação
       com o impresso). **(depende do responsável)**
+- [ ] **I-06 (alto contraste):** ver no celular (Ajustes → Aparência → Alto contraste, com a fonte do sistema grande); **revisão por
+      uma pessoa com baixa visão** antes de dar como pronto (cor, espessuras, o grupo Estilo desativado); decidir a **segunda etapa**:
+      o Automático seguir `prefers-contrast: more` (depende de a WebView repassar a preferência) e a versão invertida (amarelo sobre preto).
+      **(depende do responsável)**
 - [ ] **I-07 (sons gravados):** hospedar também no **GitHub Releases** (hoje o pacote está no File Browser do responsável, com
       limite de banda de ~500 KB/s); **flugelhorn e bombardino gravados** (nenhum banco livre tem os dois: hoje só sintetizados);
       registrar o teste de baixar, instalar e remover o pacote (o uso nos zips 004 a 012 é a evidência, sem roteiro).

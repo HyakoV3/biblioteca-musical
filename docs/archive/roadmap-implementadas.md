@@ -17,6 +17,7 @@ descrito** (documentos, código, testes e PRs). Ele não repete esses detalhes.
 | **I-02** | Estilo de cor Pergaminho | feita, a ver no celular | [`../design-tokens.md`](../design-tokens.md), `src/lib/tema.css`, PR #4 |
 | **I-04** | Tamanho e alinhamento da letra | feita, a ver no celular | `src/lib/leitura.ts`, aba Letra, PR #18 |
 | **I-05** | Arquivo de correções para a letra | feita, a usar nos hinos reais | [`../correcoes-da-letra.md`](../correcoes-da-letra.md), `tools/mscx2json/src/correcoes.rs`, `tools/mscx2json/README.md` |
+| **I-06** | Modo de baixa visão (preto sobre amarelo bem claro) | feita, a ver no celular e com quem tem baixa visão | [`../design-tokens.md`](../design-tokens.md), `src/lib/tema.css`, `tools/contraste.py`, `tests/estilos.test.ts` |
 | **I-07** | Sons de instrumentos mais realistas | feita (pacote opcional) | [`../pacote-de-sons.md`](../pacote-de-sons.md), [`../licencas-de-terceiros.md`](../licencas-de-terceiros.md), PRs #10, #11, #16 |
 | **I-09** | Mostrar em que parte do hino se está | feita, a ver no aparelho | `src/lib/Player.svelte`, `src/lib/vezes.ts` |
 | **I-10** | Trocar instrumento, andamento e tom na pausa | feita, a ver no aparelho | `src/lib/reproducao.svelte.ts`, `src/lib/sintetizador.ts` |

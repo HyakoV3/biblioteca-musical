@@ -939,4 +939,86 @@ tocadores, que fica na borda superior da faixa).
   delas (verificado por mutação: com o slider de volta embaixo, as duas conferências falham).
 - Falta ver no aparelho (seção 7 de [`../roadmap-pendencias.md`](../roadmap-pendencias.md)).
 
+## I-06 — Modo de baixa visão: preto sobre amarelo bem claro
+
+- **Status:** anotada
+- **Origem:** pedido do responsável, 2026-11-14, como requisito de acessibilidade.
+- **Prioridade:** a definir (é acessibilidade, então vale tratar como importante)
+
+### O que se deseja (nas palavras do responsável)
+
+Uma versão de **baixa visibilidade**: **preto sobre amarelo bem claro**.
+
+### Contraste medido (2026-11-14)
+
+Preto puro (`#000000`) sobre os candidatos a fundo, contra a meta **AAA de 7:1** para texto comum (WCAG 1.4.6):
+
+| Fundo | Contraste com preto |
+|---|---|
+| `#FFFFE0` (amarelo claro) | 20,63 : 1 |
+| `#FFFDE7` (creme amarelado) | 20,46 : 1 |
+| `#FFFFCC` (amarelo bem claro) | 20,43 : 1 |
+| `#FFFF99` (amarelo mais forte) | 20,02 : 1 |
+| `#FFF9C4` (amarelo suave) | 19,60 : 1 |
+
+Para comparar, o texto principal do tema claro atual dá 14,73 : 1. Qualquer um desses fundos passa com folga. Texto
+secundário em cinza também passaria se ficar escuro (`#333333` sobre `#FFFFCC` dá 12,29 : 1; `#4D4D4D` dá 8,22 : 1), mas
+num modo de baixa visão vale usar preto também no secundário.
+
+### Ideia de comportamento (a validar)
+
+Uma nova opção em **Ajustes → Aparência**, ao lado de Automático, Claro e Escuro: **Alto contraste** (preto sobre
+amarelo claro). Além das cores, o modo reforça o resto do visual:
+
+- Borda dos controles mais grossa e preta; foco com contorno grosso e bem visível.
+- Links sempre sublinhados; nada de informação só por cor (o app já segue isso).
+- Sem sombras, degradês ou tons intermediários; barras de progresso e interruptores em preto e branco.
+- Texto um pouco maior por padrão, combinando com a ideia I-04 (tamanho da letra).
+
+### Aproveitar o padrão da plataforma (não reinventar)
+
+O navegador e o sistema já têm o conceito: a media query CSS **`prefers-contrast: more`** indica que a pessoa pediu mais
+contraste, e **`forced-colors`** cobre o modo de cores forçadas. A ideia é: em "Automático", se o aparelho pedir
+mais contraste, o app usa esta paleta automaticamente; e a opção manual existe para quem quer o modo sem mexer no
+sistema. **Não verificado:** se o WebView do Android e o do iOS repassam essa preferência; precisa de teste no aparelho.
+
+### Perguntas em aberto
+
+1. **Qual amarelo?** Os cinco acima passam; falta escolher no olho, de preferência com quem tem baixa visão.
+2. **Ter também a versão invertida** (amarelo ou branco sobre preto)? Muita gente com baixa visão prefere fundo escuro;
+   o pedido foi só preto sobre amarelo claro, então fica como pergunta.
+3. **Combina com o "pergaminho" (I-02)?** Provavelmente não: é um modo próprio, e juntar os dois complicaria o desenho.
+4. **Nome na interface:** "Alto contraste", "Baixa visão" ou outro? Em espanhol e inglês também.
+5. **O ícone do app e a barra de status do Android** não mudam com este modo; aceitável?
+
+### Impacto técnico (hipóteses, não verificadas)
+
+- **Tokens (`src/lib/tema.css`):** novo conjunto de valores para `data-tema="alto-contraste"`, e um bloco
+  `@media (prefers-contrast: more)` para "Automático".
+- **Preferência e primeira pintura:** estender `src/lib/tema.svelte.ts` (os temas passam de 3 para 4) e o script do
+  `src/app.html` que aplica o tema antes da primeira pintura.
+- **Contraste (`tools/contraste.py`):** conferir esta paleta com a meta **AAA** (7:1 para texto, e 4,5:1 ou mais para
+  componentes), mais exigente que a das outras.
+- **Traduções:** nova chave nos três idiomas.
+
+### Critérios de aceitação (propostos)
+
+- Todos os pares de texto da paleta passam de 7 : 1 em `tools/contraste.py`.
+- Escolher o modo muda o app inteiro na hora e a escolha sobrevive ao fechar o app.
+- Com a fonte do sistema no máximo, nada fica cortado.
+- Revisado por pelo menos uma pessoa com baixa visão antes de ser dado como pronto.
+
+### Como ficou (2026-11-16)
+- Feito: 4º **Modo** "Alto contraste" em Ajustes (pt "Alto contraste", es "Alto contraste", en "High contrast"), paleta própria preto sobre
+  `#ffffcc` e `#ffffe0` com contraste AAA medido por `tools/contraste.py`, espessuras maiores de foco, bordas e barra de progresso, links
+  sempre sublinhados e destaques em bloco preto com texto amarelo. Detalhes e a tabela de contrastes em [`../design-tokens.md`](../design-tokens.md).
+- Respostas às perguntas acima: (1) amarelo `#ffffcc` no fundo e `#ffffe0` nos cartões, **a validar com quem tem baixa visão**; (2) a
+  versão invertida **não** entrou; (3) o modo **ignora o estilo** (o grupo Estilo fica desativado, com uma nota); (4) o nome é "Alto
+  contraste" nos três idiomas; (5) o ícone do app e a barra de status do Android **não** mudam.
+- **Não feito:** o Automático seguir `prefers-contrast: more` (decisão: segunda etapa, depois de saber se a WebView repassa a preferência);
+  "texto um pouco maior por padrão" (a I-04 e o `rem` já cobrem).
+- Achado do parecer prévio, confirmado no navegador: o escuro "do sistema" de cada estilo (especificidade 0,3,0) **vencia** o bloco novo
+  (0,2,0) com o aparelho no escuro. Os três usam agora `:not(..., [data-tema="alto-contraste"])`; o e2e confere nos três estilos.
+- Falta (seção 7 de [`../roadmap-pendencias.md`](../roadmap-pendencias.md)): ver no celular e a revisão por uma pessoa com baixa visão.
+
 ---

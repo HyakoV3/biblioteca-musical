@@ -407,6 +407,28 @@ async function principal() {
   confere(aparencia.fonte > fonteAntes, `aumentar o tamanho cresce a letra: ${fonteAntes} → ${aparencia.fonte} px`);
   confere(aparencia.alinha === "justify", `justificar muda o alinhamento da letra: ${aparencia.alinha}`);
   confere(aparencia.salvo === '{"passo":2,"alinhamento":"justificado"}', `a escolha fica salva no aparelho: ${aparencia.salvo}`);
+  // Alto contraste (I-06) com o aparelho no ESCURO: o escuro "do sistema" de cada estilo tem seletor mais específico (0,3,0) que o bloco
+  // do modo (0,2,0) e o venceria se o :not(...) não o excluísse. Só um navegador de verdade confere isso (a cascata não é texto).
+  await enviar("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
+  const cascata = await av(`(() => {
+    const r = document.documentElement;
+    const v = (nome) => getComputedStyle(r).getPropertyValue(nome).trim();
+    const saida = {};
+    delete r.dataset.tema; delete r.dataset.estilo;
+    saida.controleEscuro = v('--fundo'); // sem o modo, o aparelho no escuro tem de dar o escuro (prova que a emulação vale)
+    for (const estilo of ['normal', 'pergaminho', 'marinho']) {
+      if (estilo === 'normal') delete r.dataset.estilo; else r.dataset.estilo = estilo;
+      r.dataset.tema = 'alto-contraste';
+      saida[estilo] = [v('--fundo'), v('--texto'), v('--ouro')].join(' ');
+    }
+    delete r.dataset.tema; delete r.dataset.estilo;
+    return saida;
+  })()`);
+  await enviar("Emulation.setEmulatedMedia", { features: [] });
+  confere(cascata.controleEscuro === "#10151d", `controle: com o aparelho no escuro e sem o modo, vale o escuro normal: ${cascata.controleEscuro}`);
+  for (const estilo of ["normal", "pergaminho", "marinho"]) {
+    confere(cascata[estilo] === "#ffffcc #000000 #000000", `alto contraste vence o escuro do sistema no estilo ${estilo}: ${cascata[estilo]}`);
+  }
   await av("clearInterval(window.__iv); 1");
   const am = await av("window.__am");
   ws.close();
