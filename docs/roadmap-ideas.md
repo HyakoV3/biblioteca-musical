@@ -97,32 +97,67 @@ para escolher o WhatsApp e o instrutor; o app não precisa conhecer contatos.
 ### O que se deseja
 Uma aba **Partitura** no hino (ao lado de Ouvir e Letra) para o músico ler a música enquanto ouve.
 
-### Caminho recomendado (a confirmar com um teste pequeno)
-1. **Gerar imagens fora do app**, na conversão: uma ferramenta de linha de comando transforma cada `.mscx` em **SVG**
-   (um por página), por exemplo o MuseScore (`mscore -o hino.svg`). A partitura sai idêntica à do arquivo.
-2. **Empacotar** as imagens junto do `hinario.json`, usando o campo `partitura`.
-3. **Aba "Partitura"** com zoom e rolagem. SVG fica nítido em qualquer tamanho, o que ajuda quem tem baixa visão.
-4. **Extra, depois:** acompanhar a música tocando (cursor ou compasso destacado). É viável, porque o conversor já
-   sabe o instante de cada compasso.
+### Decisões (responsável, 2026-11-16)
+1. **Ferramentas:** MuseScore 4 (Flatpak) e Verovio (pacote Python) instalados **fora do repositório**: só geram o conteúdo.
+2. **Diagramação:** **Verovio, pensada para o celular** (a página tem a largura da tela e reflui em sistemas curtos), no lugar de
+   copiar a diagramação do MuseScore, que é de página larga e exigiria rolagem lateral.
+3. **Entrega:** as partituras vão **dentro do pacote `.zip`** (o `hinario.json` e os SVGs), fora do Git.
+4. **Aba Partitura:** com o pacote já importado, aparece **só nos hinos que têm partitura**. Quem acabou de instalar e ainda não
+   importou nada vê a aba **com um aviso e um botão para Ajustes**, onde baixa o arquivo. (Cursor na partitura, I-12 fase B: fica
+   para depois, mas o instante de cada nota já sai no **timemap**, para não regerar tudo mais tarde.)
+
+### Caminho
+1. **Gerar fora do app** (`python3 tools/gerar-partituras.py ENTRADA SAIDA`): `.mscx` → **MusicXML** (MuseScore 4, sem janela) →
+   **SVG** (Verovio), uma página por hino, mais um `hino-N.timemap.json`.
+2. **Empacotar** no `.zip` junto do `hinario.json`, usando o campo `partitura` (PR 2: importador em Rust e **sanitização do SVG**).
+3. **Aba "Partitura"** com zoom e rolagem (PR 3). SVG fica nítido em qualquer tamanho, o que ajuda quem tem baixa visão.
+4. **Teste no emulador e no celular** num APK (PR 4).
 
 **Por que não desenhar a partitura a partir do JSON:** o JSON guarda só altura e duração. Faltam armadura, fórmula
 de compasso, acidentes, ligaduras, cifras e casas de volta. Reconstruir isso seria reinventar a roda.
 
-### Pontos de atenção
-- **Direitos:** as partituras vêm das mesmas transcrições, então a resposta dele vale aqui também. As
-  imagens ficam **fora do Git**, como as letras.
-- **Importação:** hoje o app importa um só JSON (limite de 20 MB). Com imagens, é preciso um **pacote de vários
-  arquivos** (um `.zip`). É a parte de maior trabalho.
-- **Tamanho:** 480 hinos em SVG podem somar dezenas de MB; avaliar compressão.
-- **Ferramenta:** o MuseScore **não está instalado** no computador de desenvolvimento. Alternativa sem instalar:
-  renderizar no próprio app com uma biblioteca como o OpenSheetMusicDisplay, mas exige converter antes para
-  MusicXML e é mais frágil. Pesquisar as duas opções antes de escolher (ver também I-01, "Alternativas
-  consideradas", onde o MuseScore em linha de comando já foi avaliado para outro fim).
+### Primeiro teste (PR 1, feito nos 5 hinos de amostra)
+O MuseScore converte cada hino em MusicXML em menos de 1 s, e o Verovio o desenha em segundos. Medido com `largura=700`, `escala=40`:
 
-### Perguntas em aberto
-1. Instalar o MuseScore para o primeiro teste, ou avaliar a alternativa sem instalar?
-2. A aba Partitura deve aparecer só quando o hino tem partitura, ou sempre, com aviso?
-3. Vale já planejar o cursor acompanhando a música, ou fica para depois?
+| Hino | SVG | SVG comprimido (gzip) | timemap |
+|---:|---:|---:|---:|
+| 1 | 316 KB | 70 KB | 7 KB |
+| 276 | 192 KB | 60 KB | 3 KB |
+| 283 | 373 KB | 75 KB | 11 KB |
+| 398 | 614 KB | 99 KB | 20 KB |
+| 457 | 509 KB | 87 KB | 26 KB |
+
+Média de **400 KB por hino**, ou **uns 75 KB comprimido**. Para 480 hinos: ~190 MB sem compressão e **~36 MB num zip**. Cabe, mas o
+zip é obrigatório (e o limite de 20 MB de hoje não serve para o pacote com partituras: a PR 2 precisa tratar isso).
+
+O que se aprendeu, e que a ferramenta já faz:
+- **Largura 700 em vez de 1000:** olhando num celular de 412 px, as notas ficam bem maiores e há poucos compassos por linha; o
+  arquivo só cresce 3%.
+- **Elisão ("sempre_em", duas palavras numa nota):** o MuseScore escreve o sinal como um texto solto numa fonte privada, que a página
+  mostra como um quadrado (▯). A ferramenta o troca pelo `<elision>` padrão do MusicXML, e o Verovio o desenha como a ligação "‿",
+  como no hinário impresso.
+- **Espaço entre as palavras da letra:** com o padrão do Verovio, onde duas vozes cantam letras diferentes as palavras se colam
+  ("bemu-", "ComJe-sus"). `lyricWordSpace` em 2,5 resolve.
+- **O SVG usa só `svg`, `g`, `path`, `use`, `text`, `tspan`, `rect`, `ellipse`, `style`, `defs` e `desc`**, e todo `href` é interno
+  (`#id`). Isso permite sanitizar por **lista de permitidos** na PR 2 (o app roda com `csp: null`, então um SVG com `<script>` ou
+  referência externa não pode passar). O único cuidado é o `<style>` (CSS do próprio Verovio, escopado pelo `id` do SVG): a
+  sanitização o aceita só sem `url(` nem `@import`.
+- **Cor pelo tema:** o `<svg>` vem com `color="black"` e o preenchimento padrão é preto, então uma cor no contêiner de fora **não**
+  pinta nada (testado: preto sobre preto). O que funciona, testado no Chrome com o SVG **embutido na página** (inline, depois de
+  sanitizado), é uma regra de CSS no próprio `svg`: `color: var(--texto); fill: currentColor`. Aí pauta, notas, letra e andamento
+  seguem o tema escuro e o alto contraste (amarelo sobre preto) sem regerar nada. Como `<img>`, não dá: a CSS da página não entra
+  no SVG.
+- **Andamento esquisito no topo ("( - 84) ♩ = 63")** vem do próprio arquivo do autor (o texto do andamento está assim na
+  transcrição), não é defeito da geração.
+- O Verovio avisa quando um sistema fica muito apertado (razão de justificação < 0,8); nos 5 hinos a leitura não foi prejudicada.
+
+### Pontos de atenção
+- **Direitos:** as partituras vêm das mesmas transcrições, então a resposta do autor vale aqui também. As
+  imagens ficam **fora do Git**, como as letras (e as capturas de tela de partituras reais também).
+- **Importação:** hoje o app importa um só JSON (limite de 20 MB). Com imagens, é preciso um **pacote de vários
+  arquivos** (um `.zip`). É a parte de maior trabalho (PR 2).
+- **Licenças das ferramentas:** MuseScore (GPL-3.0) e Verovio (LGPL-3.0) só **geram** o conteúdo; nenhum dos dois entra no app.
+  O SVG gerado é do conteúdo, não das ferramentas.
 
 ### Critérios de aceitação (propostos)
 - A partitura de um hino de amostra aparece nítida na aba, com zoom e rolagem, no emulador e no desktop.
