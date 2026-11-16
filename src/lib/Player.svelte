@@ -1,5 +1,6 @@
 <script lang="ts">
   import Aviso from "./Aviso.svelte";
+  import Busca from "./Busca.svelte";
   import type { Hino } from "./biblioteca.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
   import { ORGAOS, PADRAO, instrumentosDaVoz, tipoDaVoz, type TipoVoz } from "./instrumentos";
@@ -31,6 +32,8 @@
   const editavel = $derived(estado !== "tocando");
   const decorrido = $derived(meu ? reproducao.decorrido : 0);
   const duracao = $derived(meu ? reproducao.duracao : 0);
+  // O ponto que a pessoa está arrastando na barra de progresso (nulo quando não arrasta).
+  let previaBusca = $state<number | null>(null);
 
   // Instrumento, volume e silenciar de cada voz são lembrados no aparelho.
   $effect(() => {
@@ -236,19 +239,9 @@
       {/if}
 
       <div class="progresso-bloco">
-        <div
-          class="progresso"
-          role="progressbar"
-          aria-label={t("player.progresso_rotulo")}
-          aria-valuemin="0"
-          aria-valuemax={Math.round(duracao)}
-          aria-valuenow={Math.round(decorrido)}
-          aria-valuetext={t("player.progresso", { atual: formatarTempo(decorrido), total: formatarTempo(duracao) })}
-        >
-          <div class="preenchido" style:width={`${fracao(decorrido, duracao) * 100}%`}></div>
-        </div>
+        <Busca {decorrido} {duracao} habilitado={!parado && duracao > 0} aoBuscar={(s) => reproducao.irPara(s)} bind:previa={previaBusca} />
         <div class="tempos" aria-hidden="true">
-          <span>{formatarTempo(decorrido)}</span>
+          <span>{formatarTempo(previaBusca ?? decorrido)}</span>
           <span>{duracao > 0 ? formatarTempo(duracao) : ""}</span>
         </div>
       </div>
@@ -429,8 +422,6 @@
   .principal :global(.botao) { gap: 0.5rem; }
   .tocar { flex: 1; min-height: 56px; font-size: 1.15rem; }
   .parar { min-height: 56px; }
-  .progresso { height: 8px; border-radius: 4px; background: var(--borda); overflow: hidden; }
-  .preenchido { height: 100%; background: var(--ouro-linha); }
   .tempos { display: flex; justify-content: space-between; margin-top: 0.3rem; font-size: 0.85rem; color: var(--suave); font-variant-numeric: tabular-nums; }
   .dica { margin: 0; }
 

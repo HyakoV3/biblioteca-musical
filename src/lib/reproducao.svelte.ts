@@ -84,6 +84,11 @@ const mudou = (c: Config, a: Agendado) =>
 
 let relogio: ReturnType<typeof setInterval> | null = null;
 let trocando = false;
+// Muda a cada `parar()`. Quem está esperando o áudio (tocar, reagendar) guarda o número de quando começou: se mudou ao voltar,
+// a pessoa tocou em Parar nesse meio tempo, então o som que acabou de ser agendado é silenciado em vez de começar a tocar.
+let geracao = 0;
+// A última posição pedida no slider enquanto um reagendamento estava em curso (aplicada ao terminar, em vez de descartada).
+let buscaPendente: number | null = null;
 
 const efetivo = (c: Config, i: number) => (c.mudas[i] ? 0 : c.volumes[i]);
 
@@ -134,12 +139,17 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
           ? vozesDaIntroducao(hino)
           : vozesDaVez(hino, typeof parte === "number" ? parte : 1, total);
     pararRelogio();
+    const g = geracao;
     duracao = await sint.tocar(vozes, {
       andamento: c.andamento,
       transposicao: c.transposicao,
       instrumentos: [...c.instrumentos],
       volumes: hino.vozes.map((_, i) => efetivo(c, i)),
     });
+    if (g !== geracao) {
+      sint.parar(); // Parar foi tocado enquanto o áudio iniciava: não deixa o som começar
+      return;
+    }
     atual = {
       numero: hino.numero,
       titulo: hino.titulo,
@@ -178,48 +188,94 @@ async function pausar() {
   estado = "pausado";
 }
 
+/**
+ * Reagenda o hino que está tocando ou pausado a partir de uma posição, com os ajustes de AGORA (instrumento, andamento, tom).
+ * A posição vai em batidas da escala em que o hino foi agendado (não em segundos), para valer mesmo que o andamento tenha
+ * mudado na pausa. `pausado`: o relógio do áudio está suspenso, então agenda sem retomar. Devolve false se o áudio falhou
+ * (nesse caso já parou tudo e `erro` diz por quê).
+ */
+async function reagendar(batida: number, pausado: boolean): Promise<boolean> {
+  const c = atual ? configs.get(atual.numero) : undefined;
+  if (!atual || !c || !agendado) return false;
+  trocando = true;
+  const g = geracao;
+  try {
+    duracao = await sint.tocar(
+      agendado.vozes,
+      {
+        andamento: c.andamento,
+        transposicao: c.transposicao,
+        instrumentos: [...c.instrumentos],
+        volumes: agendado.vozes.map((_, i) => efetivo(c, i)),
+      },
+      { aPartirDe: batida, pausado },
+    );
+    if (g !== geracao || !atual || !agendado) {
+      // Parar foi tocado enquanto o áudio reagendava: silencia o que acabou de ser agendado e sai sem erro.
+      sint.parar();
+      return false;
+    }
+    agendado = {
+      vozes: agendado.vozes,
+      andamento: c.andamento,
+      transposicao: c.transposicao,
+      instrumentos: [...c.instrumentos],
+    };
+    atual.andamento = c.andamento; // os marcos das partes estão em batidas; o andamento novo os converte
+    decorrido = sint.decorrido();
+    return true;
+  } catch (e) {
+    sint.parar();
+    parar();
+    erro = String(e);
+    return false;
+  } finally {
+    trocando = false;
+  }
+}
+
 async function continuar() {
   if (estado !== "pausado" || trocando) return;
   const c = atual ? configs.get(atual.numero) : undefined;
   if (atual && c && agendado && mudou(c, agendado)) {
-    // Instrumento, andamento ou tom mudaram na pausa: reagenda de onde parou, com os ajustes novos. A posição vai
-    // em batidas (não em segundos), para valer mesmo que o andamento tenha mudado.
-    trocando = true;
-    try {
-      const batida = (decorrido * agendado.andamento) / 60;
-      duracao = await sint.tocar(
-        agendado.vozes,
-        {
-          andamento: c.andamento,
-          transposicao: c.transposicao,
-          instrumentos: [...c.instrumentos],
-          volumes: agendado.vozes.map((_, i) => efetivo(c, i)),
-        },
-        { aPartirDe: batida, pausado: true },
-      );
-      agendado = {
-        vozes: agendado.vozes,
-        andamento: c.andamento,
-        transposicao: c.transposicao,
-        instrumentos: [...c.instrumentos],
-      };
-      atual.andamento = c.andamento; // os marcos das partes estão em batidas; o andamento novo os converte
-      decorrido = sint.decorrido();
-    } catch (e) {
-      sint.parar();
-      parar();
-      erro = String(e);
-      trocando = false;
-      return;
-    }
-    trocando = false;
+    // Instrumento, andamento ou tom mudaram na pausa: reagenda de onde parou, com os ajustes novos.
+    if (!(await reagendar((decorrido * agendado.andamento) / 60, true))) return;
   }
   await sint.continuar();
   estado = "tocando";
   iniciarRelogio();
 }
 
+/**
+ * Vai para um ponto do hino (em segundos da barra de progresso), tocando ou pausado, e continua no mesmo estado: tocando segue
+ * tocando dali, pausado fica pausado ali. Fora do hino (de 0 até um instante antes do fim). Sem nada tocando, não faz nada.
+ */
+async function irPara(segundos: number) {
+  if (!atual || !agendado || (estado !== "tocando" && estado !== "pausado")) return;
+  if (trocando) {
+    // Já há um reagendamento em curso (outra soltura, ou uma seta do teclado repetida): guarda só a última posição pedida e a
+    // aplica ao terminar, em vez de descartar e deixar a barra voltar ao ponto antigo.
+    buscaPendente = segundos;
+    return;
+  }
+  buscaPendente = null;
+  let proximo: number | null = segundos;
+  while (proximo !== null && atual && agendado && (estado === "tocando" || estado === "pausado")) {
+    const alvo = Math.min(Math.max(0, Number.isFinite(proximo) ? proximo : 0), Math.max(0, duracao - 0.05));
+    const tocandoAntes = estado === "tocando";
+    const batida = (alvo * agendado.andamento) / 60;
+    pararRelogio();
+    decorrido = alvo; // a barra já mostra o ponto escolhido enquanto o som é reagendado
+    if (!(await reagendar(batida, !tocandoAntes))) return;
+    if (tocandoAntes) iniciarRelogio();
+    proximo = buscaPendente;
+    buscaPendente = null;
+  }
+}
+
 function parar() {
+  geracao++;
+  buscaPendente = null;
   pararRelogio();
   sint.parar();
   estado = "parado";
@@ -318,6 +374,7 @@ export const reproducao = {
   tocar,
   pausar,
   continuar,
+  irPara,
   parar,
   alternar,
   alternarAtual,

@@ -21,6 +21,11 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
       mostrou atraso nem desvio: se reaparecer, anotar voz, modo, hino e se foi pausar ou parar.
 - [x] Andamento de 1 em 1 e de 5 em 5 (`−5 −1 +1 +5`) e abas Ouvir | Letra embaixo, ou à esquerda com o celular
       deitado (zip 005). **Falta ver no celular.**
+- [x] **Avançar e retroceder pela barra de progresso** (pedido do responsável após testar o zip 010: a barra era só de
+      leitura). Na aba Ouvir e no miniplayer a barra agora é um `<input type="range">` (`src/lib/Busca.svelte`): arrasta,
+      toca ou usa as setas (1 s por passo) e, ao soltar, `reproducao.irPara()` reposiciona o som e a letra, tocando ou
+      pausado, e continua no mesmo estado. Enquanto arrasta, mostra o ponto escolhido e só reposiciona ao soltar. Coberto
+      pelo e2e (`tests/e2e/karaoke.mjs`). **Falta ver no celular** (toque e arraste).
 - [ ] **Aplicar o roteiro de teste** (`docs/teste-de-uso.md`) com 3 a 5 músicos, com o APK de teste
       (`docs/apk-de-teste.md`). **(depende do responsável)**
 - [ ] Corrigir o que dois ou mais músicos repetirem: bloqueios primeiro, depois o que atrapalha.
