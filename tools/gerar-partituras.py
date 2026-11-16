@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Gera a partitura de cada hino em SVG (I-08): .mscx -> MusicXML (MuseScore 4) -> SVG (Verovio).
 
-Uso:  python3 tools/gerar-partituras.py ENTRADA SAIDA [--largura 700] [--escala 40] [--musescore "CMD"] [--tempo 180]
+Uso:  python3 tools/gerar-partituras.py ENTRADA SAIDA [--largura 500] [--escala 40] [--musescore "CMD"] [--tempo 180]
 
 ENTRADA  pasta com arquivos hino-<número>.mscx (os mesmos que o conversor lê).
 SAIDA    pasta onde ficam hino-<número>.svg e hino-<número>.timemap.json (cria se não existir).
@@ -13,9 +13,11 @@ O MuseScore é procurado, nesta ordem: --musescore, a variável BMCCB_MUSESCORE,
 no PATH e o Flatpak org.musescore.MuseScore. Ele roda sem janela (QT_QPA_PLATFORM=offscreen), com limite de tempo por hino
 (--tempo, em segundos). Se um hino falha, o motivo é impresso e o lote continua; o código de saída é 1 se algum falhou.
 
-O SVG sai numa **página só**, que termina onde acaba a música, com viewBox (escala com a largura do contêiner). A largura
-700 foi escolhida olhando um celular de 412 px: as notas ficam grandes e há poucos compassos por linha. O timemap guarda o
-instante de cada nota e compasso, para o karaokê na partitura (I-12, fase B).
+O SVG sai numa **página só**, que termina onde acaba a música, com viewBox (escala com a largura do contêiner), **sem a letra**: a
+letra cantada tem a aba Letra, e na partitura só atrapalha (alarga os compassos e alonga a página). A largura 500 (era 700) deixa as
+notas **1,4x maiores** num celular de 412 px em pé, à custa de mais rolagem vertical (medido nos hinos de amostra: no 276, de 1,6 mil
+para 2,7 mil px de altura; no 457, de 5,8 mil para 11 mil px). O timemap guarda o instante de cada nota e compasso, para o
+karaokê na partitura (I-12, fase B).
 """
 import argparse
 import gzip
@@ -31,11 +33,12 @@ from pathlib import Path
 
 NOME = re.compile(r"^hino-(\d+)\.mscx$")
 
-# O MuseScore escreve o sinal de elisão (duas palavras numa nota só: "sempre_em") como um <text> solto numa fonte
-# privada ("MScore Text", caracteres U+E550 a U+E552 do padrão SMuFL). Nenhuma fonte comum tem esse caractere, e a página
-# mostra um quadrado. O MusicXML padrão tem o elemento <elision>, que o Verovio desenha conforme a opção lyricElision.
-GLIFOS_ELISAO = "".join(chr(c) for c in range(0xE550, 0xE553))
-ELISAO_MUSESCORE = re.compile(f'<text font-family="MScore Text">[{GLIFOS_ELISAO}]</text>')
+# A letra da partitura sai: todo <lyric>...</lyric> do MusicXML (incluindo o sinal de elisão que o MuseScore escreve dentro dele). Só o
+# elemento <lyric> verdadeiro: <lyric-font> e <lyric-language>, que ficam em <defaults>, têm o mesmo começo e NÃO podem ser tocados (um
+# padrão frouxo apagaria a partitura inteira entre o primeiro <lyric-font> e o primeiro </lyric>).
+LETRA_MUSICXML = re.compile(r"<lyric(?=[\s>])(?:[^<>]*/>|.*?</lyric>)", re.S)
+
+LARGURA_PADRAO = 500  # unidades do Verovio (ver o texto no começo do arquivo)
 
 TEMPO_LIMITE = 180  # segundos por hino no MuseScore (nos hinos de amostra ele leva menos de 1 s)
 
@@ -44,9 +47,9 @@ class ErroHino(Exception):
     """Um hino que não deu certo; a mensagem diz o porquê e o lote continua."""
 
 
-def corrigir_elisao(xml: str) -> str:
-    """Troca o sinal de elisão do MuseScore pelo <elision> do MusicXML."""
-    return ELISAO_MUSESCORE.sub("<elision> </elision>", xml)
+def remover_letra(xml: str) -> str:
+    """O MusicXML sem a letra (os elementos <lyric>)."""
+    return LETRA_MUSICXML.sub("", xml)
 
 
 def numero_do_hino(nome: str):
@@ -96,8 +99,6 @@ def opcoes_verovio(largura: int, escala: int) -> dict:
         # todos os hinos. O app traz a fonte uma vez só; o SVG fica sem ela (e sem nenhum url(), que o app recusa).
         "smuflTextFont": "none",
         "svgFormatRaw": True,  # sem indentação: o arquivo cai para menos da metade
-        "lyricElision": "unicode",  # a ligação "‿", que qualquer fonte tem
-        "lyricWordSpace": 2.5,  # o padrão (1,2) cola as palavras onde duas vozes cantam letras diferentes ("bemu-")
         "header": "none",
         "footer": "none",
     }
@@ -148,7 +149,7 @@ def gerar_hino(tk, musescore: list, n: int, mscx: Path, trabalho: Path, saida: P
         raise ErroHino(motivo)
     try:
         texto = xml.read_text(encoding="utf-8")
-        if not tk.loadData(corrigir_elisao(texto)):
+        if not tk.loadData(remover_letra(texto)):
             raise ErroHino("o Verovio não leu o MusicXML")
         if tk.getPageCount() != 1:
             raise ErroHino(f"saiu em {tk.getPageCount()} páginas (esperava 1)")
@@ -181,7 +182,7 @@ def principal() -> int:
     ap = argparse.ArgumentParser(description="Gera a partitura (SVG) de cada hino-N.mscx.")
     ap.add_argument("entrada", type=Path)
     ap.add_argument("saida", type=Path)
-    ap.add_argument("--largura", type=inteiro_positivo, default=700, help="largura da página, em unidades do Verovio (padrão 700)")
+    ap.add_argument("--largura", type=inteiro_positivo, default=LARGURA_PADRAO, help=f"largura da página, em unidades do Verovio (padrão {LARGURA_PADRAO})")
     ap.add_argument("--escala", type=inteiro_positivo, default=40, help="escala do Verovio, em %% (padrão 40)")
     ap.add_argument("--musescore", help='comando do MuseScore, por exemplo "flatpak run org.musescore.MuseScore"')
     ap.add_argument("--tempo", type=inteiro_positivo, default=TEMPO_LIMITE, help=f"limite de segundos por hino no MuseScore (padrão {TEMPO_LIMITE})")

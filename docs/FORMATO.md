@@ -215,7 +215,8 @@ O Rust confere tudo antes de gravar:
   `url(data:...)`, que a limpeza recusaria). O texto do SVG usa `font-family="Leipzig"`, então o **app a traz uma vez só**
   (`src/lib/fonts/Leipzig.woff2`, carregada por `src/lib/partitura.css`; licença OFL 1.1, nos créditos de Ajustes).
 - **Na tela (aba Partitura).** O SVG é embutido na página (`{@html}`, já limpo) dentro de `.folha`, com o CSS acima e `color` do
-  tema; o zoom (100% a 400%, 6 passos, lembrado no aparelho) muda a largura da folha, e a região rola para os lados. A aba
+  tema; o zoom (50% a 400%, 9 passos, com o 100% no meio como padrão; lembrado no aparelho) muda a largura da folha: abaixo de 100% ela fica mais estreita e
+  centralizada, acima rola para os lados. A aba
   Partitura aparece nos hinos que têm partitura; enquanto **nenhum** hino tem partitura instalada, aparece em todos, com um aviso e
   um botão para Ajustes (o card Partituras); num pacote que tem partituras, não aparece nos hinos que não têm.
 

@@ -102,7 +102,8 @@
   /* A folha é a partitura do tamanho escolhido; passando da largura da tela, rola para os lados. O que o SVG desenha fica dentro
      dela: o <svg> raiz sai do Rust com overflow hidden, e este contêiner também recorta. */
   .rolagem { overflow-x: auto; overflow-y: hidden; background: var(--superficie); border: 0.0625rem solid var(--borda); border-radius: 0.75rem; }
-  .folha { width: calc(100% * var(--zoom, 1)); color: var(--texto); }
+  /* Abaixo de 100% a folha fica mais estreita que a região e centralizada; acima, passa da região (as margens automáticas valem 0 e a região rola). */
+  .folha { width: calc(100% * var(--zoom, 1)); margin-inline: auto; color: var(--texto); }
 
   /* O SVG embutido segue o tema: tudo é desenhado em currentColor (o `color="black"` do arquivo perde para esta regra). As regras
      abaixo são o que o <style> do Verovio fazia e o app descarta na importação (um <style> em SVG embutido valeria para a página
