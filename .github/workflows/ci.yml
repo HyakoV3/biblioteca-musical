@@ -32,11 +32,12 @@ jobs:
         run: npm run check
       - name: Testes (Vitest)
         run: npm test
-      - name: Traduções, movimento e contraste
+      - name: Traduções, movimento, contraste e gerador de partituras
         run: |
           python3 tools/verificar-traducoes.py
           python3 tools/verificar-movimento.py
           python3 tools/contraste.py
+          python3 tools/test_gerar_partituras.py
 
   conversor:
     name: Conversor de partituras (Rust)

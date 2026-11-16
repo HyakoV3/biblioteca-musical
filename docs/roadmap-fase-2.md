@@ -77,10 +77,12 @@ sem estalos; a licença de cada som está registrada; e o app base não cresceu.
 
 ## Etapa 3 — Partitura no hino (I-08)
 
-- [ ] Primeiro teste: gerar o SVG de **um** hino e mostrá-lo numa aba simples. **(depende de instalar o MuseScore, ou
-      de avaliar a alternativa sem instalar)**
+- [x] Primeiro teste: `tools/gerar-partituras.py` gera o SVG (MuseScore 4 → MusicXML → Verovio) e o timemap de cada hino; medido
+      nos 5 hinos de amostra (~400 KB cada, ~36 MB num zip de 480). Decisões do responsável em
+      [`roadmap-ideas.md`](roadmap-ideas.md), I-08. **Falta mostrá-lo numa aba (PR 3).**
 - [ ] Pacote de **vários arquivos** (`.zip`) na importação, no lugar do JSON único (limite atual de 20 MB).
-- [ ] Aba **Partitura** com zoom e rolagem, nos temas claro, escuro e (futuro) baixa visão.
+- [ ] Aba **Partitura** com zoom e rolagem, nos temas claro, escuro e alto contraste; só nos hinos que têm partitura, e, sem
+      pacote importado, com um aviso e um botão para Ajustes.
 - [x] **Karaokê (I-12), fase A:** a **letra** acompanhando a música, com botão ligar/desligar na aba Letra (campo
       `sincronia` no formato, conversor e leitor). **Feito, falta ver no celular.**
 - [ ] **Karaokê (I-12), fase B:** cursor ou compasso na partitura, junto da I-08.
