@@ -253,6 +253,51 @@ async function principal() {
     estados.length === 1 && estados[0] === estado(pausa.antes),
     `a pausa congela o destaque no estado em que foi pedida (depois dela: ${JSON.stringify(estados)}; antes: ${JSON.stringify(estado(pausa.antes))})`,
   );
+  // 5b. Slider de busca (avançar e retroceder). Usa o <input type="range"> como a pessoa usaria: muda o valor e solta (input + change).
+  // Cada sílaba dura 1 s (2 batidas a 120 bpm), então o segundo inteiro escolhido cai no começo de uma sílaba, e o teste confere a
+  // sílaba e a estrofe 0,7 s depois de continuar, no meio dela.
+  const buscar = (seletor, s) =>
+    av(`(() => {
+      const i = document.querySelector(${JSON.stringify(seletor)});
+      if (!i || i.disabled) return false;
+      i.value = ${s};
+      i.dispatchEvent(new Event("input", { bubbles: true }));
+      i.dispatchEvent(new Event("change", { bubbles: true }));
+      return true;
+    })()`);
+  const lido = () =>
+    av(`({
+      tr: document.querySelector('.trecho')?.textContent ?? null,
+      est: document.querySelector('.estrofe.da-vez h2')?.textContent ?? null,
+      tocando: /pause|pausar/i.test(document.querySelector('.mini .acao')?.getAttribute('aria-label') ?? ''),
+      valor: document.querySelector('.mini .busca-entrada')?.getAttribute('aria-valuetext') ?? null,
+    })`);
+  // Voltar com a música PAUSADA (estava na 2ª estrofe): vai para 0:03 e continua pausada.
+  confere(await buscar(".mini .busca-entrada", 3), "slider do miniplayer encontrado e usado (voltar para 0:03 com a música pausada)");
+  await dormir(600);
+  let e = await lido();
+  confere(!e.tocando, "voltar pelo slider com a música pausada mantém a pausa");
+  confere((e.valor ?? "").startsWith("0:03"), `o slider mostra o ponto escolhido: ${JSON.stringify(e.valor)} (esperado 0:03 ...)`);
+  await av("document.querySelector('.mini .acao')?.click(); 1"); // continua
+  await dormir(700);
+  e = await lido();
+  confere(e.tocando, "continuar depois de voltar toca de novo");
+  confere(e.tr === "fa" && (e.est ?? "").includes("1"), `a letra acompanha o ponto escolhido: ${e.tr} / ${e.est} (esperado fa / estrofe 1)`);
+  // Avançar com a música TOCANDO: vai para 0:08 (a "si" da 2ª estrofe) e segue tocando.
+  confere(await buscar(".mini .busca-entrada", 8), "slider do miniplayer: avançar para 0:08 com a música tocando");
+  await dormir(700);
+  e = await lido();
+  confere(e.tocando, "avançar pelo slider com a música tocando segue tocando");
+  confere(e.tr === "si" && (e.est ?? "").includes("2"), `a letra acompanha o ponto escolhido: ${e.tr} / ${e.est} (esperado si / estrofe 2)`);
+  // O slider da aba Ouvir (o miniplayer some lá, porque os controles completos já estão visíveis).
+  await av("document.getElementById('aba-ouvir').click(); 1");
+  await dormir(400);
+  confere(await buscar("#painel-ouvir .busca-entrada", 2), "slider da aba Ouvir encontrado e usado (voltar para 0:02)");
+  await dormir(600);
+  const tempoOuvir = await av("document.querySelector('#painel-ouvir .tempos span')?.textContent ?? null");
+  confere(tempoOuvir === "0:02", `o tempo da aba Ouvir acompanha o slider: ${JSON.stringify(tempoOuvir)} (esperado "0:02")`);
+  await av("document.getElementById('aba-letra').click(); 1");
+  await dormir(400);
   await av("document.querySelector('.chave-karaoke')?.click(); 1"); // desliga
   await dormir(400);
   confere((await av("document.querySelectorAll('.trecho').length")) === 0, "com o botão desligado nada fica aceso");

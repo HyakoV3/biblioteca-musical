@@ -178,45 +178,71 @@ async function pausar() {
   estado = "pausado";
 }
 
+/**
+ * Reagenda o hino que está tocando ou pausado a partir de uma posição, com os ajustes de AGORA (instrumento, andamento, tom).
+ * A posição vai em batidas da escala em que o hino foi agendado (não em segundos), para valer mesmo que o andamento tenha
+ * mudado na pausa. `pausado`: o relógio do áudio está suspenso, então agenda sem retomar. Devolve false se o áudio falhou
+ * (nesse caso já parou tudo e `erro` diz por quê).
+ */
+async function reagendar(batida: number, pausado: boolean): Promise<boolean> {
+  const c = atual ? configs.get(atual.numero) : undefined;
+  if (!atual || !c || !agendado) return false;
+  trocando = true;
+  try {
+    duracao = await sint.tocar(
+      agendado.vozes,
+      {
+        andamento: c.andamento,
+        transposicao: c.transposicao,
+        instrumentos: [...c.instrumentos],
+        volumes: agendado.vozes.map((_, i) => efetivo(c, i)),
+      },
+      { aPartirDe: batida, pausado },
+    );
+    agendado = {
+      vozes: agendado.vozes,
+      andamento: c.andamento,
+      transposicao: c.transposicao,
+      instrumentos: [...c.instrumentos],
+    };
+    atual.andamento = c.andamento; // os marcos das partes estão em batidas; o andamento novo os converte
+    decorrido = sint.decorrido();
+    return true;
+  } catch (e) {
+    sint.parar();
+    parar();
+    erro = String(e);
+    return false;
+  } finally {
+    trocando = false;
+  }
+}
+
 async function continuar() {
   if (estado !== "pausado" || trocando) return;
   const c = atual ? configs.get(atual.numero) : undefined;
   if (atual && c && agendado && mudou(c, agendado)) {
-    // Instrumento, andamento ou tom mudaram na pausa: reagenda de onde parou, com os ajustes novos. A posição vai
-    // em batidas (não em segundos), para valer mesmo que o andamento tenha mudado.
-    trocando = true;
-    try {
-      const batida = (decorrido * agendado.andamento) / 60;
-      duracao = await sint.tocar(
-        agendado.vozes,
-        {
-          andamento: c.andamento,
-          transposicao: c.transposicao,
-          instrumentos: [...c.instrumentos],
-          volumes: agendado.vozes.map((_, i) => efetivo(c, i)),
-        },
-        { aPartirDe: batida, pausado: true },
-      );
-      agendado = {
-        vozes: agendado.vozes,
-        andamento: c.andamento,
-        transposicao: c.transposicao,
-        instrumentos: [...c.instrumentos],
-      };
-      atual.andamento = c.andamento; // os marcos das partes estão em batidas; o andamento novo os converte
-      decorrido = sint.decorrido();
-    } catch (e) {
-      sint.parar();
-      parar();
-      erro = String(e);
-      trocando = false;
-      return;
-    }
-    trocando = false;
+    // Instrumento, andamento ou tom mudaram na pausa: reagenda de onde parou, com os ajustes novos.
+    if (!(await reagendar((decorrido * agendado.andamento) / 60, true))) return;
   }
   await sint.continuar();
   estado = "tocando";
   iniciarRelogio();
+}
+
+/**
+ * Vai para um ponto do hino (em segundos da barra de progresso), tocando ou pausado, e continua no mesmo estado: tocando segue
+ * tocando dali, pausado fica pausado ali. Fora do hino (de 0 até um instante antes do fim). Sem nada tocando, não faz nada.
+ */
+async function irPara(segundos: number) {
+  if (trocando || !atual || !agendado || (estado !== "tocando" && estado !== "pausado")) return;
+  const alvo = Math.min(Math.max(0, Number.isFinite(segundos) ? segundos : 0), Math.max(0, duracao - 0.05));
+  const tocandoAntes = estado === "tocando";
+  const batida = (alvo * agendado.andamento) / 60;
+  pararRelogio();
+  decorrido = alvo; // a barra já mostra o ponto escolhido enquanto o som é reagendado
+  if (!(await reagendar(batida, !tocandoAntes))) return;
+  if (tocandoAntes) iniciarRelogio();
 }
 
 function parar() {
@@ -318,6 +344,7 @@ export const reproducao = {
   tocar,
   pausar,
   continuar,
+  irPara,
   parar,
   alternar,
   alternarAtual,
