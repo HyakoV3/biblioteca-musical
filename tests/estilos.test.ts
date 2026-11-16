@@ -65,12 +65,64 @@ describe("estilos de cor", () => {
       const claro = temaCss.match(new RegExp(`^:root\\[data-estilo="${e}"\\] \\{`, "m"));
       // O escuro do sistema só vale com o aparelho no escuro: precisa estar DENTRO do @media.
       const escuroSistema = temaCss.match(
-        new RegExp(`@media \\(prefers-color-scheme: dark\\) \\{\\s*:root\\[data-estilo="${e}"\\]:not\\(\\[data-tema="claro"\\]\\) \\{`),
+        new RegExp(
+          `@media \\(prefers-color-scheme: dark\\) \\{\\s*:root\\[data-estilo="${e}"\\]:not\\(\\[data-tema="claro"\\], \\[data-tema="alto-contraste"\\]\\) \\{`,
+        ),
       );
       const escuroEscolhido = temaCss.match(new RegExp(`^:root\\[data-estilo="${e}"\\]\\[data-tema="escuro"\\] \\{`, "m"));
       expect(claro, `${e}: falta o bloco claro`).not.toBeNull();
       expect(escuroSistema, `${e}: falta o escuro do sistema dentro do @media`).not.toBeNull();
       expect(escuroEscolhido, `${e}: falta o escuro escolhido`).not.toBeNull();
     }
+  });
+});
+
+// Modo "alto contraste" (I-06): quarto modo, de paleta própria, que ignora o estilo.
+describe("modo alto contraste", () => {
+  const fonteTema = ler("src/lib/tema.svelte.ts");
+  const temas = [...(fonteTema.match(/export const TEMAS = \[([^\]]*)\]/)?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+  const tokensDo = (bloco: string) => [...bloco.matchAll(/--([\w-]+)\s*:/g)].map((m) => m[1]).sort();
+  const blocoAlto = temaCss.match(/^:root\[data-tema="alto-contraste"\] \{([^}]*)\}/m)?.[1] ?? "";
+  const blocoNormal = temaCss.match(/^:root \{([^}]*)\}/m)?.[1] ?? "";
+
+  it("é um dos modos de TEMAS (o Automático continua sendo o primeiro)", () => {
+    expect(temas[0]).toBe("sistema");
+    expect(temas).toContain("alto-contraste");
+  });
+
+  it("o script do app.html aplica exatamente os modos que não são o Automático", () => {
+    const condicao = appHtml.match(/if \(t === [^)]*\) document\.documentElement\.dataset\.tema = t;/)?.[0] ?? "";
+    expect(condicao, "não achei a linha que aplica o modo").not.toBe("");
+    const citados = [...condicao.matchAll(/"([^"]+)"/g)].map((m) => m[1]);
+    expect(citados.sort()).toEqual(temas.filter((x) => x !== "sistema").sort());
+  });
+
+  it("aplica o alto contraste salvo antes da primeira pintura, com qualquer estilo", () => {
+    const script = appHtml.match(/<script>([\s\S]*?)<\/script>/)?.[1] ?? "";
+    const documento = { documentElement: { dataset: {} as Record<string, string> } };
+    runInNewContext(script, {
+      localStorage: { getItem: (k: string) => ({ tema: "alto-contraste", estilo: "marinho" })[k] ?? null },
+      document: documento,
+    });
+    expect(documento.documentElement.dataset).toEqual({ tema: "alto-contraste", estilo: "marinho" });
+  });
+
+  it("o tema.css tem o bloco do modo, com todos os tokens do :root padrão", () => {
+    expect(blocoAlto, "falta o bloco :root[data-tema=\"alto-contraste\"]").not.toBe("");
+    expect(tokensDo(blocoAlto)).toEqual(tokensDo(blocoNormal));
+    expect(blocoAlto).toContain("color-scheme: light");
+  });
+
+  it("o bloco vem DEPOIS dos blocos dos estilos (empata na especificidade e vence pela ordem)", () => {
+    const posAlto = temaCss.search(/^:root\[data-tema="alto-contraste"\] \{/m);
+    const ultimoEstilo = temaCss.lastIndexOf(':root[data-estilo="');
+    expect(posAlto).toBeGreaterThan(ultimoEstilo);
+  });
+
+  it("os três escuros do sistema (normal, pergaminho e marinho) excluem o modo", () => {
+    const excluem = temaCss.match(/:not\(\[data-tema="claro"\], \[data-tema="alto-contraste"\]\) \{/g) ?? [];
+    const escurosDoSistema = temaCss.match(/@media \(prefers-color-scheme: dark\) \{\s*:root/g) ?? [];
+    expect(escurosDoSistema).toHaveLength(1 + outros.length);
+    expect(excluem).toHaveLength(escurosDoSistema.length);
   });
 });

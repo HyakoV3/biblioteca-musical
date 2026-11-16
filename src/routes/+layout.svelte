@@ -42,6 +42,10 @@
   /* Anel de foco visível para teclado e leitores de tela com navegação por foco. */
   :global(:focus-visible) { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
   :global(a) { color: var(--acento); }
+  /* Alto contraste (I-06): foco e bordas mais grossos e links sempre sublinhados, para nada depender só de cor. */
+  :global(:root[data-tema="alto-contraste"] :focus-visible) { outline-width: 0.25rem; }
+  :global(:root[data-tema="alto-contraste"] .botao) { border-width: 0.125rem; }
+  :global(:root[data-tema="alto-contraste"] a) { text-decoration: underline; }
   /* Coluna central; respeita o recorte da câmera e a barra de gestos (viewport-fit=cover). */
   :global(.coluna) {
     max-width: 40rem; margin: 0 auto; box-sizing: border-box;

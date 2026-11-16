@@ -1,12 +1,13 @@
-// Preferência de aparência: Automático (padrão, segue o sistema), Claro ou Escuro.
-// "sistema" não define data-tema e deixa o CSS seguir prefers-color-scheme.
+// Preferência de aparência: Automático (padrão, segue o sistema), Claro, Escuro ou Alto contraste (I-06, baixa visão).
+// "sistema" não define data-tema e deixa o CSS seguir prefers-color-scheme. O Automático NÃO liga o alto contraste sozinho
+// (prefers-contrast): não se sabe se a WebView repassa essa preferência, e mudar a cor de quem não escolheu surpreenderia.
 // O app.html aplica a escolha salva antes da primeira pintura, para não piscar.
 
 import { CHAVE_ESTILO, ESTILOS, ehEstilo, type Estilo } from "./estilos";
 
 export { ESTILOS, type Estilo };
 
-export const TEMAS = ["sistema", "claro", "escuro"] as const;
+export const TEMAS = ["sistema", "claro", "escuro", "alto-contraste"] as const;
 export type Tema = (typeof TEMAS)[number];
 
 const CHAVE = "tema";

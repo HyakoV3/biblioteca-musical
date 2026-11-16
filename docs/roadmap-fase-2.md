@@ -117,7 +117,7 @@ sem ir para o Git.
 ## Ideias sem etapa ainda
 
 Entram conforme o retorno dos testes: gravador de áudio (I-03, com fone toca o hino no ouvido e grava; sem fone só
-grava), afinador (I-13, dá o tom e mostra num medidor se a nota está baixa ou alta), modo de baixa visão (I-06),
+grava), afinador (I-13, dá o tom e mostra num medidor se a nota está baixa ou alta),
 e as ideias novas I-16 (repetir um trecho em laço), I-17 (lembrar o último hino), I-18 (pular uma parte
 inteira), I-19 (organizar como a letra aparece, a partir das fotos do hinário), I-20 (metrônomo embutido) e I-22 (continuar tocando com a tela bloqueada). Todas em [`roadmap-ideas.md`](roadmap-ideas.md).
 Gravador e afinador dividem a detecção de fone e a permissão de microfone: convém decidir os dois juntos. As ideias **já

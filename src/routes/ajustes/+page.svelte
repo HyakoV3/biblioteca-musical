@@ -71,7 +71,7 @@
     <!-- Duas escolhas que se combinam: o modo (claro ou escuro) e o estilo de cor. O próprio rótulo visível dá o nome
          ao grupo (aria-labelledby), então texto visível e nome acessível são sempre o mesmo. -->
     <p class="rotulo-grupo" id="rotulo-modo">{t("ajustes.modo")}</p>
-    <fieldset class="segmentos" aria-labelledby="rotulo-modo">
+    <fieldset class="segmentos modo" aria-labelledby="rotulo-modo">
       {#each TEMAS as id}
         <label class:ativo={tema.atual === id}>
           <input type="radio" name="tema" value={id} checked={tema.atual === id} onchange={() => (tema.atual = id)} />
@@ -80,7 +80,8 @@
       {/each}
     </fieldset>
     <p class="rotulo-grupo" id="rotulo-estilo">{t("ajustes.estilo")}</p>
-    <fieldset class="segmentos" aria-labelledby="rotulo-estilo">
+    <!-- O Alto contraste tem paleta própria: com ele o estilo não vale, então o grupo fica desativado e uma nota diz por quê. -->
+    <fieldset class="segmentos" aria-labelledby="rotulo-estilo" disabled={tema.atual === "alto-contraste"}>
       {#each ESTILOS as id}
         <label class:ativo={estilo.atual === id}>
           <input type="radio" name="estilo" value={id} checked={estilo.atual === id} onchange={() => (estilo.atual = id)} />
@@ -88,6 +89,7 @@
         </label>
       {/each}
     </fieldset>
+    {#if tema.atual === "alto-contraste"}<p class="meta">{t("ajustes.estilo_alto_contraste")}</p>{/if}
   </section>
 
   <section>
@@ -273,6 +275,10 @@
   .rotulo-grupo { margin: 0.9rem 0 0.35rem; font-size: 0.9rem; color: var(--suave); }
   .rotulo-grupo:first-of-type { margin-top: 0.4rem; }
   .segmentos { display: flex; gap: 0.4rem; margin: 0; padding: 0; border: 0; }
+  /* O modo tem quatro opções: 2 por linha no celular em pé e 4 por linha numa janela larga (o rem acompanha a fonte do sistema). */
+  .segmentos.modo { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); }
+  .segmentos:disabled { opacity: 0.6; }
+  .segmentos:disabled input { cursor: not-allowed; }
   .segmentos label { position: relative; flex: 1; }
   .segmentos input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
   .segmentos span {

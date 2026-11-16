@@ -70,6 +70,9 @@
      no centro do ponto, que nunca passa das pontas da barra. */
   .trilho { width: 100%; height: 0.5rem; border-radius: 0.25rem; background: var(--borda); overflow: hidden; }
   .fino .trilho { height: 0.25rem; border-radius: 0; }
+  /* Alto contraste (I-06): a trilha fica mais grossa (no miniplayer, que tem 1,25rem de faixa, passa de 0,25rem a 0,375rem). */
+  :global(:root[data-tema="alto-contraste"]) .trilho { height: 0.75rem; }
+  :global(:root[data-tema="alto-contraste"]) .fino .trilho { height: 0.375rem; }
   .preenchido { height: 100%; width: calc(var(--ponto) / 2 + (100% - var(--ponto)) * var(--f)); background: var(--ouro-linha); }
   .ponto {
     position: absolute; top: 50%; left: calc((100% - var(--ponto)) * var(--f)); margin-top: calc(var(--ponto) / -2);
