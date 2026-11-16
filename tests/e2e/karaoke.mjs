@@ -272,6 +272,16 @@ async function principal() {
       tocando: /pause|pausar/i.test(document.querySelector('.mini .acao')?.getAttribute('aria-label') ?? ''),
       valor: document.querySelector('.mini .busca-entrada')?.getAttribute('aria-valuetext') ?? null,
     })`);
+  // A área de toque do slider do miniplayer tem de ficar DENTRO do miniplayer e livre dos outros controles: se invadisse a linha de
+  // cima (botões e link do hino) ou a barra de abas embaixo, roubaria toques deles.
+  const geo = await av(`(() => {
+    const m = document.querySelector('.mini').getBoundingClientRect();
+    const i = document.querySelector('.mini .busca-entrada').getBoundingClientRect();
+    const cruza = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    const outros = [...document.querySelectorAll('.mini .acao, .mini .info, [role="tablist"] [role="tab"]')].map((e) => e.getBoundingClientRect());
+    return { dentro: i.top >= m.top - 0.5 && i.bottom <= m.bottom + 0.5, livre: outros.every((r) => !cruza(i, r)), altura: Math.round(i.height) };
+  })()`);
+  confere(geo.dentro && geo.livre && geo.altura >= 20, `a área de toque do slider do miniplayer fica dentro dele e não cobre outros controles: ${JSON.stringify(geo)}`);
   // Voltar com a música PAUSADA (estava na 2ª estrofe): vai para 0:03 e continua pausada.
   confere(await buscar(".mini .busca-entrada", 3), "slider do miniplayer encontrado e usado (voltar para 0:03 com a música pausada)");
   await dormir(600);
@@ -301,6 +311,35 @@ async function principal() {
   await av("document.querySelector('.chave-karaoke')?.click(); 1"); // desliga
   await dormir(400);
   confere((await av("document.querySelectorAll('.trecho').length")) === 0, "com o botão desligado nada fica aceso");
+  // Duas soltas seguidas (é o que a seta do teclado segurada faz): vale a ÚLTIMA. A segunda chega com o reagendamento da primeira
+  // ainda em curso e não pode ser descartada em silêncio (a barra voltaria ao ponto antigo e a pessoa acharia que não funcionou).
+  await av(`(() => {
+    const i = document.querySelector('.mini .busca-entrada');
+    for (const v of [2, 6]) {
+      i.value = v;
+      i.dispatchEvent(new Event("input", { bubbles: true }));
+      i.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  })()`);
+  await dormir(900);
+  const aposDuas = await av("document.querySelector('.mini .busca-entrada')?.getAttribute('aria-valuetext') ?? null");
+  confere((aposDuas ?? "").startsWith("0:06"), `duas soltas seguidas: vale a última (0:06): ${JSON.stringify(aposDuas)}`);
+  // Corrida: soltar o slider e tocar em Parar logo em seguida, com o áudio ainda reagendando, tem de parar tudo e SEM aviso de
+  // erro falso (antes, o reagendamento lia o hino que o Parar já tinha esquecido e mostrava uma falha de áudio que não existiu).
+  const corrida = await av(`(() => {
+    const i = document.querySelector('.mini .busca-entrada');
+    const parar = [...document.querySelectorAll('.mini .acao')].at(-1);
+    if (!i || !parar) return false;
+    i.value = 5;
+    i.dispatchEvent(new Event("input", { bubbles: true }));
+    i.dispatchEvent(new Event("change", { bubbles: true }));
+    parar.click();
+    return true;
+  })()`);
+  confere(corrida, "slider solto e Parar tocado logo em seguida");
+  await dormir(1200);
+  confere(!(await av("!!document.querySelector('.mini')")), "Parar logo depois de soltar o slider para tudo (o miniplayer some)");
+  confere(!(await av("!!document.querySelector('.aviso.erro')")), "Parar durante o reagendamento não mostra erro falso");
   await av("clearInterval(window.__iv); 1");
   const am = await av("window.__am");
   ws.close();

@@ -84,6 +84,11 @@ const mudou = (c: Config, a: Agendado) =>
 
 let relogio: ReturnType<typeof setInterval> | null = null;
 let trocando = false;
+// Muda a cada `parar()`. Quem está esperando o áudio (tocar, reagendar) guarda o número de quando começou: se mudou ao voltar,
+// a pessoa tocou em Parar nesse meio tempo, então o som que acabou de ser agendado é silenciado em vez de começar a tocar.
+let geracao = 0;
+// A última posição pedida no slider enquanto um reagendamento estava em curso (aplicada ao terminar, em vez de descartada).
+let buscaPendente: number | null = null;
 
 const efetivo = (c: Config, i: number) => (c.mudas[i] ? 0 : c.volumes[i]);
 
@@ -134,12 +139,17 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
           ? vozesDaIntroducao(hino)
           : vozesDaVez(hino, typeof parte === "number" ? parte : 1, total);
     pararRelogio();
+    const g = geracao;
     duracao = await sint.tocar(vozes, {
       andamento: c.andamento,
       transposicao: c.transposicao,
       instrumentos: [...c.instrumentos],
       volumes: hino.vozes.map((_, i) => efetivo(c, i)),
     });
+    if (g !== geracao) {
+      sint.parar(); // Parar foi tocado enquanto o áudio iniciava: não deixa o som começar
+      return;
+    }
     atual = {
       numero: hino.numero,
       titulo: hino.titulo,
@@ -188,6 +198,7 @@ async function reagendar(batida: number, pausado: boolean): Promise<boolean> {
   const c = atual ? configs.get(atual.numero) : undefined;
   if (!atual || !c || !agendado) return false;
   trocando = true;
+  const g = geracao;
   try {
     duracao = await sint.tocar(
       agendado.vozes,
@@ -199,6 +210,11 @@ async function reagendar(batida: number, pausado: boolean): Promise<boolean> {
       },
       { aPartirDe: batida, pausado },
     );
+    if (g !== geracao || !atual || !agendado) {
+      // Parar foi tocado enquanto o áudio reagendava: silencia o que acabou de ser agendado e sai sem erro.
+      sint.parar();
+      return false;
+    }
     agendado = {
       vozes: agendado.vozes,
       andamento: c.andamento,
@@ -235,17 +251,31 @@ async function continuar() {
  * tocando dali, pausado fica pausado ali. Fora do hino (de 0 até um instante antes do fim). Sem nada tocando, não faz nada.
  */
 async function irPara(segundos: number) {
-  if (trocando || !atual || !agendado || (estado !== "tocando" && estado !== "pausado")) return;
-  const alvo = Math.min(Math.max(0, Number.isFinite(segundos) ? segundos : 0), Math.max(0, duracao - 0.05));
-  const tocandoAntes = estado === "tocando";
-  const batida = (alvo * agendado.andamento) / 60;
-  pararRelogio();
-  decorrido = alvo; // a barra já mostra o ponto escolhido enquanto o som é reagendado
-  if (!(await reagendar(batida, !tocandoAntes))) return;
-  if (tocandoAntes) iniciarRelogio();
+  if (!atual || !agendado || (estado !== "tocando" && estado !== "pausado")) return;
+  if (trocando) {
+    // Já há um reagendamento em curso (outra soltura, ou uma seta do teclado repetida): guarda só a última posição pedida e a
+    // aplica ao terminar, em vez de descartar e deixar a barra voltar ao ponto antigo.
+    buscaPendente = segundos;
+    return;
+  }
+  buscaPendente = null;
+  let proximo: number | null = segundos;
+  while (proximo !== null && atual && agendado && (estado === "tocando" || estado === "pausado")) {
+    const alvo = Math.min(Math.max(0, Number.isFinite(proximo) ? proximo : 0), Math.max(0, duracao - 0.05));
+    const tocandoAntes = estado === "tocando";
+    const batida = (alvo * agendado.andamento) / 60;
+    pararRelogio();
+    decorrido = alvo; // a barra já mostra o ponto escolhido enquanto o som é reagendado
+    if (!(await reagendar(batida, !tocandoAntes))) return;
+    if (tocandoAntes) iniciarRelogio();
+    proximo = buscaPendente;
+    buscaPendente = null;
+  }
 }
 
 function parar() {
+  geracao++;
+  buscaPendente = null;
   pararRelogio();
   sint.parar();
   estado = "parado";

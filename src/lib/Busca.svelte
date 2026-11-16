@@ -18,7 +18,7 @@
     habilitado: boolean;
     /** Chamado ao soltar, com o ponto escolhido em segundos. */
     aoBuscar: (segundos: number) => void;
-    /** Versão do miniplayer: um fio de 4 px à vista, com uma área de toque maior (24 px) e invisível por cima. */
+    /** Versão do miniplayer: um fio de 4 px à vista, com uma área de toque (20 px) reservada no layout e invisível por cima. */
     fino?: boolean;
     /** O ponto que a pessoa está arrastando (nulo quando não arrasta), para quem mostra o tempo ao lado. */
     previa?: number | null;
@@ -63,12 +63,11 @@
   .busca-entrada { display: block; width: 100%; margin: 0; min-height: 48px; accent-color: var(--acento); }
   .busca-entrada:disabled { opacity: 0.5; }
 
-  /* Miniplayer: o fio de 4 px é o que se vê; a área de toque (24 px) é o input, transparente, sobre ele. */
-  .fino .fio { height: 4px; background: var(--borda); }
+  /* Miniplayer: o fio de 4 px é o que se vê, e a área de toque (20 px) é um espaço RESERVADO no layout, com o input transparente
+     preenchendo-o. Não sobe sobre os botões da linha de cima nem desce sobre a barra de abas, então não rouba toques de ninguém. */
+  .fino { height: 20px; display: flex; align-items: center; }
+  .fino .fio { width: 100%; height: 4px; background: var(--borda); }
   .fino .preenchido { height: 100%; background: var(--ouro-linha); }
-  .fino .busca-entrada {
-    position: absolute; left: 0; right: 0; top: -10px; /* centrada no fio de 4 px */
-    height: 24px; min-height: 0; opacity: 0; cursor: pointer;
-  }
+  .fino .busca-entrada { position: absolute; inset: 0; height: 100%; min-height: 0; opacity: 0; cursor: pointer; }
   .fino:has(.busca-entrada:focus-visible) .fio { outline: 2px solid var(--acento); outline-offset: 2px; }
 </style>
