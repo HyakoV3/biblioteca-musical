@@ -6,7 +6,7 @@
 
 use roxmltree::{Document, Node};
 use serde_json::{Map, Value, json};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -527,6 +527,30 @@ fn corrigir_silabas(silabas: &mut [Silaba]) {
     }
 }
 
+/// Num hino com final, o texto do trecho final (o coro cantado só na última vez, depois da última estrofe) costuma vir escrito pelo
+/// autor sob a estrofe 1, que é a camada que ele já tinha aberta. No hinário impresso ele vem DEPOIS da última estrofe. Então o
+/// texto que começa em `t_final` (o início da 2ª casa) e está sob uma estrofe que não é a última passa para a última estrofe.
+/// Só se mexe quando esse texto está todo sob UMA estrofe: com mais de uma, não há como saber a qual cada trecho pertence.
+fn coro_para_a_ultima_estrofe(silabas: &mut [Silaba], t_final: f64) {
+    const EPS: f64 = 1e-6;
+    let Some(ultima) = silabas.iter().map(|s| s.verso).max() else {
+        return;
+    };
+    let origem: BTreeSet<u32> = silabas
+        .iter()
+        .filter(|s| s.t >= t_final - EPS && s.verso != ultima)
+        .map(|s| s.verso)
+        .collect();
+    if origem.len() == 1 {
+        for sil in silabas
+            .iter_mut()
+            .filter(|s| s.t >= t_final - EPS && s.verso != ultima)
+        {
+            sil.verso = ultima;
+        }
+    }
+}
+
 /// Monta a letra a partir das sílabas, **ordenadas pelo tempo da nota** (e não pela ordem no
 /// arquivo, onde as camadas de uma pauta vêm uma depois da outra). Cada estrofe (`<no>`,
 /// 0 = primeira) vira uma sequência de linhas, com quebra nas respirações que terminam um VERSO
@@ -994,6 +1018,9 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
         }
 
         if letra.is_empty() && !silabas.is_empty() {
+            if let Some(&(a2, _)) = plano.as_ref().and_then(|p| p.final_.last()) {
+                coro_para_a_ultima_estrofe(&mut silabas, estrutura.inicios[a2]);
+            }
             (letra, marcas) = montar_letra(silabas, respiracoes);
         }
         let base = if nome_parte.is_empty() {
@@ -1746,6 +1773,113 @@ mod testes {
                 "Teta iota Jeová kapa."
             ]
         );
+    }
+
+    // --- Coro do final: vai para a última estrofe. Texto fictício. ---
+
+    fn silaba_em(t: f64, verso: u32, texto: &str) -> Silaba {
+        Silaba {
+            t,
+            voz: 0,
+            verso,
+            continua: false,
+            texto: texto.to_string(),
+        }
+    }
+
+    /// Três estrofes de duas sílabas (tempos 0 a 5, com a estrofe 3 entre 4 e 5) e o coro depois (tempos 10 e 11).
+    fn estrofes_com_coro(verso_do_coro: u32) -> Vec<Silaba> {
+        vec![
+            silaba_em(0.0, 0, "alfa"),
+            silaba_em(1.0, 0, "beta"),
+            silaba_em(2.0, 1, "gama"),
+            silaba_em(3.0, 1, "delta"),
+            silaba_em(4.0, 2, "eta"),
+            silaba_em(5.0, 2, "teta"),
+            silaba_em(10.0, verso_do_coro, "coro"),
+            silaba_em(11.0, verso_do_coro, "final"),
+        ]
+    }
+
+    #[test]
+    fn coro_escrito_sob_a_estrofe_1_vai_para_a_ultima() {
+        let mut s = estrofes_com_coro(0);
+        coro_para_a_ultima_estrofe(&mut s, 10.0);
+        let (letra, _) = montar_letra(s, vec![9.5]);
+        assert_eq!(
+            letra,
+            vec![
+                "1. alfa beta",
+                "",
+                "2. gama delta",
+                "",
+                "3. eta teta",
+                "coro final"
+            ]
+        );
+    }
+
+    #[test]
+    fn coro_que_ja_esta_na_ultima_estrofe_fica_como_esta() {
+        let mut s = estrofes_com_coro(2);
+        coro_para_a_ultima_estrofe(&mut s, 10.0);
+        assert!(s.iter().filter(|x| x.t >= 10.0).all(|x| x.verso == 2));
+        assert!(
+            s.iter()
+                .filter(|x| x.t < 10.0)
+                .map(|x| x.verso)
+                .eq([0, 0, 1, 1, 2, 2])
+        );
+    }
+
+    #[test]
+    fn coro_sob_mais_de_uma_estrofe_nao_e_mexido() {
+        // Texto do final sob as estrofes 1 e 2: não há como saber a qual pertence cada trecho.
+        let mut s = estrofes_com_coro(0);
+        s[7].verso = 1;
+        coro_para_a_ultima_estrofe(&mut s, 10.0);
+        assert_eq!((s[6].verso, s[7].verso), (0, 1));
+    }
+
+    #[test]
+    fn hino_de_uma_estrofe_so_nao_muda() {
+        let mut s = vec![silaba_em(0.0, 0, "alfa"), silaba_em(10.0, 0, "coro")];
+        coro_para_a_ultima_estrofe(&mut s, 10.0);
+        assert!(s.iter().all(|x| x.verso == 0));
+    }
+
+    #[test]
+    fn no_hino_com_final_o_coro_escrito_sob_a_estrofe_1_sai_na_ultima() {
+        // Mesma estrutura do hino com final: o texto do trecho final (compassos 5 e 6) está sob a estrofe 1 (<no>0),
+        // e a 2ª casa traz só a última sílaba da estrofe 2.
+        let comp = |extra: &str, pitch: u8, letras: &[(u32, &str)]| {
+            let ls: String = letras
+                .iter()
+                .map(|(no, t)| format!("<Lyrics><no>{no}</no><text>{t}</text></Lyrics>"))
+                .collect();
+            format!(
+                "<Measure>{extra}<voice>{C44}<Chord><durationType>whole</durationType>{ls}<Note><pitch>{pitch}</pitch></Note></Chord></voice></Measure>"
+            )
+        };
+        let medidas = [
+            comp("<startRepeat/>", 60, &[(0, "a"), (1, "b")]),
+            comp("", 62, &[(0, "c"), (1, "d")]),
+            comp(
+                r#"<endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta>"#,
+                64,
+                &[(0, "e"), (1, "f")],
+            ),
+            comp(
+                r#"<endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta>"#,
+                65,
+                &[(1, "g")],
+            ),
+            comp(r#"<endSpanner id="2"/>"#, 67, &[(0, "coro")]),
+            comp("", 69, &[(0, "final")]),
+        ]
+        .concat();
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap();
+        assert_eq!(h.letra, vec!["1. a c e", "", "2. b d f g coro final"]);
     }
 
     #[test]

@@ -330,8 +330,10 @@ verso, títulos). O desenho exato depende das fotos.
   pista confiável é o **texto**: o verso novo começa em maiúscula, e a continuação, em minúscula (com exceção dos nomes
   reverenciais). Com essa regra, **46 dos 48 versos impressos** conferidos passaram a sair iguais, e as quebras acertaram 57
   de 57. Descrita em `docs/FORMATO.md`. A regra foi ajustada olhando esses 4 hinos, então vale **validar com mais fotos**.
-- **Coro (refrão):** nos hinos 398 e 457 o hinário imprime o coro **em negrito e separado** da estrofe, sem número. No JSON ele
-  segue **dentro da estrofe 1**, sem marca nenhuma. O app não sabe onde o coro começa.
+- **Coro (refrão):** nos hinos 398 e 457 o hinário imprime o coro **em negrito e separado** da estrofe, sem número. **Posição:**
+  no 457 (hino com final) o coro vem **depois da última estrofe**, e o autor o escreveu sob a estrofe 1; o conversor agora o
+  passa para a última (2026-11-16, `coro_para_a_ultima_estrofe`). No 398 o coro vem logo **depois da estrofe 1**, e já saía
+  ali. **Falta:** o JSON não marca onde o coro começa, então o app ainda o mostra colado à estrofe, sem negrito nem separação.
 - **Versos colados:** no hino 283 a partitura não tem respiração entre dois versos, e eles saem na mesma linha. A regra de
   maiúscula não resolve (a letra tem frases com maiúscula no meio de um verso); fica para o arquivo de correções (I-05).
 - **Erros de digitação do autor** nos arquivos `.mscx`. **O conversor já conserta, por regra segura** (2026-11-16): pronome
