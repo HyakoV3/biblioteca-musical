@@ -422,8 +422,8 @@
   .player { display: grid; gap: 1rem; }
   .principal { display: flex; gap: 0.5rem; }
   .principal :global(.botao) { gap: 0.5rem; }
-  .tocar { flex: 1; min-height: 56px; font-size: 1.15rem; }
-  .parar { min-height: 56px; }
+  .tocar { flex: 1; min-height: 3.5rem; font-size: 1.15rem; }
+  .parar { min-height: 3.5rem; }
   .tempos { display: flex; justify-content: space-between; margin-top: 0.3rem; font-size: 0.85rem; color: var(--suave); font-variant-numeric: tabular-nums; }
   .dica { margin: 0; }
 
@@ -432,20 +432,20 @@
   .passo { display: flex; align-items: center; gap: 0.4rem; }
   .passo button {
     display: inline-flex; align-items: center; justify-content: center; padding: 0;
-    width: 48px; height: 48px; font-size: 1.4rem; border-radius: 12px; line-height: 1; cursor: pointer;
-    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+    width: 3rem; height: 3rem; font-size: 1.4rem; border-radius: 0.75rem; line-height: 1; cursor: pointer;
+    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   .passo output { min-width: 6.5rem; text-align: center; font-variant-numeric: tabular-nums; }
   /* Andamento: rótulo em cima e os cinco itens (−5 −1 valor +1 +5) repartindo a largura toda. Botões de texto. */
   .passo-linha.empilhado { flex-wrap: wrap; }
   .empilhado .passo { flex: 1 1 100%; justify-content: space-between; }
-  .empilhado .passo button { flex: none; min-width: 48px; width: auto; padding: 0 0.5rem; font-size: 1.05rem; font-weight: 600; }
+  .empilhado .passo button { flex: none; min-width: 3rem; width: auto; padding: 0 0.5rem; font-size: 1.05rem; font-weight: 600; }
   .empilhado .passo output { flex: 1; min-width: 0; }
   /* Botões compactos ("▶ Intro", "▶ 1ª", "▶ 3ª ⚑") que dividem a linha inteira. O que toca fica em destaque. */
   .vezes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   /* Cada botão ocupa uma fatia igual da linha (flex: 1 1 0). Com muitas vezes (até 8 + Intro), quebram de linha e
      cada linha também se reparte por inteiro. */
-  .vez { flex: 1 1 0; gap: 0.35rem; min-width: 48px; padding: 0 0.4rem; position: relative; overflow: hidden; }
+  .vez { flex: 1 1 0; gap: 0.35rem; min-width: 3rem; padding: 0 0.4rem; position: relative; overflow: hidden; }
   .rotulo-vez { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; }
   /* A parte que soa: base normal (a cor do cartão) com borda dourada, e por cima o dourado enchendo da esquerda para a
      direita. As duas camadas têm o mesmo tamanho e o mesmo rótulo, e a de cima é recortada no quanto já passou, então o
@@ -457,10 +457,10 @@
   }
 
   .vozes { display: grid; gap: 0.5rem; }
-  .voz { display: grid; grid-template-columns: 48px minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }
+  .voz { display: grid; grid-template-columns: 3rem minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }
   .chave {
-    min-width: 48px; min-height: 48px; font-size: 1.2rem; border-radius: 12px; cursor: pointer;
-    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+    min-width: 3rem; min-height: 3rem; font-size: 1.2rem; border-radius: 0.75rem; cursor: pointer;
+    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   /* Voz silenciada: rótulo "silenciada", nome riscado e interruptor tracejado (não depende só de cor). */
   .voz.silenciada .chave { border-style: dashed; opacity: 0.75; }
@@ -468,12 +468,12 @@
   .identidade { display: flex; flex-direction: column; min-width: 0; }
   .nome { font-weight: 600; overflow-wrap: anywhere; }
   .estado-voz { font-size: 0.8rem; color: var(--suave); font-variant-numeric: tabular-nums; }
-  input[type="range"] { width: 100%; min-height: 48px; accent-color: var(--acento); }
+  input[type="range"] { width: 100%; min-height: 3rem; accent-color: var(--acento); }
 
   /* Cards: o primeiro (Tocar) é fixo; os outros abrem e fecham. Um resumo na linha de cima mostra o estado fechado. */
-  .cartao { border: 1px solid var(--borda-controle); border-radius: 12px; background: var(--superficie); }
+  .cartao { border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
   summary, .cabecalho {
-    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 48px;
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 3rem;
     padding: 0 0.9rem; font-weight: 600;
   }
   summary { cursor: pointer; list-style: none; }
@@ -486,18 +486,18 @@
   .inst-linha { display: grid; grid-template-columns: minmax(5.5rem, 8rem) minmax(0, 1fr); align-items: center; gap: 0.5rem; }
   .inst-controles { display: grid; gap: 0.4rem; min-width: 0; }
   /* Alternador Sintetizado | Gravado: o escolhido leva ✓ e negrito, além da cor. */
-  .alternador { display: flex; border: 1px solid var(--borda-controle); border-radius: 12px; overflow: hidden; }
+  .alternador { display: flex; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; overflow: hidden; }
   .alt {
-    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; min-height: 44px;
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; min-height: 2.75rem;
     padding: 0 0.4rem; font-size: 0.95rem; border: 0; background: var(--superficie); color: var(--texto); cursor: pointer;
   }
-  .alt + .alt { border-left: 1px solid var(--borda-controle); }
+  .alt + .alt { border-left: 0.0625rem solid var(--borda-controle); }
   .alt[aria-pressed="true"] { background: var(--acento); color: var(--acento-texto); font-weight: 700; }
   .alt:disabled { opacity: 0.5; cursor: not-allowed; }
   select {
     width: 100%; min-width: 0; max-width: 100%; text-overflow: ellipsis;
-    min-height: 48px; font-size: 1rem; border-radius: 12px; padding: 0 0.5rem;
-    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+    min-height: 3rem; font-size: 1rem; border-radius: 0.75rem; padding: 0 0.5rem;
+    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   .secundario { background: transparent; font-size: 0.95rem; }
   button:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }

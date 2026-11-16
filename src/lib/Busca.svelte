@@ -74,7 +74,7 @@
   .ponto {
     position: absolute; top: 50%; left: calc((100% - var(--ponto)) * var(--f)); margin-top: calc(var(--ponto) / -2);
     width: var(--ponto); height: var(--ponto); box-sizing: border-box; border-radius: 50%;
-    background: var(--ouro-linha); border: 0.1875rem solid var(--superficie); box-shadow: 0 0 0 1px var(--ouro-linha);
+    background: var(--ouro-linha); border: 0.1875rem solid var(--superficie); box-shadow: 0 0 0 0.0625rem var(--ouro-linha);
   }
 
   .busca-entrada { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; -webkit-appearance: none; appearance: none; }
@@ -84,7 +84,7 @@
   .busca-entrada::-moz-range-thumb { width: var(--ponto); height: var(--ponto); border: 0; }
   .busca-entrada:disabled { cursor: default; }
 
-  /* Foco: o input é transparente, então o anel (o do app: 3 px de `--foco`) vai na barra e no ponto. */
+  /* Foco: o input é transparente, então o anel (o do app: 0,1875rem de `--foco`) vai na barra e no ponto. */
   .busca:has(.busca-entrada:focus-visible) .trilho,
-  .busca:has(.busca-entrada:focus-visible) .ponto { outline: 3px solid var(--foco); outline-offset: 2px; }
+  .busca:has(.busca-entrada:focus-visible) .ponto { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
 </style>

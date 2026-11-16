@@ -62,13 +62,13 @@
 <style>
   .mini {
     /* Sobe acima da barra de abas (--altura-navegacao) ou se afasta da barra lateral (--largura-trilho), quando existem. */
-    position: fixed; left: var(--largura-trilho, 0px); right: 0; bottom: var(--altura-navegacao, 0px); z-index: 20;
-    background: var(--superficie); border-top: 1px solid var(--borda-controle);
+    position: fixed; left: var(--largura-trilho, 0rem); right: 0; bottom: var(--altura-navegacao, 0rem); z-index: 20;
+    background: var(--superficie); border-top: 0.0625rem solid var(--borda-controle);
     padding-bottom: var(--inset-miniplayer, env(safe-area-inset-bottom));
   }
-  .linha { display: flex; align-items: center; gap: 0.5rem; min-height: 56px; } /* 56 + 20 do slider: só 8 px a mais que antes */
+  .linha { display: flex; align-items: center; gap: 0.5rem; min-height: 3.5rem; } /* 3,5rem + 1,25rem do slider: só 0,5rem a mais que antes */
   .acao {
-    flex: none; width: 48px; height: 48px; font-size: 1.2rem; border-radius: 12px;
+    flex: none; width: 3rem; height: 3rem; font-size: 1.2rem; border-radius: 0.75rem;
     border: 0; background: transparent; color: var(--texto); cursor: pointer;
   }
   .info { flex: 1; min-width: 0; display: flex; flex-direction: column; text-decoration: none; color: var(--texto); }

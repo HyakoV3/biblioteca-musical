@@ -243,31 +243,31 @@
 
 <style>
   section { margin-bottom: 1.8rem; }
-  .cartao { border: 1px solid var(--borda-controle); border-radius: 12px; background: var(--superficie); }
+  .cartao { border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
   summary {
-    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 48px;
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 3rem;
     padding: 0 0.9rem; font-weight: 600; cursor: pointer; list-style: none;
   }
   summary::-webkit-details-marker { display: none; }
   .corpo { padding: 0.2rem 0.9rem 0.9rem; }
   .versao { margin: 0 0 1.5rem; text-align: center; }
-  .pacote { display: grid; gap: 0.5rem; margin: 0.6rem 0; padding: 0.8rem 0.9rem; border: 1px solid var(--borda-controle); border-radius: 12px; background: var(--superficie); }
+  .pacote { display: grid; gap: 0.5rem; margin: 0.6rem 0; padding: 0.8rem 0.9rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
   .pacote-info { display: grid; gap: 0.15rem; }
-  .pacote progress { width: 100%; height: 10px; accent-color: var(--acento); }
+  .pacote progress { width: 100%; height: 0.625rem; accent-color: var(--acento); }
   .sobre p, .sobre li { line-height: 1.5; }
   .sobre h3 { margin: 1.1rem 0 0.3rem; font-size: 0.95rem; }
   .sobre ul { margin: 0; padding-left: 1.2rem; }
   .sobre ul.creditos { padding-left: 0; list-style: none; }
-  .creditos li { display: grid; gap: 0.15rem; padding: 0.7rem 0; border-top: 1px solid var(--borda-controle); }
+  .creditos li { display: grid; gap: 0.15rem; padding: 0.7rem 0; border-top: 0.0625rem solid var(--borda-controle); }
   .creditos li:first-child { border-top: 0; }
   .creditos .url { overflow-wrap: anywhere; }
-  .licenca summary { min-height: 44px; padding: 0; font-weight: 500; color: var(--acento); }
+  .licenca summary { min-height: 2.75rem; padding: 0; font-weight: 500; color: var(--acento); }
   .licenca pre { margin: 0.4rem 0 0.8rem; font: 0.78rem/1.45 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
   h2 { margin: 0 0 0.6rem; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--suave); }
   select {
     width: 100%; box-sizing: border-box; /* ocupa toda a largura, como as opções de aparência */
-    min-height: 48px; font-size: 1rem; padding: 0 0.6rem; border-radius: 12px;
-    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+    min-height: 3rem; font-size: 1rem; padding: 0 0.6rem; border-radius: 0.75rem;
+    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   /* Aparência: três opções lado a lado; a escolhida tem "✓", negrito e borda de acento (não só cor). */
   .rotulo-grupo { margin: 0.9rem 0 0.35rem; font-size: 0.9rem; color: var(--suave); }
@@ -276,15 +276,15 @@
   .segmentos label { position: relative; flex: 1; }
   .segmentos input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
   .segmentos span {
-    display: flex; align-items: center; justify-content: center; min-height: 48px; box-sizing: border-box;
-    padding: 0 0.5rem; text-align: center; border-radius: 12px; font-size: 0.95rem;
-    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+    display: flex; align-items: center; justify-content: center; min-height: 3rem; box-sizing: border-box;
+    padding: 0 0.5rem; text-align: center; border-radius: 0.75rem; font-size: 0.95rem;
+    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   .opcao-tema { display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; }
-  .segmentos .ativo span { border: 2px solid var(--acento); font-weight: 700; }
-  .segmentos input:focus-visible + span { outline: 3px solid var(--foco); outline-offset: 2px; }
+  .segmentos .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
+  .segmentos input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
   .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0; }
-  .confirma { margin: 0.8rem 0; padding: 1rem; border: 1px solid var(--perigo); border-radius: 12px; background: var(--superficie); }
+  .confirma { margin: 0.8rem 0; padding: 1rem; border: 0.0625rem solid var(--perigo); border-radius: 0.75rem; background: var(--superficie); }
   .confirma h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
   .confirma p { margin: 0 0 0.6rem; line-height: 1.5; }
 </style>

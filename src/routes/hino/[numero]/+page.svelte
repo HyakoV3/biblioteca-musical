@@ -266,17 +266,17 @@
 {/if}
 
 <style>
-  .botao-icone { min-width: 48px; padding: 0; }
-  .chave-karaoke[aria-pressed="true"] { border: 2px solid var(--ouro-linha); }
+  .botao-icone { min-width: 3rem; padding: 0; }
+  .chave-karaoke[aria-pressed="true"] { border: 0.125rem solid var(--ouro-linha); }
   /* A estrofe que soa leva uma barra dourada na borda (o recuo negativo mantém o texto no mesmo lugar). */
-  .estrofe { margin-bottom: 1.4rem; margin-left: -1rem; padding-left: calc(1rem - 4px); border-left: 4px solid transparent; }
+  .estrofe { margin-bottom: 1.4rem; margin-left: -1rem; padding-left: calc(1rem - 0.25rem); border-left: 0.25rem solid transparent; }
   .estrofe.da-vez { border-left-color: var(--ouro-linha); }
   /* Tocando o karaokê, as outras linhas da estrofe esmaecem; a linha atual fica normal e o trecho que soa, em
      destaque dourado com sublinhado (sem mudar o tamanho do texto, para nada "pular"). */
   .estrofe.da-vez p:not(.acesa) { color: var(--suave); }
   .trecho {
-    background: var(--ouro); color: var(--ouro-sobre); border-radius: 4px; box-shadow: 0 0 0 2px var(--ouro);
-    text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px;
+    background: var(--ouro); color: var(--ouro-sobre); border-radius: 0.25rem; box-shadow: 0 0 0 0.125rem var(--ouro);
+    text-decoration: underline; text-decoration-thickness: 0.125rem; text-underline-offset: 0.1875rem;
   }
   .estrofe h2 { margin: 0 0 0.3rem; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--suave); }
   /* O tamanho multiplica o de base (em rem, que já segue a fonte do sistema), e não o substitui. */
@@ -288,10 +288,10 @@
   .barra-letra { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1rem; margin: 0 0 1.2rem; }
   .barra-letra .grupo { display: flex; gap: 0.4rem; }
   .barra-letra button {
-    display: inline-flex; align-items: center; justify-content: center; padding: 0; min-width: 48px; height: 48px;
-    font-size: 1.1rem; font-weight: 600; border-radius: 12px; line-height: 1; cursor: pointer;
-    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+    display: inline-flex; align-items: center; justify-content: center; padding: 0; min-width: 3rem; height: 3rem;
+    font-size: 1.1rem; font-weight: 600; border-radius: 0.75rem; line-height: 1; cursor: pointer;
+    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   .barra-letra button:disabled { opacity: 0.5; cursor: default; }
-  .barra-letra button[aria-pressed="true"] { border: 2px solid var(--ouro-linha); }
+  .barra-letra button[aria-pressed="true"] { border: 0.125rem solid var(--ouro-linha); }
 </style>
