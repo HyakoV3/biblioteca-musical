@@ -9,6 +9,24 @@ O pacote é um `.zip` só com `partituras/hino-<número>.svg` (formato e verific
 > mas quem decide quando (e se) publicar é o responsável, depois da resposta dele. Enquanto não houver pacote publicado, o manifesto
 > do app fica `"pacote": null` e o botão Baixar **não aparece**.
 
+## Estado publicado (2026-11-16)
+
+- **Pasta no servidor:** `/mnt/downloads/BibliotecaMusicalPartituras/`, **fora** de `BibliotecaMusical/` (a dos sons), com só o `partituras-001.zip`
+  (as 5 partituras de teste, 155.108 bytes, SHA-256 `35acf55f…f0ac`). Compartilhamento próprio (a pedido do responsável, que criou a pasta e o link).
+- **Link do app:** `https://fb.hm.hv2.xyz/public/api/resources/download?hash=<hash do compartilhamento>`, no manifesto do app. Conferido contra os bytes
+  reais do servidor: o zip da pasta traz `BibliotecaMusicalPartituras/partituras-001.zip` idêntico ao local (tamanho e SHA-256).
+- **O link está no manifesto, que está no repositório público:** quem lê o código pode baixar as 5 partituras de teste. É o mesmo que já acontece com
+  o link dos sons, mas com um agravante: as partituras são das transcrições do Enéias, cuja autorização ainda não veio (ver "Direitos" acima). Antes
+  de publicar o conjunto completo, esperar a resposta dele.
+
+## Configuração do compartilhamento (File Browser)
+
+O link precisa ser **anônimo, sem senha e sem validade** (o app não sabe pedir senha, e um link que expira quebraria o download) e **só de baixar**.
+Restringir o resto, na tela do File Browser (editar o compartilhamento): desligar upload/criar, editar, apagar e substituir; desligar miniaturas,
+visualização e o visualizador de arquivos; esconder a barra lateral, o cartão de compartilhamento e a opção de login. Conferido pela API pública
+(2026-11-16): ambos os links já têm a barra lateral e o cartão de compartilhamento escondidos; faltava, nas partituras, esconder a opção de login e,
+nos sons, desligar o visualizador. O `config.yaml` do contêiner já dá aos usuários novos **só** a permissão de baixar e não permite cadastro.
+
 ## Gerar e publicar
 
 ```sh
