@@ -334,8 +334,9 @@ verso, títulos). O desenho exato depende das fotos.
   segue **dentro da estrofe 1**, sem marca nenhuma. O app não sabe onde o coro começa.
 - **Versos colados:** no hino 283 a partitura não tem respiração entre dois versos, e eles saem na mesma linha. A regra de
   maiúscula não resolve (a letra tem frases com maiúscula no meio de um verso); fica para o arquivo de correções (I-05).
-- **Erros de digitação do autor** nos arquivos `.mscx`: sílaba sem o marcador de hífen (a palavra sai partida em duas), "I"
-  maiúsculo no lugar de "l", hífen perdido numa palavra composta e letras trocadas. Também são casos da I-05.
+- **Erros de digitação do autor** nos arquivos `.mscx`. **O conversor já conserta, por regra segura** (2026-11-16): pronome
+  colado sem hífen depois de vogal acentuada, "I" maiúsculo no lugar de "l", "~" literal e "ãc" no lugar de "ãe". **Continua para a
+  I-05:** sílaba sem o marcador de hífen (a palavra sai partida em duas) e outras letras trocadas, que não têm padrão seguro.
 - **A pauta no topo** de cada hino impresso é o **começo da melodia**, no tom e no compasso do hino; o tamanho dela é o do
   primeiro verso. Não está no `.mscx`, então não serve de régua para as quebras.
 

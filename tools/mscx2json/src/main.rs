@@ -460,6 +460,67 @@ fn comeca_verso(palavra: &str, linha_anterior: &str) -> bool {
     !(REVERENCIAIS.contains(&p.as_str()) && !termina_com_pontuacao(linha_anterior))
 }
 
+/// Pronomes que se ligam ao verbo com hífen ("cantá-lo", "dá-lhe").
+const CLITICOS: &[&str] = &["lo", "la", "los", "las", "lhe", "lhes"];
+
+/// Conserta, sílaba a sílaba, erros de digitação comuns nos arquivos do autor, ANTES de montar as linhas (assim as marcas
+/// do karaokê nascem já do texto certo). `silabas` deve estar ordenada pelo tempo.
+/// 1. "I" maiúsculo no lugar de "l" no começo de uma sílaba que continua uma palavra ("cantáIo" -> "cantálo").
+/// 2. Pronome (-lo, -la, -los, -las, -lhe, -lhes) colado ao verbo que termina em vogal acentuada, sem hífen: ganha o hífen.
+/// 3. "~" literal (o autor o usa como a elisão) vira espaço, como o símbolo de elisão do MuseScore.
+/// 4. "ãc" vira "ãe": nenhuma palavra do português tem "c" logo depois de "ã"; é o "e" digitado errado ("mãe").
+fn corrigir_silabas(silabas: &mut [Silaba]) {
+    const EPS: f64 = 1e-6;
+    for sil in silabas.iter_mut() {
+        if sil.texto.contains('~') || sil.texto.contains("ãc") {
+            sil.texto = sil.texto.replace('~', " ").replace("ãc", "ãe");
+        }
+    }
+    /// Por estrofe: a sílaba atual (instante, se continua a palavra, texto) e a do instante anterior (se continua, texto).
+    struct Vista {
+        anterior: Option<(bool, String)>,
+        t: f64,
+        continua: bool,
+        texto: String,
+    }
+    let mut estado: BTreeMap<u32, Vista> = BTreeMap::new();
+    for sil in silabas.iter_mut() {
+        let e = estado.entry(sil.verso).or_insert(Vista {
+            anterior: None,
+            t: f64::NEG_INFINITY,
+            continua: false,
+            texto: String::new(),
+        });
+        if sil.t > e.t + EPS {
+            e.anterior = e.t.is_finite().then(|| (e.continua, e.texto.clone()));
+        }
+        if let Some((true, anterior)) = &e.anterior {
+            let mut letras = sil.texto.chars();
+            if letras.next() == Some('I') && letras.next().is_some_and(|c| c.is_lowercase()) {
+                sil.texto = format!("l{}", &sil.texto[1..]);
+            }
+            let radical: String = sil
+                .texto
+                .chars()
+                .take_while(|c| c.is_alphabetic())
+                .collect();
+            let acentuada = anterior
+                .trim_end_matches(|c: char| !c.is_alphabetic())
+                .chars()
+                .last()
+                .is_some_and(|c| "áàâéêíóôú".contains(c));
+            if !sil.continua && acentuada && CLITICOS.contains(&radical.as_str()) {
+                sil.texto.insert(0, '-');
+            }
+        }
+        if sil.t > e.t + EPS {
+            e.t = sil.t;
+        }
+        e.continua = sil.continua;
+        e.texto = sil.texto.clone();
+    }
+}
+
 /// Monta a letra a partir das sílabas, **ordenadas pelo tempo da nota** (e não pela ordem no
 /// arquivo, onde as camadas de uma pauta vêm uma depois da outra). Cada estrofe (`<no>`,
 /// 0 = primeira) vira uma sequência de linhas, com quebra nas respirações que terminam um VERSO
@@ -471,6 +532,7 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<Str
     const EPS: f64 = 1e-6;
     silabas.sort_by(|a, b| a.t.total_cmp(&b.t).then(a.voz.cmp(&b.voz)));
     respiracoes.sort_by(|a, b| a.total_cmp(b));
+    corrigir_silabas(&mut silabas);
 
     // Pré-passo: a palavra que cada sílaba abre e, por estrofe, quantas respirações são seguidas de maiúscula. Só com duas ou
     // mais a maiúscula vale como pista de começo de verso.
@@ -1686,6 +1748,62 @@ mod testes {
                 "marca {m:?}"
             );
         }
+    }
+
+    #[test]
+    fn pronome_colado_ao_verbo_acentuado_ganha_hifen() {
+        // "cantá" + "lo": o autor esqueceu o hífen; "I" maiúsculo no lugar de "l" também é consertado.
+        let silabas = vec![
+            silaba_de(0.0, "can", true),
+            silaba_de(1.0, "tá", true),
+            silaba_de(2.0, "lo,", false),
+            silaba_de(3.0, "dê", true),
+            silaba_de(4.0, "Ihe", false),
+            silaba_de(5.0, "ba", true),
+            silaba_de(6.0, "la.", false),
+        ];
+        let (letra, _) = montar_letra(silabas, vec![]);
+        // "ba" + "la" não é pronome: "ba" não termina em vogal acentuada.
+        assert_eq!(letra, vec!["1. cantá-lo, dê-lhe bala."]);
+    }
+
+    #[test]
+    fn palavra_com_la_ou_lo_final_sem_acento_antes_nao_ganha_hifen() {
+        let silabas = vec![
+            silaba_de(0.0, "es", true),
+            silaba_de(1.0, "tre", true),
+            silaba_de(2.0, "la", false),
+            silaba_de(3.0, "só", false),
+            silaba_de(4.0, "lo", false),
+        ];
+        let (letra, _) = montar_letra(silabas, vec![]);
+        // "só" e "lo" são duas palavras (a primeira não continua): sem hífen.
+        assert_eq!(letra, vec!["1. estrela só lo"]);
+    }
+
+    #[test]
+    fn til_literal_vira_espaco_e_ac_vira_ae() {
+        let silabas = vec![silaba_de(0.0, "a,~al", false), silaba_de(1.0, "mãc", false)];
+        let (letra, _) = montar_letra(silabas, vec![]);
+        assert_eq!(letra, vec!["1. a, al mãe"]);
+    }
+
+    #[test]
+    fn as_marcas_seguem_o_texto_corrigido() {
+        let silabas = vec![
+            silaba_de(0.0, "can", true),
+            silaba_de(1.0, "tá", true),
+            silaba_de(2.0, "lo", false),
+        ];
+        let (letra, marcas) = montar_letra(silabas, vec![]);
+        assert_eq!(letra, vec!["1. cantá-lo"]);
+        let u: Vec<u16> = "cantá-lo".encode_utf16().collect();
+        assert_eq!(
+            marcas
+                .last()
+                .map(|m| String::from_utf16(&u[m.de..m.ate]).unwrap()),
+            Some("-lo".to_string())
+        );
     }
 
     #[test]

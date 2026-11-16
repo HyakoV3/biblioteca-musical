@@ -105,9 +105,16 @@ de um verso (a continuação vem em minúscula). Duas ressalvas:
 - A regra só vale numa estrofe com **pelo menos duas respirações seguidas de maiúscula**. Se o autor escreveu tudo em
   minúscula, não há pista, e vale a quebra a cada respiração (o comportamento antigo).
 
+**Erros de digitação que o conversor conserta sozinho**, sílaba a sílaba e antes de montar as linhas (`corrigir_silabas`, para
+as marcas do karaokê já nascerem do texto certo):
+- pronome colado ao verbo que termina em vogal acentuada, sem hífen (-lo, -la, -los, -las, -lhe, -lhes): ganha o hífen;
+- "I" maiúsculo no lugar de "l" no começo de uma sílaba que continua a palavra;
+- "~" literal vira espaço (como a elisão do MuseScore);
+- "ãc" vira "ãe" (nenhuma palavra do português tem "c" logo depois de "ã").
+
 O que a regra não resolve: verso que o autor escreveu **sem respiração** na partitura (dois versos colados na mesma linha) e
-**erros de digitação** no texto (sílaba sem o marcador de hífen, "I" maiúsculo no lugar de "l"). Esses casos pedem o arquivo de
-correções da I-05 (`docs/roadmap-ideas.md`).
+**erros de digitação** que não seguem um padrão seguro. Esses casos pedem o arquivo de correções da I-05
+(`docs/roadmap-ideas.md`).
 
 ### Sincronia da letra (karaokê)
 
