@@ -6,6 +6,8 @@ Converte partituras do MuseScore em XML (`.mscx`) para o `hinario.json` do app
 ```bash
 cd tools/mscx2json
 cargo run --release -- --id meu-hinario --nome "Meu hinário" /pasta/com/hino-1.mscx ... > hinario.json
+# com correções explícitas da letra (opcional; ver docs/correcoes-da-letra.md):
+cargo run --release -- --correcoes correcoes.json --id meu-hinario --nome "Meu hinário" /pasta/com/ > hinario.json
 ```
 
 - Os arquivos devem se chamar `hino-<número>.mscx` (os demais são ignorados com aviso).
@@ -15,16 +17,22 @@ cargo run --release -- --id meu-hinario --nome "Meu hinário" /pasta/com/hino-1.
 - Suporta pontos, pausas, anacruse, ligaduras, quiálteras, acordes e várias pautas.
   Apojaturas são ignoradas. Dinâmica e tonalidade **não** são extraídas.
 - **Letra:** lida da primeira pauta que tiver `<Lyrics>`. Cada estrofe (`<no>`) vira uma
-  sequência de linhas, com quebra a cada respiração (`<Breath>`), estrofes separadas por linha
-  vazia e a primeira linha numerada ("1. ..."). O refrão, quando está guardado na estrofe 1,
-  continua nela, como no arquivo.
+  sequência de linhas, estrofes separadas por linha vazia e a primeira linha numerada ("1. ..."). A linha acompanha o
+  **verso**: quebra na respiração (`<Breath>`) em que a próxima palavra começa em **maiúscula** (a continuação do verso vem em
+  minúscula), com as ressalvas descritas em [`docs/FORMATO.md`](../../docs/FORMATO.md) ("Como o conversor decide as quebras de
+  linha"). Num hino com final, o coro (o texto do trecho final, que o autor costuma escrever sob a estrofe 1) vai para a **última
+  estrofe**.
 - **Letra: o que o conversor faz com as sílabas.** Lê a sílaba inteira, inclusive formatação interna. A **elisão**
   do MuseScore (`go‿es`, duas palavras cantadas numa nota só) vira um espaço ("go es"). O número da estrofe que o
   autor escreve dentro da primeira sílaba ("1. Pa") é removido, porque o app já numera as estrofes. Uma sílaba só
   é descartada como repetida se for **idêntica**, no mesmo instante e vier de **outra camada**.
-- **Letra: o que o conversor não corrige.** Ele une as sílabas só onde o arquivo marca início, meio e fim da palavra,
-  e mostra o texto exatamente como está. Partitura que não marca ("Pa" e "ra," saem separados) ou
-  que tem erro de digitação ("Ia" com "I" maiúsculo no lugar de "la") produz a mesma coisa na letra.
+- **Letra: o que o conversor conserta sozinho** (só onde há regra segura): pronome colado ao verbo acentuado sem hífen (-lo, -la,
+  -los, -las, -lhe, -lhes), "I" maiúsculo no lugar de "l" no meio da palavra, "~" literal (vira espaço) e "ãc" no lugar de
+  "ãe". Cada uma está descrita em `docs/FORMATO.md`.
+- **Letra: o que só se conserta com o arquivo de correções.** O conversor une as sílabas só onde o arquivo marca início, meio e
+  fim da palavra. Partitura que não marca ("Pa" e "ra," saem separados), letra trocada, ou dois versos colados sem respiração
+  produzem isso na letra. Para esses casos, `--correcoes arquivo.json` aplica trocas **explícitas** do responsável (juntar,
+  separar, trocar, quebrar antes de), cada uma com um aviso; ver [`docs/correcoes-da-letra.md`](../../docs/correcoes-da-letra.md).
 - **Título e autoria:** o título vem do texto de moldura com estilo `Title` (se não houver, do metadado
   `workTitle`, e por último "Hino N"). A autoria junta os textos com estilo `Lyricist` e `Composer`
   (letrista primeiro, sem repetir). Hinos sem esses textos ficam sem `autoria`.

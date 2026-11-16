@@ -106,7 +106,8 @@ sem ir para o Git.
 - [ ] Converter os 480 hinos (e decidir sobre os coros 1 a 6, hoje ignorados pelo conversor).
 - [ ] Revisar com arquivo real o que só foi testado com partituras fictícias: ligaduras, repetições, quiálteras,
       estruturas de final diferentes da do 457.
-- [ ] Letras com erros da partitura: decidir entre o arquivo de correções (I-05) e corrigir na fonte.
+- [ ] Letras com erros da partitura: o **arquivo de correções** existe (I-05, [`correcoes-da-letra.md`](correcoes-da-letra.md)); falta
+      escrevê-lo para os hinos reais, conforme aparecem os defeitos.
 - [ ] Confirmar direitos de letras e partituras com a CCB ou os titulares antes de distribuir.
 
 **Pronto quando:** o hinário 5 completo está convertido e validado, com a autorização registrada.
@@ -117,8 +118,8 @@ sem ir para o Git.
 
 Entram conforme o retorno dos testes: gravador de áudio (I-03, com fone toca o hino no ouvido e grava; sem fone só
 grava), afinador (I-13, dá o tom e mostra num medidor se a nota está baixa ou alta), modo de baixa visão (I-06),
-correção de letras (I-05), e as ideias novas I-16 (repetir um trecho em laço), I-17 (lembrar o último hino), I-18 (pular uma parte
-inteira), I-19 (organizar como a letra aparece, a partir das fotos do hinário) I-20 (metrônomo embutido) e I-22 (continuar tocando com a tela bloqueada). Todas em [`roadmap-ideas.md`](roadmap-ideas.md).
+e as ideias novas I-16 (repetir um trecho em laço), I-17 (lembrar o último hino), I-18 (pular uma parte
+inteira), I-19 (organizar como a letra aparece, a partir das fotos do hinário), I-20 (metrônomo embutido) e I-22 (continuar tocando com a tela bloqueada). Todas em [`roadmap-ideas.md`](roadmap-ideas.md).
 Gravador e afinador dividem a detecção de fone e a permissão de microfone: convém decidir os dois juntos. As ideias **já
 implementadas** (estilos de cor, botão da parte que enche de dourado e outras) estão em
 [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md).
