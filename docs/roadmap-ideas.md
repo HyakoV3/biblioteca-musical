@@ -552,6 +552,136 @@ instrumento por voz): quanto mais combinações possíveis, mais a calibração 
 
 ---
 
+## I-24 — Ajustes em cartões, com um cartão de Conteúdo (hinário, partituras e sons gravados)
+
+- **Status:** anotada, **rascunho** (a revisar com o subagente Opus antes de implementar)
+- **Origem:** pedido do responsável, 2026-11-16: "no Ajustes já cabe uns cards... o de temas, o de importação (importar hinário agora, apesar de que no futuro não existe, mas teria o importar partituras e importar sons gravados dentro)". E, ao tentar importar as partituras: "achei que ele teria um botão específico para ele, tipo o dos sons gravados".
+- **Prioridade:** a definir (a tela já está longa, e cada pacote novo, como as partituras, acrescenta mais botões)
+
+### O problema
+Hoje **Ajustes** é uma coluna de seções soltas, e só "Sobre o app" e "Créditos e licenças" são cartões que se recolhem (`<details class="cartao">`):
+
+```
+┌─ Ajustes ──────────────────────────────────────┐
+│ Aparência                                       │
+│   Modo    [Automático][Claro][Escuro][Alto contr.]│
+│   Estilo  [Normal][Pergaminho][Marinho]         │
+│ Idioma da interface            [ Português ▾ ]  │
+│ Biblioteca                                      │
+│   Conteúdo atual: Amostra de teste (5 hinos)    │
+│   [Importar hinário]  [Remover importação]      │
+│ Sons gravados                                   │
+│   Todos os sons gravados  36 MB · Não instalado │
+│                                [Baixar (36 MB)] │
+│   Órgão / Madeiras / Metais / Cordas ...        │
+│ ⓘ Aviso: o app não tem ligação com a CCB        │
+│ ▸ Sobre o app                                   │
+│ ▸ Créditos e licenças                           │
+└─────────────────────────────────────────────────┘
+```
+
+Três coisas incomodam:
+1. **O botão certo não está onde se espera.** As partituras não têm botão próprio: entram pelo mesmo "Importar hinário" (que aceita `.json` ou `.zip`). Quem procura "partituras" em Ajustes não acha nada, e o texto do botão não diz que ele serve para isso.
+2. **Cada pacote novo piora a tela.** Hinário, partituras e sons gravados são a **mesma coisa** para a pessoa (conteúdo que se instala, atualiza e remove), mas estão em desenhos diferentes: o de sons tem estado, "Baixar (tamanho)" e "Remover"; o do hinário só tem "Importar" e "Remover importação".
+3. **A tela fica comprida** (e mais ainda com a fonte do sistema grande, onde tudo cresce em `rem`).
+
+### O que se deseja
+Ajustes em **cartões recolhíveis**, cada um com **uma linha de estado quando fechado** (assim recolher não esconde o que importa), e um cartão **Conteúdo** com as três coisas instaláveis no **mesmo desenho de linha** que os sons gravados já têm.
+
+```
+┌─ Ajustes ──────────────────────────────────────┐
+│ ⓘ Aplicativo não oficial (aviso sempre à vista) │
+│ ▸ Aparência        Automático · Normal          │
+│ ▸ Idioma           Português                    │
+│ ▾ Conteúdo         Hinário · Partituras · Sons  │
+│ ┌────────────────────────────────────────────┐ │
+│ │ Hinário                                    │ │
+│ │ Amostra de teste · 5 hinos                 │ │
+│ │ [Importar arquivo]            [Remover]    │ │
+│ ├────────────────────────────────────────────┤ │
+│ │ Partituras                                 │ │
+│ │ 5 de 5 hinos · 0,2 MB · Instaladas         │ │
+│ │ [Baixar (15 MB)] [Importar .zip] [Remover] │ │
+│ ├────────────────────────────────────────────┤ │
+│ │ Sons gravados                              │ │
+│ │ 2 de 4 pacotes · 20 MB                     │ │
+│ │ Órgão    Instalado          [Remover]      │ │
+│ │ Cordas   ● Atualização      [Atualizar]    │ │
+│ └────────────────────────────────────────────┘ │
+│ ▸ Sobre o app                                   │
+│ ▸ Créditos e licenças                           │
+└─────────────────────────────────────────────────┘
+```
+(`●` é só um exemplo de indicador de atualização, ver I-25; nunca por cor sozinha.)
+
+**Princípios** (do projeto): medidas em `rem`; cores só das variáveis do tema; estado por **texto e ícone**, não só por cor; funciona nos temas claro, escuro e alto contraste; **teclado e leitor de tela** (o `<details>/<summary>` já dá isso de graça); textos em pt, es e en; com a fonte do sistema grande, a linha de estado **quebra**, não corta.
+
+### Perguntas em aberto
+1. **Um cartão "Conteúdo" com três linhas, ou três cartões?** Recomendação: **um**, porque são a mesma coisa para a pessoa e o desenho da linha é igual; o cartão de sons já tem 4 sublinhas.
+2. **Acordeão** (abrir um fecha os outros, como já é nos cartões do player) **ou livre?** Recomendação: **livre**, para comparar Conteúdo com Aparência; mas **lembrar** o que ficou aberto.
+3. **Qual cartão abre por padrão?** Recomendação: **todos fechados** no primeiro uso, com a linha de estado de cada um, **exceto** quando se chega pelo botão "Abrir Ajustes" da aba Partitura (aí abre o **Conteúdo**, já rolado até Partituras).
+4. **Onde vai o botão de importar de arquivo?** Recomendação: **em cada linha** do cartão (hinário aceita `.json`/`.zip`, partituras aceita `.zip`), no lugar do botão único de hoje; "Baixar" convive com ele até todo pacote ter servidor (I-25).
+5. **O pacote de partituras deve ser separado do hinário?** Hoje o `.zip` leva o `hinario.json` **junto** (a importação troca o hinário e as partituras de uma vez). Importar pela linha **Partituras** e ver o hinário mudar surpreende. Alternativa: um pacote de partituras **só com os SVG** e um manifesto com o `id` do hinário a que se aplica. É decisão de **formato** (mexe em `docs/FORMATO.md` e no Rust), a tomar antes de construir a linha.
+6. **"Importar hinário" no futuro não existe** (o responsável): o hinário também virá de um pacote. Até lá a linha **Hinário** tem "Importar arquivo"; depois ela vira "Baixar/Atualizar" como as outras e o importar de arquivo passa para um submenu **Avançado**, ou some?
+7. **Um comando para remover só as partituras** (hoje "Remover importação" apaga hinário **e** partituras): confirmar o texto de cada remoção (hoje há um diálogo só).
+
+### Impacto técnico (hipóteses)
+- `src/routes/ajustes/+page.svelte` (a tela, hoje com seções soltas): extrair um componente de **cartão** a partir do `.cartao` que já existe, e um de **linha de pacote** a partir do `.pacote` dos sons.
+- `src-tauri/src/pacote.rs` e `lib.rs`: um comando **`remover_partituras`** (a função `remover_partituras` já existe no Rust, só não é um comando) e, se a pergunta 5 for "separar", um importador só de SVG.
+- `src/lib/biblioteca.svelte.ts` e a tela da aba Partitura: o botão "Abrir Ajustes" passa a levar ao cartão Conteúdo (parâmetro na rota ou `#conteudo`).
+- Sem mudança de conteúdo nem de formato **se** a pergunta 5 for "continua junto".
+
+### Critérios de aceitação (propostos)
+- Com todos os cartões fechados, **cada um mostra uma linha de estado** correta (modo e estilo; idioma; hinário, partituras e sons instalados).
+- A aba Partitura sem partituras leva a **Conteúdo → Partituras**, que mostra o estado e a ação certa.
+- **Teclado:** cada cartão abre e fecha com Enter e Espaço; a ordem de foco é a visual. **Leitor de tela:** o estado é lido junto do nome do cartão.
+- **Fonte do sistema no máximo** e os três temas (incluindo Alto contraste): nada cortado nem sobreposto (captura de tela conferida).
+- O que ficou aberto é **lembrado** entre aberturas, e as regras de `rem`/tema/i18n do projeto passam nos verificadores.
+- O e2e cobre: abrir/fechar, a linha de estado, o caminho da aba Partitura até o cartão e o importar de arquivo por linha.
+
+---
+
+## I-25 — Verificar atualização dos pacotes (sons gravados e partituras) ao abrir o app
+
+- **Status:** anotada, **rascunho** (a revisar com o subagente Opus antes de implementar)
+- **Origem:** pedido do responsável, 2026-11-16: "seria interessante mais para frente, no importar partitura e importar sons gravados, que quando abrir ele fosse no servidor e visse se tem alguma atualização nesses pacotes .zip".
+- **Prioridade:** a definir ("mais para frente"; depende da I-24 para ter onde mostrar o aviso)
+
+### O problema
+Os pacotes mudam (o banco dos sons já trocou uma vez, do FluidR3 para o GeneralUser GS; as partituras vão crescer de 5 para 480 hinos), mas **o app não sabe disso**:
+- O manifesto dos sons (`src/lib/sons/manifesto.json`, com o SHA-256 de cada pacote) está **embutido no app**: um pacote novo no servidor **exige um APK novo**, e o APK antigo **recusa** o pacote novo (foi o que aconteceu no zip 010).
+- As partituras não têm servidor ainda (ver a I-24 e a questão dos direitos, abaixo).
+- Quem instalou um pacote **não é avisado** de que há uma versão melhor, nem de que um arquivo foi corrigido.
+
+### O que se deseja
+**Ao abrir o app** (e no máximo uma vez por dia), ele pergunta ao servidor se há versão nova de cada pacote **instalado** e, se houver, **avisa sem atrapalhar** (por exemplo, o indicador "Atualização disponível" na linha do pacote em Ajustes e uma linha discreta na tela inicial), com o tamanho e uma frase do que mudou. **Nada baixa sozinho**: a pessoa toca em "Atualizar".
+
+### Perguntas em aberto
+1. **Onde mora a verdade sobre as versões?** Um **manifesto remoto** (um JSON pequeno no servidor, com versão, tamanho e SHA-256 de cada pacote, e uma frase de mudanças) que **substitui** o manifesto embutido: o app passa a aceitar pacotes novos **sem APK novo**. O embutido vira só o **plano B** offline.
+2. **Como confiar no manifesto?** O SHA-256 que vem do **mesmo servidor** não protege contra um servidor comprometido. **Assinar o manifesto** (por exemplo minisign/Ed25519, com a chave pública dentro do app) fecha isso; é mais trabalho. Vale agora, ou só HTTPS e SHA-256 por enquanto?
+3. **Dados móveis:** perguntar antes de baixar acima de X MB fora do Wi-Fi? (O app não sabe se a rede é paga no WebView; talvez só avisar o tamanho.)
+4. **Frequência e custo:** uma consulta por dia, com `If-None-Match` (ETag) para o servidor responder "sem mudança" em poucos bytes. Sem trabalho em segundo plano (só ao abrir).
+5. **Privacidade:** a consulta revela o **IP** e a **versão do app** ao servidor. Sem identificador, sem análise de uso, e o texto de privacidade do "Sobre" precisa dizer isso. Dá para **desligar** a verificação em Ajustes?
+6. **Os direitos das partituras:** o servidor **só pode publicar** o pacote de partituras **depois da autorização do autor das transcrições** (ainda pendente). Antes disso, o mecanismo existe, mas o manifesto das partituras fica **vazio** (ou só em endereço privado, para teste).
+
+### Caminhos possíveis (hipóteses)
+- **Manifesto remoto** (`manifesto.json` no servidor de arquivos que já serve os sons), lido com o plugin de HTTP que o app já usa para baixar os sons; guardado no aparelho com a data da última consulta.
+- **Atualização atômica:** baixa para uma pasta temporária, confere o SHA-256, e só então troca (como a importação de partituras já faz); se falhar, **fica a versão antiga**.
+- **Versões:** cada pacote tem um número de versão (inteiro crescente) e, se o formato mudar, uma `versaoMinimaDoApp`; um APK velho **não** oferece um pacote que não entende (evita o "recusa o pacote novo").
+- **Falha de rede é silenciosa:** sem internet, o app abre como sempre, sem erro na tela.
+
+### Pesquisar antes de construir (regra do projeto)
+Como o plugin de HTTP do Tauri trata cabeçalhos condicionais (ETag) no Android; padrões de atualização de conteúdo em apps offline-first; assinatura de manifesto leve (minisign) e verificação em Rust.
+
+### Critérios de aceitação (propostos)
+- Sem internet: o app abre **sem erro e sem demora** (a consulta tem tempo máximo curto).
+- Com um pacote novo no servidor: a linha do pacote mostra **"Atualização disponível"** (texto, não só cor) e, ao tocar, baixa, **confere o SHA-256** e troca; com o arquivo corrompido, **fica a versão antiga** e mostra o erro.
+- No máximo **uma consulta por dia**, e nenhuma se a verificação estiver desligada.
+- Um **APK antigo** não oferece um pacote que não entende.
+- O servidor de teste, com um manifesto de mentira, cobre isso num teste automatizado (o app não depende do servidor real para o CI passar).
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
