@@ -39,6 +39,14 @@ MARGEM_SEGURA = 0.93  # o símbolo ocupa 93% do círculo seguro, não 100%: sobr
 LIMIAR_CLARO = 0.35  # luminância (0 a 1) a partir da qual um pixel entra na silhueta monocromática
 FAVICON = 256
 CAMINHO = re.compile(r'<path fill="(#[0-9a-fA-F]{6})" d="(.*?)"\s*/>', re.S)
+# O desenho é só caminhos preenchidos; o resto é recusado, porque poderia fazer o Inkscape ler arquivo local ou rede: script, imagem, objeto
+# estrangeiro, <use> e <style> (referências e @import), qualquer href (inclusive `xlink:href`), manipuladores de evento, entidades externas
+# do DOCTYPE e url() que não seja só uma referência interna (#id). `\son...=` e não `on...=`: o cabeçalho XML tem `standalone="no"`, que
+# termina em "one=".
+PROIBIDO = re.compile(
+    r"<(?:script|image|foreignObject|use|style)\b|(?:^|[\s:])href\s*=|\son[a-z]+\s*=|<!ENTITY|@import|url\(\s*[\"']?\s*[^#\s\"')]",
+    re.I,
+)
 
 
 class ErroIcone(Exception):
@@ -47,14 +55,19 @@ class ErroIcone(Exception):
 
 def separar_camadas(svg: str):
     """(cabeçalho do SVG, [(cor, d)] da placa, [(cor, d)] do símbolo). Confere a convenção do desenho e recusa SVG com conteúdo ativo."""
-    # `\son...=` e não `on...=`: o cabeçalho XML tem `standalone="no"`, que termina em "one=".
-    if re.search(r"<(script|image|foreignObject)\b|\shref\s*=|\son[a-z]+\s*=", svg, re.I):
-        raise ErroIcone("o SVG tem script, imagem ou link: só desenho (caminhos) é aceito")
-    inicio = svg.find("<g")
-    if inicio < 0 or "<svg" not in svg[:inicio]:
+    if PROIBIDO.search(svg):
+        raise ErroIcone("o SVG tem script, imagem, <use>, <style>, link, entidade externa ou url() externo: só desenho (caminhos) é aceito")
+    achou = re.search(r"<g[\s>/]", svg)
+    if achou is None or "<svg" not in svg[: achou.start()]:
         raise ErroIcone("não achei o grupo de traços depois do <svg ...>: o arquivo não é o esperado")
+    inicio = achou.start()
+    if svg[svg.index(">", inicio) - 1] == "/":
+        raise ErroIcone("o grupo de traços está autofechado (<g/>): o arquivo não é o esperado")
+    fecha = svg.find("</g>", inicio)
+    if fecha < 0:
+        raise ErroIcone("o grupo de traços não fecha (</g>): o arquivo está truncado ou não é o esperado")
     cabecalho = svg[:inicio]
-    fim_grupo = svg.index("</g>", inicio) + len("</g>")
+    fim_grupo = fecha + len("</g>")
     caminhos = CAMINHO.findall(svg[fim_grupo:])
     if len(caminhos) < 3:
         raise ErroIcone(f"esperava a moldura, a placa e o símbolo; achei {len(caminhos)} caminhos preenchidos")
@@ -69,9 +82,18 @@ def montar_svg(cabecalho: str, caminhos) -> str:
 
 
 def desenhar(svg: Path, saida: Path, largura: int):
-    subprocess.run(["inkscape", str(svg), "--export-type=png", f"--export-width={largura}", "--export-background-opacity=0",
-                    f"--export-filename={saida}"], check=True, capture_output=True)
-    return Image.open(saida).convert("RGBA")
+    try:
+        subprocess.run(["inkscape", str(svg), "--export-type=png", f"--export-width={largura}", "--export-background-opacity=0",
+                        f"--export-filename={saida}"], check=True, capture_output=True, text=True, timeout=300)
+    except FileNotFoundError as e:
+        raise ErroIcone("não achei o Inkscape (instale e deixe no PATH)") from e
+    except subprocess.TimeoutExpired as e:
+        raise ErroIcone(f"o Inkscape passou de 300 s desenhando {svg.name}") from e
+    except subprocess.CalledProcessError as e:
+        detalhe = (e.stderr or e.stdout or "").strip()[-400:]
+        raise ErroIcone(f"o Inkscape falhou desenhando {svg.name} (código {e.returncode})" + (f": {detalhe}" if detalhe else "")) from e
+    with Image.open(saida) as aberta:
+        return aberta.convert("RGBA")
 
 
 def recortar_quadrado(img: Image.Image, lado: int) -> Image.Image:
@@ -130,29 +152,21 @@ def silhueta(img: Image.Image) -> Image.Image:
 def sem_alfa(pasta: Path, cor: str) -> int:
     """Regrava como RGB (sem canal alfa) todo PNG da pasta, compondo sobre `cor`. A App Store recusa ícone com canal alfa, mesmo que opaco,
     e o `tauri icon` grava os do iOS em RGBA. Devolve quantos arquivos foram regravados."""
+    arquivos = sorted(pasta.glob("*.png")) if pasta.is_dir() else []
+    if not arquivos:
+        raise ErroIcone(f"não achei PNG em {pasta}: o tauri icon não gerou os ícones do iOS?")
     n = 0
-    for p in sorted(pasta.glob("*.png")):
-        img = Image.open(p).convert("RGBA")
+    for p in arquivos:
+        with Image.open(p) as aberta:
+            img = aberta.convert("RGBA")
         fundo = Image.new("RGBA", img.size, cor)
         Image.alpha_composite(fundo, img).convert("RGB").save(p, optimize=True)
         n += 1
     return n
 
 
-def principal() -> int:
-    fonte = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else FONTE
-    if not fonte.is_file():
-        print(f"erro: {fonte} não existe", file=sys.stderr)
-        return 2
-    for ferramenta in ("inkscape", "npx"):
-        if shutil.which(ferramenta) is None:
-            print(f"erro: falta o programa '{ferramenta}'", file=sys.stderr)
-            return 2
-    try:
-        cabecalho, placa, simbolo = separar_camadas(fonte.read_text(encoding="utf-8"))
-    except ErroIcone as e:
-        print(f"erro: {e}", file=sys.stderr)
-        return 2
+def gerar(cabecalho: str, placa, simbolo) -> int:
+    """Desenha as camadas, roda o `tauri icon` e acerta o iOS e o favicon. Levanta ErroIcone se algo falhar."""
     cor_placa = placa[1][0]
 
     with tempfile.TemporaryDirectory(prefix="bmccb-icones-") as t:
@@ -183,6 +197,27 @@ def principal() -> int:
         padrao.resize((FAVICON, FAVICON), Image.LANCZOS).save(favicon, optimize=True)
         print(f"{favicon.relative_to(RAIZ)}: {FAVICON}x{FAVICON}")
     return 0
+
+
+def principal() -> int:
+    fonte = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else FONTE
+    if not fonte.is_file():
+        print(f"erro: {fonte} não existe", file=sys.stderr)
+        return 2
+    for ferramenta in ("inkscape", "npx"):
+        if shutil.which(ferramenta) is None:
+            print(f"erro: falta o programa '{ferramenta}'", file=sys.stderr)
+            return 2
+    try:
+        cabecalho, placa, simbolo = separar_camadas(fonte.read_text(encoding="utf-8"))
+    except ErroIcone as e:
+        print(f"erro: {e}", file=sys.stderr)
+        return 2
+    try:
+        return gerar(cabecalho, placa, simbolo)
+    except ErroIcone as e:
+        print(f"erro: {e}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

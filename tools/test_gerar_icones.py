@@ -3,10 +3,15 @@
 
 Uso:  python3 tools/test_gerar_icones.py
 """
+import contextlib
 import importlib.util
+import io
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from PIL import Image, ImageDraw
 
@@ -42,6 +47,41 @@ class SepararCamadas(unittest.TestCase):
             with self.assertRaises(g.ErroIcone, msg=extra):
                 g.separar_camadas(svg("#fdaf00", "#012250", "#fcf5ea", extra=extra))
 
+    def test_recusa_referencias_a_arquivos_ou_rede_em_todas_as_formas(self):
+        # o filtro antigo só via ` href=` e deixava passar tudo isto (comentário do vandame na PR #47)
+        casos = {
+            "xlink:href": '<use xlink:href="file:///etc/hostname"/>',
+            "href com prefixo de outro espaço de nomes": '<a xl:href="http://x"/>',
+            "<use>": "<use/>",
+            "<style> com @import": '<style>@import "file:///etc/hostname";</style>',
+            "<style>": "<style>path{fill:red}</style>",
+            "@import fora de <style>": '<path d="M0 0" data-x="@import"/>',
+            "url() externo": '<path fill="url(file:///etc/hostname)" d="M0 0"/>',
+            "url() externo entre aspas": '<path fill="url(\'http://x/a.svg#g\')" d="M0 0"/>',
+            "entidade externa": '<!DOCTYPE svg [<!ENTITY x SYSTEM "file:///etc/hostname">]>',
+        }
+        for rotulo, extra in casos.items():
+            with self.assertRaises(g.ErroIcone, msg=rotulo):
+                g.separar_camadas(svg("#fdaf00", "#012250", "#fcf5ea", extra=extra))
+
+    def test_aceita_referencia_interna_por_fragmento(self):
+        # `url(#id)` (gradiente do próprio desenho) não lê nada de fora
+        g.separar_camadas(svg("#fdaf00", "#012250", "#fcf5ea", extra='<path fill="url(#g1)" d="M0 0"/>'))
+
+    def test_grupo_de_tracos_sem_fecho_ou_autofechado_e_erro_do_script_e_nao_excecao(self):
+        # `<g/>` e arquivo truncado davam ValueError (str.index) e um traceback no lugar da mensagem. A mensagem tem de dizer O QUE está
+        # errado (e não só levantar algum erro: com três caminhos a mais, outra checagem levantaria o mesmo tipo por outro motivo).
+        tres = '<path fill="#fdaf00" d="M0 0"/><path fill="#012250" d="M0 0"/><path fill="#fcf5ea" d="M0 0"/>'
+        casos = {
+            "autofechado": (CABECA + "<g/>" + tres + "</svg>", "autofechado"),
+            "autofechado com atributos": (CABECA + '<g fill="none" />' + tres + "</svg>", "autofechado"),
+            "truncado": (CABECA + "<g fill='none'>" + tres, "não fecha"),
+            "sem nenhum <g": (CABECA + tres + "</svg>", "não achei o grupo"),
+        }
+        for rotulo, (texto, mensagem) in casos.items():
+            with self.assertRaisesRegex(g.ErroIcone, mensagem, msg=rotulo):
+                g.separar_camadas(texto)
+
     def test_recusa_menos_de_tres_caminhos_e_placa_de_uma_cor_so(self):
         with self.assertRaises(g.ErroIcone):
             g.separar_camadas(svg("#fdaf00", "#012250"))
@@ -65,6 +105,74 @@ class SepararCamadas(unittest.TestCase):
         saida = g.montar_svg(cabecalho, placa + simbolo)
         self.assertEqual(saida.count("<path"), 3)
         self.assertTrue(saida.endswith("</svg>\n"))
+
+
+class Desenhar(unittest.TestCase):
+    def roda(self, efeito):
+        with tempfile.TemporaryDirectory() as t:
+            pasta = Path(t)
+            with mock.patch.object(g.subprocess, "run", side_effect=efeito):
+                return g.desenhar(pasta / "x.svg", pasta / "x.png", 64)
+
+    def test_falha_do_inkscape_mostra_o_que_o_inkscape_disse(self):
+        falha = subprocess.CalledProcessError(1, ["inkscape"], output="", stderr="Erro: arquivo corrompido na linha 7\n")
+        with self.assertRaises(g.ErroIcone) as e:
+            self.roda(falha)
+        self.assertIn("arquivo corrompido na linha 7", str(e.exception))
+        self.assertIn("código 1", str(e.exception))
+        self.assertIn("x.svg", str(e.exception))
+
+    def test_falha_sem_texto_ainda_vira_erro_do_script(self):
+        with self.assertRaises(g.ErroIcone) as e:
+            self.roda(subprocess.CalledProcessError(3, ["inkscape"], output="", stderr=""))
+        self.assertIn("código 3", str(e.exception))
+
+    def test_inkscape_ausente_ou_lento_viram_erro_do_script(self):
+        with self.assertRaisesRegex(g.ErroIcone, "Inkscape"):
+            self.roda(FileNotFoundError("inkscape"))
+        with self.assertRaisesRegex(g.ErroIcone, "300 s"):
+            self.roda(subprocess.TimeoutExpired(["inkscape"], 300))
+
+    def test_sucesso_devolve_a_imagem_rgba_ja_carregada(self):
+        with tempfile.TemporaryDirectory() as t:
+            pasta = Path(t)
+
+            def escreve(cmd, **k):
+                Image.new("RGB", (4, 4), (1, 2, 3)).save(pasta / "x.png")
+                return subprocess.CompletedProcess(cmd, 0, "", "")
+
+            with mock.patch.object(g.subprocess, "run", side_effect=escreve):
+                im = g.desenhar(pasta / "x.svg", pasta / "x.png", 4)
+            (pasta / "x.png").unlink()  # a imagem não depende mais do arquivo
+            self.assertEqual((im.mode, im.getpixel((0, 0))), ("RGBA", (1, 2, 3, 255)))
+
+
+class Principal(unittest.TestCase):
+    def roda(self, **patches):
+        fonte = AQUI.parent / "src-tauri" / "icons" / "fonte" / "icone.svg"
+        if not fonte.exists():
+            self.skipTest("sem o SVG-fonte")
+        erro = io.StringIO()
+        with mock.patch.object(sys, "argv", ["gerar-icones.py", str(fonte)]), mock.patch.object(g.shutil, "which", return_value="/usr/bin/x"), \
+                mock.patch.object(g, "desenhar", **patches), contextlib.redirect_stderr(erro):
+            return g.principal(), erro.getvalue()
+
+    def test_falha_do_inkscape_sai_com_mensagem_e_codigo_1_sem_traceback(self):
+        codigo, erro = self.roda(side_effect=g.ErroIcone("o Inkscape falhou desenhando completo.svg (código 1): arquivo corrompido"))
+        self.assertEqual(codigo, 1)
+        self.assertTrue(erro.startswith("erro: o Inkscape falhou"), erro)
+        self.assertNotIn("Traceback", erro)
+
+    def test_svg_que_nao_e_o_esperado_sai_com_codigo_2(self):
+        with tempfile.TemporaryDirectory() as t:
+            ruim = Path(t) / "ruim.svg"
+            ruim.write_text(CABECA + "<g fill='none'>", encoding="utf-8")  # truncado
+            erro = io.StringIO()
+            with mock.patch.object(sys, "argv", ["gerar-icones.py", str(ruim)]), mock.patch.object(g.shutil, "which", return_value="/x"), \
+                    contextlib.redirect_stderr(erro):
+                self.assertEqual(g.principal(), 2)
+            self.assertIn("erro:", erro.getvalue())
+            self.assertNotIn("Traceback", erro.getvalue())
 
 
 def quadrado(lado, caixa, cor=(250, 245, 235, 255)):
@@ -111,7 +219,18 @@ class Imagens(unittest.TestCase):
         im = Image.new("RGBA", (4, 1))
         im.putdata([(250, 245, 235, 255), (253, 175, 0, 255), (1, 34, 80, 255), (250, 245, 235, 0)])
         s = g.silhueta(im)
-        self.assertEqual(list(s.getdata()), [(0, 0, 0, 255), (0, 0, 0, 255), (0, 0, 0, 0), (0, 0, 0, 0)])
+        self.assertEqual([s.getpixel((i, 0)) for i in range(4)], [(0, 0, 0, 255), (0, 0, 0, 255), (0, 0, 0, 0), (0, 0, 0, 0)])
+
+    def test_sem_alfa_pasta_inexistente_ou_sem_png_e_erro_e_nao_zero_em_silencio(self):
+        with tempfile.TemporaryDirectory() as t:
+            pasta = Path(t)
+            with self.assertRaisesRegex(g.ErroIcone, "não achei PNG"):
+                g.sem_alfa(pasta / "nao-existe", "#012250")
+            with self.assertRaisesRegex(g.ErroIcone, "não achei PNG"):
+                g.sem_alfa(pasta, "#012250")  # existe, mas vazia
+            (pasta / "so-texto.txt").write_text("x")
+            with self.assertRaises(g.ErroIcone):
+                g.sem_alfa(pasta, "#012250")
 
     def test_sem_alfa_regrava_em_rgb_compondo_sobre_a_cor(self):
         with tempfile.TemporaryDirectory() as t:
