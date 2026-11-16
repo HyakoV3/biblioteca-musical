@@ -2,6 +2,7 @@
 // telas (assim voltar do hino devolve a lista como estava) e o Rust é chamado uma vez só.
 import { invoke } from "@tauri-apps/api/core";
 import type { Sincronia } from "./karaoke";
+import { LIMITE_ZIP_BYTES, bytesParaBase64 } from "./pacote";
 import type { Voz } from "./sintetizador";
 
 export type Hino = {
@@ -75,10 +76,11 @@ export const biblioteca = {
     return pacote;
   },
 
-  /** Importa um pacote .zip (hinario.json + partituras). Os bytes vão como corpo binário da chamada, sem passar por JSON.
+  /** Importa um pacote .zip (hinario.json + partituras). Os bytes vão em **base64** (texto): corpo binário não chega ao Rust no Android.
    *  Lança erro (texto do Rust) se o pacote for recusado; o conteúdo atual não muda. */
   async importarZip(bytes: Uint8Array) {
-    const r = await invoke<Importacao>("importar_pacote", bytes);
+    if (bytes.length > LIMITE_ZIP_BYTES) throw JSON.stringify(["zip_grande_demais"]); // o mesmo erro do Rust, sem montar o texto
+    const r = await invoke<Importacao>("importar_pacote", { zip: bytesParaBase64(bytes) });
     pacote = r.pacote;
     busca = "";
     return r;

@@ -5,7 +5,7 @@
 // desligar o botão apaga tudo. Depois confere a aba Partitura (I-08): quando aparece, o SVG embutido seguindo o tema, o zoom, a
 // fonte Leipzig e o aviso para Ajustes. Precisa de um Chrome ou Chromium instalado (variável CHROME para indicar o caminho).
 import { spawn, execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
@@ -61,6 +61,11 @@ const STUB = `window.__TAURI_INTERNALS__ = {
     if (cmd === "carregar_hinario") {
       const sem = sessionStorage.getItem("e2e-sem-partituras") === "1";
       return { hinario: ${JSON.stringify(hinario)}, exemplo: false, partituras: sem ? [] : [999] };
+    }
+    if (cmd === "importar_pacote") {
+      // Como o Tauri no ANDROID: não existe corpo binário, só o que passa por JSON. Guarda o argumento para o teste conferir.
+      window.__zipRecebido = args;
+      return { pacote: { hinario: ${JSON.stringify(hinario)}, exemplo: false, partituras: [999] }, partituras: 1, recusadas: [] };
     }
     if (cmd === "ler_partitura") {
       if (args.numero === 999) {
@@ -574,6 +579,32 @@ async function principal() {
   await dormir(700);
   const refeito = await av(`({ alerta: !!document.querySelector('#painel-partitura [role="alert"]'), svg: !!document.querySelector('#painel-partitura svg'), botao: !!document.querySelector('#painel-partitura .tentar') })`);
   confere(!refeito.alerta && refeito.svg && !refeito.botao, `"Tentar de novo" lê a partitura outra vez e ela aparece: ${JSON.stringify(refeito)}`);
+
+  // Importar um .zip pelo seletor de Ajustes (o bug do Android: "a chamada não trouxe os bytes do arquivo"). O arquivo é um "zip" de
+  // mentira (só a assinatura PK\x03\x04 e os 256 valores de byte), porque o que se confere aqui é o ENVIO: o app tem de mandar TEXTO
+  // base64 com os mesmos bytes do arquivo, e nunca bytes soltos (o Android não os entrega).
+  const bytesDoZip = Uint8Array.from([0x50, 0x4b, 0x03, 0x04, ...Array.from({ length: 256 }, (_, i) => i), 0xff, 0x00]);
+  const caminhoZip = join(perfil, "pacote-de-teste.zip");
+  writeFileSync(caminhoZip, bytesDoZip);
+  await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes` });
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('input[type="file"]')`)); ) await dormir(250);
+  const raiz = (await enviar("DOM.getDocument", {})).result.root.nodeId;
+  const entrada = (await enviar("DOM.querySelector", { nodeId: raiz, selector: 'input[type="file"]' })).result.nodeId;
+  confere(entrada > 0, "o seletor de arquivo de Ajustes foi encontrado");
+  await enviar("DOM.setFileInputFiles", { nodeId: entrada, files: [caminhoZip] });
+  await dormir(1200);
+  const envio = await av(`(() => {
+    const a = window.__zipRecebido;
+    if (!a) return { chamou: false };
+    const texto = typeof a.zip === 'string' ? a.zip : null;
+    const volta = texto === null ? null : Array.from(atob(texto), (c) => c.charCodeAt(0));
+    return { chamou: true, chaves: Object.keys(a), tipo: typeof a.zip, base64: texto !== null && /^[A-Za-z0-9+/]*={0,2}$/.test(texto), volta };
+  })()`);
+  confere(envio.chamou && envio.tipo === "string" && envio.chaves.join() === "zip", `importar o .zip manda o argumento \`zip\` como TEXTO (e só ele): ${JSON.stringify({ chamou: envio.chamou, tipo: envio.tipo, chaves: envio.chaves })}`);
+  confere(envio.base64, "o texto enviado é base64 válido");
+  confere(JSON.stringify(envio.volta) === JSON.stringify(Array.from(bytesDoZip)), `decodificado, o texto tem exatamente os ${bytesDoZip.length} bytes do arquivo`);
+  const resultado = await av(`document.body.innerText`);
+  confere(/Teste e2e/.test(resultado) && !/could not|não foi possível/i.test(resultado), "a tela mostra o resultado da importação, sem erro");
   ws.close();
 
   // 6. análise: trocas de sílaba antes da pausa

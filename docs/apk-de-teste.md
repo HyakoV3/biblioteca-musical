@@ -72,7 +72,7 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 
 | Zip | Versão (commit) | Data | Conteúdo | SHA-256 |
 |---|---|---|---|---|
-| **018** | 0.3.0 (72b22f8) | 2026-11-16 | **Aba Partitura** (I-08, PRs #35 a #37): o app importa um **pacote `.zip`** (hinário + partituras em SVG), mostra a partitura de cada hino numa aba (zoom de 100% a 400%, nos temas claro, escuro e alto contraste, com a fonte Leipzig) e, sem nenhuma partitura instalada, mostra a aba com um aviso e um botão para Ajustes. **Hino 283** com as correções da foto (versos separados, "esplendor", "Contigo ao céu"). O resto igual ao 017. Compilado da `main`. **Acompanha o `BibliotecaMusical-CCB-pacote-partituras-018.zip`** (os mesmos 5 hinos com partituras; SHA-256 `775b7fc6…2741`, 165.629 bytes), que **não** deve ser aberto: é importado em Ajustes. **A ver no celular** (roteiro abaixo). Entregue em `<pasta de entrega dos zips>/` | `fafa75f6…b6bd` |
+| **018** | 0.3.0 (72b22f8) | 2026-11-16 | **Aba Partitura** (I-08, PRs #35 a #37): o app importa um **pacote `.zip`** (hinário + partituras em SVG), mostra a partitura de cada hino numa aba (zoom de 100% a 400%, nos temas claro, escuro e alto contraste, com a fonte Leipzig) e, sem nenhuma partitura instalada, mostra a aba com um aviso e um botão para Ajustes. **Hino 283** com as correções da foto (versos separados, "esplendor", "Contigo ao céu"). O resto igual ao 017. Compilado da `main`. **O importar do `.zip` falhou no Android (corrigido no 019).** **Acompanha o `BibliotecaMusical-CCB-pacote-partituras-018.zip`** (os mesmos 5 hinos com partituras; SHA-256 `775b7fc6…2741`, 165.629 bytes), que **não** deve ser aberto: é importado em Ajustes. **A ver no celular** (roteiro abaixo). Entregue em `<pasta de entrega dos zips>/` | `fafa75f6…b6bd` |
 | **017** | 0.3.0 (b3615ac) | 2026-11-16 | **Alto contraste em amarelo vivo sobre preto** (PR #33), como o Alto contraste do site da Tokai: no 016 era preto sobre amarelo claro, e o responsável pediu o inverso. Fundo preto; texto, bordas e acento em `#ffff00`; foco branco; trilha da barra em oliva. O resto igual ao 016 (slider do miniplayer em cima, letra com as 12 correções). Compilado da `main`. **A ver no celular** e com quem tem baixa visão. Entregue em `<pasta de entrega dos zips>/` | `25b2d8ee…e8be` |
 | **016** | 0.3.0 (57b03a4) | 2026-11-16 | **Modo Alto contraste** (I-06, PR #31): em Ajustes → Aparência, 4º Modo, preto sobre amarelo bem claro, com foco, bordas e barra de progresso mais grossos; o estilo não vale nele. Mesmo conteúdo do 015: slider do miniplayer em cima, letra com as 12 correções explícitas e **sem** a regra automática "ãc" vira "ãe". Compilado da `main`. **A ver no celular**, com a fonte do sistema grande. Entregue em `<pasta de entrega dos zips>/` | `bb343aff…4786` |
 | **015** | 0.3.0 (fac50cb) | 2026-11-16 | **Slider do miniplayer em cima** (I-21, PR #27) e **letra com as correções explícitas** (I-05, PR #28): os 5 hinos de teste embutidos agora passam pelo arquivo de correções (12 correções: palavras partidas, "dar-nos", "mão", "servir"...), e **sem** a regra automática "ãc" vira "ãe", que errava (PR #30). Compilado do ramo do PR #30, ainda não mergeado. Entregue em `<pasta de entrega dos zips>/` | `fb91faed…d90f` |
@@ -93,9 +93,11 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 
 ### Roteiro do 018 (partituras)
 
-O **importador do `.zip` nunca rodou num Android de verdade**: o app envia os bytes do arquivo ao Rust como corpo binário da chamada
-(`invoke`), e isso só foi testado em Chrome com uma simulação e em testes do Rust. É o ponto mais incerto; se falhar, a mensagem de erro
-diz o que foi (por exemplo, "a chamada não trouxe os bytes do arquivo").
+**No 018 o importar do `.zip` FALHOU no Android** ("Não foi possível importar: o pacote .zip não pôde ser lido: a chamada não trouxe os
+bytes do arquivo"), como o roteiro já temia: o app mandava os bytes ao Rust como corpo binário da chamada (`invoke`), e **o Android não
+entrega corpo binário** (o Tauri só usa o `postMessage` lá, que é texto; a documentação dele manda passar bytes como base64). Isso só
+tinha sido testado em Chrome com uma simulação. **Corrigido no 019:** o zip vai como texto base64, em todas as plataformas. O roteiro
+abaixo vale para o 019.
 1. Instale o 018 e abra um hino. A aba **Partitura** aparece (em todos os hinos) com o aviso "Este hinário não tem partituras instaladas" e o
    botão **Abrir Ajustes**. Conferir que o botão leva a Ajustes.
 2. Em **Ajustes → Importar hinário**, escolha o `BibliotecaMusical-CCB-pacote-partituras-018.zip` (o seletor de arquivos precisa mostrar o
