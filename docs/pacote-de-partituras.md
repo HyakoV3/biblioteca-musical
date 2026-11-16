@@ -2,7 +2,7 @@
 
 As partituras são **opcionais**, como os sons gravados: o app baixa um pacote do servidor em **Ajustes → Partituras → Baixar** (decisão do
 responsável, 2026-11-16: o botão "Importar hinário" vai deixar de existir e as partituras ganham um botão automático, no molde dos sons).
-O pacote é um `.zip` só com `partituras/hino-<número>.svg` (formato e verificações em [`FORMATO.md`](FORMATO.md), seção "Importar").
+O pacote é um `.zip` só com `partituras/hino-<número>.svg` e, opcional, `partituras/hino-<número>-paisagem.svg` (formato e verificações em [`FORMATO.md`](FORMATO.md), seção "Importar").
 
 > **Direitos.** As partituras são geradas das transcrições do Enéias (`eneiasramos/ccb-hinario-5-do`, "todos os direitos reservados", sem
 > licença); a autorização dele **ainda não veio**. **Publicar o pacote num link público é distribuir esse trabalho**: o mecanismo está pronto,
@@ -13,14 +13,17 @@ O pacote é um `.zip` só com `partituras/hino-<número>.svg` (formato e verific
 
 - **Pasta no servidor:** `/mnt/downloads/BibliotecaMusicalPartituras/`, **fora** da dos sons (`BibliotecaMusicalSons/`, renomeada pelo responsável depois do
   upgrade do File Browser para a 2.0.2; o link dos sons continuou valendo e conferido). Compartilhamento próprio (a pedido do responsável, que criou a pasta
-  e o link). Tem **dois** zips:
+  e o link). Tem **três** zips:
   - `partituras-001.zip` (155.108 bytes, SHA-256 `35acf55f…f0ac`): a primeira versão, com a letra e largura 700. **Fica** porque os APKs 020 e 021
     procuram por ele.
-  - `partituras-002.zip` (125.130 bytes, SHA-256 `253500de…bd0f`): **sem letra, largura 500** (notas 1,4x maiores no celular em pé), o do APK 022.
+  - `partituras-002.zip` (125.130 bytes, SHA-256 `253500de…bd0f`): **sem letra, largura 500**, uma versão só, o do APK 022. A largura 500 deu 1
+    compasso por linha ("cortando", no relato do responsável), por isso o 003.
+  - `partituras-003.zip` (228.343 bytes, SHA-256 `f39cbe13…9087`): **sem letra, com duas versões de cada hino**: retrato (largura 700, ~1,6 compasso
+    por linha) e paisagem (1200, ~3 compassos por linha), o do APK 023. É o que o manifesto do app aponta.
 
-  O link da pasta baixa os dois juntos (280 KB), e o app acha o seu pelo nome. Quando nenhum APK em uso precisar do 001, apagar.
+  O link da pasta baixa os três juntos (510 KB), e o app acha o seu pelo nome. Quando nenhum APK em uso precisar do 001 e do 002, apagar.
 - **Link do app:** `https://fb.hm.hv2.xyz/public/api/resources/download?hash=<hash do compartilhamento>`, no manifesto do app. Conferido contra os bytes
-  reais do servidor: o zip da pasta traz `BibliotecaMusicalPartituras/partituras-001.zip` idêntico ao local (tamanho e SHA-256).
+  reais do servidor: o zip da pasta traz os três (`BibliotecaMusicalPartituras/partituras-00N.zip`), e o app, com o manifesto novo, acha o 003 e confere o tamanho e o SHA-256.
 - **O link está no manifesto, que está no repositório público:** quem lê o código pode baixar as 5 partituras de teste. É o mesmo que já acontece com
   o link dos sons, mas com um agravante: as partituras são das transcrições do Enéias, cuja autorização ainda não veio (ver "Direitos" acima). Antes
   de publicar o conjunto completo, esperar a resposta dele.
@@ -36,10 +39,11 @@ nos sons, desligar o visualizador. O `config.yaml` do contêiner já dá aos usu
 ## Gerar e publicar
 
 ```sh
-# 1. SVG de cada hino, SEM a letra e na largura 500 (precisa do MuseScore 4 e do pacote Python verovio; ver tools/gerar-partituras.py)
+# 1. SVG de cada hino, SEM a letra, em DUAS versões: retrato (largura 700) e paisagem (1200), cada uma com o seu timemap
+#    (precisa do MuseScore 4 e do pacote Python verovio; ver tools/gerar-partituras.py; --so-retrato pula a paisagem)
 python3 tools/gerar-partituras.py <pasta dos hino-N.mscx> <pasta dos svg>
 
-# 2. o zip (só partituras/hino-N.svg, reproduzível)
+# 2. o zip (só partituras/hino-N.svg e hino-N-paisagem.svg, reproduzível; os timemap não entram)
 python3 tools/montar-pacote.py <pasta dos svg> partituras-NNN.zip
 
 # 3. no servidor de arquivos (o mesmo dos sons): uma pasta PRÓPRIA, fora de BibliotecaMusical/, com o zip dentro, e o link público só dela;

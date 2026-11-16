@@ -91,9 +91,10 @@ export const biblioteca = {
     return pacote;
   },
 
-  /** O SVG (já conferido no Rust) da partitura do hino. Lança erro se o hino não tiver partitura. */
-  lerPartitura(numero: number) {
-    return invoke<string>("ler_partitura", { numero });
+  /** O SVG (já conferido no Rust) da partitura do hino, na versão da tela (`paisagem` pede a larga; sem ela no pacote vale o retrato).
+   *  Lança erro se o hino não tiver partitura. */
+  lerPartitura(numero: number, paisagem: boolean) {
+    return invoke<string>("ler_partitura", { numero, paisagem });
   },
 
   async remover() {

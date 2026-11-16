@@ -45,6 +45,8 @@ const hinario = {
 // conferir o prefixo e o <svg> aninhado com color="black" como o do Verovio. No app de verdade, quem entrega o SVG
 // é o Rust, já limpo; aqui o `invoke` simulado devolve o que o Rust devolveria.
 const SVG_PARTITURA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" overflow="hidden"><svg class="definition-scale" color="black" viewBox="0 0 400 120"><g id="bmccb-p-folha">${[20, 35, 50, 65, 80].map((y) => `<path d="M10 ${y} L390 ${y}"></path>`).join("")}<ellipse cx="60" cy="50" rx="10" ry="7"></ellipse><rect x="90" y="30" width="6" height="40"></rect><text x="120" y="110" font-family="Leipzig" font-size="30px">&#xE1D5; = 58</text></g></svg></svg>`;
+// A versão de paisagem é outro desenho (marcado com data-largo, para saber qual foi entregue).
+const SVG_PARTITURA_PAISAGEM = SVG_PARTITURA.replace('id="bmccb-p-folha"', 'id="bmccb-p-folha" data-largo="1"');
 // Sílabas esperadas na 1ª vez (estrofe 1) e na 2ª (estrofe 2), com o início de cada uma em batidas.
 const ESPERADO_VEZ1 = [["do", 0], ["re", 2], ["mi", 4], ["fa", 6], ["sol", 8]];
 const ESPERADO_VEZ2 = [["la", 0], ["si", 2], ["do", 4], ["re", 6], ["mi", 8]];
@@ -68,13 +70,14 @@ const STUB = `window.__TAURI_INTERNALS__ = {
       return { hinario: ${JSON.stringify(hinario)}, exemplo: false, partituras: [] };
     }
     if (cmd === "ler_partitura") {
+      (window.__leituras = window.__leituras ?? []).push(args.paisagem === true); // cada leitura, com a versão pedida
       if (args.numero === 999) {
         // "e2e-falha-partitura": a PRÓXIMA leitura falha (um erro do Rust), e as seguintes dão certo.
         if (sessionStorage.getItem("e2e-falha-partitura") === "1") {
           sessionStorage.removeItem("e2e-falha-partitura");
           throw JSON.stringify(["ler", "falha simulada"]);
         }
-        return ${JSON.stringify(SVG_PARTITURA)};
+        return args.paisagem === true ? ${JSON.stringify(SVG_PARTITURA_PAISAGEM)} : ${JSON.stringify(SVG_PARTITURA)};
       }
       throw JSON.stringify(["sem_partitura", String(args.numero)]);
     }
@@ -553,6 +556,34 @@ async function principal() {
   confere(min.salvo === '{"escala":0.5}' && min.menosDesligado, `o menor tamanho é 50% e o "−" desliga: ${JSON.stringify(min)}`);
   await av("document.querySelectorAll('#painel-partitura .barra-zoom button')[1].click(); 1");
   await dormir(200);
+
+  // Versões: em pé (412 px) é o desenho de retrato; deitado (915 px) o de paisagem, e a coluna deixa de ser limitada a 40rem (640 px).
+  const estadoVersao = () => av(`(() => ({
+    variante: document.querySelector('#painel-partitura .folha')?.dataset.variante ?? null,
+    largo: !!document.querySelector('#painel-partitura .folha svg [data-largo]'),
+    leituras: JSON.stringify(window.__leituras ?? []),
+    colunaPx: Math.round(document.querySelector('main').getBoundingClientRect().width),
+    folhaPx: Math.round(document.querySelector('#painel-partitura .folha').getBoundingClientRect().width),
+  }))()`);
+  const v0 = await estadoVersao();
+  confere(v0.variante === "retrato" && !v0.largo && v0.leituras === "[false]", `em pé: versão de retrato, uma leitura pedindo o retrato: ${JSON.stringify(v0)}`);
+  confere(v0.colunaPx <= 412, `em pé a coluna cabe na tela: ${v0.colunaPx} px`);
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 915, height: 412, deviceScaleFactor: 1, mobile: true });
+  await dormir(900);
+  const v1 = await estadoVersao();
+  confere(v1.variante === "paisagem" && v1.largo && v1.leituras === "[false,true]", `deitado: a versão de paisagem entra e é lida uma vez: ${JSON.stringify(v1)}`);
+  confere(v1.folhaPx > 640, `deitado, a partitura passa dos 40rem de antes (coluna ${v1.colunaPx} px, folha ${v1.folhaPx} px)`);
+  // a coluna só é larga na aba Partitura: na Letra o limite de 40rem continua
+  await av("document.getElementById('aba-letra').click(); 1");
+  await dormir(400);
+  const colLetra = await av("Math.round(document.querySelector('main').getBoundingClientRect().width)");
+  confere(colLetra <= 640, `na aba Letra a coluna continua limitada a 40rem: ${colLetra} px`);
+  await av("document.getElementById('aba-partitura').click(); 1");
+  await dormir(400);
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
+  await dormir(900);
+  const v2 = await estadoVersao();
+  confere(v2.variante === "retrato" && !v2.largo && v2.leituras === "[false,true]", `de volta em pé: o retrato volta SEM ler de novo: ${JSON.stringify(v2)}`);
 
   const abrirHino = async (numero) => {
     await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/hino/${numero}` });

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ESCALAS_PARTITURA,
+  CONSULTA_PAISAGEM,
   ZOOM_PADRAO,
   escalaDoZoom,
   estadoDaPartitura,
@@ -8,6 +9,7 @@ import {
   normalizarZoom,
   passoDaEscala,
   temAbaPartitura,
+  varianteDaTela,
 } from "../src/lib/partitura";
 import { lerZoomPartitura, salvarZoomPartitura } from "../src/lib/preferencias";
 
@@ -118,5 +120,22 @@ describe("zoom salvo no aparelho", () => {
     });
     expect(lerZoomPartitura()).toBe(ZOOM_PADRAO);
     expect(() => salvarZoomPartitura(2)).not.toThrow();
+  });
+});
+
+describe("versão da partitura para a tela (retrato ou paisagem)", () => {
+  it("tela larga pede a paisagem e tela estreita o retrato", () => {
+    expect(varianteDaTela(true)).toBe("paisagem");
+    expect(varianteDaTela(false)).toBe("retrato");
+  });
+
+  it("o ponto de corte é 36rem: celular em pé fica no retrato, deitado e tablet na paisagem", () => {
+    expect(CONSULTA_PAISAGEM).toBe("(min-width: 36rem)");
+    const px = Number(/\((?:min-width): (\d+)rem\)/.exec(CONSULTA_PAISAGEM)![1]) * 16;
+    expect(px).toBe(576);
+    expect(412).toBeLessThan(px); // celular em pé comum (412 dp) e até 540 dp
+    expect(540).toBeLessThan(px);
+    expect(640).toBeGreaterThanOrEqual(px); // celular deitado, tablet pequeno
+    expect(915).toBeGreaterThanOrEqual(px);
   });
 });

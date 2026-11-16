@@ -206,7 +206,9 @@
     acao={mostrarKaraoke ? botaoKaraoke : undefined}
   />
 
-  <main class="coluna conteudo">
+  <!-- Na aba Partitura a coluna perde o limite de 40rem (até 64rem): numa tela larga (celular deitado, tablet) a partitura de paisagem usa a
+       largura toda, em vez de uma faixa estreita no meio. -->
+  <main class="coluna conteudo" class:partitura-larga={aba === "partitura"}>
     <!-- Os dois painéis ficam montados (só um visível): o som não para ao trocar de aba. -->
     <div role="tabpanel" id="painel-letra" aria-labelledby={abas.length > 1 ? "aba-letra" : undefined} hidden={aba !== "letra"}>
       {#if !temAudio}
@@ -282,6 +284,7 @@
 {/if}
 
 <style>
+  main.partitura-larga { max-width: 64rem; }
   .botao-icone { min-width: 3rem; padding: 0; }
   .chave-karaoke[aria-pressed="true"] { border: 0.125rem solid var(--ouro-linha); }
   /* A estrofe que soa leva uma barra dourada na borda (o recuo negativo mantém o texto no mesmo lugar). */
