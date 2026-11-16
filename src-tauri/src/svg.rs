@@ -6,9 +6,19 @@
 //! quem decide cada byte do que a página vai receber (assim, diferenças entre o parser XML e o do navegador não ajudam quem
 //! ataca). O que não está na lista faz o arquivo ser **recusado**, com o motivo, e não "consertado".
 //!
-//! A lista cobre o que o Verovio gera (ver `tools/gerar-partituras.py`): formas, texto e um `<style>` próprio. Fica de fora
-//! tudo o que executa ou busca algo: `script`, `foreignObject`, `image`, `a`, animações, `iframe`, `use` com endereço de
-//! fora, `url(...)` em qualquer valor, `@import`, atributos `on*`, `xlink:href`, DOCTYPE, comentários e instruções.
+//! A lista cobre o que o Verovio gera (ver `tools/gerar-partituras.py`): formas e texto. Fica de fora tudo o que executa ou
+//! busca algo: `script`, `foreignObject`, `image`, `a`, animações, `iframe`, `use` com endereço de fora, `url(...)` em
+//! qualquer valor, `@import`, atributos `on*`, `xlink:href`, DOCTYPE, comentários e instruções.
+//!
+//! **CSS.** Um `<style>` dentro de um SVG embutido na página vale para o **documento inteiro**, não só para o SVG: um pacote
+//! malicioso poderia esconder ou falsificar botões do app (`.botao{position:fixed;...}`). Por isso nenhum CSS do pacote entra:
+//! o `<style>` do Verovio é **descartado** (só tem negrito, itálico e `stroke:currentColor`, que o app traz no seu CSS, escopado
+//! à partitura: ver docs/FORMATO.md) e o atributo `style` é recusado.
+//!
+//! **O que mais um SVG embutido poderia afetar da página**, e como é barrado:
+//!  - `id` e `href="#..."` ganham o prefixo `bmccb-p-` (um `id` igual ao de um elemento do app não o confunde);
+//!  - o `<svg>` raiz, que é o que o layout da página enxerga, não pode ter `class` (puxaria uma regra do app, por exemplo
+//!    `position:fixed`) nem `transform`, e sai sempre com `overflow="hidden"` (o desenho não passa por cima da interface).
 
 use roxmltree::{Document, Node, NodeType, ParsingOptions};
 
@@ -20,14 +30,14 @@ const NS_XML: &str = "http://www.w3.org/XML/1998/namespace";
 
 const ELEMENTOS: &[&str] = &[
     "svg", "g", "path", "use", "text", "tspan", "rect", "ellipse", "circle", "line", "polyline",
-    "polygon", "style", "defs", "desc", "title", "symbol",
+    "polygon", "defs", "desc", "title", "symbol",
 ];
 
 /// Elementos cujo conteúdo de texto vale. Nos demais, só pode haver espaço entre os filhos.
-const COM_TEXTO: &[&str] = &["text", "tspan", "style", "desc", "title"];
+const COM_TEXTO: &[&str] = &["text", "tspan", "desc", "title"];
 
-/// Atributos permitidos (de geometria e de apresentação). `href` só aponta para dentro (`#id`); `style` e `type` têm regras
-/// próprias em `valor_ok`. Sem `xmlns` (o app escreve o seu) e sem nada que comece com `on`.
+/// Atributos permitidos (de geometria e de apresentação). `id` e `href` (só `#id`) têm regras próprias em `valor_final`. Sem
+/// `style` (nenhum CSS do pacote entra), sem `xmlns` (o app escreve o seu) e sem nada que comece com `on`.
 const ATRIBUTOS: &[&str] = &[
     "id",
     "class",
@@ -54,8 +64,6 @@ const ATRIBUTOS: &[&str] = &[
     "d",
     "points",
     "href",
-    "style",
-    "type",
     "color",
     "fill",
     "fill-opacity",
@@ -97,19 +105,8 @@ const PROIBIDOS_NO_VALOR: &[&str] = &[
     "<",
 ];
 
-/// Dentro de CSS (`<style>` e atributo `style`) é mais estrito: nenhuma regra com `@`, nem comentário.
-const PROIBIDOS_NO_CSS: &[&str] = &[
-    "url(",
-    "javascript",
-    "expression",
-    "behavior",
-    "binding",
-    "image-set",
-    "@",
-    "\\",
-    "<",
-    "/*",
-];
+/// Prefixo dos `id` (e dos `href="#..."`) do SVG, para não colidirem com os da página.
+const PREFIXO_ID: &str = "bmccb-p-";
 
 /// Confere o SVG e devolve a versão reescrita, ou o motivo de recusar.
 pub fn limpar(texto: &str) -> Result<String, String> {
@@ -170,24 +167,37 @@ fn escrever(no: Node, nivel: usize, saida: &mut String) -> Result<(), String> {
         if !ATRIBUTOS.contains(&completo.as_str()) {
             return Err(format!("atributo não permitido: {completo} em <{nome}>"));
         }
-        valor_ok(nome, &completo, a.value()).map_err(|m| format!("{completo} em <{nome}>: {m}"))?;
+        if nivel == 0 {
+            match completo.as_str() {
+                // O overflow do raiz é decidido abaixo, e não pelo pacote.
+                "overflow" => continue,
+                "class" | "transform" => {
+                    return Err(format!("{completo} não é permitido no <svg> raiz"));
+                }
+                _ => {}
+            }
+        }
+        let valor = valor_final(&completo, a.value())
+            .map_err(|m| format!("{completo} em <{nome}>: {m}"))?;
         saida.push(' ');
         saida.push_str(&completo);
         saida.push_str("=\"");
-        escapar(a.value(), true, saida);
+        escapar(&valor, true, saida);
         saida.push('"');
+    }
+    if nivel == 0 {
+        saida.push_str(" overflow=\"hidden\"");
     }
     saida.push('>');
     let com_texto = COM_TEXTO.contains(&nome);
     for filho in no.children() {
         match filho.node_type() {
+            // O CSS do pacote é descartado (ver o cabeçalho): quem o escreveu não decide nada na página.
+            NodeType::Element if is_style(filho) => {}
             NodeType::Element => escrever(filho, nivel + 1, saida)?,
             NodeType::Text => {
                 let t = filho.text().unwrap_or("");
                 if com_texto {
-                    if nome == "style" {
-                        css_ok(t)?;
-                    }
                     // Em <text> e <tspan> o espaço entre os filhos é mantido: faz parte de como o texto é desenhado.
                     escapar(t, false, saida);
                 } else if !t.trim().is_empty() {
@@ -205,43 +215,47 @@ fn escrever(no: Node, nivel: usize, saida: &mut String) -> Result<(), String> {
     Ok(())
 }
 
-fn valor_ok(elemento: &str, atributo: &str, valor: &str) -> Result<(), String> {
+/// `<style>` do espaço de nomes do SVG (um `<style>` de outro espaço de nomes não é descartado: é recusado em `escrever`).
+fn is_style(no: Node) -> bool {
+    no.tag_name().name() == "style" && no.tag_name().namespace() == Some(NS_SVG)
+}
+
+fn id_simples(id: &str) -> bool {
+    !id.is_empty()
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || "_-.:".contains(c))
+}
+
+/// O `id` com o prefixo do app. Idempotente: limpar de novo um SVG já limpo não prefixa outra vez.
+fn com_prefixo(id: &str) -> String {
+    if id.starts_with(PREFIXO_ID) {
+        id.to_string()
+    } else {
+        format!("{PREFIXO_ID}{id}")
+    }
+}
+
+/// Confere o valor de um atributo e devolve o que vai para a saída (`id` e `href` ganham o prefixo).
+fn valor_final(atributo: &str, valor: &str) -> Result<String, String> {
     match atributo {
+        "id" if id_simples(valor) => Ok(com_prefixo(valor)),
+        "id" => Err("só letras, números e _ - . :".into()),
         "href" => {
             let id = valor.strip_prefix('#').unwrap_or("");
-            let simples = !id.is_empty()
-                && id
-                    .chars()
-                    .all(|c| c.is_ascii_alphanumeric() || "_-.:".contains(c));
-            if simples {
-                Ok(())
+            if id_simples(id) {
+                Ok(format!("#{}", com_prefixo(id)))
             } else {
                 Err("só aponta para dentro (#id)".into())
-            }
-        }
-        "style" => css_ok(valor),
-        "type" => {
-            if elemento == "style" && valor == "text/css" {
-                Ok(())
-            } else {
-                Err("valor não permitido".into())
             }
         }
         _ => {
             let baixo = valor.to_ascii_lowercase();
             match PROIBIDOS_NO_VALOR.iter().find(|p| baixo.contains(**p)) {
                 Some(p) => Err(format!("contém \"{p}\"")),
-                None => Ok(()),
+                None => Ok(valor.to_string()),
             }
         }
-    }
-}
-
-fn css_ok(css: &str) -> Result<(), String> {
-    let baixo = css.to_ascii_lowercase();
-    match PROIBIDOS_NO_CSS.iter().find(|p| baixo.contains(**p)) {
-        Some(p) => Err(format!("CSS com \"{p}\"")),
-        None => Ok(()),
     }
 }
 
@@ -296,19 +310,31 @@ mod testes {
     #[test]
     fn aceita_o_formato_do_verovio_e_reescreve() {
         let s = limpar(VEROVIO).unwrap();
+        // O raiz perde o overflow do pacote ("visible") e sai com "hidden", sempre por último.
         assert!(
             s.starts_with(
-                r#"<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100 100""#
+                r#"<svg xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 100 100" color="black" overflow="hidden">"#
             ),
             "{s}"
         );
         assert!(!s.contains("<?xml") && !s.contains("xlink"), "{s}");
+        // id e href ganham o prefixo do app
         assert!(
-            s.contains(r##"<use href="#E050-1" x="1" y="2" height="720px" width="720px"></use>"##),
+            s.contains(
+                r##"<use href="#bmccb-p-E050-1" x="1" y="2" height="720px" width="720px"></use>"##
+            ),
+            "{s}"
+        );
+        assert!(
+            s.contains(r#"<path id="bmccb-p-E050-1""#) && s.contains(r#"<g id="bmccb-p-x""#),
             "{s}"
         );
         assert!(s.contains(r#"xml:lang="pt""#));
-        assert!(s.contains("font-style:italic;"));
+        // o CSS do pacote é descartado
+        assert!(
+            !s.contains("<style") && !s.contains("font-style:italic"),
+            "{s}"
+        );
         assert!(
             !s.contains("\n  <g") && !s.contains("\n  <defs"),
             "o espaço entre os elementos soltos some"
@@ -385,6 +411,8 @@ mod testes {
             r#"filter="x""#,
             r#"clip-path="x""#,
             r#"mask="x""#,
+            r#"contenteditable="true""#,
+            r#"tabindex="0""#,
         ] {
             let motivo = recusa(&svg(&format!("<g {attr}/>")));
             assert!(
@@ -449,42 +477,129 @@ mod testes {
     }
 
     #[test]
-    fn css_do_style_e_do_atributo_style_e_conferido() {
-        assert!(limpar(&svg(r#"<style type="text/css">#a g.b {font-weight:bold;} #a rect {stroke:currentColor}</style>"#)).is_ok());
-        assert!(limpar(&svg(r#"<g style="fill:red; stroke:currentColor"/>"#)).is_ok());
+    fn o_style_do_pacote_e_descartado_com_tudo_o_que_ha_dentro() {
+        // Um <style> no SVG embutido valeria para a página inteira (".botao{position:fixed}"): nada dele chega à saída, nem o
+        // que parece inofensivo, nem o que tem marcação escondida em CDATA.
         for css in [
-            "@import url(x);",
-            "a{background:url(x)}",
-            "a{b:\\75rl(x)}",
-            "@font-face{src:x}",
-            "a{b:expression(1)}",
-            "a{-moz-binding:x}",
-            "a{behavior:x}",
-            "/* c */ a{b:c}",
-            "a{b:image-set(x)}",
-            "a{b:javascript}",
+            "#a g.b {font-weight:bold;} #a rect {stroke:currentColor}",
+            "body{display:none}",
+            "*{visibility:hidden}",
+            ".botao{position:fixed;inset:0;z-index:9}",
+            "@import url(https://evil/x.css);",
+            "a{background:url(https://evil/x)}",
+            "/* c */ a{b:\\75rl(x)}",
+            "<![CDATA[</style><img src=x onerror=alert(1)>]]>",
         ] {
-            recusa(&svg(&format!(r#"<style type="text/css">{css}</style>"#)));
-            recusa(&svg(&format!(
-                r#"<g style="{}"/>"#,
-                css.replace('"', "&quot;")
-            )));
+            let s = limpar(&svg(&format!(
+                r#"<style type="text/css">{css}</style><g/>"#
+            )))
+            .unwrap();
+            assert!(
+                !s.contains("style") && !s.contains("CDATA") && !s.contains("onerror"),
+                "{css} -> {s}"
+            );
+            assert!(s.ends_with("<g></g></svg>"), "o resto continua: {s}");
         }
+        // com filhos e sem type, e dentro de outro elemento
+        let s = limpar(&svg(r#"<g><style><g id="x"/></style></g>"#)).unwrap();
+        assert!(s.ends_with("<g></g></svg>"), "{s}");
     }
 
     #[test]
-    fn cdata_com_marcacao_dentro_do_style_e_recusado() {
+    fn style_de_outro_espaco_de_nomes_nao_e_descartado_e_sim_recusado() {
         recusa(&svg(
-            r#"<style type="text/css"><![CDATA[</style><img src=x onerror=alert(1)>]]></style>"#,
+            r#"<style xmlns="http://www.w3.org/1999/xhtml">body{display:none}</style>"#,
         ));
     }
 
     #[test]
-    fn style_so_aceita_o_tipo_text_css() {
-        assert!(limpar(&svg(r#"<style>a{b:c}</style>"#)).is_ok());
-        assert!(limpar(&svg(r#"<style type="text/css">a{b:c}</style>"#)).is_ok());
-        recusa(&svg(r#"<style type="text/javascript">a</style>"#));
-        recusa(&svg(r#"<g type="text/css"/>"#));
+    fn atributo_style_e_type_sao_recusados() {
+        for attr in [
+            r#"style="fill:red""#,
+            r#"style="position:fixed;inset:0""#,
+            r#"style="background:url(x)""#,
+            r#"style="""#,
+            r#"type="text/css""#,
+        ] {
+            let motivo = recusa(&svg(&format!("<g {attr}/>")));
+            assert!(
+                motivo.contains("atributo não permitido"),
+                "{attr} -> {motivo}"
+            );
+        }
+    }
+
+    #[test]
+    fn id_e_href_ganham_o_prefixo_do_app_e_isso_e_idempotente() {
+        let uma = limpar(&svg(r##"<defs><path id="app"/></defs><use href="#app"/>"##)).unwrap();
+        assert!(uma.contains(r#"<path id="bmccb-p-app">"#), "{uma}");
+        assert!(uma.contains(r##"<use href="#bmccb-p-app">"##), "{uma}");
+        assert_eq!(
+            limpar(&uma).unwrap(),
+            uma,
+            "limpar de novo não prefixa outra vez"
+        );
+        // quem já escreve com o prefixo continua no espaço do app
+        let ja = limpar(&svg(r#"<g id="bmccb-p-x"/>"#)).unwrap();
+        assert!(
+            ja.contains(r#"id="bmccb-p-x""#) && !ja.contains("bmccb-p-bmccb-p-"),
+            "{ja}"
+        );
+    }
+
+    #[test]
+    fn id_com_caracteres_estranhos_e_recusado() {
+        for id in [
+            "", "a b", "a\"b", "a<b", "a'b", "a/b", "a#b", "a)b", "é", "a\n",
+        ] {
+            let motivo = recusa(&svg(&format!(
+                r#"<g id="{}"/>"#,
+                id.replace('"', "&quot;").replace('<', "&lt;")
+            )));
+            assert!(motivo.contains("id em <g>"), "{id:?} -> {motivo}");
+        }
+    }
+
+    #[test]
+    fn o_svg_raiz_nao_pode_ter_class_nem_transform_mas_os_de_dentro_podem() {
+        for attr in [
+            r#"class="miniplayer""#,
+            r#"transform="translate(-500 -500)""#,
+        ] {
+            let motivo = recusa(&format!(
+                r#"<svg xmlns="http://www.w3.org/2000/svg" {attr}/>"#
+            ));
+            assert!(
+                motivo.contains("não é permitido no <svg> raiz"),
+                "{attr} -> {motivo}"
+            );
+        }
+        // o <svg> de dentro (o do Verovio, "definition-scale") e os outros elementos seguem com os dois
+        let s = limpar(&svg(r#"<svg class="definition-scale" viewBox="0 0 1 1"><g class="a" transform="scale(2)"/></svg>"#)).unwrap();
+        assert!(
+            s.contains(r#"<svg class="definition-scale""#)
+                && s.contains(r#"<g class="a" transform="scale(2)">"#),
+            "{s}"
+        );
+    }
+
+    #[test]
+    fn o_overflow_do_raiz_e_sempre_hidden() {
+        for entrada in [
+            r#"<svg xmlns="http://www.w3.org/2000/svg" overflow="visible"/>"#,
+            r#"<svg xmlns="http://www.w3.org/2000/svg" overflow="hidden"/>"#,
+            r#"<svg xmlns="http://www.w3.org/2000/svg" overflow="auto"/>"#,
+            r#"<svg xmlns="http://www.w3.org/2000/svg"/>"#,
+        ] {
+            let s = limpar(entrada).unwrap();
+            assert_eq!(
+                s, r#"<svg xmlns="http://www.w3.org/2000/svg" overflow="hidden"></svg>"#,
+                "{entrada}"
+            );
+        }
+        // um elemento de dentro mantém o que o pacote escreveu (o raiz o recorta)
+        let s = limpar(&svg(r#"<svg overflow="visible"/>"#)).unwrap();
+        assert!(s.contains(r#"<svg overflow="visible">"#), "{s}");
     }
 
     #[test]

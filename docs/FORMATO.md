@@ -179,10 +179,27 @@ SVG vêm de `tools/gerar-partituras.py`. O app confere tudo antes de gravar:
   cabeçalho do zip declara um tamanho errado (a leitura é cortada no limite).
 - **O SVG é limpo, não copiado.** O app lê o SVG com um parser XML, confere cada elemento, atributo e valor contra uma **lista de
   permitidos** e o **reescreve**; é essa versão que fica no disco e que a tela mostra, embutida na página. Ficam de fora `script`,
-  `foreignObject`, `image`, `a`, animações, `url(...)` em qualquer valor, `@import` e qualquer regra com `@` no CSS, escapes de
-  CSS (`\`), atributos `on*`, `href` que não seja `#id`, `xlink:href`, DOCTYPE, comentários e instruções. O que não passa é
-  **recusado e informado** (hino e motivo), e o resto do pacote entra. O SVG de um hino que o `hinario.json` não tem também é
-  recusado.
+  `foreignObject`, `image`, `a`, animações, `url(...)` em qualquer valor, `@import`, escapes de CSS (`\`), atributos `on*`,
+  `style`, `href` que não seja `#id`, `xlink:href`, DOCTYPE, comentários e instruções. O que não passa é **recusado e informado**
+  (hino e motivo), e o resto do pacote entra. O SVG de um hino que o `hinario.json` não tem também é recusado.
+- **Nenhum CSS do pacote entra.** Um `<style>` dentro de um SVG embutido na página vale para o **documento inteiro**, não só para
+  o SVG: um pacote malicioso poderia esconder ou falsificar botões do app (`.botao{position:fixed;inset:0}`). Por isso o `<style>`
+  do Verovio é **descartado** (com o que tiver dentro) e o atributo `style` é recusado. O que o `<style>` do Verovio fazia é
+  pouco, e quem embute o SVG traz no CSS do app, escopado à partitura (por exemplo, dentro de `.partitura`):
+  ```css
+  .partitura svg path, .partitura svg ellipse, .partitura svg polygon, .partitura svg polyline, .partitura svg rect { stroke: currentColor; }
+  .partitura svg g.ending, .partitura svg g.fing, .partitura svg g.reh, .partitura svg g.tempo { font-weight: bold; }
+  .partitura svg g.dir, .partitura svg g.dynam, .partitura svg g.mNum { font-style: italic; }
+  .partitura svg g.label { font-weight: normal; }
+  .partitura svg g.placeholder { visibility: hidden; }
+  ```
+  Conferido no Chrome nos 5 hinos de amostra: com esse CSS o desenho é o mesmo do SVG com o `<style>` original (4 hinos idênticos
+  byte a byte e 1 com um pixel de diferença de 2/255, ruído de antialiasing); sem ele, difere (o `stroke` some). A cor segue o
+  tema com `color` e `fill: currentColor` no `svg`.
+- **O SVG não alcança a página.** Os `id` (e os `href="#..."`) ganham o prefixo `bmccb-p-`, então um `id` igual ao de um elemento
+  do app não o confunde. O `<svg>` raiz, que é o que o layout da página enxerga, não pode ter `class` (puxaria uma regra do app,
+  como `position:fixed`) nem `transform`, e sai sempre com `overflow="hidden"` (o desenho não passa por cima da interface). Quem
+  embute o SVG também deve recortá-lo (`overflow: hidden` no contêiner).
 - **Tudo ou nada.** Os SVG são gravados numa pasta de preparo, e só quando tudo está pronto ela troca a `partituras/` anterior. O
   `hinario.json` é o último a ser trocado. (Uma queda no meio da troca pode deixar o JSON antigo com as partituras novas: como elas
   são lidas pelo número, nada quebra, e importar de novo conserta.)

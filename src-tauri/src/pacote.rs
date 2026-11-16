@@ -147,6 +147,7 @@ pub fn importar_zip(dir: &Path, bytes: &[u8]) -> Result<Importacao, String> {
 }
 
 pub fn importar_zip_com(dir: &Path, bytes: &[u8], lim: &Limites) -> Result<Importacao, String> {
+    let _tranca = hinario::trancar();
     if bytes.len() > lim.zip {
         return Err(erro("zip_grande_demais", &[]));
     }
@@ -299,41 +300,45 @@ fn preparar(
     Ok((aceitas, recusadas))
 }
 
-/// Números dos hinos com partitura instalada, em ordem; vazio se a pasta não pertence ao hinário `id`.
-pub fn numeros(dir: &Path, id: &str) -> Vec<u32> {
-    let pasta = dir.join("partituras");
-    if std::fs::read_to_string(pasta.join(".hinario"))
-        .ok()
-        .as_deref()
-        != Some(marca(id).as_str())
-    {
-        return Vec::new();
+/// A marca de `partituras/` (o `id` do hinário a que pertencem), ou `None` se não há marca. **Só** a falta do arquivo é "sem
+/// marca": qualquer outra falha de leitura (permissão, erro de E/S) é um erro, e quem decide apagar algo não pode confundi-la
+/// com "é de outro hinário".
+fn ler_marca(pasta: &Path) -> Result<Option<String>, String> {
+    let arquivo = pasta.join(".hinario");
+    match std::fs::read_to_string(&arquivo) {
+        Ok(t) => Ok(Some(t)),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(erro("ler", &[format!("{}: {e}", arquivo.display())])),
     }
-    let mut v: Vec<u32> = std::fs::read_dir(&pasta)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .filter_map(|e| {
-            match classificar(&format!("partituras/{}", e.file_name().to_string_lossy())) {
-                Some(Entrada::Svg(n)) => Some(n),
-                _ => None,
-            }
-        })
-        .collect();
-    v.sort_unstable();
-    v.dedup();
-    v
 }
 
-/// Depois de importar um `hinario.json` sozinho: as partituras só ficam se forem do mesmo hinário (`id`).
+/// Números dos hinos com partitura instalada, em ordem; vazio se a pasta não pertence ao hinário `id`. Uma pasta que não
+/// pode ser lida é um erro, e não uma lista vazia (a tela mostraria "sem partitura" sem dizer por quê).
+pub fn numeros(dir: &Path, id: &str) -> Result<Vec<u32>, String> {
+    let pasta = dir.join("partituras");
+    if ler_marca(&pasta)?.as_deref() != Some(marca(id).as_str()) {
+        return Ok(Vec::new());
+    }
+    let falha = |e: std::io::Error| erro("ler", &[format!("{}: {e}", pasta.display())]);
+    let mut v = Vec::new();
+    for entrada in std::fs::read_dir(&pasta).map_err(falha)? {
+        let nome = entrada.map_err(falha)?.file_name();
+        if let Some(Entrada::Svg(n)) =
+            classificar(&format!("partituras/{}", nome.to_string_lossy()))
+        {
+            v.push(n);
+        }
+    }
+    v.sort_unstable();
+    v.dedup();
+    Ok(v)
+}
+
+/// Depois de importar um `hinario.json` sozinho: as partituras só ficam se forem do mesmo hinário (`id`). Se a marca não puder
+/// ser lida, nada é apagado e o erro sobe.
 pub fn alinhar(dir: &Path, id: &str) -> Result<(), String> {
     let pasta = dir.join("partituras");
-    if pasta.exists()
-        && std::fs::read_to_string(pasta.join(".hinario"))
-            .ok()
-            .as_deref()
-            != Some(marca(id).as_str())
-    {
+    if pasta.exists() && ler_marca(&pasta)?.as_deref() != Some(marca(id).as_str()) {
         remover_partituras(dir)?;
     }
     Ok(())
@@ -349,26 +354,30 @@ pub fn remover_partituras(dir: &Path) -> Result<(), String> {
 }
 
 /// O SVG (já limpo na importação, e limpo de novo aqui: o arquivo fica numa pasta que o app não é o único a poder tocar)
-/// do hino `numero`.
+/// do hino `numero`. O arquivo é aberto uma vez e lido só até o limite (nada de olhar o tamanho e ler depois: ele pode mudar
+/// entre as duas coisas).
 pub fn ler_partitura(dir: &Path, numero: u32) -> Result<String, String> {
     let arquivo = dir.join("partituras").join(format!("hino-{numero}.svg"));
     let limite = Limites::default().svg;
-    let tamanho = match std::fs::metadata(&arquivo) {
-        Ok(m) => m.len(),
+    let falha = |e: std::io::Error| erro("ler", &[format!("{}: {e}", arquivo.display())]);
+    let aberto = match std::fs::File::open(&arquivo) {
+        Ok(f) => f,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
             return Err(erro("sem_partitura", &[numero.to_string()]));
         }
-        Err(e) => return Err(erro("ler", &[format!("{}: {e}", arquivo.display())])),
+        Err(e) => return Err(falha(e)),
     };
-    if tamanho > limite {
-        return Err(erro(
-            "partitura_invalida",
-            &[numero.to_string(), format!("passa de {} MiB", limite / MIB)],
-        ));
+    let invalida = |motivo: String| erro("partitura_invalida", &[numero.to_string(), motivo]);
+    let mut bytes = Vec::new();
+    aberto
+        .take(limite + 1)
+        .read_to_end(&mut bytes)
+        .map_err(falha)?;
+    if bytes.len() as u64 > limite {
+        return Err(invalida(format!("passa de {} MiB", limite / MIB)));
     }
-    let texto = std::fs::read_to_string(&arquivo)
-        .map_err(|e| erro("ler", &[format!("{}: {e}", arquivo.display())]))?;
-    svg::limpar(&texto).map_err(|m| erro("partitura_invalida", &[numero.to_string(), m]))
+    let texto = String::from_utf8(bytes).map_err(|_| invalida("o texto não é UTF-8".into()))?;
+    svg::limpar(&texto).map_err(invalida)
 }
 
 #[cfg(test)]
@@ -997,10 +1006,10 @@ mod testes {
         std::fs::write(d.join("partituras/hino-5.svg.bak"), "x").unwrap();
         std::fs::write(d.join("partituras/leia-me.txt"), "x").unwrap();
         std::fs::write(d.join("partituras/hino-007.svg"), "x").unwrap();
-        assert_eq!(numeros(&d, "x"), vec![1, 283]);
-        assert!(numeros(&d, "outro").is_empty());
-        assert!(numeros(&d, "").is_empty());
-        assert!(numeros(&dir_teste("nao_existe"), "x").is_empty());
+        assert_eq!(numeros(&d, "x").unwrap(), vec![1, 283]);
+        assert!(numeros(&d, "outro").unwrap().is_empty());
+        assert!(numeros(&d, "").unwrap().is_empty());
+        assert!(numeros(&dir_teste("nao_existe"), "x").unwrap().is_empty());
         std::fs::remove_dir_all(&d).ok();
     }
 
@@ -1012,7 +1021,139 @@ mod testes {
         let r = importar_zip(&d, &z).unwrap();
         assert_eq!(r.pacote.partituras, vec![1]);
         assert_eq!(hinario::carregar(Some(&d)).unwrap().partituras, vec![1]);
-        assert!(numeros(&d, "a\nb\"c").is_empty(), "a marca é exata");
+        assert!(
+            numeros(&d, "a\nb\"c").unwrap().is_empty(),
+            "a marca é exata"
+        );
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    // ---- falhas de leitura não viram "sem partitura" nem apagam nada ----
+
+    /// Deixa `partituras/.hinario` ilegível (um diretório no lugar do arquivo: o erro não é "não existe").
+    fn estraga_a_marca(d: &Path) {
+        std::fs::remove_file(d.join("partituras/.hinario")).unwrap();
+        std::fs::create_dir(d.join("partituras/.hinario")).unwrap();
+    }
+
+    #[test]
+    fn marca_ilegivel_nao_apaga_as_partituras_e_o_erro_sobe() {
+        let d = dir_teste("marca_ilegivel");
+        importar_zip(&d, &pacote_ok()).unwrap();
+        estraga_a_marca(&d);
+        // alinhar (importar um JSON de outro hinário) NÃO pode tratar "não consegui ler" como "é de outro hinário"
+        assert_eq!(codigo(&alinhar(&d, "outro").unwrap_err()), "ler");
+        assert!(
+            d.join("partituras/hino-1.svg").exists() && d.join("partituras/hino-283.svg").exists()
+        );
+        assert_eq!(codigo(&numeros(&d, "x").unwrap_err()), "ler");
+        let outro = JSON.replace(r#""id":"x""#, r#""id":"y""#);
+        assert_eq!(codigo(&hinario::importar(&d, &outro).unwrap_err()), "ler");
+        assert!(
+            d.join("partituras/hino-1.svg").exists(),
+            "as partituras continuam lá"
+        );
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn sem_marca_e_sem_pasta_e_so_ausencia_e_nao_erro() {
+        let d = dir_teste("sem_marca");
+        assert!(numeros(&d, "x").unwrap().is_empty()); // nem a pasta existe
+        std::fs::create_dir_all(d.join("partituras")).unwrap();
+        std::fs::write(d.join("partituras/hino-1.svg"), SVG).unwrap();
+        assert!(numeros(&d, "x").unwrap().is_empty()); // pasta sem marca: não é deste hinário
+        alinhar(&d, "x").unwrap(); // e aí sim é apagada
+        assert!(!d.join("partituras").exists());
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn pasta_de_partituras_que_nao_da_para_listar_e_erro_e_nao_lista_vazia() {
+        use std::os::unix::fs::PermissionsExt;
+        let d = dir_teste("sem_listar");
+        importar_zip(&d, &pacote_ok()).unwrap();
+        let pasta = d.join("partituras");
+        // só "x": dá para abrir o .hinario pelo caminho, mas não listar a pasta
+        std::fs::set_permissions(&pasta, std::fs::Permissions::from_mode(0o100)).unwrap();
+        let resultado = if std::fs::read_dir(&pasta).is_ok() {
+            None // rodando como root: as permissões não valem, e não há o que provar aqui
+        } else {
+            Some(numeros(&d, "x"))
+        };
+        std::fs::set_permissions(&pasta, std::fs::Permissions::from_mode(0o755)).unwrap();
+        if let Some(r) = resultado {
+            assert_eq!(codigo(&r.unwrap_err()), "ler");
+        }
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    // ---- uma importação ou remoção de cada vez ----
+
+    /// Roda `f` numa thread enquanto a tranca está presa aqui: ela tem de esperar (não acabar e não tocar em `d`), e só depois de
+    /// a tranca ser solta é que termina.
+    fn espera_a_tranca<T: Send + 'static>(d: &Path, f: impl FnOnce() -> T + Send + 'static) -> T {
+        let guarda = hinario::trancar();
+        let t = std::thread::spawn(f);
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        assert!(!t.is_finished(), "tem de esperar a tranca");
+        assert!(!d.exists(), "e não pode ter tocado em nada enquanto espera");
+        drop(guarda);
+        t.join().unwrap()
+    }
+
+    #[test]
+    fn importar_zip_espera_a_tranca() {
+        let d = dir_teste("tranca_zip");
+        let (d2, z) = (d.clone(), pacote_ok());
+        let r = espera_a_tranca(&d, move || importar_zip(&d2, &z));
+        assert_eq!(r.unwrap().partituras, 2);
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn importar_json_espera_a_tranca() {
+        let d = dir_teste("tranca_json");
+        let d2 = d.clone();
+        let r = espera_a_tranca(&d, move || hinario::importar(&d2, JSON));
+        assert!(r.is_ok());
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn remover_espera_a_tranca() {
+        let d = dir_teste("tranca_remover");
+        let d2 = d.clone();
+        let r = espera_a_tranca(&d, move || hinario::remover(&d2));
+        assert!(r.unwrap().exemplo);
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn importacoes_em_paralelo_deixam_o_disco_consistente() {
+        let d = dir_teste("paralelo");
+        let a = zip_de(&[("hinario.json", JSON), ("partituras/hino-1.svg", SVG)]);
+        let b = zip_de(&[("hinario.json", JSON), ("partituras/hino-2.svg", SVG)]);
+        let mut threads = Vec::new();
+        for i in 0..8 {
+            let (d2, z) = (d.clone(), if i % 2 == 0 { a.clone() } else { b.clone() });
+            threads.push(std::thread::spawn(move || {
+                importar_zip(&d2, &z).unwrap().partituras
+            }));
+            let d3 = d.clone();
+            threads.push(std::thread::spawn(move || {
+                hinario::importar(&d3, JSON).unwrap();
+                0
+            }));
+        }
+        for t in threads {
+            t.join().unwrap();
+        }
+        let n = numeros(&d, "x").unwrap();
+        assert!(n == vec![1] || n == vec![2], "{n:?}");
+        assert!(!d.join("partituras.novo").exists() && !d.join("hinario.json.tmp").exists());
+        assert_eq!(hinario::carregar(Some(&d)).unwrap().partituras, n);
         std::fs::remove_dir_all(&d).ok();
     }
 
