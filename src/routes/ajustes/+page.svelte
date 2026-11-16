@@ -13,7 +13,8 @@
   import { ESTILOS, TEMAS, estilo, tema } from "$lib/tema.svelte";
   import { CREDITOS, textoDaLicenca } from "$lib/licencas";
   import { traduzirErro } from "$lib/erros";
-  import { LIMITE_ZIP_BYTES, ehZip, listaCurta } from "$lib/pacote";
+  import { LIMITE_JSON_BYTES, listaCurta } from "$lib/pacote";
+  import { partituras } from "$lib/partituras/partituras.svelte";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const voltar = usarVoltar();
@@ -39,37 +40,40 @@
     if (!arquivo) return;
     resultado = null;
     try {
-      // O tamanho vem do arquivo, antes de lê-lo para a memória: um arquivo enorme não é nem aberto. (O Rust ainda confere o limite de cada
-      // tipo: 20 MB para o .json e 150 MiB para o .zip.)
-      if (arquivo.size > LIMITE_ZIP_BYTES) throw JSON.stringify(["zip_grande_demais"]);
-      const bytes = new Uint8Array(await arquivo.arrayBuffer());
-      let texto: string;
-      if (ehZip(bytes)) {
-        // Pacote .zip: o hinario.json e as partituras. O Rust confere tudo; as partituras que não passam na verificação do SVG
-        // ficam de fora e são listadas, e o resto entra.
-        const r = await biblioteca.importarZip(bytes);
-        texto = t("importar.ok_partituras", {
-          total: i18n.tn("plural.hinos", r.pacote.hinario.hinos.length),
-          nome: r.pacote.hinario.hinario.nome,
-          partituras: i18n.tn("plural.partituras", r.partituras),
-        });
-        if (r.recusadas.length > 0) {
-          texto += " " + t("importar.recusadas", {
-            total: r.recusadas.length,
-            lista: listaCurta(r.recusadas.map((x) => x.numero)),
-            motivo: r.recusadas[0].motivo,
-          });
-        }
-      } else {
-        const p = await biblioteca.importar(new TextDecoder().decode(bytes));
-        texto = t("importar.ok", { total: i18n.tn("plural.hinos", p.hinario.hinos.length), nome: p.hinario.hinario.nome });
-      }
+      // O tamanho vem do arquivo, antes de lê-lo para a memória: um arquivo enorme não é nem aberto. (O Rust confere o mesmo limite.)
+      if (arquivo.size > LIMITE_JSON_BYTES) throw JSON.stringify(["grande_demais"]);
+      const p = await biblioteca.importar(await arquivo.text());
       reproducao.limpar(); // o conteúdo mudou: para o som e esquece os ajustes dos hinos antigos
-      resultado = { tipo: "sucesso", texto };
+      resultado = {
+        tipo: "sucesso",
+        texto: t("importar.ok", { total: i18n.tn("plural.hinos", p.hinario.hinos.length), nome: p.hinario.hinario.nome }),
+      };
     } catch (err) {
       resultado = { tipo: "erro", texto: t("importar.erro", { erro: traduzirErro(String(err), t) }) };
     }
   }
+
+  // --- Partituras (I-08): baixar do servidor e remover, no molde dos sons gravados. ---
+  const instaladas = $derived(biblioteca.pacote?.partituras.length ?? 0);
+  // "0,2 MB · Não instaladas" (o tamanho só aparece quando há pacote publicado).
+  const estadoPartituras = $derived.by(() => {
+    const estado =
+      instaladas > 0
+        ? t("partituras.instaladas", { total: i18n.tn("plural.partituras", instaladas) })
+        : partituras.disponivel
+          ? t("partituras.nao_instaladas")
+          : t("partituras.indisponivel");
+    return partituras.disponivel ? `${formatarMB(partituras.bytes, i18n.idioma)} · ${estado}` : estado;
+  });
+  // O erro do download: código do pacote (rede, integridade...) ou texto do Rust (JSON de códigos), traduzido.
+  const erroDasPartituras = $derived.by(() => {
+    const e = partituras.andamento.erro;
+    if (!e) return "";
+    if ("codigo" in e) {
+      return t(e.codigo === "rede" ? "sons.erro_rede" : "sons.erro_arquivo");
+    }
+    return traduzirErro(e.bruto, t);
+  });
 
   async function remover() {
     confirmando = false;
@@ -144,7 +148,7 @@
     <div class="acoes">
       <label class="botao primario">
         {t("importar.botao")}
-        <input type="file" accept=".json,.zip,application/json,application/zip,application/x-zip-compressed" onchange={importar} hidden />
+        <input type="file" accept=".json,application/json" onchange={importar} hidden />
       </label>
       {#if biblioteca.pacote && !biblioteca.pacote.exemplo}
         <button class="botao perigo" onclick={() => (confirmando = true)}>{t("importar.remover")}</button>
@@ -163,6 +167,47 @@
     {/if}
 
     {#if resultado}<Aviso tipo={resultado.tipo}>{resultado.texto}</Aviso>{/if}
+  </section>
+
+  <section id="partituras">
+    <h2>{t("partituras.titulo")}</h2>
+    <p class="meta">{t("partituras.explica")}</p>
+    <div class="pacote">
+      <div class="pacote-info">
+        <strong>{t("partituras.pacote")}</strong>
+        <span class="meta">{estadoPartituras}</span>
+      </div>
+      {#if partituras.andamento.fase === "baixando"}
+        <progress
+          value={partituras.andamento.progresso}
+          max="1"
+          aria-label={t("partituras.baixando", { n: Math.round(partituras.andamento.progresso * 100) })}
+        ></progress>
+        <span class="meta">{t("partituras.baixando", { n: Math.round(partituras.andamento.progresso * 100) })}</span>
+      {:else if partituras.andamento.fase === "conferindo"}
+        <span class="meta" role="status">{t("partituras.conferindo")}</span>
+      {:else if partituras.andamento.fase === "instalando"}
+        <span class="meta" role="status">{t("partituras.instalando")}</span>
+      {:else if instaladas > 0}
+        <button class="botao" onclick={() => partituras.remover()}>{t("partituras.remover")}</button>
+      {:else if partituras.disponivel}
+        <button class="botao primario" onclick={() => partituras.baixar()}>
+          {t("partituras.baixar", { tamanho: formatarMB(partituras.bytes, i18n.idioma) })}
+        </button>
+      {/if}
+    </div>
+    {#if partituras.andamento.fase === "erro"}
+      <Aviso tipo="erro">{erroDasPartituras}</Aviso>
+    {/if}
+    {#if partituras.recusadas.length > 0}
+      <Aviso tipo="info">
+        {t("partituras.recusadas", {
+          total: partituras.recusadas.length,
+          lista: listaCurta(partituras.recusadas.map((x) => x.numero)),
+          motivo: partituras.recusadas[0].motivo,
+        })}
+      </Aviso>
+    {/if}
   </section>
 
   <section>

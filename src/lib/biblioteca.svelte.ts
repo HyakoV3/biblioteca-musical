@@ -76,14 +76,19 @@ export const biblioteca = {
     return pacote;
   },
 
-  /** Importa um pacote .zip (hinario.json + partituras). Os bytes vão em **base64** (texto): corpo binário não chega ao Rust no Android.
-   *  Lança erro (texto do Rust) se o pacote for recusado; o conteúdo atual não muda. */
-  async importarZip(bytes: Uint8Array) {
+  /** Instala o pacote de partituras (zip só com os SVG, já baixado e conferido). Os bytes vão em **base64** (texto): corpo binário não chega
+   *  ao Rust no Android. Lança erro (texto do Rust) se o pacote for recusado; o conteúdo atual não muda. */
+  async importarPartituras(bytes: Uint8Array) {
     if (bytes.length > LIMITE_ZIP_BYTES) throw JSON.stringify(["zip_grande_demais"]); // o mesmo erro do Rust, sem montar o texto
-    const r = await invoke<Importacao>("importar_pacote", { zip: bytesParaBase64(bytes) });
+    const r = await invoke<Importacao>("importar_partituras", { zip: bytesParaBase64(bytes) });
     pacote = r.pacote;
-    busca = "";
     return r;
+  },
+
+  /** Apaga só as partituras; o hinário fica. */
+  async removerPartituras() {
+    pacote = await invoke<Pacote>("remover_partituras");
+    return pacote;
   },
 
   /** O SVG (já conferido no Rust) da partitura do hino. Lança erro se o hino não tiver partitura. */

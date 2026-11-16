@@ -290,6 +290,26 @@ pub fn importar(dir: &Path, json: &str) -> Result<Pacote, String> {
     })
 }
 
+/// O hinário instalado (o `hinario.json` de `dir`), sem semear nem carregar o exemplo: `None` se não há arquivo. Não pega a tranca
+/// (quem importa partituras já a tem e não pode pedi-la de novo).
+pub(crate) fn instalado(dir: &Path) -> Result<Option<Hinario>, String> {
+    let arquivo = dir.join("hinario.json");
+    match std::fs::read_to_string(&arquivo) {
+        Ok(texto) => ler(&texto).map(Some),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(erro("ler", &[format!("{}: {e}", arquivo.display())])),
+    }
+}
+
+/// Remove só as partituras importadas; o hinário fica.
+pub fn remover_partituras(dir: &Path) -> Result<Pacote, String> {
+    {
+        let _tranca = trancar(); // solta antes do `carregar`, que pode importar (semear) e pegá-la
+        crate::pacote::remover_partituras(dir)?;
+    }
+    carregar(Some(dir))
+}
+
 /// Remove o conteúdo importado (o hinário e as partituras); o app volta a mostrar o pacote de exemplo.
 pub fn remover(dir: &Path) -> Result<Pacote, String> {
     {

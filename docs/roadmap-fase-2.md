@@ -81,7 +81,8 @@ sem estalos; a licença de cada som está registrada; e o app base não cresceu.
       nos 5 hinos de amostra (~400 KB cada, ~36 MB num zip de 480). Decisões do responsável em
       [`roadmap-ideas.md`](roadmap-ideas.md), I-08. **A aba está na PR 3.**
 - [x] Pacote de **vários arquivos** (`.zip`) na importação, no lugar do JSON único (limite atual de 20 MB). **Feito (PR 2):
-      `hinario.json` + `partituras/hino-N.svg`, com limpeza do SVG, nomes exatos e limites.**
+      `hinario.json` + `partituras/hino-N.svg`, com limpeza do SVG, nomes exatos e limites. Depois (2026-11-16) o zip passou a ser só de
+      partituras e a importação manual saiu: o card Partituras em Ajustes baixa o pacote (ver `pacote-de-partituras.md`).**
 - [x] Aba **Partitura** com zoom e rolagem, nos temas claro, escuro e alto contraste; só nos hinos que têm partitura, e, sem
       pacote importado, com um aviso e um botão para Ajustes. **Feito (PR 3), falta ver no celular (APK, PR 4).**
 - [x] **Karaokê (I-12), fase A:** a **letra** acompanhando a música, com botão ligar/desligar na aba Letra (campo
