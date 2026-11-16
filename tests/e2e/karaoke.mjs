@@ -306,8 +306,41 @@ async function principal() {
   await dormir(600);
   const tempoOuvir = await av("document.querySelector('#painel-ouvir .tempos span')?.textContent ?? null");
   confere(tempoOuvir === "0:02", `o tempo da aba Ouvir acompanha o slider: ${JSON.stringify(tempoOuvir)} (esperado "0:02")`);
+  // O polegar NATIVO (transparente) tem de ter o mesmo tamanho do ponto desenhado: o toque e o arraste são mapeados por ele, e se
+  // fosse menor o valor escolhido e o ponto divergiriam alguns pixels nas pontas. (O Chrome não informa o tamanho de um polegar
+  // nativo pelo estilo, então a medida é de COMPORTAMENTO: com o passo livre, um toque exatamente no ponto que o desenho indicaria
+  // para 10% da barra tem de escolher 10% do tempo.)
+  const caixa = await av(`(() => {
+    const e = document.querySelector('#painel-ouvir .busca-entrada');
+    e.step = 'any';
+    const r = e.getBoundingClientRect();
+    const ponto = parseFloat(getComputedStyle(document.querySelector('#painel-ouvir .busca .ponto')).width);
+    return { x: r.left + ponto / 2 + (r.width - ponto) * 0.1, y: r.top + r.height / 2, max: Number(e.max) };
+  })()`);
+  await enviar("Input.dispatchMouseEvent", { type: "mousePressed", x: caixa.x, y: caixa.y, button: "left", clickCount: 1 });
+  const escolhido = Number(await av("document.querySelector('#painel-ouvir .busca-entrada').value"));
+  await av("document.querySelector('#painel-ouvir .busca-entrada').step = '1'; 1");
+  await enviar("Input.dispatchMouseEvent", { type: "mouseReleased", x: caixa.x, y: caixa.y, button: "left", clickCount: 1 });
+  const fracaoEscolhida = escolhido / caixa.max;
+  confere(Math.abs(fracaoEscolhida - 0.1) < 0.003, `o toque escolhe o ponto que o desenho indica (esperado 10%, escolheu ${(fracaoEscolhida * 100).toFixed(2)}%)`);
+  // A barra tem de usar as cores do TEMA (`--ouro-linha` no preenchimento e no ponto, `--borda` na trilha), e não o azul do controle
+  // nativo do sistema: as cores mudam em cada tema, então a conferência é contra as variáveis, não contra um valor fixo.
+  const cores = await av(`(() => {
+    const cor = (v) => { const d = document.createElement('i'); d.style.color = v; document.body.append(d); const c = getComputedStyle(d).color; d.remove(); return c; };
+    const fundo = (s) => { const e = document.querySelector(s); return e ? getComputedStyle(e).backgroundColor : null; };
+    return { ouro: cor('var(--ouro-linha)'), borda: cor('var(--borda)'), preenchimento: fundo('#painel-ouvir .busca .preenchido'),
+             ponto: fundo('#painel-ouvir .busca .ponto'), trilha: fundo('#painel-ouvir .busca .trilho') };
+  })()`);
+  confere(
+    cores.preenchimento === cores.ouro && cores.ponto === cores.ouro && cores.trilha === cores.borda,
+    `a barra de progresso usa as cores do tema (preenchimento e ponto = ouro-linha, trilha = borda): ${JSON.stringify(cores)}`,
+  );
   await av("document.getElementById('aba-letra').click(); 1");
   await dormir(400);
+  confere(
+    (await av(`(() => { const e = document.querySelector('.mini .busca .preenchido'); return e ? getComputedStyle(e).backgroundColor : null; })()`)) === cores.ouro,
+    "o fio do miniplayer usa o ouro-linha do tema",
+  );
   await av("document.querySelector('.chave-karaoke')?.click(); 1"); // desliga
   await dormir(400);
   confere((await av("document.querySelectorAll('.trecho').length")) === 0, "com o botão desligado nada fica aceso");
