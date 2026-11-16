@@ -3,10 +3,12 @@
 
 Uso:  python3 tools/montar-manifesto-partituras.py LINK PACOTE.zip [--saida src/lib/partituras/manifesto.json]
 
-LINK       o endereço público de download do zip (https, no servidor que o app pode acessar: src-tauri/capabilities/default.json).
-PACOTE.zip o zip de tools/montar-pacote.py, o MESMO arquivo que está no servidor.
+LINK       o endereço público de download (https, no servidor que o app pode acessar: src-tauri/capabilities/default.json). Pode ser o link
+           da PASTA compartilhada que contém o zip (o File Browser devolve a pasta inteira em zip, e o app acha o zip pelo nome) ou o do próprio
+           arquivo.
+PACOTE.zip o zip de tools/montar-pacote.py, o MESMO arquivo que está no servidor. O NOME dele vai para o manifesto (`arquivo`).
 
-O app só instala um arquivo que tenha EXATAMENTE o tamanho e o SHA-256 daqui; mudou o pacote no servidor, refaça o manifesto e gere um APK
+O app só instala um zip que tenha EXATAMENTE o tamanho e o SHA-256 daqui; mudou o pacote no servidor, refaça o manifesto e gere um APK
 novo. Sem esse manifesto (`"pacote": null`), o botão Baixar não aparece.
 """
 import argparse
@@ -26,7 +28,7 @@ def montar(link: str, zip_: Path) -> dict:
     dados = zip_.read_bytes()
     if not dados.startswith(b"PK\x03\x04"):
         raise ValueError(f"{zip_.name} não parece um zip")
-    return {"versao": 1, "pacote": {"url": link, "bytes": len(dados), "sha256": hashlib.sha256(dados).hexdigest()}}
+    return {"versao": 1, "pacote": {"url": link, "arquivo": zip_.name, "bytes": len(dados), "sha256": hashlib.sha256(dados).hexdigest()}}
 
 
 def principal() -> int:

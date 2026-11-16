@@ -18,9 +18,16 @@ python3 tools/gerar-partituras.py <pasta dos hino-N.mscx> <pasta dos svg>
 # 2. o zip (só partituras/hino-N.svg, reproduzível)
 python3 tools/montar-pacote.py <pasta dos svg> partituras-001.zip
 
-# 3. no servidor de arquivos (o mesmo dos sons), sobe o zip e cria o link público; depois o manifesto do app, com o tamanho e o SHA-256
-python3 tools/montar-manifesto-partituras.py <link público> partituras-001.zip
+# 3. no servidor de arquivos (o mesmo dos sons): uma pasta PRÓPRIA, fora de BibliotecaMusical/, com o zip dentro, e o link público só dela;
+#    depois o manifesto do app, com o nome, o tamanho e o SHA-256 do zip
+python3 tools/montar-manifesto-partituras.py <link público da pasta> partituras-001.zip
 ```
+
+**Pasta própria, fora de `BibliotecaMusical/`:** o link público do File Browser baixa a **pasta inteira em zip** (não há download de arquivo
+avulso por esse tipo de link). Se o zip das partituras ficasse dentro de `BibliotecaMusical/` (a pasta dos sons), o download dos sons o traria
+junto e o das partituras traria os 38 MB de sons. Numa pasta só dele, o servidor entrega uma pasta em zip com o `partituras-001.zip` dentro; o app
+a abre, acha o zip **pelo nome**, e confere o **tamanho e o SHA-256 do zip de dentro** (o de fora não é reproduzível). Se o link for do próprio
+arquivo, o app também aceita (usa o que veio, se bater).
 
 O passo 3 escreve `src/lib/partituras/manifesto.json`; **o app só instala um arquivo com exatamente aquele tamanho e SHA-256**. Mudou o zip no
 servidor, refaça o manifesto e gere um APK novo (a atualização automática, sem APK novo, é a ideia I-25 em

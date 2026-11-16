@@ -107,7 +107,8 @@ class Manifesto(unittest.TestCase):
             r = mm.montar("https://fb.hm.hv2.xyz/public/api/resources/download?hash=abc", z)
             dados = z.read_bytes()
             self.assertEqual(r, {"versao": 1, "pacote": {"url": "https://fb.hm.hv2.xyz/public/api/resources/download?hash=abc",
-                                                          "bytes": len(dados), "sha256": hashlib.sha256(dados).hexdigest()}})
+                                                          "arquivo": "p.zip", "bytes": len(dados),
+                                                          "sha256": hashlib.sha256(dados).hexdigest()}})
 
     def test_link_ruim_e_arquivo_que_nao_e_zip_dao_erro(self):
         with tempfile.TemporaryDirectory() as t:
@@ -148,6 +149,7 @@ class Manifesto(unittest.TestCase):
         if lido["pacote"] is not None:
             self.assertTrue(lido["pacote"]["url"].startswith("https://"))
             self.assertRegex(lido["pacote"]["sha256"], r"^[0-9a-f]{64}$")
+            self.assertRegex(lido["pacote"]["arquivo"], r"^[\w.-]+\.zip$")
             self.assertGreater(lido["pacote"]["bytes"], 0)
 
 

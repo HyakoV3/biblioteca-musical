@@ -3,7 +3,7 @@
 import { biblioteca, type Recusada } from "../biblioteca.svelte";
 import { baixarZip } from "../sons/baixar";
 import { ErroPacote, sha256Hex, type CodigoErro } from "../sons/extrair";
-import { baixarEInstalar, type Fase } from "./baixar";
+import { baixarEInstalar, extrairDaPastaReal, type Fase } from "./baixar";
 import { MANIFESTO } from "./manifesto";
 
 export type Andamento = {
@@ -29,7 +29,7 @@ async function baixar() {
   try {
     const r = await baixarEInstalar(
       pacote,
-      { baixar: baixarZip, sha256: sha256Hex, instalar: (zip) => biblioteca.importarPartituras(zip) },
+      { baixar: baixarZip, sha256: sha256Hex, extrairDaPasta: extrairDaPastaReal, instalar: (zip) => biblioteca.importarPartituras(zip) },
       (fase, progresso) => (andamento = { fase, progresso, erro: null }),
     );
     recusadas = r.recusadas;

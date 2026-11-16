@@ -3,10 +3,14 @@
 // daqui (docs/pacote-de-partituras.md). Enquanto `pacote` é null, não há pacote publicado e o botão Baixar não aparece.
 
 export type PacotePartituras = {
-  /** Endereço de download do zip (link público do File Browser). */
+  /** Endereço de download (link público do File Browser). Para uma PASTA compartilhada, o servidor devolve a pasta inteira em zip, com o
+   *  zip das partituras dentro; se o link for do próprio arquivo, devolve o zip das partituras direto. O app aceita os dois. */
   url: string;
-  /** Tamanho exato do zip, em bytes. */
+  /** Nome do zip das partituras (o que `tools/montar-pacote.py` gera), por exemplo "partituras-001.zip". */
+  arquivo: string;
+  /** Tamanho exato desse zip, em bytes. */
   bytes: number;
+  /** SHA-256 desse zip. */
   sha256: string;
 };
 
