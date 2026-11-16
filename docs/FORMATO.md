@@ -107,10 +107,13 @@ de um verso (a continuação vem em minúscula). Duas ressalvas:
 
 **Erros de digitação que o conversor conserta sozinho**, sílaba a sílaba e antes de montar as linhas (`corrigir_silabas`, para
 as marcas do karaokê já nascerem do texto certo):
-- pronome colado ao verbo que termina em vogal acentuada, sem hífen (-lo, -la, -los, -las, -lhe, -lhes): ganha o hífen;
-- "I" maiúsculo no lugar de "l" no começo de uma sílaba que continua a palavra;
-- "~" literal vira espaço (como a elisão do MuseScore);
-- "ãc" vira "ãe" (nenhuma palavra do português tem "c" logo depois de "ã").
+- pronome colado ao verbo que termina em vogal acentuada, sem hífen (-lo, -la, -los, -las, -lhe, -lhes): ganha o hífen. Nesse caso
+  um "I" maiúsculo no começo do pronome só pode ser um "l" digitado errado e também é consertado ("cantáIo" vira "cantá-lo");
+- "~" literal vira espaço (como a elisão do MuseScore).
+
+**O que o conversor NÃO adivinha:** qualquer erro com mais de uma leitura possível. Uma regra "esperta" que trocava "ãc" por "ãe"
+errou: o autor tinha escrito "mãc" para **"mão"**. Um "I" no meio de uma palavra, fora do pronome, também não se mexe (poderia ser "l"
+ou "i"). Esses casos são decisão do responsável, no arquivo de correções.
 
 O que a regra não resolve: verso que o autor escreveu **sem respiração** na partitura (dois versos colados na mesma linha) e
 **erros de digitação** que não seguem um padrão seguro. Esses casos se conseguem com o **arquivo de correções** da letra (opção

@@ -27,8 +27,8 @@ cargo run --release -- --correcoes correcoes.json --id meu-hinario --nome "Meu h
   autor escreve dentro da primeira sílaba ("1. Pa") é removido, porque o app já numera as estrofes. Uma sílaba só
   é descartada como repetida se for **idêntica**, no mesmo instante e vier de **outra camada**.
 - **Letra: o que o conversor conserta sozinho** (só onde há regra segura): pronome colado ao verbo acentuado sem hífen (-lo, -la,
-  -los, -las, -lhe, -lhes), "I" maiúsculo no lugar de "l" no meio da palavra, "~" literal (vira espaço) e "ãc" no lugar de
-  "ãe". Cada uma está descrita em `docs/FORMATO.md`.
+  -los, -las, -lhe, -lhes, com o "I" maiúsculo no lugar do "l" que ele traz às vezes) e "~" literal (vira espaço). O que tem mais de uma
+  leitura possível o conversor **não adivinha**: fica para o arquivo de correções. Detalhes em `docs/FORMATO.md`.
 - **Letra: o que só se conserta com o arquivo de correções.** O conversor une as sílabas só onde o arquivo marca início, meio e
   fim da palavra. Partitura que não marca ("Pa" e "ra," saem separados), letra trocada, ou dois versos colados sem respiração
   produzem isso na letra. Para esses casos, `--correcoes arquivo.json` aplica trocas **explícitas** do responsável (juntar,

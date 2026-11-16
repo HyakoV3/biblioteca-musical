@@ -311,7 +311,8 @@ verso, títulos). O desenho exato depende das fotos.
   maiúscula não resolve (a letra tem frases com maiúscula no meio de um verso); o **arquivo de correções** (I-05, feita) tem o verbo
   `quebrar_antes`, mas falta a foto do hino 283 para saber onde ficam os versos.
 - **Erros de digitação do autor** nos arquivos `.mscx`. **O conversor já conserta, por regra segura** (2026-11-16): pronome
-  colado sem hífen depois de vogal acentuada, "I" maiúsculo no lugar de "l", "~" literal e "ãc" no lugar de "ãe". **O resto** (sílaba
+  colado sem hífen depois de vogal acentuada (com o "I" no lugar do "l") e "~" literal. A regra "ãc" vira "ãe" **foi removida** (2026-11-16): o
+  autor tinha escrito "mãc" para "mão"; o que é ambíguo não se adivinha. **O resto** (sílaba
   sem o marcador de continuação, a palavra que sai partida em duas, letras trocadas) **conserta-se com o arquivo de correções**
   (I-05, feita 2026-11-16, [`correcoes-da-letra.md`](correcoes-da-letra.md)); nos 5 hinos de amostra, 10 correções deixaram as palavras
   iguais ao impresso (hinos 1, 276, 398 e 457) e sem palavras desconhecidas para o dicionário (exceto uma palavra do 283, sem foto).
