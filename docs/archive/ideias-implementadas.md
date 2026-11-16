@@ -855,5 +855,42 @@ celular quase não reproduzem. Agora fica na mediana do ouvido (pico 0,62). Falt
 - O espectro médio de cada instrumento sintetizado fica mais perto do da amostra gravada do que o de hoje (medida
   objetiva, em `tools/`), sem aumentar de forma relevante o tamanho do app nem o uso de CPU com 4 vozes.
 
----
+## I-05 — Arquivo de correções para a letra (proposta do assistente)
 
+- **Status:** anotada
+- **Origem:** observação do assistente, 2026-11-14, a partir do hino 1.
+- **Prioridade:** a definir
+
+### O problema
+
+Algumas partituras trazem a letra com marcas incompletas ou erros de digitação: numa partitura, "Pa" e "ra," sem marca de continuação (saem "Pa ra,") e "Ia" com "I" maiúsculo no lugar de "la" ("cantêIa"). O
+conversor mostra o texto como está no arquivo. Corrigir isso por heurística seria arriscado (poderia alterar o texto
+de um hino sem ninguém perceber).
+
+### Ideia
+
+Um arquivo de **correções explícitas**, mantido pelo responsável (por exemplo `content/correcoes.json`, fora do Git
+como o resto do conteúdo): uma lista de "trocar este texto por este, neste hino". O conversor aplica só o que estiver
+listado e **avisa** cada correção aplicada. Assim o texto dos hinos nunca muda sem registro.
+
+### Perguntas em aberto
+
+1. As correções devem ficar no repositório (úteis a todos, mas são texto do hinário) ou só locais?
+2. Prefere corrigir direto nos `.mscx` (sem arquivo de correções)? Isso diverge dos arquivos do autor das transcrições.
+3. Vale uma ferramenta que liste os suspeitos (palavras com "I" maiúsculo no meio, sílabas sem marca de continuação)
+   para o responsável revisar, em vez de procurar à mão?
+
+### Como ficou (2026-11-16)
+- Feito: opção `--correcoes arquivo.json` no `mscx2json` e o documento [`../correcoes-da-letra.md`](../correcoes-da-letra.md). Quatro
+  verbos, todos **explícitos**: `juntar`, `separar`, `trocar` (+ `por`) e `quebrar_antes`; cada correção aplicada (ou que não achou o
+  texto) vira um aviso, e o arquivo é recusado se tiver chave desconhecida ou verbo duplicado. Código em
+  `tools/mscx2json/src/correcoes.rs`; as correções entram nas sílabas **antes** de montar as linhas, então o karaokê continua batendo.
+- Respostas às perguntas acima: (1) o arquivo fica **só no computador** de quem converte, fora do Git, porque traz texto de hino;
+  (2) não se corrige nos `.mscx` (ficam como o autor os fez); (3) a ferramenta de suspeitos **não** foi feita: o documento sugere
+  passar a letra por um corretor ortográfico (`aspell -l pt_BR`), que acha palavras inexistentes mas não fragmentos que são palavras
+  ("Sem" e "pre").
+- Nos 5 hinos de amostra, 10 correções deixaram as palavras iguais ao hinário impresso (hinos 1, 276, 398 e 457).
+- Falta (seção 7 de [`../roadmap-pendencias.md`](../roadmap-pendencias.md)): escrever as correções dos hinos reais conforme os defeitos
+  aparecem, e o hino 283 (versos colados) depende da foto do impresso.
+
+---

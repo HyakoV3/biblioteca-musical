@@ -9,6 +9,9 @@ use serde_json::{Map, Value, json};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::{Path, PathBuf};
 
+mod correcoes;
+use correcoes::Correcoes;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Evento {
     pub inicio: f64,
@@ -168,7 +171,8 @@ struct Silaba {
     t: f64,
     voz: usize,
     verso: u32,
-    continua: bool, // "begin"/"middle": a palavra segue na próxima sílaba
+    continua: bool,     // "begin"/"middle": a palavra segue na próxima sílaba
+    quebra_antes: bool, // pedido no arquivo de correções: começa uma linha nova aqui (dois versos colados)
     texto: String,
 }
 
@@ -269,6 +273,7 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                             voz,
                             verso: numero(l, "no").unwrap_or(0),
                             continua: matches!(texto(l, "syllabic"), Some("begin" | "middle")),
+                            quebra_antes: false,
                             texto: sil,
                         });
                     }
@@ -624,6 +629,10 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<Str
         if texto.is_empty() {
             continue;
         }
+        if sil.quebra_antes && !e.linhas.last().is_some_and(|l| l.is_empty()) {
+            e.linhas.push(String::new());
+            e.espaco = false;
+        }
         let quebras = respiracoes.iter().filter(|&&r| r <= sil.t + EPS).count();
         if quebras > e.quebra_vista {
             e.quebra_vista = quebras;
@@ -902,6 +911,15 @@ fn selecionar(acordes: &[Acorde], inicios: &[f64], segmentos: &[(usize, usize)])
 }
 
 pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
+    converter_com(xml, numero_hino, &[])
+}
+
+/// Como `converter`, aplicando antes as correções da letra desse hino (arquivo de correções; ver `correcoes.rs`).
+pub fn converter_com(
+    xml: &str,
+    numero_hino: u32,
+    ajustes: &[correcoes::Correcao],
+) -> Result<Hino, String> {
     let doc = Document::parse(xml).map_err(|e| format!("XML inválido: {e}"))?;
     let score = doc
         .descendants()
@@ -1018,6 +1036,7 @@ pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
         }
 
         if letra.is_empty() && !silabas.is_empty() {
+            avisos.extend(correcoes::aplicar(&mut silabas, numero_hino, ajustes));
             if let Some(&(a2, _)) = plano.as_ref().and_then(|p| p.final_.last()) {
                 coro_para_a_ultima_estrofe(&mut silabas, estrutura.inicios[a2]);
             }
@@ -1281,8 +1300,9 @@ fn cabecalho(id: &str, nome: &str, idioma: Option<&str>) -> Value {
     Value::Object(m)
 }
 
-const AJUDA: &str = "Uso: mscx2json [--nomes-originais] [--idioma pt-BR] --id ID --nome NOME arquivo.mscx|pasta ... > hinario.json\n\
+const AJUDA: &str = "Uso: mscx2json [--nomes-originais] [--idioma pt-BR] [--correcoes correcoes.json] --id ID --nome NOME arquivo.mscx|pasta ... > hinario.json\n\
 --idioma declara o idioma do conteúdo (título e letra) no hinário gerado.\n\
+--correcoes aplica as correções explícitas da letra (formato em docs/correcoes-da-letra.md); cada uma vira um aviso.\n\
 --nomes-originais mantém \"Parte I..IV\" em vez de Soprano/Contralto/Tenor/Baixo.\n\
 Os arquivos devem se chamar hino-<número>.mscx; os demais são ignorados com um aviso.";
 
@@ -1294,6 +1314,7 @@ fn executar(args: Vec<String>) -> Result<(), String> {
     let (mut id, mut nome, mut entradas) = (None, None, vec![]);
     let mut renomear = true;
     let mut idioma: Option<String> = None;
+    let mut arquivo_correcoes: Option<PathBuf> = None;
     let mut it = args.into_iter();
     while let Some(a) = it.next() {
         match a.as_str() {
@@ -1301,6 +1322,7 @@ fn executar(args: Vec<String>) -> Result<(), String> {
             "--nome" => nome = it.next(),
             "--nomes-originais" => renomear = false,
             "--idioma" => idioma = it.next(),
+            "--correcoes" => arquivo_correcoes = it.next().map(PathBuf::from),
             "-h" | "--ajuda" => {
                 println!("{AJUDA}");
                 return Ok(());
@@ -1309,6 +1331,13 @@ fn executar(args: Vec<String>) -> Result<(), String> {
         }
     }
     let (id, nome) = (id.ok_or(AJUDA)?, nome.ok_or(AJUDA)?);
+    let correcoes: Correcoes = match &arquivo_correcoes {
+        Some(c) => {
+            let texto = std::fs::read_to_string(c).map_err(|e| format!("{}: {e}", c.display()))?;
+            correcoes::ler(&texto).map_err(|e| format!("{}: {e}", c.display()))?
+        }
+        None => Correcoes::new(),
+    };
 
     let mut arquivos = vec![];
     for e in entradas {
@@ -1338,7 +1367,9 @@ fn executar(args: Vec<String>) -> Result<(), String> {
             continue;
         };
         let xml = std::fs::read_to_string(&arq).map_err(|e| format!("{}: {e}", arq.display()))?;
-        let mut h = converter(&xml, n).map_err(|e| format!("{}: {e}", arq.display()))?;
+        let ajustes = correcoes.get(&n).map(Vec::as_slice).unwrap_or(&[]);
+        let mut h =
+            converter_com(&xml, n, ajustes).map_err(|e| format!("{}: {e}", arq.display()))?;
         if renomear {
             nomes_satb(&mut h);
         }
@@ -1348,6 +1379,14 @@ fn executar(args: Vec<String>) -> Result<(), String> {
         hinos.push(h);
     }
     hinos.sort_by_key(|h| h.numero);
+    for n in correcoes
+        .keys()
+        .filter(|n| !hinos.iter().any(|h| h.numero == **n))
+    {
+        eprintln!(
+            "aviso: há correções para o hino {n}, mas não há arquivo hino-{n}.mscx nesta conversão"
+        );
+    }
     if let Some(p) = hinos.windows(2).find(|p| p[0].numero == p[1].numero) {
         return Err(format!("número de hino repetido: {}", p[0].numero));
     }
@@ -1649,6 +1688,7 @@ mod testes {
             voz: 0,
             verso: 0,
             continua,
+            quebra_antes: false,
             texto: texto.to_string(),
         }
     }
@@ -1783,6 +1823,7 @@ mod testes {
             voz: 0,
             verso,
             continua: false,
+            quebra_antes: false,
             texto: texto.to_string(),
         }
     }
@@ -1880,6 +1921,36 @@ mod testes {
         .concat();
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap();
         assert_eq!(h.letra, vec!["1. a c e", "", "2. b d f g coro final"]);
+    }
+
+    #[test]
+    fn correcoes_do_arquivo_valem_na_conversao_e_viram_avisos() {
+        // "al" + "fa" sem marcador de continuação, "bta" digitado errado, e dois versos colados (sem respiração) em "Gama".
+        let c = format!(
+            "{C44}{}{}{}{}{}",
+            acorde_letra(60, &sil("", "al")),
+            acorde_letra(62, &sil("", "fa")),
+            acorde_letra(64, &sil("", "bta.")),
+            acorde_letra(65, &sil("", "Gama")),
+            acorde_letra(67, &sil("", "delta")),
+        );
+        let xml = doc(&parte(1, "S"), &pauta(1, &compasso_ms2(&c, "")));
+        let texto = r#"{ "hinos": { "1": [
+            { "estrofe": 1, "juntar": "al fa" },
+            { "estrofe": 1, "trocar": "bta.", "por": "beta." },
+            { "estrofe": 1, "quebrar_antes": "Gama delta" } ] } }"#;
+        let c = correcoes::ler(texto).unwrap();
+        let h = converter_com(&xml, 1, &c[&1]).unwrap();
+        assert_eq!(h.letra, vec!["1. alfa beta.", "Gama delta"]);
+        let aplicadas = h
+            .avisos
+            .iter()
+            .filter(|a| a.contains("correção aplicada"))
+            .count();
+        assert_eq!(aplicadas, 3, "{:?}", h.avisos);
+        // Sem o arquivo, o texto fica como o autor escreveu.
+        let sem = converter(&xml, 1).unwrap();
+        assert_eq!(sem.letra, vec!["1. al fa bta. Gama delta"]);
     }
 
     #[test]

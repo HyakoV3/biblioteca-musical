@@ -89,33 +89,6 @@ para escolher o WhatsApp e o instrutor; o app não precisa conhecer contatos.
 
 ---
 
-## I-05 — Arquivo de correções para a letra (proposta do assistente)
-
-- **Status:** anotada
-- **Origem:** observação do assistente, 2026-11-14, a partir do hino 1.
-- **Prioridade:** a definir
-
-### O problema
-
-Algumas partituras trazem a letra com marcas incompletas ou erros de digitação: numa partitura, "Pa" e "ra," sem marca de continuação (saem "Pa ra,") e "Ia" com "I" maiúsculo no lugar de "la" ("cantêIa"). O
-conversor mostra o texto como está no arquivo. Corrigir isso por heurística seria arriscado (poderia alterar o texto
-de um hino sem ninguém perceber).
-
-### Ideia
-
-Um arquivo de **correções explícitas**, mantido pelo responsável (por exemplo `content/correcoes.json`, fora do Git
-como o resto do conteúdo): uma lista de "trocar este texto por este, neste hino". O conversor aplica só o que estiver
-listado e **avisa** cada correção aplicada. Assim o texto dos hinos nunca muda sem registro.
-
-### Perguntas em aberto
-
-1. As correções devem ficar no repositório (úteis a todos, mas são texto do hinário) ou só locais?
-2. Prefere corrigir direto nos `.mscx` (sem arquivo de correções)? Isso diverge dos arquivos do autor das transcrições.
-3. Vale uma ferramenta que liste os suspeitos (palavras com "I" maiúsculo no meio, sílabas sem marca de continuação)
-   para o responsável revisar, em vez de procurar à mão?
-
----
-
 ## I-06 — Modo de baixa visão: preto sobre amarelo bem claro
 
 - **Status:** anotada
@@ -335,10 +308,13 @@ verso, títulos). O desenho exato depende das fotos.
   passa para a última (2026-11-16, `coro_para_a_ultima_estrofe`). No 398 o coro vem logo **depois da estrofe 1**, e já saía
   ali. **Falta:** o JSON não marca onde o coro começa, então o app ainda o mostra colado à estrofe, sem negrito nem separação.
 - **Versos colados:** no hino 283 a partitura não tem respiração entre dois versos, e eles saem na mesma linha. A regra de
-  maiúscula não resolve (a letra tem frases com maiúscula no meio de um verso); fica para o arquivo de correções (I-05).
+  maiúscula não resolve (a letra tem frases com maiúscula no meio de um verso); o **arquivo de correções** (I-05, feita) tem o verbo
+  `quebrar_antes`, mas falta a foto do hino 283 para saber onde ficam os versos.
 - **Erros de digitação do autor** nos arquivos `.mscx`. **O conversor já conserta, por regra segura** (2026-11-16): pronome
-  colado sem hífen depois de vogal acentuada, "I" maiúsculo no lugar de "l", "~" literal e "ãc" no lugar de "ãe". **Continua para a
-  I-05:** sílaba sem o marcador de hífen (a palavra sai partida em duas) e outras letras trocadas, que não têm padrão seguro.
+  colado sem hífen depois de vogal acentuada, "I" maiúsculo no lugar de "l", "~" literal e "ãc" no lugar de "ãe". **O resto** (sílaba
+  sem o marcador de continuação, a palavra que sai partida em duas, letras trocadas) **conserta-se com o arquivo de correções**
+  (I-05, feita 2026-11-16, [`correcoes-da-letra.md`](correcoes-da-letra.md)); nos 5 hinos de amostra, 10 correções deixaram as palavras
+  iguais ao impresso (hinos 1, 276, 398 e 457) e sem palavras desconhecidas para o dicionário (exceto uma palavra do 283, sem foto).
 - **A pauta no topo** de cada hino impresso é o **começo da melodia**, no tom e no compasso do hino; o tamanho dela é o do
   primeiro verso. Não está no `.mscx`, então não serve de régua para as quebras.
 
