@@ -246,7 +246,14 @@ pub fn importar_zip_com(dir: &Path, bytes: &[u8], lim: &Limites) -> Result<Impor
     }
 
     aceitas.sort_unstable();
-    let instaladas = numeros(dir, &hinario.hinario.id)?;
+    // Depois da troca, o que está instalado é EXATAMENTE o que foi aceito: não se relê o disco (uma falha de leitura aqui devolveria erro
+    // com as partituras novas já no lugar, e a tela ficaria diferente do que está instalado). Só quando nada foi trocado (todas recusadas)
+    // é preciso ler o que já havia, e aí nada mudou no disco.
+    let instaladas = if aceitas.is_empty() {
+        numeros(dir, &hinario.hinario.id)?
+    } else {
+        aceitas.clone()
+    };
     Ok(Importacao {
         partituras: aceitas.len() as u32,
         pacote: Pacote {
