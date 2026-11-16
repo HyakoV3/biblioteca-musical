@@ -340,6 +340,27 @@ async function principal() {
   await dormir(1200);
   confere(!(await av("!!document.querySelector('.mini')")), "Parar logo depois de soltar o slider para tudo (o miniplayer some)");
   confere(!(await av("!!document.querySelector('.aviso.erro')")), "Parar durante o reagendamento não mostra erro falso");
+  // Aparência da letra (I-04): aumentar o tamanho e justificar mudam a letra na hora e ficam salvos no aparelho.
+  const fonteAntes = await av("parseFloat(getComputedStyle(document.querySelector('.estrofe p')).fontSize)");
+  const clicouAparencia = await av(`(() => {
+    const botoes = [...document.querySelectorAll('#painel-letra .barra-letra button')];
+    const por = (re) => botoes.find((b) => re.test(b.getAttribute('aria-label') ?? ''));
+    const mais = por(/increase/i), justificar = por(/justify/i);
+    if (!mais || !justificar) return false;
+    mais.click();
+    justificar.click();
+    return true;
+  })()`);
+  confere(clicouAparencia, "controles de tamanho e alinhamento da letra encontrados e usados");
+  await dormir(200);
+  const aparencia = await av(`({
+    fonte: parseFloat(getComputedStyle(document.querySelector('.estrofe p')).fontSize),
+    alinha: getComputedStyle(document.querySelector('.letra')).textAlign,
+    salvo: localStorage.getItem('prefs.letra'),
+  })`);
+  confere(aparencia.fonte > fonteAntes, `aumentar o tamanho cresce a letra: ${fonteAntes} → ${aparencia.fonte} px`);
+  confere(aparencia.alinha === "justify", `justificar muda o alinhamento da letra: ${aparencia.alinha}`);
+  confere(aparencia.salvo === '{"passo":2,"alinhamento":"justificado"}', `a escolha fica salva no aparelho: ${aparencia.salvo}`);
   await av("clearInterval(window.__iv); 1");
   const am = await av("window.__am");
   ws.close();

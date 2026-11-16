@@ -3,6 +3,7 @@
 // Tudo é validado ao ler e qualquer falha de armazenamento é ignorada (o app segue com o padrão).
 
 import { INSTRUMENTOS, ORGAOS, PADRAO, instrumentosDaVoz, tipoDaVoz, type InstrumentoId } from "./instrumentos";
+import { leituraPadrao, normalizarLeitura, type Leitura } from "./leitura";
 import { IDS_REALISTAS, ehRealista } from "./realista";
 
 export type PrefVoz = { instrumento: InstrumentoId; volume: number; muda: boolean };
@@ -92,6 +93,26 @@ export function lerKaraoke(): boolean {
 export function salvarKaraoke(ligado: boolean) {
   try {
     localStorage.setItem(CHAVE_KARAOKE, ligado ? "1" : "0");
+  } catch {
+    /* sem armazenamento: vale só nesta sessão */
+  }
+}
+
+const CHAVE_LEITURA = "prefs.letra";
+
+/** Tamanho e alinhamento da letra (valem para todos os hinos). O que estiver inválido no armazenamento volta ao padrão. */
+export function lerLeitura(): Leitura {
+  try {
+    const v = localStorage.getItem(CHAVE_LEITURA);
+    return v === null ? leituraPadrao() : normalizarLeitura(JSON.parse(v));
+  } catch {
+    return leituraPadrao();
+  }
+}
+
+export function salvarLeitura(l: Leitura) {
+  try {
+    localStorage.setItem(CHAVE_LEITURA, JSON.stringify(l));
   } catch {
     /* sem armazenamento: vale só nesta sessão */
   }

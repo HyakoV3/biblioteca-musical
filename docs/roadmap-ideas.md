@@ -344,7 +344,7 @@ para escolher o WhatsApp e o instrutor; o app não precisa conhecer contatos.
 
 ## I-04 — Alinhamento e tamanho da letra
 
-- **Status:** anotada
+- **Status:** implementada em 2026-11-15 (primeira versão; falta ver no celular e conferir com hinos reais, ver "O que foi feito")
 - **Origem:** pedido do responsável, 2026-11-14.
 - **Prioridade:** a definir
 
@@ -360,6 +360,25 @@ Na aba da **letra**, oferecer:
 Uma barra pequena no topo da aba Letra (ou no menu da aba) com três botões de alinhamento e os controles **A−**,
 **A** (restaurar) e **A+**. As escolhas valem para todos os hinos e ficam salvas no aparelho. O plano original já
 previa "Leitura: tamanho da letra" em Ajustes; esta ideia traz o controle para perto do texto.
+
+### O que foi feito (2026-11-15)
+
+- **Controles na própria aba Letra**, numa barra no topo: `A−`, `A` (restaurar, desabilitado no padrão) e `A+`, e três botões de
+  alinhamento (esquerda, direita, justificado) com `aria-pressed`. Alvos de 48 px, nomes acessíveis e textos em pt, es e en.
+- **Tamanho:** 6 passos, de **85% a 160%** do padrão (85, 100, 115, 130, 145, 160). Multiplica o tamanho de base em `rem`
+  (`--escala-letra`), então **soma** com a fonte do sistema em vez de substituí-la. Os botões desabilitam nos limites.
+- **Alinhamento:** esquerda (padrão), direita e justificado, aplicado à área da letra, estrofes e títulos incluídos.
+- **Preferência** em `prefs.letra` (`src/lib/preferencias.ts`; regras puras em `src/lib/leitura.ts`), valem para todos os hinos e
+  sobrevivem a fechar o app. Valor inválido no armazenamento volta ao padrão, campo a campo.
+- **Ícones** de alinhamento acrescentados ao conjunto `ic` pelo gerador (`tools/gerar-icones.mjs`).
+- **Conferido** em Chrome mudo: nos 6 passos o texto não transborda nem é cortado, **inclusive com a fonte do sistema a 150% e a
+  letra no máximo**, e a escolha continua depois de recarregar. Testes: `tests/leitura.test.ts` e o e2e do karaokê.
+
+**Limite conhecido do justificado.** A letra é em versos curtos, um por linha, então o justificado só age nos versos que
+**quebram de linha**, e aí abre **espaços largos** entre as palavras, principalmente com a letra grande ("para &nbsp; ver &nbsp;
+como &nbsp; cada"). A hifenização automática (`hyphens: auto`) está ligada, mas depende de o aparelho ter o dicionário da
+língua. É a ressalva que a própria ideia anotava; **falta ver com hinos reais** e, se ficar feio, justificar só estrofes de
+versos longos ou desistir do justificado.
 
 ### Perguntas em aberto
 

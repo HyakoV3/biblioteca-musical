@@ -26,6 +26,15 @@ export const pt = {
 
   "hino.tonalidade": "Tonalidade: {tom}",
   "hino.sem_letra": "Sem letra neste pacote.",
+  "letra.aparencia": "Aparência da letra",
+  "letra.tamanho": "Tamanho da letra",
+  "letra.diminuir": "Diminuir letra",
+  "letra.aumentar": "Aumentar letra",
+  "letra.restaurar": "Restaurar tamanho da letra ({n}%)",
+  "letra.alinhamento": "Alinhamento da letra",
+  "letra.alinhar_esquerda": "Alinhar à esquerda",
+  "letra.alinhar_direita": "Alinhar à direita",
+  "letra.justificar": "Justificar",
 
   "player.titulo": "Player",
   "player.vozes": "Vozes",

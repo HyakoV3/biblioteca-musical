@@ -32,7 +32,9 @@ Objetivo: tirar os atritos que já apareceram e os que os músicos apontarem.
 - [x] **Ícones em SVG local (I-11)**: feito com o conjunto `ic` (1,9 KB). Texto original:: trocar emojis e símbolos por um subset local de ícones (~11 KB), reaproveitando a
       ideia de outro projeto do responsável. Item pequeno. **Prévia feita** (`design/icones/previa-icones.png`); recomendação: conjunto `ic`.
       **(depende de o responsável escolher o conjunto)**
-- [ ] Opcionais, conforme o retorno: tamanho e alinhamento da letra (I-04), favoritos e histórico (D4).
+- [x] **Tamanho e alinhamento da letra (I-04)**: barra na aba Letra, 6 passos de 85% a 160%, esquerda, direita e justificado,
+      salvos no aparelho. **Falta ver no celular** e o justificado com hinos reais (abre espaços em versos que quebram).
+- [ ] Opcionais, conforme o retorno: favoritos e histórico (D4).
 
 **Pronto quando:** a I-10 estiver validada no celular e os problemas que bloqueiam o uso, resolvidos.
 
