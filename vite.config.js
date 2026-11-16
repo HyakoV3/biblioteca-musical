@@ -44,7 +44,9 @@ export default defineConfig(() => ({
       : undefined,
     watch: {
       // 3. tell Vite to ignore watching `src-tauri`
-      ignored: ["**/src-tauri/**"],
+      // 4. e `.claude/`: os worktrees do Claude Code ficam DENTRO da pasta do projeto, e cada `npm run check`/`build` deles (que mexe em
+      //    `.svelte-kit/tsconfig.json` e `build/`) fazia o `tauri dev` da pasta principal recarregar o app ("forcing full-reload").
+      ignored: ["**/src-tauri/**", "**/.claude/**"],
     },
   },
 }));
