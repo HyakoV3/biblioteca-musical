@@ -34,6 +34,9 @@ const NOMES = {
   ajustes: "outline-settings", // engrenagem
   karaoke: "outline-mic-off", // microfone riscado: karaokê desligado (o estado não depende só da cor)
   karaoke_ligado: "baseline-mic", // microfone: karaokê ligado
+  alinhar_esquerda: "outline-format-align-left",
+  alinhar_direita: "outline-format-align-right",
+  justificar: "outline-format-align-justify",
 };
 // Só tags de desenho: o corpo do SVG é inserido na página com {@html}, então nada além disso pode passar.
 const TAGS_PERMITIDAS = new Set(["path", "g", "circle", "rect", "ellipse", "line", "polyline", "polygon"]);

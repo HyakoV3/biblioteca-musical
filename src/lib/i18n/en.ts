@@ -26,6 +26,15 @@ export const en: Dicionario = {
 
   "hino.tonalidade": "Key: {tom}",
   "hino.sem_letra": "No lyrics in this package.",
+  "letra.aparencia": "Lyrics appearance",
+  "letra.tamanho": "Lyrics size",
+  "letra.diminuir": "Decrease lyrics size",
+  "letra.aumentar": "Increase lyrics size",
+  "letra.restaurar": "Reset lyrics size ({n}%)",
+  "letra.alinhamento": "Lyrics alignment",
+  "letra.alinhar_esquerda": "Align left",
+  "letra.alinhar_direita": "Align right",
+  "letra.justificar": "Justify",
 
   "player.titulo": "Player",
   "player.vozes": "Voices",

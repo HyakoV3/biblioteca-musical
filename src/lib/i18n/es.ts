@@ -26,6 +26,15 @@ export const es: Dicionario = {
 
   "hino.tonalidade": "Tonalidad: {tom}",
   "hino.sem_letra": "Sin letra en este paquete.",
+  "letra.aparencia": "Apariencia de la letra",
+  "letra.tamanho": "Tamaño de la letra",
+  "letra.diminuir": "Reducir letra",
+  "letra.aumentar": "Aumentar letra",
+  "letra.restaurar": "Restaurar tamaño de la letra ({n}%)",
+  "letra.alinhamento": "Alineación de la letra",
+  "letra.alinhar_esquerda": "Alinear a la izquierda",
+  "letra.alinhar_direita": "Alinear a la derecha",
+  "letra.justificar": "Justificar",
 
   "player.titulo": "Reproductor",
   "player.vozes": "Voces",

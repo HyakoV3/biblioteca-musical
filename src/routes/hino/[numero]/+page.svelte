@@ -12,7 +12,8 @@
   import { marcaEm, marcasDaVez, sincroniaCombina, type Marca } from "$lib/karaoke";
   import { usarVoltar } from "$lib/navegacao";
   import Player from "$lib/Player.svelte";
-  import { lerKaraoke, salvarKaraoke } from "$lib/preferencias";
+  import { ESCALAS_LETRA, PASSO_PADRAO, escalaDoPasso, limitarPasso, type Alinhamento } from "$lib/leitura";
+  import { lerKaraoke, lerLeitura, salvarKaraoke, salvarLeitura } from "$lib/preferencias";
   import { reproducao } from "$lib/reproducao.svelte";
   import { untrack } from "svelte";
 
@@ -38,6 +39,20 @@
     return partes.length ? partes.join(" · ") : undefined;
   });
   const tituloPagina = $derived(hino ? `${hino.numero} · ${hino.titulo}` : t("biblioteca.titulo"));
+
+  // --- Aparência da letra (I-04): tamanho e alinhamento, lembrados no aparelho e iguais em todos os hinos. ---
+  const leituraSalva = lerLeitura();
+  let passoLetra = $state(leituraSalva.passo);
+  let alinhamento = $state<Alinhamento>(leituraSalva.alinhamento);
+  const escalaLetra = $derived(escalaDoPasso(passoLetra));
+  function tamanhoLetra(acao: "menos" | "padrao" | "mais") {
+    passoLetra = acao === "padrao" ? PASSO_PADRAO : limitarPasso(passoLetra + (acao === "mais" ? 1 : -1));
+    salvarLeitura({ passo: passoLetra, alinhamento });
+  }
+  function alinharLetra(a: Alinhamento) {
+    alinhamento = a;
+    salvarLeitura({ passo: passoLetra, alinhamento });
+  }
 
   // --- Karaokê da letra: acende a estrofe da vez, a linha e o trecho (sílaba) que está soando. ---
   // Só existe se o hino traz a sincronia e ela combina com a letra (se a letra foi editada, fica desligado).
@@ -189,7 +204,31 @@
       {#if !temAudio}
         <Aviso tipo="info">{t("hino.sem_audio")}</Aviso>
       {/if}
-      <div lang={idiomaConteudo}>
+      {#if partes.length > 0}
+        <div class="barra-letra" role="group" aria-label={t("letra.aparencia")}>
+          <div class="grupo" role="group" aria-label={t("letra.tamanho")}>
+            <button aria-label={t("letra.diminuir")} disabled={passoLetra <= 0} onclick={() => tamanhoLetra("menos")}>A−</button>
+            <button
+              aria-label={t("letra.restaurar", { n: Math.round(escalaLetra * 100) })}
+              disabled={passoLetra === PASSO_PADRAO}
+              onclick={() => tamanhoLetra("padrao")}>A</button
+            >
+            <button aria-label={t("letra.aumentar")} disabled={passoLetra >= ESCALAS_LETRA.length - 1} onclick={() => tamanhoLetra("mais")}>A+</button>
+          </div>
+          <div class="grupo" role="group" aria-label={t("letra.alinhamento")}>
+            <button aria-label={t("letra.alinhar_esquerda")} aria-pressed={alinhamento === "esquerda"} onclick={() => alinharLetra("esquerda")}>
+              <Icone nome="alinhar_esquerda" tamanho={24} />
+            </button>
+            <button aria-label={t("letra.alinhar_direita")} aria-pressed={alinhamento === "direita"} onclick={() => alinharLetra("direita")}>
+              <Icone nome="alinhar_direita" tamanho={24} />
+            </button>
+            <button aria-label={t("letra.justificar")} aria-pressed={alinhamento === "justificado"} onclick={() => alinharLetra("justificado")}>
+              <Icone nome="justificar" tamanho={24} />
+            </button>
+          </div>
+        </div>
+      {/if}
+      <div lang={idiomaConteudo} class={`letra alinha-${alinhamento}`} style:--escala-letra={escalaLetra}>
         {#each partes as e}
           <div class="estrofe" class:da-vez={aceso !== null && aceso.estrofe === e.numero}>
             {#if e.numero !== null}<h2 lang={i18n.idioma}>{t("hino.estrofe", { n: e.numero })}</h2>{/if}
@@ -240,5 +279,19 @@
     text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px;
   }
   .estrofe h2 { margin: 0 0 0.3rem; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--suave); }
-  .estrofe p { margin: 0; font-size: 1.15rem; line-height: 1.7; overflow-wrap: anywhere; }
+  /* O tamanho multiplica o de base (em rem, que já segue a fonte do sistema), e não o substitui. */
+  .estrofe p { margin: 0; font-size: calc(1.15rem * var(--escala-letra, 1)); line-height: 1.7; overflow-wrap: anywhere; }
+  .alinha-direita { text-align: right; }
+  .alinha-justificado { text-align: justify; hyphens: auto; }
+
+  /* Barra de tamanho e alinhamento da letra. */
+  .barra-letra { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1rem; margin: 0 0 1.2rem; }
+  .barra-letra .grupo { display: flex; gap: 0.4rem; }
+  .barra-letra button {
+    display: inline-flex; align-items: center; justify-content: center; padding: 0; min-width: 48px; height: 48px;
+    font-size: 1.1rem; font-weight: 600; border-radius: 12px; line-height: 1; cursor: pointer;
+    border: 1px solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+  }
+  .barra-letra button:disabled { opacity: 0.5; cursor: default; }
+  .barra-letra button[aria-pressed="true"] { border: 2px solid var(--ouro-linha); }
 </style>
