@@ -230,7 +230,6 @@ export const en: Dicionario = {
   "player.volume_valor": "{n} percent",
   "player.instrumentos": "Instruments",
   "player.cartao_ajustes": "Tempo and Key",
-  "player.duracao_tudo": "Whole hymn: {tempo}",
   "player.instrumentos_varios": "Mixed",
   "player.erro_audio": "Could not start audio on this device. Try again.",
 

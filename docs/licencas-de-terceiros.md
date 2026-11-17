@@ -2,10 +2,12 @@
 
 O código deste projeto é MIT (`LICENSE`). Alguns materiais de terceiros acompanham o app; cada um mantém a sua licença.
 
-## Ícones: Google Material Icons (conjunto `ic`)
+## Ícones: Google Material Icons (conjunto `ic`) e Material Symbols (conjunto `material-symbols`)
 
-- **Onde:** `src/lib/icones.json` (13 ícones em SVG), gerado por `tools/gerar-icones.mjs` a partir do Iconify.
-- **Autoria:** Material Design Authors (Google).
+- **Onde:** `src/lib/icones.json` (21 ícones em SVG), gerado por `tools/gerar-icones.mjs` a partir do Iconify. A maioria vem do
+  `ic`; o marca-texto do karaokê vem do `material-symbols`, a família nova do mesmo projeto (o `ic` não tem esse desenho). O gerador
+  só aceita esses dois conjuntos.
+- **Autoria:** Material Design Authors (Google), nos dois conjuntos.
 - **Licença:** [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). A licença pede que o aviso de copyright e o
   texto da licença acompanhem a redistribuição; este arquivo registra a origem. Os desenhos não foram alterados.
 

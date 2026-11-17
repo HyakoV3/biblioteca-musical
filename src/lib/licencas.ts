@@ -35,7 +35,7 @@ export const CREDITOS: readonly Credito[] = [
   },
   {
     id: "icones",
-    nome: "Google Material Icons",
+    nome: "Google Material Icons e Material Symbols",
     autoria: "Material Design Authors (Google)",
     licenca: "Apache 2.0",
     url: "https://github.com/google/material-design-icons",

@@ -230,7 +230,6 @@ export const pt = {
   "player.volume_valor": "{n} por cento",
   "player.instrumentos": "Instrumentos",
   "player.cartao_ajustes": "Andamento e Tom",
-  "player.duracao_tudo": "Hino todo: {tempo}",
   "player.instrumentos_varios": "Vários",
   "player.erro_audio": "Não foi possível iniciar o áudio neste aparelho. Tente de novo.",
 

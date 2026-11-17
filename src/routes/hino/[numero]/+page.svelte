@@ -15,6 +15,7 @@
   import { estadoDaPartitura, temAbaPartitura } from "$lib/partitura";
   import Player from "$lib/Player.svelte";
   import { ESCALAS_LETRA, PASSO_PADRAO, escalaDoPasso, limitarPasso, type Alinhamento } from "$lib/leitura";
+  import ControleDeTamanho from "$lib/ControleDeTamanho.svelte";
   import { lerKaraoke, lerLeitura, salvarKaraoke, salvarLeitura } from "$lib/preferencias";
   import { reproducao } from "$lib/reproducao.svelte";
   import { untrack } from "svelte";
@@ -171,8 +172,8 @@
 <!-- O título do documento é o que leitores de tela anunciam a cada troca de tela. -->
 <svelte:head><title>{tituloPagina} · Biblioteca Musical CCB</title></svelte:head>
 
-<!-- Karaokê: botão só de ícone no cabeçalho (microfone vazado = desligado, cheio = ligado, então o estado não depende só
-     da cor). O nome e a explicação vão no rótulo de acessibilidade e na dica; `aria-pressed` diz o estado ao leitor de tela. -->
+<!-- Karaokê: botão só de ícone no cabeçalho (marca-texto vazado = desligado, cheio = ligado, e o ligado leva borda dourada,
+     então o estado não depende só da cor; o microfone fica para o gravador e o afinador). O nome e a explicação vão no rótulo de acessibilidade e na dica; `aria-pressed` diz o estado ao leitor de tela. -->
 {#snippet botaoKaraoke()}
   <button
     class="botao botao-icone chave-karaoke"
@@ -218,23 +219,28 @@
       {/if}
       {#if partes.length > 0}
         <div class="barra-letra" role="group" aria-label={t("letra.aparencia")}>
-          <div class="grupo" role="group" aria-label={t("letra.tamanho")}>
-            <button aria-label={t("letra.diminuir")} disabled={passoLetra <= 0} onclick={() => tamanhoLetra("menos")}>A−</button>
-            <button
-              aria-label={t("letra.restaurar", { n: Math.round(escalaLetra * 100) })}
-              disabled={passoLetra === PASSO_PADRAO}
-              onclick={() => tamanhoLetra("padrao")}>A</button
-            >
-            <button aria-label={t("letra.aumentar")} disabled={passoLetra >= ESCALAS_LETRA.length - 1} onclick={() => tamanhoLetra("mais")}>A+</button>
-          </div>
+          <ControleDeTamanho
+            rotulos={{
+              grupo: t("letra.tamanho"),
+              diminuir: t("letra.diminuir"),
+              restaurar: t("letra.restaurar", { n: Math.round(ESCALAS_LETRA[PASSO_PADRAO] * 100) }),
+              aumentar: t("letra.aumentar"),
+            }}
+            podeDiminuir={passoLetra > 0}
+            podeAumentar={passoLetra < ESCALAS_LETRA.length - 1}
+            noPadrao={passoLetra === PASSO_PADRAO}
+            aoDiminuir={() => tamanhoLetra("menos")}
+            aoRestaurar={() => tamanhoLetra("padrao")}
+            aoAumentar={() => tamanhoLetra("mais")}
+          />
           <div class="grupo" role="group" aria-label={t("letra.alinhamento")}>
-            <button aria-label={t("letra.alinhar_esquerda")} aria-pressed={alinhamento === "esquerda"} onclick={() => alinharLetra("esquerda")}>
+            <button class="botao-barra" aria-label={t("letra.alinhar_esquerda")} aria-pressed={alinhamento === "esquerda"} onclick={() => alinharLetra("esquerda")}>
               <Icone nome="alinhar_esquerda" tamanho={24} />
             </button>
-            <button aria-label={t("letra.alinhar_direita")} aria-pressed={alinhamento === "direita"} onclick={() => alinharLetra("direita")}>
+            <button class="botao-barra" aria-label={t("letra.alinhar_direita")} aria-pressed={alinhamento === "direita"} onclick={() => alinharLetra("direita")}>
               <Icone nome="alinhar_direita" tamanho={24} />
             </button>
-            <button aria-label={t("letra.justificar")} aria-pressed={alinhamento === "justificado"} onclick={() => alinharLetra("justificado")}>
+            <button class="botao-barra" aria-label={t("letra.justificar")} aria-pressed={alinhamento === "justificado"} onclick={() => alinharLetra("justificado")}>
               <Icone nome="justificar" tamanho={24} />
             </button>
           </div>
@@ -305,14 +311,7 @@
   .alinha-direita { text-align: right; }
   .alinha-justificado { text-align: justify; hyphens: auto; }
 
-  /* Barra de tamanho e alinhamento da letra. */
+  /* Barra de tamanho e alinhamento da letra (os botões são o `.botao-barra` global). */
   .barra-letra { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1rem; margin: 0 0 1.2rem; }
   .barra-letra .grupo { display: flex; gap: 0.4rem; }
-  .barra-letra button {
-    display: inline-flex; align-items: center; justify-content: center; padding: 0; min-width: 3rem; height: 3rem;
-    font-size: 1.1rem; font-weight: 600; border-radius: 0.75rem; line-height: 1; cursor: pointer;
-    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
-  }
-  .barra-letra button:disabled { opacity: 0.5; cursor: default; }
-  .barra-letra button[aria-pressed="true"] { border: 0.125rem solid var(--ouro-linha); }
 </style>

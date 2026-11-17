@@ -533,9 +533,9 @@ async function principal() {
   confere(claro.alvo !== escuro.alvo && claro.fundo !== escuro.fundo, `claro e escuro dão cores diferentes à partitura: ${claro.alvo} no ${claro.fundo} / ${escuro.alvo} no ${escuro.fundo}`);
 
   // Zoom: 125% passa da largura da tela e rola de lado; o passo fica salvo; "restaurar" volta a 100%.
-  const botoesZoom = await av(`[...document.querySelectorAll('#painel-partitura .barra-zoom button')].map((b) => b.getAttribute('aria-label'))`);
+  const botoesZoom = await av(`[...document.querySelectorAll('#painel-partitura .controle-tamanho button')].map((b) => b.getAttribute('aria-label'))`);
   confere(botoesZoom.length === 3, `a barra de zoom tem 3 botões: ${JSON.stringify(botoesZoom)}`);
-  await av("document.querySelectorAll('#painel-partitura .barra-zoom button')[2].click(); 1");
+  await av("document.querySelector('#painel-partitura .controle-tamanho [data-acao=mais]').click(); 1");
   await dormir(200);
   const z1 = await av(`(() => {
     const r = document.querySelector('#painel-partitura .rolagem');
@@ -544,13 +544,13 @@ async function principal() {
   })()`);
   confere(z1.rola && Math.abs(z1.folha / z1.regiao - 1.25) < 0.02, `125%: a folha fica ${(z1.folha / z1.regiao).toFixed(2)}x a região e rola de lado`);
   confere(z1.salvo === '{"escala":1.25}' && z1.dica && !z1.pagina, `o zoom fica salvo, aparece a dica de arrastar e só a região rola (a página não): ${JSON.stringify({ salvo: z1.salvo, dica: z1.dica, pagina: z1.pagina })}`);
-  await av("document.querySelectorAll('#painel-partitura .barra-zoom button')[1].click(); 1");
+  await av("document.querySelector('#painel-partitura .controle-tamanho [data-acao=padrao]').click(); 1");
   await dormir(200);
   const z0 = await av(`(() => { const r = document.querySelector('#painel-partitura .rolagem'); return { rola: r.scrollWidth > r.clientWidth + 1, salvo: localStorage.getItem('prefs.partitura') }; })()`);
   confere(!z0.rola && z0.salvo === '{"escala":1}', `restaurar volta a 100% sem rolar de lado: ${JSON.stringify(z0)}`);
 
   // Diminuir: o padrão (100%) não é o menor tamanho. "−" dá 80%: a folha fica mais estreita que a região, CENTRALIZADA, sem rolar de lado.
-  await av("document.querySelectorAll('#painel-partitura .barra-zoom button')[0].click(); 1");
+  await av("document.querySelector('#painel-partitura .controle-tamanho [data-acao=menos]').click(); 1");
   await dormir(200);
   const zm = await av(`(() => {
     const reg = document.querySelector('#painel-partitura .rolagem');
@@ -562,11 +562,11 @@ async function principal() {
   confere(Math.abs(zm.razao - 0.8) < 0.02 && !zm.rola && zm.salvo === '{"escala":0.8}' && !zm.dica, `"−" diminui para 80% (a folha é ${(zm.razao * 100).toFixed(0)}% da região), sem rolar de lado e sem a dica de arrastar: ${JSON.stringify({ salvo: zm.salvo, rola: zm.rola })}`);
   confere(zm.esquerda > 5 && Math.abs(zm.esquerda - zm.direita) < 2, `a partitura menor fica centralizada (sobra ${zm.esquerda.toFixed(0)} px de cada lado)`);
   // chega ao menor (50%) e o "−" desliga; depois volta ao padrão para não afetar o resto
-  for (let i = 0; i < 4; i++) await av("document.querySelectorAll('#painel-partitura .barra-zoom button')[0].click(); 1");
+  for (let i = 0; i < 4; i++) await av("document.querySelector('#painel-partitura .controle-tamanho [data-acao=menos]').click(); 1");
   await dormir(200);
-  const min = await av(`({ salvo: localStorage.getItem('prefs.partitura'), menosDesligado: document.querySelectorAll('#painel-partitura .barra-zoom button')[0].disabled })`);
+  const min = await av(`({ salvo: localStorage.getItem('prefs.partitura'), menosDesligado: document.querySelector('#painel-partitura .controle-tamanho [data-acao=menos]').disabled })`);
   confere(min.salvo === '{"escala":0.5}' && min.menosDesligado, `o menor tamanho é 50% e o "−" desliga: ${JSON.stringify(min)}`);
-  await av("document.querySelectorAll('#painel-partitura .barra-zoom button')[1].click(); 1");
+  await av("document.querySelector('#painel-partitura .controle-tamanho [data-acao=padrao]').click(); 1");
   await dormir(200);
 
   // Versões: em pé (412 px) é o desenho de retrato; deitado (915 px) o de paisagem, e a coluna deixa de ser limitada a 40rem (640 px).
@@ -695,7 +695,7 @@ async function principal() {
     if (!aba) return { aba: false };
     const a = document.querySelector('#painel-partitura .sem-pacote a');
     return { aba: true, abas: [...document.querySelectorAll('[role="tab"]')].map((t) => t.id), href: a?.getAttribute('href') ?? null, botao: a?.classList.contains('botao') ?? false,
-      svg: !!document.querySelector('#painel-partitura svg'), visivel: !document.getElementById('painel-partitura').hidden };
+      svg: !!document.querySelector('#painel-partitura .folha svg'), visivel: !document.getElementById('painel-partitura').hidden };
   })()`);
   confere(aviso.aba && aviso.href === "/ajustes" && aviso.botao && !aviso.svg && aviso.visivel, `sem pacote com partituras: a aba aparece com o aviso e o botão para Ajustes: ${JSON.stringify(aviso)}`);
   await av("sessionStorage.removeItem('e2e-sem-partituras'); sessionStorage.setItem('e2e-falha-partitura', '1'); 1");
@@ -704,17 +704,17 @@ async function principal() {
   confere(await abrirHino(999), "hino 999 carregado para o teste de falha da partitura");
   await av("document.getElementById('aba-partitura')?.click(); 1");
   await dormir(600);
-  const falhou = await av(`({ alerta: !!document.querySelector('#painel-partitura [role="alert"]'), botao: !!document.querySelector('#painel-partitura .tentar'), svg: !!document.querySelector('#painel-partitura svg') })`);
+  const falhou = await av(`({ alerta: !!document.querySelector('#painel-partitura [role="alert"]'), botao: !!document.querySelector('#painel-partitura .tentar'), svg: !!document.querySelector('#painel-partitura .folha svg') })`);
   confere(falhou.alerta && falhou.botao && !falhou.svg, `leitura que falha: aviso de erro com o botão de tentar de novo: ${JSON.stringify(falhou)}`);
   // trocar de aba e voltar NÃO repete sozinho (o erro continua à vista)
   await av("document.getElementById('aba-letra').click(); 1");
   await dormir(200);
   await av("document.getElementById('aba-partitura').click(); 1");
   await dormir(400);
-  confere(await av(`!!document.querySelector('#painel-partitura [role="alert"]') && !document.querySelector('#painel-partitura svg')`), "trocar de aba e voltar não esconde o erro nem repete sozinho");
+  confere(await av(`!!document.querySelector('#painel-partitura [role="alert"]') && !document.querySelector('#painel-partitura .folha svg')`), "trocar de aba e voltar não esconde o erro nem repete sozinho");
   await av("document.querySelector('#painel-partitura .tentar')?.click(); 1");
   await dormir(700);
-  const refeito = await av(`({ alerta: !!document.querySelector('#painel-partitura [role="alert"]'), svg: !!document.querySelector('#painel-partitura svg'), botao: !!document.querySelector('#painel-partitura .tentar') })`);
+  const refeito = await av(`({ alerta: !!document.querySelector('#painel-partitura [role="alert"]'), svg: !!document.querySelector('#painel-partitura .folha svg'), botao: !!document.querySelector('#painel-partitura .tentar') })`);
   confere(!refeito.alerta && refeito.svg && !refeito.botao, `"Tentar de novo" lê a partitura outra vez e ela aparece: ${JSON.stringify(refeito)}`);
 
   // Tela inicial: a logo do app tem o tamanho do botão de Ajustes (o hambúrguer/engrenagem), e a barra não cresce por causa dela.
