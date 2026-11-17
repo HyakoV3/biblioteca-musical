@@ -460,12 +460,33 @@ mas há relatos de que **a WebView sozinha pode não ser coberta por esse servi�
 
 ## I-23 — Equalizar o volume dos sons gravados, para encaixarem no conjunto
 
-- **Status:** anotada, **revisada em 2026-11-16** pelo subagente Opus 5 (seção "Revisão", abaixo): **não está pronta para implementar**; o próximo passo é medir, e o rascunho tem fatos a corrigir
+- **Status:** **etapa A feita em 2026-11-16** (nivelar cada nota, automático, com liga/desliga em Ajustes: seção "Respostas e primeira entrega", abaixo). O resto (cadeia de saída, balanço entre vozes) **espera a audição do responsável**. O rascunho foi revisado pelo subagente Opus 5 (seção "Revisão"), que apontou fatos a corrigir
 - **Origem:** pedido do responsável, 2026-11-16: "com os sons gravados precisamos ter uma espécie de equalização nos volumes para encaixar bem... algo que não é necessário nos sintetizados".
 - **Prioridade:** a definir (mexe na qualidade percebida de **toda** audição com sons gravados)
 
 > **Aviso do rascunho:** nada aqui foi **medido**. As amostras do banco ficam fora do Git (`sons-fonte/`) e não estavam à mão; o que vem
 > do código está dito como fato, o resto está marcado como **hipótese**. A primeira etapa proposta é justamente medir.
+
+### Respostas do responsável e primeira entrega (2026-11-16)
+
+**O que o responsável respondeu às perguntas em aberto**
+- **Onde se ouve o problema:** não notou em nota longa nem em hino lento. O que percebe é que, quando as quatro vozes gravadas (soprano, contralto, tenor e
+  baixo) ficam **"na mesma altura"**, fica **"bagunçado"**: falta uma equalização que ajuste o nível de cada voz. *(Interpretação registrada: "altura" = volume,
+  o nível de cada voz. Se era a altura do som, o tom, esta leitura está errada e precisa ser corrigida.)*
+- **Balanço entre as vozes:** **não** pôr o soprano à frente; deixar como está. Ele pensou em algo **mais automático**, que precisa ser desenvolvido aos poucos, com a
+  audição dele no meio.
+- **Saída:** ouviu **no alto-falante do celular** (som aberto). **Não testou no fone de ouvido.** **Pendência dele: testar no fone**; a hipótese é que o problema
+  seja do som aberto e o fone o resolva (o alto-falante do celular quase não reproduz o grave).
+
+**Primeira entrega: etapa A (nivelar cada nota), automática e com liga/desliga.** É o primeiro passo que a medição sustenta, e dá para ser feito sem ouvir.
+- **O que faz:** `src/lib/niveis-gravados.json` (3,5 KB) guarda, por gravado e por nota, a correção em dB que leva a nota ao nível médio (em potência) da faixa de uso do
+  instrumento; o app a aplica pela `velocity` do smplr (ver `docs/pacote-de-sons.md`). Em **Ajustes, "Nivelar as notas"** liga e desliga (padrão: ligado), para o responsável **comparar de ouvido**.
+- **Medição (reproduz a do revisor):** a amplitude entre as notas da faixa de uso de cada gravado, na curva A, é de 2,5 a 10 dB (média 6,1 dB nos 16). **Validação fora da amostra**, com outras
+  janelas de tempo e a curva do celular: a amplitude média cai de 6,1 a 6,7 dB para **0,8 a 1,2 dB**. Alguns instrumentos ficam com 2 a 3 dB numa janela de ataque (oboé, trompa, viola, contrabaixo).
+- **O que ela NÃO faz (de propósito):** não mexe na **cadeia de saída** (o compressor segue como está; é a etapa C), não balanceia **entre as vozes** (o responsável pediu para não pôr o soprano à frente), e não
+  resolve as **amostras que acabam cedo** (a 0b). Nivelar as notas de **cada** instrumento deixa as vozes consistentes entre si, mas **não é** um balanço entre S, C, T e B.
+- **Como julgar:** tocar um hino com as 4 vozes gravadas com "Nivelar as notas" ligado e desligado, no celular e, quando puder, no fone. Se ainda estiver "bagunçado" no alto-falante, a próxima investigação é a
+  cadeia de saída (compressor: a medição do revisor indica que ele atua sempre) e um balanço automático entre as vozes, e só então um equalizador por frequência.
 
 ### Revisão (2026-11-16, subagente Opus 5)
 

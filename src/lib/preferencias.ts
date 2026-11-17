@@ -99,6 +99,26 @@ export function salvarKaraoke(ligado: boolean) {
   }
 }
 
+const CHAVE_NIVELAR = "prefs.nivelar";
+
+/** Nivelar o volume de cada nota dos instrumentos gravados (I-23)? Padrão: ligado. */
+export function lerNivelar(): boolean {
+  try {
+    const v = localStorage.getItem(CHAVE_NIVELAR);
+    return v === null ? true : v === "1";
+  } catch {
+    return true;
+  }
+}
+
+export function salvarNivelar(ligado: boolean) {
+  try {
+    localStorage.setItem(CHAVE_NIVELAR, ligado ? "1" : "0");
+  } catch {
+    /* sem armazenamento: vale só nesta sessão */
+  }
+}
+
 const CHAVE_LEITURA = "prefs.letra";
 
 /** Tamanho e alinhamento da letra (valem para todos os hinos). O que estiver inválido no armazenamento volta ao padrão. */

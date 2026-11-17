@@ -11,6 +11,8 @@ Grava src/lib/timbres.json. A síntese interpola entre as âncoras para qualquer
 
 Uso:
   python3 tools/analisar-timbres.py                      # analisa os 7 instrumentos e grava o JSON
+  python3 tools/analisar-timbres.py --fonte sons-fonte/GeneralUserGS/amostras --mapa-notas --escrever   # I-23: nivela cada nota
+  python3 tools/analisar-timbres.py --fonte sons-fonte/GeneralUserGS/amostras --validar-mapa          # confere com outras janelas e curvas
   python3 tools/analisar-timbres.py --instrumento trumpet --diagnostico   # só mostra as medidas, sem gravar
 
 Precisa de: numpy, ffmpeg e dos arquivos de sons-fonte/FluidR3_GM/ (baixados por tools/baixar-sons-gm.py, fora do Git).
@@ -419,6 +421,156 @@ def medir_distancia():
     print(f"{'todos':<11}{len(todas_antes):>6} | {np.mean(todas_antes):7.1f}{np.mean(todas_agora):8.1f} | {np.mean(todas_antes) / np.mean(todas_agora):7.1f}x")
 
 
+# ---------------------------------------------------------------------------------------------------------------------------------
+# I-23: nivelar cada nota dos gravados. Hoje cada gravado tem UM ganho (`calibrar`), e dentro do instrumento as notas variam de 2,5 a 10 dB
+# (o agudo mais forte). Aqui mede-se TODA nota da faixa de uso e grava-se a correção em dB que a leva ao nível médio do instrumento.
+# O app aplica a correção pela `velocity` do smplr (ganho = velocity²/16129): sem nó de áudio por nota.
+
+SAIDA_NIVEIS = RAIZ / "src" / "lib" / "niveis-gravados.json"
+FAIXA_BANCO = (30, 86)  # as notas que o banco tem (a mesma de tools/preparar-sons.py)
+MARGEM_TRANSPOSICAO = 6  # o app transpõe de -6 a +6 semitons: a tabela cobre a faixa de uso mais esta margem
+VELOCIDADE_BASE = 90  # a `velocity` que o app usa sem correção (src/lib/sintetizador.ts)
+# velocity 127 é o máximo (acima, nenhuma região do banco casa e a nota fica muda): 40·log10(127/90) = +5,99 dB de reforço no máximo.
+LIMITE_REFORCO_DB = 5.9
+LIMITE_CORTE_DB = -12.0
+JANELA_PADRAO = (0.45, 1.2)  # segundos depois do início da nota (a mesma de `nivel_do_instrumento`)
+CURVAS = {"ouvido": 1, "celular": 2}  # posição em `niveis_do_trecho`
+
+
+def faixa_de_uso(vozes):
+    """(menor, maior) altura MIDI em que o instrumento toca, pelas vozes dele."""
+    return min(FAIXA_VOZ[v][0] for v in vozes), max(FAIXA_VOZ[v][1] for v in vozes)
+
+
+def correcoes_db(niveis, faixa, reforco=LIMITE_REFORCO_DB, corte=LIMITE_CORTE_DB):
+    """`niveis` = {midi: nível em dB}; `faixa` = (de, ate) onde o instrumento é usado. Devolve {midi: correção em dB} que leva cada nota ao
+    nível médio EM POTÊNCIA da faixa de uso (e não ao da média em dB, que baixaria o volume geral: o `ganho` do instrumento já foi
+    calibrado por uma média em potência), limitada a [corte, reforço]."""
+    dentro = [v for m, v in niveis.items() if faixa[0] <= m <= faixa[1]]
+    if not dentro:
+        raise ValueError("nenhuma nota medida dentro da faixa de uso")
+    referencia = 10 * np.log10(np.mean([10 ** (v / 10) for v in dentro]))
+    return {m: float(min(reforco, max(corte, referencia - v))) for m, v in niveis.items()}
+
+
+def amplitude_db(niveis, faixa, correcoes=None):
+    """Maior menos menor nível (dB) das notas da faixa de uso, com a correção aplicada se dada."""
+    v = [niveis[m] + (correcoes.get(m, 0.0) if correcoes else 0.0) for m in niveis if faixa[0] <= m <= faixa[1]]
+    return max(v) - min(v) if v else 0.0
+
+
+def nivel_da_nota(x, curva="ouvido", janela=JANELA_PADRAO):
+    """Nível (dB) do trecho sustentado da nota na curva pedida, ou None se a nota está muda."""
+    env, passo = rms_janelas(x)
+    if len(env) == 0 or env.max() < 1e-4:
+        return None
+    ini = int(np.argmax(env > 0.05 * env.max()))
+    a, b = int((ini * passo + janela[0]) * SR), min(len(x), int((ini * passo + janela[1]) * SR))
+    if b - a < SR * 0.1:
+        return None
+    return niveis_do_trecho(x[a:b], 1.0)[CURVAS[curva]]
+
+
+def medir_notas(arquivo, faixa, curva="ouvido", janela=JANELA_PADRAO):
+    """{midi: nível em dB} de toda nota do banco na faixa de uso mais a margem de transposição (as mudas ficam de fora)."""
+    amostras = ler_amostras(arquivo)
+    de = max(FAIXA_BANCO[0], faixa[0] - MARGEM_TRANSPOSICAO)
+    ate = min(FAIXA_BANCO[1], faixa[1] + MARGEM_TRANSPOSICAO)
+    saida = {}
+    for midi in range(de, ate + 1):
+        if midi not in amostras:
+            continue
+        nivel = nivel_da_nota(decodificar(amostras[midi]), curva, janela)
+        if nivel is not None:
+            saida[midi] = float(nivel)
+    return saida
+
+
+def rotulo_da_fonte():
+    """Como o mapa identifica o banco de amostras de onde saiu (a pasta e a mãe dela: `GeneralUserGS/amostras`)."""
+    return f"{FONTE.parent.name}/{FONTE.name}"
+
+
+def gravados_do_catalogo():
+    """Os gravados de `src/lib/realista.ts`. Lista vazia é erro (o formato do arquivo pode ter mudado e a expressão regular deixou de casar)."""
+    lista = parse_realistas()
+    if not lista:
+        sys.exit("nenhum gravado encontrado em src/lib/realista.ts (o formato do arquivo mudou?)")
+    return lista
+
+
+def ler_mapa():
+    """O `niveis-gravados.json`, ou sai com a instrução de refazê-lo se não existir, estiver ilegível ou não tiver o formato esperado."""
+    refazer = "rode --fonte <amostras> --mapa-notas --escrever"
+    if not SAIDA_NIVEIS.exists():
+        sys.exit(f"não existe {SAIDA_NIVEIS.name}: {refazer}")
+    try:
+        dados = json.loads(SAIDA_NIVEIS.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        sys.exit(f"{SAIDA_NIVEIS.name} ilegível ({e}): {refazer}")
+    if not isinstance(dados, dict) or not isinstance(dados.get("instrumentos"), dict):
+        sys.exit(f"{SAIDA_NIVEIS.name} não tem o formato esperado (falta 'instrumentos'): {refazer}")
+    return dados
+
+
+def mapa_notas(curva, escrever):
+    print(f"Curva: {curva}. Correção em dB que leva cada nota ao nível médio (em potência) da faixa de uso; limites {LIMITE_CORTE_DB} a +{LIMITE_REFORCO_DB} dB.\n")
+    print(f"{'instrumento':<22}{'faixa':>9}{'notas':>6}{'mudas':>6} | {'amplitude antes':>16}{'depois':>8}{'limitadas':>10}")
+    instrumentos = {}
+    for id_, arquivo, _ganho, vozes in gravados_do_catalogo():
+        faixa = faixa_de_uso(vozes)
+        niveis = medir_notas(arquivo, faixa, curva)
+        if not niveis:
+            sys.exit(f"{arquivo}: nenhuma nota medida em {FONTE}")
+        try:
+            corr = correcoes_db(niveis, faixa)
+        except ValueError as e:  # só sobraram notas da margem de transposição: as da faixa de uso estão mudas
+            sys.exit(f"{arquivo}: {e} (faixa {faixa[0]}-{faixa[1]}) em {FONTE}")
+        de, ate = min(niveis), max(niveis)
+        # sem buraco: a nota muda (ou fora do banco) recebe 0 dB, como se não houvesse correção
+        lista = [round(corr.get(m, 0.0), 2) for m in range(de, ate + 1)]
+        mudas = [m for m in range(de, ate + 1) if m not in niveis]
+        limitadas = sum(1 for m, v in corr.items() if v in (LIMITE_REFORCO_DB, LIMITE_CORTE_DB) and faixa[0] <= m <= faixa[1])
+        instrumentos[id_] = {"de": de, "db": lista}
+        print(f"{id_:<22}{faixa[0]:>5}-{faixa[1]:<3}{len(niveis):>6}{len(mudas):>6} | {amplitude_db(niveis, faixa):>14.1f} dB{amplitude_db(niveis, faixa, corr):>6.1f} dB{limitadas:>8}")
+    if escrever:
+        saida = {"fonte": f"{FONTE.parent.name}/{FONTE.name}", "curva": curva, "limites_db": [LIMITE_CORTE_DB, LIMITE_REFORCO_DB],
+                 "gerado_por": "tools/analisar-timbres.py --mapa-notas", "instrumentos": instrumentos}
+        SAIDA_NIVEIS.write_text(json.dumps(saida, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+        print(f"\ngravado {SAIDA_NIVEIS} ({SAIDA_NIVEIS.stat().st_size / 1024:.1f} KB)")
+
+
+def validar_mapa():
+    """Confere o mapa gravado com medidas DIFERENTES das que o geraram (outras janelas de tempo e as duas curvas): se a variação entre as notas
+    cai também nelas, o mapa vale para o som e não só para o critério que o produziu."""
+    dados = ler_mapa()
+    if dados.get("fonte") != rotulo_da_fonte():
+        sys.exit(f"o mapa foi gerado de {dados.get('fonte')}, mas --fonte aponta para {rotulo_da_fonte()}: validar outro banco daria números sem sentido")
+    realistas = gravados_do_catalogo()
+    ausentes = [id_ for id_, _, _, _ in realistas if id_ not in dados["instrumentos"]]
+    if ausentes:
+        sys.exit(f"{', '.join(ausentes)} não está(ão) em {SAIDA_NIVEIS.name}: rode --fonte <amostras> --mapa-notas --escrever")
+    cenarios = [("ouvido", (0.45, 1.2)), ("ouvido", (0.15, 0.6)), ("ouvido", (1.0, 1.8)), ("celular", (0.45, 1.2))]
+    print(f"Mapa: {SAIDA_NIVEIS.name} (gerado na curva {dados['curva']}). Amplitude entre as notas da faixa de uso, ANTES e DEPOIS da correção:\n")
+    print(f"{'instrumento':<22}" + "".join(f"{c + ' ' + str(j[0]) + '-' + str(j[1]) + 's':>22}" for c, j in cenarios))
+    somas = [[0.0, 0.0] for _ in cenarios]
+    n = 0
+    for id_, arquivo, _ganho, vozes in realistas:
+        faixa = faixa_de_uso(vozes)
+        m = dados["instrumentos"][id_]
+        corr = {m["de"] + i: v for i, v in enumerate(m["db"])}
+        linha = f"{id_:<22}"
+        for k, (curva, janela) in enumerate(cenarios):
+            niveis = medir_notas(arquivo, faixa, curva, janela)
+            antes, depois = amplitude_db(niveis, faixa), amplitude_db(niveis, faixa, corr)
+            somas[k][0] += antes
+            somas[k][1] += depois
+            linha += f"{antes:>14.1f} -> {depois:>4.1f}"
+        n += 1
+        print(linha)
+    print(f"{'média':<22}" + "".join(f"{a / n:>14.1f} -> {d / n:>4.1f}" for a, d in somas))
+
+
 PICO_MAXIMO = 0.85  # amplitude de uma voz sozinha: acima disso, 4 vozes somadas passam do que o compressor segura
 
 
@@ -455,19 +607,33 @@ def main():
     ap.add_argument("--fonte", type=Path, help="pasta com os <instrumento>-mp3.js a medir (padrão: sons-fonte/FluidR3_GM)")
     ap.add_argument("--calibrar", action="store_true", help="calcula o ganho de cada gravado para o mesmo nível médio no ouvido")
     ap.add_argument("--alvo", type=float, default=-24.6, help="nível alvo no ouvido, em dB, para --calibrar (padrão: a mediana medida antes da troca de banco)")
-    ap.add_argument("--escrever", action="store_true", help="com --calibrar, grava os ganhos em src/lib/realista.ts")
+    ap.add_argument("--escrever", action="store_true", help="com --calibrar grava os ganhos em src/lib/realista.ts; com --mapa-notas grava src/lib/niveis-gravados.json")
     ap.add_argument("--niveis", action="store_true", help="compara o volume dos 16 gravados (o órgão de tirantes em destaque)")
+    ap.add_argument("--mapa-notas", action="store_true", help="I-23: mede cada nota dos 16 gravados e calcula a correção em dB que a leva ao nível médio do instrumento")
+    ap.add_argument("--validar-mapa", action="store_true", help="I-23: confere o mapa gravado com outras janelas de tempo e com as duas curvas (ouvido e celular)")
+    ap.add_argument("--curva", choices=list(CURVAS), default="ouvido", help="curva de medida do --mapa-notas (padrão: ouvido, a curva A)")
     ap.add_argument("--instrumento", choices=list(INSTRUMENTOS), help="só este (nome da síntese: trompete, trombone, tuba, fagote, oboe, sax_alto, sax_tenor)")
     ap.add_argument("--diagnostico", action="store_true", help="mostra as medidas e não grava")
     ap.add_argument("--orgaos", action="store_true", help="mede o órgão de tirantes e compara com os órgãos sintetizados")
     args = ap.parse_args()
     global FONTE
+    if (args.mapa_notas or args.validar_mapa) and not args.fonte:
+        # O banco padrão da ferramenta é o FluidR3 (o antigo); os gravados do app são do GeneralUser GS. Sem isto, `--mapa-notas --escrever` sobrescreveria o
+        # mapa do app com dados do banco errado, sem aviso.
+        sys.exit("--mapa-notas e --validar-mapa exigem --fonte: o padrão (sons-fonte/FluidR3_GM) NÃO é o banco dos gravados de hoje "
+                 "(use --fonte sons-fonte/GeneralUserGS/amostras)")
     if args.fonte:
         FONTE = args.fonte.expanduser().resolve()
     if not FONTE.is_dir():
         sys.exit(f"sem {FONTE}: rode tools/baixar-sons-gm.py")
     if args.calibrar:
         calibrar(args.alvo, args.escrever)
+        return
+    if args.mapa_notas:
+        mapa_notas(args.curva, args.escrever)
+        return
+    if args.validar_mapa:
+        validar_mapa()
         return
     if args.niveis:
         comparar_niveis()
