@@ -5,6 +5,7 @@
   import { i18n } from "$lib/i18n/index.svelte";
   import { ORGAOS, PADRAO, instrumentosDaVoz, tipoDaVoz, type TipoVoz } from "./instrumentos";
   import { lerCartoes, padrao, salvarCartoes, salvarVozes } from "./preferencias";
+  import Cartao from "./Cartao.svelte";
   import { ehRealista, gravadoEquivalente, realistasDaVoz, sinteticoEquivalente } from "./realista";
   import { sons } from "./sons/pacotes.svelte";
   import { ANDAMENTO_MAX, ANDAMENTO_MIN, TRANSPOSICAO_MAX, reproducao, vezesDoHino } from "./reproducao.svelte";
@@ -169,7 +170,7 @@
        próprio botão, entre parênteses. Com o Parar ao lado falta espaço, e o "(04:00)" desce inteiro para a linha de baixo
        (duas linhas cabem nos 3,5 rem do botão, então ele não muda de altura). -->
   <section class="cartao" aria-label={t("audio.tocar")}>
-    <div class="corpo sem-cabecalho">
+    <div class="corpo">
       <div class="principal">
         <button
           class="botao tocar primario"
@@ -253,12 +254,8 @@
   </section>
 
   <!-- Card 2: andamento e transposição. -->
-  <details class="cartao" name="cartoes-ouvir" bind:open={cartoes.ajustes}>
-    <summary>
-      <span>{t("player.cartao_ajustes")}</span>
-      <span class="direita"><span class="resumo">{resumoAjustes}</span><Icone nome={cartoes.ajustes ? "fechar" : "abrir"} tamanho={24} /></span>
-    </summary>
-    <div class="corpo">
+  <Cartao titulo={t("player.cartao_ajustes")} bind:aberto={cartoes.ajustes} name="cartoes-ouvir" grade>
+    {#snippet resumo()}{resumoAjustes}{/snippet}
       <!-- Andamento e transposição têm o mesmo desenho: o rótulo em cima e os controles numa linha inteira embaixo. No andamento são dois passos de cada lado (−5 −1 [valor] +1 +5), e quatro botões não cabem ao lado do rótulo; na transposição, − [n semitons] +. -->
       <div class="passo-linha empilhado">
         <span class="rotulo" id="rot-andamento">{t("player.andamento_rotulo")}</span>
@@ -303,17 +300,12 @@
       </div>
 
       <button class="botao secundario" disabled={!editavel} onclick={restaurarPadrao}>{t("player.restaurar_padrao")}</button>
-    </div>
-  </details>
+  </Cartao>
 
   <!-- Card 3: vozes. Mixer: cada voz tem dois controles distintos. Interruptor = liga/desliga a voz;
        controle deslizante = volume. O instrumento fica no card seguinte. -->
-  <details class="cartao" name="cartoes-ouvir" bind:open={cartoes.vozes}>
-    <summary>
-      <span>{t("player.vozes")}</span>
-      <span class="direita"><span class="resumo"><Icone nome="som" tamanho={16} /> {resumoVozes}</span><Icone nome={cartoes.vozes ? "fechar" : "abrir"} tamanho={24} /></span>
-    </summary>
-    <div class="corpo">
+  <Cartao titulo={t("player.vozes")} bind:aberto={cartoes.vozes} name="cartoes-ouvir" grade>
+    {#snippet resumo()}<Icone nome="som" tamanho={16} /> {resumoVozes}{/snippet}
       <div class="vozes" role="group" aria-label={t("player.vozes")}>
         {#each hino.vozes as v, i}
           <div class="voz" class:silenciada={cfg.mudas[i]}>
@@ -349,16 +341,11 @@
 
       <!-- Só volume e silenciar: vale na hora, também tocando. -->
       <button class="botao secundario" onclick={redefinirVozes}>{t("player.redefinir")}</button>
-    </div>
-  </details>
+  </Cartao>
 
   <!-- Card 4: instrumentos de cada voz. -->
-  <details class="cartao" name="cartoes-ouvir" bind:open={cartoes.instrumentos}>
-    <summary>
-      <span>{t("player.instrumentos")}</span>
-      <span class="direita"><span class="resumo">{resumoInstrumentos}</span><Icone nome={cartoes.instrumentos ? "fechar" : "abrir"} tamanho={24} /></span>
-    </summary>
-    <div class="corpo">
+  <Cartao titulo={t("player.instrumentos")} bind:aberto={cartoes.instrumentos} name="cartoes-ouvir" grade>
+    {#snippet resumo()}{resumoInstrumentos}{/snippet}
       {#each hino.vozes as v, i}
         {@const tipo = tipoDaVoz(v.nome)}
         {@const gravados = gravadosDaVoz(tipo)}
@@ -412,8 +399,7 @@
       <button class="botao secundario" disabled={!editavel} onclick={redefinirInstrumentos}>
         {t("player.redefinir_instrumentos")}
       </button>
-    </div>
-  </details>
+  </Cartao>
 </section>
 
 <style>
@@ -470,18 +456,9 @@
   .estado-voz { font-size: 0.8rem; color: var(--suave); font-variant-numeric: tabular-nums; }
   input[type="range"] { width: 100%; min-height: 3rem; accent-color: var(--acento); }
 
-  /* Cards: o primeiro (Tocar) é fixo; os outros abrem e fecham. Um resumo na linha de cima mostra o estado fechado. */
-  .cartao { border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
-  summary {
-    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 3rem;
-    padding: 0 0.9rem; font-weight: 600;
-  }
-  summary { cursor: pointer; list-style: none; }
-  summary::-webkit-details-marker { display: none; }
-  .direita { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
-  .resumo { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 400; color: var(--suave); font-size: 0.9rem; text-align: end; }
-  .corpo { display: grid; gap: 0.8rem; padding: 0.2rem 0.9rem 0.9rem; }
-  .corpo.sem-cabecalho { padding-top: 0.9rem; }
+  /* Cards: o primeiro (Tocar) é fixo (a moldura `.cartao` é global); os outros são o Cartao.svelte, que abre e fecha e mostra um resumo
+     na linha de cima. */
+  .corpo { display: grid; gap: 0.8rem; padding: 0.9rem; }
   /* minmax(0, 1fr) + largura limitada: sem isso, o nome mais longo ("Órgão de palhetas gravado (teste)") alarga o
      seletor e ele passa da borda do painel. */
   .inst-linha { display: grid; grid-template-columns: minmax(5.5rem, 8rem) minmax(0, 1fr); align-items: center; gap: 0.5rem; }

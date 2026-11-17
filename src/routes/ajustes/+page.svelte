@@ -5,6 +5,8 @@
   import { formatarMB } from "$lib/sons/formato";
   import { bytesDoPacote } from "$lib/sons/tipos";
   import Aviso from "$lib/Aviso.svelte";
+  import Cartao from "$lib/Cartao.svelte";
+  import LinhaPacote from "$lib/LinhaPacote.svelte";
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
   import { IDIOMAS, i18n, type Idioma } from "$lib/i18n/index.svelte";
@@ -172,30 +174,20 @@
   <section id="partituras">
     <h2>{t("partituras.titulo")}</h2>
     <p class="meta">{t("partituras.explica")}</p>
-    <div class="pacote">
-      <div class="pacote-info">
-        <strong>{t("partituras.pacote")}</strong>
-        <span class="meta">{estadoPartituras}</span>
-      </div>
-      {#if partituras.andamento.fase === "baixando"}
-        <progress
-          value={partituras.andamento.progresso}
-          max="1"
-          aria-label={t("partituras.baixando", { n: Math.round(partituras.andamento.progresso * 100) })}
-        ></progress>
-        <span class="meta">{t("partituras.baixando", { n: Math.round(partituras.andamento.progresso * 100) })}</span>
-      {:else if partituras.andamento.fase === "conferindo"}
-        <span class="meta" role="status">{t("partituras.conferindo")}</span>
-      {:else if partituras.andamento.fase === "instalando"}
-        <span class="meta" role="status">{t("partituras.instalando")}</span>
-      {:else if instaladas > 0}
-        <button class="botao" onclick={() => partituras.remover()}>{t("partituras.remover")}</button>
-      {:else if partituras.disponivel}
-        <button class="botao primario" onclick={() => partituras.baixar()}>
-          {t("partituras.baixar", { tamanho: formatarMB(partituras.bytes, i18n.idioma) })}
-        </button>
-      {/if}
-    </div>
+    <LinhaPacote
+      titulo={t("partituras.pacote")}
+      detalhe={estadoPartituras}
+      fase={partituras.andamento.fase === "baixando" || partituras.andamento.fase === "conferindo" || partituras.andamento.fase === "instalando" ? partituras.andamento.fase : "ocioso"}
+      progresso={partituras.andamento.progresso}
+      textoBaixando={t("partituras.baixando", { n: Math.round(partituras.andamento.progresso * 100) })}
+      textoConferindo={t("partituras.conferindo")}
+      textoInstalando={t("partituras.instalando")}
+      instalado={instaladas > 0}
+      rotuloRemover={t("partituras.remover")}
+      aoRemover={() => partituras.remover()}
+      rotuloBaixar={partituras.disponivel ? t("partituras.baixar", { tamanho: formatarMB(partituras.bytes, i18n.idioma) }) : undefined}
+      aoBaixar={() => partituras.baixar()}
+    />
     {#if partituras.andamento.fase === "erro"}
       <Aviso tipo="erro">{erroDasPartituras}</Aviso>
     {/if}
@@ -217,26 +209,19 @@
       {@const and = sons.andamento(p.id)}
       {@const instalado = sons.pacoteInstalado(p)}
       {@const tamanho = formatarMB(bytesDoPacote(p), i18n.idioma)}
-      <div class="pacote">
-        <div class="pacote-info">
-          <strong>{t(`sons.pacote_${p.id}` as Chave)}</strong>
-          <span class="meta">{tamanho} · {instalado ? t("sons.instalado") : t("sons.nao_instalado")}</span>
-        </div>
-        {#if and.fase === "baixando"}
-          <progress
-            value={and.progresso}
-            max="1"
-            aria-label={t("sons.baixando", { n: Math.round(and.progresso * 100) })}
-          ></progress>
-          <span class="meta">{t("sons.baixando", { n: Math.round(and.progresso * 100) })}</span>
-        {:else if and.fase === "conferindo"}
-          <span class="meta" role="status">{t("sons.conferindo")}</span>
-        {:else if instalado}
-          <button class="botao" onclick={() => sons.remover(p.id)}>{t("sons.remover")}</button>
-        {:else}
-          <button class="botao primario" onclick={() => sons.baixar(p.id)}>{t("sons.baixar", { tamanho })}</button>
-        {/if}
-      </div>
+      <LinhaPacote
+        titulo={t(`sons.pacote_${p.id}` as Chave)}
+        detalhe={`${tamanho} · ${instalado ? t("sons.instalado") : t("sons.nao_instalado")}`}
+        fase={and.fase === "baixando" || and.fase === "conferindo" ? and.fase : "ocioso"}
+        progresso={and.progresso}
+        textoBaixando={t("sons.baixando", { n: Math.round(and.progresso * 100) })}
+        textoConferindo={t("sons.conferindo")}
+        {instalado}
+        rotuloRemover={t("sons.remover")}
+        aoRemover={() => sons.remover(p.id)}
+        rotuloBaixar={t("sons.baixar", { tamanho })}
+        aoBaixar={() => sons.baixar(p.id)}
+      />
       {#if and.fase === "erro"}
         <Aviso tipo="erro">{t(erroDoSom(and.erro))}</Aviso>
       {/if}
@@ -249,12 +234,8 @@
   </section>
 
   <section>
-    <details class="cartao" bind:open={sobreAberto}>
-      <summary>
-        <span>{t("ajustes.sobre")}</span>
-        <Icone nome={sobreAberto ? "fechar" : "abrir"} tamanho={24} />
-      </summary>
-      <div class="corpo sobre">
+    <Cartao titulo={t("ajustes.sobre")} bind:aberto={sobreAberto}>
+      <div class="sobre">
         <p>{t("sobre.intro")}</p>
 
         <h3>{t("sobre.fazer_titulo")}</h3>
@@ -274,16 +255,12 @@
         <h3>{t("sobre.codigo_titulo")}</h3>
         <p>{t("sobre.codigo")}</p>
       </div>
-    </details>
+    </Cartao>
   </section>
 
   <section>
-    <details class="cartao" bind:open={creditosAberto}>
-      <summary>
-        <span>{t("ajustes.creditos")}</span>
-        <Icone nome={creditosAberto ? "fechar" : "abrir"} tamanho={24} />
-      </summary>
-      <div class="corpo sobre">
+    <Cartao titulo={t("ajustes.creditos")} bind:aberto={creditosAberto}>
+      <div class="sobre">
         <p>{t("creditos.intro")}</p>
         <ul class="creditos">
           {#each CREDITOS as c (c.id)}
@@ -303,7 +280,7 @@
           {/each}
         </ul>
       </div>
-    </details>
+    </Cartao>
   </section>
 
   <!-- A versão fica sozinha no fim, centralizada, fora do card. -->
@@ -312,17 +289,7 @@
 
 <style>
   section { margin-bottom: 1.8rem; }
-  .cartao { border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
-  summary {
-    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 3rem;
-    padding: 0 0.9rem; font-weight: 600; cursor: pointer; list-style: none;
-  }
-  summary::-webkit-details-marker { display: none; }
-  .corpo { padding: 0.2rem 0.9rem 0.9rem; }
   .versao { margin: 0 0 1.5rem; text-align: center; }
-  .pacote { display: grid; gap: 0.5rem; margin: 0.6rem 0; padding: 0.8rem 0.9rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
-  .pacote-info { display: grid; gap: 0.15rem; }
-  .pacote progress { width: 100%; height: 0.625rem; accent-color: var(--acento); }
   .sobre p, .sobre li { line-height: 1.5; }
   .sobre h3 { margin: 1.1rem 0 0.3rem; font-size: 0.95rem; }
   .sobre ul { margin: 0; padding-left: 1.2rem; }
@@ -330,7 +297,11 @@
   .creditos li { display: grid; gap: 0.15rem; padding: 0.7rem 0; border-top: 0.0625rem solid var(--borda-controle); }
   .creditos li:first-child { border-top: 0; }
   .creditos .url { overflow-wrap: anywhere; }
-  .licenca summary { min-height: 2.75rem; padding: 0; font-weight: 500; color: var(--acento); }
+  .licenca summary {
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; cursor: pointer; list-style: none;
+    min-height: 2.75rem; padding: 0; font-weight: 500; color: var(--acento);
+  }
+  .licenca summary::-webkit-details-marker { display: none; }
   .licenca pre { margin: 0.4rem 0 0.8rem; font: 0.78rem/1.45 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
   h2 { margin: 0 0 0.6rem; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--suave); }
   select {
