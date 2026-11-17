@@ -1,0 +1,171 @@
+// As gravações guardadas do Gravador (I-03): ficam no IndexedDB da própria WebView, só neste aparelho (nada sai dele) e sobrevivem a fechar o app; somem
+// quando a pessoa as apaga ou limpa os dados do app. Dois depósitos: `meta` (nome, data, duração, tamanho: leve, é o que a lista lê, página por página)
+// e `blobs` (o arquivo de áudio, lido só quando a pessoa toca em "Ouvir"). Sem limite de quantidade: a lista pagina e a tela mostra o espaço usado.
+
+export type MetaGravacao = { id: string; criadaEm: number; segundos: number; tipo: string; bytes: number };
+/** Onde a página anterior terminou: a próxima começa logo depois (da mais nova para a mais antiga). */
+export type Posicao = { criadaEm: number; id: string };
+export type Pagina = { itens: MetaGravacao[]; temMais: boolean };
+export type Resumo = { quantidade: number; bytes: number };
+
+/** Quantas gravações a lista carrega por vez. */
+export const TAMANHO_DA_PAGINA = 10;
+
+export const BANCO = "bmccb-gravacoes";
+const VERSAO = 1;
+
+/** "17/11 10:46" (dia e mês na ordem do idioma, mais hora e minuto). */
+export function formatarData(criadaEm: number, idioma: string): string {
+  if (!Number.isFinite(criadaEm)) return "";
+  return new Intl.DateTimeFormat(idioma, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(criadaEm));
+}
+
+const pedido = <T>(r: IDBRequest<T>): Promise<T> =>
+  new Promise((ok, falha) => {
+    r.onsuccess = () => ok(r.result);
+    r.onerror = () => falha(r.error ?? new Error("falha no armazenamento"));
+  });
+
+/** Roda `fn` numa transação e devolve o que ela devolver DEPOIS de a transação terminar de verdade (confirmada); qualquer erro ou cota estourada rejeita. */
+function transacao<T>(banco: IDBDatabase, lojas: string[], modo: IDBTransactionMode, fn: (t: IDBTransaction) => Promise<T> | T): Promise<T> {
+  return new Promise((ok, falha) => {
+    let resultado: T;
+    const t = banco.transaction(lojas, modo);
+    t.oncomplete = () => ok(resultado);
+    t.onerror = () => falha(t.error ?? new Error("falha no armazenamento"));
+    t.onabort = () => falha(t.error ?? new Error("transação cancelada"));
+    const desistir = (e: unknown) => {
+      falha(e);
+      try {
+        t.abort(); // desfaz tudo o que a transação já pediu: ou entra tudo ou nada
+      } catch {
+        /* já terminou */
+      }
+    };
+    let devolvido: Promise<T> | T;
+    try {
+      devolvido = fn(t);
+    } catch (e) {
+      return desistir(e); // um erro síncrono no meio (um valor que não pode ser guardado) também desfaz o que já foi pedido
+    }
+    Promise.resolve(devolvido).then((r) => (resultado = r), desistir);
+  });
+}
+
+export class Gravacoes {
+  private abrindo: Promise<IDBDatabase> | null = null;
+
+  /** `fabrica` devolve o IndexedDB (um falso nos testes). */
+  constructor(private readonly fabrica: () => IDBFactory | undefined = () => (typeof indexedDB === "undefined" ? undefined : indexedDB)) {}
+
+  private banco(): Promise<IDBDatabase> {
+    if (this.abrindo) return this.abrindo;
+    const idb = this.fabrica();
+    if (!idb) return Promise.reject(new Error("armazenamento indisponível"));
+    const aberto = new Promise<IDBDatabase>((ok, falha) => {
+      const r = idb.open(BANCO, VERSAO);
+      r.onupgradeneeded = () => {
+        const b = r.result;
+        const meta = b.createObjectStore("meta", { keyPath: "id" });
+        meta.createIndex("porData", ["criadaEm", "id"]); // da mais nova para a mais antiga, com o id desempatando
+        b.createObjectStore("blobs");
+      };
+      r.onsuccess = () => ok(r.result);
+      r.onerror = () => falha(r.error ?? new Error("não abriu o armazenamento"));
+      r.onblocked = () => falha(new Error("armazenamento bloqueado"));
+    });
+    // Uma falha ao abrir não fica guardada: a próxima chamada tenta de novo.
+    this.abrindo = aberto.catch((e) => {
+      this.abrindo = null;
+      throw e;
+    });
+    return this.abrindo;
+  }
+
+  /** Guarda uma gravação (metadados e arquivo, numa transação só: ou entram os dois ou nenhum). */
+  async salvar(blob: Blob, tipo: string, segundos: number): Promise<MetaGravacao> {
+    const banco = await this.banco();
+    const meta: MetaGravacao = {
+      id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      criadaEm: Date.now(),
+      segundos: Number.isFinite(segundos) && segundos > 0 ? segundos : 0,
+      tipo,
+      bytes: blob.size,
+    };
+    await transacao(banco, ["meta", "blobs"], "readwrite", (t) => {
+      t.objectStore("meta").put(meta);
+      t.objectStore("blobs").put(blob, meta.id);
+    });
+    return meta;
+  }
+
+  /** Uma página da lista, da mais nova para a mais antiga, começando depois de `antes` (ou do começo). `temMais` diz se há outra página. */
+  async listar(limite: number = TAMANHO_DA_PAGINA, antes?: Posicao): Promise<Pagina> {
+    const banco = await this.banco();
+    return transacao(banco, ["meta"], "readonly", (t) => {
+      const faixa = antes ? globalThis.IDBKeyRange.upperBound([antes.criadaEm, antes.id], true) : undefined;
+      const coletadas: MetaGravacao[] = [];
+      return new Promise<Pagina>((ok, falha) => {
+        const r = t.objectStore("meta").index("porData").openCursor(faixa, "prev");
+        r.onerror = () => falha(r.error ?? new Error("falha ao ler"));
+        r.onsuccess = () => {
+          const c = r.result;
+          if (!c || coletadas.length > limite) return ok({ itens: coletadas.slice(0, limite), temMais: coletadas.length > limite });
+          coletadas.push(c.value as MetaGravacao);
+          c.continue();
+        };
+      });
+    });
+  }
+
+  /** O arquivo de áudio de uma gravação, ou nulo se não existe mais. */
+  async blob(id: string): Promise<Blob | null> {
+    const banco = await this.banco();
+    return transacao(banco, ["blobs"], "readonly", async (t) => ((await pedido(t.objectStore("blobs").get(id))) as Blob | undefined) ?? null);
+  }
+
+  async apagar(id: string): Promise<void> {
+    const banco = await this.banco();
+    await transacao(banco, ["meta", "blobs"], "readwrite", (t) => {
+      t.objectStore("meta").delete(id);
+      t.objectStore("blobs").delete(id);
+    });
+  }
+
+  async apagarTodas(): Promise<void> {
+    const banco = await this.banco();
+    await transacao(banco, ["meta", "blobs"], "readwrite", (t) => {
+      t.objectStore("meta").clear();
+      t.objectStore("blobs").clear();
+    });
+  }
+
+  /** Quantas gravações há e quanto espaço ocupam (soma dos tamanhos dos arquivos). */
+  async resumo(): Promise<Resumo> {
+    const banco = await this.banco();
+    return transacao(banco, ["meta"], "readonly", (t) => {
+      let quantidade = 0;
+      let bytes = 0;
+      return new Promise<Resumo>((ok, falha) => {
+        const r = t.objectStore("meta").openCursor();
+        r.onerror = () => falha(r.error ?? new Error("falha ao ler"));
+        r.onsuccess = () => {
+          const c = r.result;
+          if (!c) return ok({ quantidade, bytes });
+          quantidade++;
+          bytes += (c.value as MetaGravacao).bytes;
+          c.continue();
+        };
+      });
+    });
+  }
+
+  /** Fecha a conexão (nos testes, para recomeçar do zero). */
+  async fechar(): Promise<void> {
+    const b = await this.abrindo?.catch(() => null);
+    b?.close();
+    this.abrindo = null;
+  }
+}
+
+export const gravacoes = new Gravacoes();
