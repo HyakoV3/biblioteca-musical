@@ -13,7 +13,7 @@
   // novo. Não usa microfone nem pede permissão. O som tem contexto de áudio próprio (ver `tom.ts`) e é um de cada vez: dar o tom para o hino
   // que estiver tocando, e o hino que começar cala o tom. `ativa` diz se a aba está à vista: ao sair dela o som para e o áudio é devolvido.
   // Sem controle de volume na tela: quem ajusta é o volume de mídia do celular, pelos botões físicos. "Outra nota" fica num cartão fechado:
-  // quem quiser a abre, escolhe a nota e a oitava e toca. O cartão "Temporizador" (fechado, não lembrado) faz o tom parar sozinho depois de 10, 20 ou
+  // quem quiser a abre e escolhe a nota e a oitava; o Play dela fica na ponta da linha (a "pílula"), sempre à vista, e fechar o cartão não para o som. O cartão "Temporizador" (fechado, não lembrado) faz o tom parar sozinho depois de 10, 20 ou
   // 30 segundos; o padrão é "até parar", o de sempre. Vale para o Lá e para a outra nota, e a contagem recomeça a cada nota nova.
   let { ativa }: { ativa: boolean } = $props();
 
@@ -120,10 +120,6 @@
   $effect(() => {
     if (reproducao.estado === "tocando") parar();
   });
-  // Fechar o cartão "Outra nota" com a nota soando a para: o botão de parar fica dentro dele e sumiria com o som ainda saindo.
-  $effect(() => {
-    if (!outraAberta && tocando === "nota") parar();
-  });
   $effect(() => {
     const aoEsconder = () => {
       if (document.hidden) sair();
@@ -155,6 +151,9 @@
     {#if tocando === "la"}{@render rotuloParar()}{:else}{rotuloLa}{/if}
   </button>
 
+  <!-- A pílula: o cartão "Outra nota" (nota e frequência na linha de cima) e, na ponta dela, o Play da nota escolhida. O Play fica sempre à vista, com o
+       cartão aberto ou fechado: quem usa muito uma nota que não é o Lá a deixa marcada aqui e toca com um toque. -->
+  <div class="pilula">
   <Cartao titulo={t("afinador.outra_nota")} resumo={`${nomeNota} · ${hz(freqNota)} Hz`} bind:aberto={outraAberta} grade>
     <fieldset class="opcoes" aria-label={t("afinador.outra_nota")}>
       {#each Array.from({ length: 12 }, (_, n) => n) as n (n)}
@@ -185,12 +184,20 @@
       <span class="freq">{nomeNota} · {hz(freqNota)} Hz</span>
     </div>
     {#if grave}<p class="meta">{t("afinador.aviso_grave")}</p>{/if}
-
-    <button class="botao primario grande" aria-pressed={tocando === "nota"} onclick={() => alternar("nota")}>
-      <Icone nome={tocando === "nota" ? "stop" : "play"} tamanho={24} />
-      {#if tocando === "nota"}{@render rotuloParar()}{:else}{t("afinador.tocar_nota", { nota: nomeNota })}{/if}
-    </button>
   </Cartao>
+    <button
+      class="tocar-pilula"
+      class:fechada={!outraAberta}
+      aria-pressed={tocando === "nota"}
+      aria-label={tocando === "nota" ? t("audio.parar") : t("afinador.tocar_nota", { nota: nomeNota })}
+      title={tocando === "nota" ? t("audio.parar") : t("afinador.tocar_nota", { nota: nomeNota })}
+      onclick={() => alternar("nota")}
+    >
+      <Icone nome={tocando === "nota" ? "stop" : "play"} tamanho={24} />
+      {#if tocando === "nota" && restante !== null}<span class="resta" aria-hidden="true">{restante} s</span>{/if}
+      {#if tocando === "nota" && restante !== null}<span class="barra" aria-hidden="true" style:width={`${fracaoFeita(limite, restante) * 100}%`}></span>{/if}
+    </button>
+  </div>
 
   <Cartao id="cartao-temporizador" titulo={t("afinador.temporizador")} resumo={limite === 0 ? t("afinador.ate_parar") : `${limite} s`} bind:aberto={temporizadorAberto} grade>
     <p class="meta" id="rotulo-limite">{t("afinador.parar_sozinho")}</p>
@@ -239,6 +246,20 @@
   }
   .opcoes .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
   .opcoes input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
+
+  /* A pílula: o Play é posicionado sobre a linha de cima do cartão (a moldura global tem 1px de borda e 0,75rem de raio); o título fica
+     à esquerda da divisória e o sinal de abrir e fechar vem antes dela. */
+  .pilula { position: relative; }
+  .pilula :global(summary) { padding-inline-end: 4.75rem; }
+  .tocar-pilula {
+    position: absolute; inset: 0.0625rem 0.0625rem auto auto; width: 4.5rem; height: 2.9375rem; box-sizing: border-box; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.05rem; padding: 0;
+    border: 0; border-inline-start: 0.0625rem solid var(--borda-controle); border-radius: 0 0.6875rem 0 0;
+    background: var(--acento); color: var(--acento-texto); cursor: pointer; font: inherit;
+  }
+  .tocar-pilula.fechada { border-radius: 0 0.6875rem 0.6875rem 0; }
+  .tocar-pilula:focus-visible { outline: 0.1875rem solid var(--foco); outline-offset: -0.25rem; }
+  .resta { font-size: 0.75rem; line-height: 1; font-variant-numeric: tabular-nums; }
 
   .linha { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; }
   .oitava { display: flex; align-items: center; gap: 0.5rem; }
