@@ -21,7 +21,14 @@ export type Hino = {
   introducao?: { vozes: Voz[] } | null;
   /** Tempo de cada sílaba da letra, para o karaokê (opcional). */
   sincronia?: Sincronia | null;
+  /** Em que instante cada compasso da partitura começa, em cada fluxo de notas, para destacá-lo na partitura (opcional). */
+  compassos?: Compassos | null;
 };
+
+/** `[inicio_em_batidas, indice_do_compasso]`: o índice conta os compassos escritos da partitura, a partir de 0 (a ordem dos `g.measure` do SVG). */
+export type InicioDeCompasso = [number, number];
+/** Os compassos de cada fluxo de notas; o tempo está na régua do próprio fluxo (a mesma das notas). */
+export type Compassos = { normal: InicioDeCompasso[]; final?: InicioDeCompasso[] | null; introducao?: InicioDeCompasso[] | null };
 
 export type Pacote = {
   hinario: { versao: number; hinario: { id: string; nome: string; idioma?: string | null }; hinos: Hino[] };

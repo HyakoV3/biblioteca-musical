@@ -40,6 +40,8 @@ pub struct Hino {
     pub letra: Vec<String>,
     /// Tempo de cada sílaba da letra, para o karaokê (opcional: só quando a partitura tem letra).
     pub sincronia: Option<Sincronia>,
+    /// Em que instante cada compasso começa, em cada fluxo de notas, para destacar o compasso na partitura (I-12, fase B).
+    pub compassos: Option<Compassos>,
     pub avisos: Vec<String>,
 }
 
@@ -63,6 +65,21 @@ pub struct EstrofeSinc {
 pub struct Sincronia {
     pub normal: Vec<EstrofeSinc>,
     pub passada_final: Option<Vec<EstrofeSinc>>,
+}
+
+/// Em que instante (em batidas, na régua de cada passada: a mesma das notas) um compasso ESCRITO começa a tocar.
+/// `(inicio_em_batidas, indice_do_compasso)`: o índice conta os compassos da partitura em ordem, a partir de 0, que é também a ordem
+/// dos `g.measure` do SVG da partitura. É o que o app usa para destacar o compasso que toca (I-12, fase B). O `timemap` do Verovio não
+/// serve para isso: ele EXPANDE as repetições com ids de compasso que não existem no SVG (no hino 457, 56 compassos únicos contra 38
+/// desenhados).
+pub type InicioDeCompasso = (f64, usize);
+
+/// Os compassos de cada fluxo de notas do hino (a passada normal, a do final e a introdução), na régua do próprio fluxo.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Compassos {
+    pub normal: Vec<InicioDeCompasso>,
+    pub passada_final: Option<Vec<InicioDeCompasso>>,
+    pub introducao: Option<Vec<InicioDeCompasso>>,
 }
 
 /// Posição de uma sílaba na letra montada, com o instante dela na partitura (antes de escolher a passada).
@@ -910,6 +927,31 @@ fn selecionar(acordes: &[Acorde], inicios: &[f64], segmentos: &[(usize, usize)])
     saida
 }
 
+/// O instante em que cada compasso dos `segmentos` começa na passada montada por `selecionar`: o mesmo deslocamento de cada intervalo
+/// (`inicio - t0 + acumulado`), para o compasso cair exatamente onde as suas notas caem. Os índices são os do compasso ESCRITO.
+fn compassos_da_passada(inicios: &[f64], segmentos: &[(usize, usize)]) -> Vec<InicioDeCompasso> {
+    let mut saida = vec![];
+    let mut acumulado = 0.0;
+    for &(de, ate) in segmentos {
+        let t0 = inicios[de];
+        for (i, &inicio) in inicios.iter().enumerate().take(ate).skip(de) {
+            saida.push((arredondar(inicio - t0 + acumulado), i));
+        }
+        acumulado += inicios[ate] - t0;
+    }
+    saida
+}
+
+/// Os compassos da introdução: os que começam antes do marcador `*` (`fim_intro`, em batidas). O compasso que contém o `*` entra, porque
+/// começa antes dele. A introdução é o começo da passada normal, então a régua é a mesma.
+fn compassos_da_introducao(inicios: &[f64], fim_intro: f64) -> Vec<InicioDeCompasso> {
+    const EPS: f64 = 1e-6;
+    (0..inicios.len().saturating_sub(1))
+        .take_while(|&i| inicios[i] < fim_intro - EPS)
+        .map(|i| (arredondar(inicios[i]), i))
+        .collect()
+}
+
 pub fn converter(xml: &str, numero_hino: u32) -> Result<Hino, String> {
     converter_com(xml, numero_hino, &[])
 }
@@ -1180,6 +1222,25 @@ pub fn converter_com(
         None
     };
 
+    // Compassos de cada fluxo (I-12, fase B): a passada normal toca os compassos do plano (ou a partitura toda, sem plano); a do final, só quando
+    // o final foi aceito; a introdução, os que começam antes do "*". Mesma régua das notas das vozes de cada fluxo.
+    let compassos = if estrutura.inicios.len() < 2 {
+        None
+    } else {
+        let todos = [(0, estrutura.inicios.len() - 1)];
+        let normal_seg: &[(usize, usize)] = plano.as_ref().map_or(&todos, |p| &p.normal);
+        Some(Compassos {
+            normal: compassos_da_passada(&estrutura.inicios, normal_seg),
+            passada_final: plano
+                .as_ref()
+                .filter(|_| passada_final.is_some())
+                .map(|p| compassos_da_passada(&estrutura.inicios, &p.final_)),
+            introducao: introducao
+                .as_ref()
+                .map(|_| compassos_da_introducao(&estrutura.inicios, fim_intro)),
+        })
+    };
+
     if vozes.is_empty() {
         return Err("nenhuma nota encontrada".into());
     }
@@ -1215,6 +1276,7 @@ pub fn converter_com(
         introducao,
         letra,
         sincronia,
+        compassos,
         avisos,
     })
 }
@@ -1272,6 +1334,17 @@ pub fn para_json(h: &Hino) -> Value {
             o.insert("final".into(), json!(estrofes_json(f)));
         }
         m.insert("sincronia".into(), Value::Object(o));
+    }
+    if let Some(c) = &h.compassos {
+        let mut o = Map::new();
+        o.insert("normal".into(), json!(c.normal));
+        if let Some(f) = &c.passada_final {
+            o.insert("final".into(), json!(f));
+        }
+        if let Some(i) = &c.introducao {
+            o.insert("introducao".into(), json!(i));
+        }
+        m.insert("compassos".into(), Value::Object(o));
     }
     Value::Object(m)
 }
@@ -2261,6 +2334,7 @@ mod testes {
                 .collect(),
             letra: vec![],
             sincronia: None,
+            compassos: None,
             avisos: vec![],
         };
         nomes_satb(&mut h);
@@ -2603,6 +2677,7 @@ mod testes {
             vozes: partes(),
             letra: vec![],
             sincronia: None,
+            compassos: None,
             avisos: vec![],
         };
         nomes_satb(&mut h);
@@ -2781,5 +2856,231 @@ mod testes {
     fn numero_vem_do_nome_do_arquivo() {
         assert_eq!(numero_do_arquivo(Path::new("x/hino-42.mscx")), Some(42));
         assert_eq!(numero_do_arquivo(Path::new("coro-1.mscx")), None);
+    }
+
+    // ---- Compassos de cada fluxo (I-12, fase B: destacar o compasso na partitura) ----
+
+    /// Onde as notas de cada compasso caem na régua do fluxo: para cada compasso listado, a nota que começa no instante dele tem de ser a do
+    /// compasso certo (cada compasso dos hinos de teste tem uma altura própria, que o índice do compasso identifica).
+    fn altura_do_compasso(i: usize) -> u8 {
+        [60, 62, 64, 65, 67, 69][i]
+    }
+
+    #[test]
+    fn sem_repeticao_cada_compasso_da_partitura_entra_uma_vez_e_em_ordem() {
+        let h = converter(&hino_com_asterisco(), 1).unwrap();
+        let c = h.compassos.expect("deveria ter compassos");
+        assert_eq!(c.normal, vec![(0.0, 0), (4.0, 1)]);
+        assert!(
+            c.passada_final.is_none(),
+            "sem final, sem compassos do final"
+        );
+    }
+
+    #[test]
+    fn introducao_inclui_o_compasso_que_contem_o_asterisco() {
+        // O "*" está no meio do compasso 2 (a 6 batidas): o compasso 2 começa antes dele e entra.
+        let h = converter(&hino_com_asterisco(), 1).unwrap();
+        let c = h.compassos.unwrap();
+        assert_eq!(c.introducao, Some(vec![(0.0, 0), (4.0, 1)]));
+    }
+
+    #[test]
+    fn introducao_que_termina_no_fim_de_um_compasso_nao_inclui_o_seguinte() {
+        let marca = "<StaffText><text>*</text></StaffText>";
+        let m1 = format!(
+            "<Measure><voice>{C44}{}{marca}</voice></Measure>",
+            acorde("whole", 60)
+        );
+        let m2 = comp_marcado("", 62);
+        let m3 = comp_marcado("", 64);
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &[m1, m2, m3].concat())), 1).unwrap();
+        // o "*" fica no fim do compasso 1 (4 batidas): o compasso 2 começa EM 4, e não antes, então não é da introdução
+        let c = h.compassos.unwrap();
+        assert_eq!(c.introducao, Some(vec![(0.0, 0)]));
+        assert_eq!(c.normal, vec![(0.0, 0), (4.0, 1), (8.0, 2)]);
+    }
+
+    #[test]
+    fn sem_asterisco_nao_ha_compassos_da_introducao() {
+        let h = converter(&hino_com_final(), 1).unwrap();
+        assert!(h.compassos.unwrap().introducao.is_none());
+    }
+
+    #[test]
+    fn com_final_a_passada_normal_e_a_do_final_seguem_o_plano_de_repeticao() {
+        let h = converter(&hino_com_final(), 1).unwrap();
+        let c = h.compassos.expect("deveria ter compassos");
+        // normal: compassos 0, 1 e 2 (até o fim da 1ª casa); final: 0 e 1, pula a 1ª casa (2) e segue com 3, 4 e 5. Os instantes são os da régua
+        // de cada passada (4 batidas por compasso, sem buracos).
+        assert_eq!(c.normal, vec![(0.0, 0), (4.0, 1), (8.0, 2)]);
+        assert_eq!(
+            c.passada_final,
+            Some(vec![(0.0, 0), (4.0, 1), (8.0, 3), (12.0, 4), (16.0, 5)])
+        );
+    }
+
+    #[test]
+    fn o_instante_de_cada_compasso_e_onde_as_notas_dele_caem_em_cada_passada() {
+        let h = converter(&hino_com_final(), 1).unwrap();
+        let c = h.compassos.clone().unwrap();
+        let normal = notas_de(&h.vozes, 0);
+        for &(t, i) in &c.normal {
+            let n = normal
+                .iter()
+                .find(|n| (n.0 - t).abs() < 1e-9)
+                .expect("há uma nota começando no compasso");
+            assert_eq!(
+                n.2,
+                altura_do_compasso(i),
+                "passada normal, compasso {i} em {t}"
+            );
+        }
+        let final_ = notas_de(h.passada_final.as_ref().unwrap(), 0);
+        for &(t, i) in c.passada_final.as_ref().unwrap() {
+            let n = final_
+                .iter()
+                .find(|n| (n.0 - t).abs() < 1e-9)
+                .expect("há uma nota começando no compasso");
+            assert_eq!(
+                n.2,
+                altura_do_compasso(i),
+                "passada do final, compasso {i} em {t}"
+            );
+        }
+        // e não sobra compasso sem nota nem nota sem compasso: um compasso por nota (cada compasso do teste tem uma semibreve)
+        assert_eq!(c.normal.len(), normal.len());
+        assert_eq!(c.passada_final.as_ref().unwrap().len(), final_.len());
+    }
+
+    #[test]
+    fn estrutura_nao_reconhecida_le_a_partitura_uma_vez_em_ordem_tambem_nos_compassos() {
+        // um fim de repetição sem as casas de volta que o plano reconhece: a partitura é lida uma vez, como as notas
+        let medidas = [
+            comp_marcado("<startRepeat/>", 60),
+            comp_marcado("<endRepeat>2</endRepeat>", 62),
+            comp_marcado("", 64),
+        ]
+        .concat();
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap();
+        let c = h.compassos.unwrap();
+        assert_eq!(c.normal, vec![(0.0, 0), (4.0, 1), (8.0, 2)]);
+        assert!(c.passada_final.is_none());
+    }
+
+    #[test]
+    fn anacruse_o_compasso_curto_empurra_os_seguintes_pela_duracao_real() {
+        // 1º compasso de 1 batida (len="1/4"), depois dois de 4: os instantes são 0, 1 e 5 (e não 0, 4 e 8)
+        let anacruse = format!(
+            r#"<Measure len="1/4"><voice>{C44}{}</voice></Measure>"#,
+            acorde("quarter", 60)
+        );
+        let h = converter(
+            &doc(
+                &parte(1, "S"),
+                &pauta(
+                    1,
+                    &[anacruse, comp_marcado("", 62), comp_marcado("", 64)].concat(),
+                ),
+            ),
+            1,
+        )
+        .unwrap();
+        assert_eq!(
+            h.compassos.unwrap().normal,
+            vec![(0.0, 0), (1.0, 1), (5.0, 2)]
+        );
+    }
+
+    #[test]
+    fn o_json_traz_os_compassos_de_cada_fluxo_e_omite_o_que_nao_existe() {
+        let j = para_json(&converter(&hino_com_final(), 1).unwrap());
+        assert_eq!(
+            j["compassos"]["normal"],
+            json!([[0.0, 0], [4.0, 1], [8.0, 2]])
+        );
+        assert_eq!(
+            j["compassos"]["final"],
+            json!([[0.0, 0], [4.0, 1], [8.0, 3], [12.0, 4], [16.0, 5]])
+        );
+        assert!(j["compassos"].get("introducao").is_none());
+        let j2 = para_json(&converter(&hino_com_asterisco(), 1).unwrap());
+        assert_eq!(j2["compassos"]["introducao"], json!([[0.0, 0], [4.0, 1]]));
+        assert!(j2["compassos"].get("final").is_none());
+    }
+
+    #[test]
+    fn final_descartado_nao_deixa_compassos_do_final() {
+        // O último compasso (só existe na passada do final) tem um acorde de 2 notas: o final teria 2 vozes e a normal 1, então o final é
+        // descartado (ver o aviso). Os compassos do final têm de sumir junto: sem notas do final, o app não tem o que destacar.
+        let ultimo = format!(
+            "<Measure><voice>{C44}<Chord><durationType>whole</durationType><Note><pitch>69</pitch></Note><Note><pitch>72</pitch></Note></Chord></voice></Measure>"
+        );
+        let medidas = [
+            comp_marcado("<startRepeat/>", 60),
+            comp_marcado("", 62),
+            comp_marcado(
+                r#"<endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta>"#,
+                64,
+            ),
+            comp_marcado(
+                r#"<endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta>"#,
+                65,
+            ),
+            comp_marcado(r#"<endSpanner id="2"/>"#, 67),
+            ultimo,
+        ]
+        .concat();
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap();
+        assert!(
+            h.passada_final.is_none(),
+            "o final deveria ter sido descartado: {:?}",
+            h.avisos
+        );
+        assert!(
+            h.avisos.iter().any(|a| a.contains("descartado")),
+            "{:?}",
+            h.avisos
+        );
+        let c = h.compassos.unwrap();
+        assert!(c.passada_final.is_none());
+        assert_eq!(
+            c.normal,
+            vec![(0.0, 0), (4.0, 1), (8.0, 2)],
+            "a passada normal segue com o plano"
+        );
+        assert!(para_json(&converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap())["compassos"].get("final").is_none());
+    }
+
+    #[test]
+    fn hino_sem_compassos_nao_tem_o_campo() {
+        let mut h = converter(&hino_com_asterisco(), 1).unwrap();
+        h.compassos = None;
+        assert!(para_json(&h).get("compassos").is_none());
+    }
+
+    #[test]
+    fn compassos_da_passada_desloca_cada_intervalo_pelo_acumulado() {
+        // 4 compassos de 2 batidas; passada = compassos [0,1) e [2,4): o 2º intervalo recomeça em 2 (acumulado), e não em 4
+        let inicios = [0.0, 2.0, 4.0, 6.0, 8.0];
+        assert_eq!(
+            compassos_da_passada(&inicios, &[(0, 1), (2, 4)]),
+            vec![(0.0, 0), (2.0, 2), (4.0, 3)]
+        );
+        assert_eq!(
+            compassos_da_passada(&inicios, &[(0, 4)]),
+            vec![(0.0, 0), (2.0, 1), (4.0, 2), (6.0, 3)]
+        );
+        assert!(compassos_da_passada(&inicios, &[]).is_empty());
+    }
+
+    #[test]
+    fn compassos_da_introducao_com_poucos_inicios_nao_estoura() {
+        assert!(compassos_da_introducao(&[], 5.0).is_empty());
+        assert!(compassos_da_introducao(&[0.0], 5.0).is_empty()); // só o "fim da partitura", sem nenhum compasso
+        assert_eq!(
+            compassos_da_introducao(&[0.0, 4.0, 8.0], 6.0),
+            vec![(0.0, 0), (4.0, 1)]
+        );
     }
 }

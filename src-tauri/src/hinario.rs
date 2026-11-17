@@ -52,6 +52,42 @@ pub struct Hino {
     /// o hino continua importando, só sem karaokê.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sincronia: Option<Sincronia>,
+    /// Em que instante cada compasso da partitura começa, em cada fluxo de notas, para destacar o compasso que toca (I-12, fase B). Se
+    /// estiver malformado, é descartado na leitura: o hino continua importando, só sem o destaque na partitura.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub compassos: Option<Compassos>,
+}
+
+/// Instante em que um compasso começa a tocar: `[inicio_em_batidas, indice_do_compasso]`. O índice conta os compassos ESCRITOS da
+/// partitura, a partir de 0, que é também a ordem dos `g.measure` do SVG.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct InicioDeCompasso(pub f32, pub u32);
+
+/// Os compassos de cada fluxo de notas do hino; o tempo está na régua do próprio fluxo (a mesma das notas): `normal` vale para as vezes
+/// normais, `final` para a última vez (só em hino com final) e `introducao` para a introdução.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Compassos {
+    pub normal: Vec<InicioDeCompasso>,
+    #[serde(rename = "final", default, skip_serializing_if = "Option::is_none")]
+    pub passada_final: Option<Vec<InicioDeCompasso>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub introducao: Option<Vec<InicioDeCompasso>>,
+}
+
+/// Lista utilizável: não vazia, com tempos finitos e não negativos em ordem estritamente crescente (um compasso começa depois do anterior).
+fn compassos_validos(c: &[InicioDeCompasso]) -> bool {
+    !c.is_empty()
+        && c.iter()
+            .all(|InicioDeCompasso(t, _)| t.is_finite() && *t >= 0.0)
+        && c.windows(2).all(|w| w[0].0 < w[1].0)
+}
+
+impl Compassos {
+    fn valida(&self) -> bool {
+        compassos_validos(&self.normal)
+            && self.passada_final.as_deref().is_none_or(compassos_validos)
+            && self.introducao.as_deref().is_none_or(compassos_validos)
+    }
 }
 
 /// Trecho da letra: `[inicio_em_batidas, de, ate]`. `de..ate` são posições, em unidades UTF-16 (as do JavaScript),
@@ -150,6 +186,10 @@ pub fn ler(json: &str) -> Result<Hinario, String> {
     for hino in &mut h.hinos {
         if hino.sincronia.as_ref().is_some_and(|s| !s.valida()) {
             hino.sincronia = None;
+        }
+        // O destaque do compasso na partitura também é um extra: compassos malformados são descartados, sem recusar o hino.
+        if hino.compassos.as_ref().is_some_and(|c| !c.valida()) {
+            hino.compassos = None;
         }
     }
     // O final precisa ter as mesmas vozes da passada normal, na mesma ordem (a interface as junta por posição).
@@ -533,6 +573,101 @@ mod testes {
             assert_eq!(h.hinos[0].titulo, "T");
             assert!(h.hinos[0].sincronia.is_none(), "devia descartar: {ruim}");
         }
+    }
+
+    fn json_com_compassos(compassos: &str) -> String {
+        format!(
+            r#"{{"versao":1,"hinario":{{"id":"a","nome":"A"}},"hinos":[{{"numero":1,"titulo":"T",
+            "vozes":[{{"nome":"Soprano","notas":[[0,1,60],[1,1,62]]}}],"compassos":{compassos}}}]}}"#
+        )
+    }
+
+    #[test]
+    fn compassos_sao_lidos_voltam_na_saida_com_a_chave_final_e_somem_quando_nao_ha() {
+        let h = ler(&json_com_compassos(
+            r#"{"normal":[[0,0],[4,1],[8,2]],"final":[[0,0],[4,1],[8,3]],"introducao":[[0,0],[4,1]]}"#,
+        ))
+        .unwrap();
+        let c = h.hinos[0]
+            .compassos
+            .as_ref()
+            .expect("deveria ter compassos");
+        assert_eq!(
+            c.normal,
+            vec![
+                InicioDeCompasso(0.0, 0),
+                InicioDeCompasso(4.0, 1),
+                InicioDeCompasso(8.0, 2)
+            ]
+        );
+        assert_eq!(c.passada_final.as_ref().unwrap().len(), 3);
+        assert_eq!(
+            c.introducao.as_ref().unwrap(),
+            &vec![InicioDeCompasso(0.0, 0), InicioDeCompasso(4.0, 1)]
+        );
+        // ao serializar para a interface, a chave do final continua "final"; sem o final nem a introdução, elas não aparecem
+        let saida = serde_json::to_string(&h.hinos[0]).unwrap();
+        assert!(
+            saida.contains(r#""compassos":{"normal":[[0.0,0],[4.0,1],[8.0,2]],"final":[[0.0,0],[4.0,1],[8.0,3]],"introducao":[[0.0,0],[4.0,1]]}"#),
+            "{saida}"
+        );
+        let so_normal = ler(&json_com_compassos(r#"{"normal":[[0,0]]}"#)).unwrap();
+        let saida = serde_json::to_string(&so_normal.hinos[0]).unwrap();
+        assert!(
+            saida.contains(r#""compassos":{"normal":[[0.0,0]]}"#),
+            "{saida}"
+        );
+
+        let sem = ler(
+            r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T"}]}"#,
+        )
+        .unwrap();
+        assert!(sem.hinos[0].compassos.is_none());
+        assert!(
+            !serde_json::to_string(&sem.hinos[0])
+                .unwrap()
+                .contains("compassos")
+        );
+    }
+
+    #[test]
+    fn compassos_malformados_sao_descartados_sem_recusar_o_hino() {
+        // lista vazia, tempo negativo, instante repetido, fora de ordem e (no final ou na introdução) o mesmo: cada um derruba só os compassos
+        for ruim in [
+            r#"{"normal":[]}"#,
+            r#"{"normal":[[-1,0]]}"#,
+            r#"{"normal":[[0,0],[0,1]]}"#,
+            r#"{"normal":[[4,0],[2,1]]}"#,
+            r#"{"normal":[[0,0],[4,1]],"final":[[3,0],[1,1]]}"#,
+            r#"{"normal":[[0,0],[4,1]],"final":[]}"#,
+            r#"{"normal":[[0,0],[4,1]],"introducao":[[0,0],[0,1]]}"#,
+            r#"{"normal":[[0,0],[4,1]],"introducao":[]}"#,
+        ] {
+            let h =
+                ler(&json_com_compassos(ruim)).unwrap_or_else(|e| panic!("não devia recusar: {e}"));
+            assert_eq!(h.hinos[0].titulo, "T");
+            assert_eq!(h.hinos[0].vozes.len(), 1, "as notas continuam");
+            assert!(h.hinos[0].compassos.is_none(), "devia descartar: {ruim}");
+        }
+    }
+
+    #[test]
+    fn compassos_com_numero_que_estoura_o_f32_nao_viram_infinito_na_lista() {
+        // 1e39 não cabe num f32: o que o serde faz com ele decide se o teste de `is_finite` é alcançável pelo JSON
+        match ler(&json_com_compassos(r#"{"normal":[[1e39,0]]}"#)) {
+            Ok(h) => assert!(
+                h.hinos[0].compassos.is_none(),
+                "um tempo infinito não pode ficar"
+            ),
+            Err(e) => assert_eq!(args(&e)[0], "json_invalido", "{e}"),
+        }
+    }
+
+    #[test]
+    fn compassos_com_formato_errado_recusam_so_pelo_json_invalido_como_qualquer_campo() {
+        // um item que não é [numero, indice] não é JSON de um compasso: o erro é o de JSON inválido de sempre, não um comportamento novo
+        let e = ler(&json_com_compassos(r#"{"normal":[["a",0]]}"#)).unwrap_err();
+        assert_eq!(args(&e)[0], "json_invalido", "{e}");
     }
 
     #[test]

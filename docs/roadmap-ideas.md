@@ -176,7 +176,7 @@ O que se aprendeu, e que a ferramenta já faz:
 
 ## I-12 — Karaokê na partitura (fase B)
 
-- **Status:** **escolhida como a próxima frente** pelo responsável (2026-11-16); **passo 0 (medição) feito**, implementação não começou (a **fase A**, o karaokê na letra, está feita: ver [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md))
+- **Status:** **escolhida como a próxima frente** pelo responsável (2026-11-16); **passo 0 (medição) feito**; **etapa 1 (os dados) feita**: o conversor emite `compassos` e o app os lê (`docs/FORMATO.md`); **falta a etapa 2 (a interface: destacar o compasso, rolar, ligar e desligar)** (a **fase A**, o karaokê na letra, está feita: ver [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md))
 - **Origem:** sugestão do responsável: um karaokê "tanto na letra das músicas como nas partituras".
 - **Prioridade:** depende da I-08 (aba Partitura)
 
@@ -201,7 +201,7 @@ Antes de construir, mediu-se nos 5 hinos de amostra se o tempo das notas que o a
 2. **Quem diz qual compasso toca em cada instante é o conversor** (`tools/mscx2json`), que já conhece o instante de cada compasso e as repetições e casas de volta de cada passada (`Estrutura`: `inicio_compasso`, a passada normal e a do final). Ele emitiria, por fluxo, uma lista `[batida local, índice do compasso escrito]`, no mesmo molde da `sincronia` da letra. O app marca o N-ésimo `g.measure` do SVG (a ordem no documento seria a ordem escrita). **Sem o `timemap` no pacote.**
 3. **A rolagem** que acompanha o compasso tem de respeitar "reduzir movimento" (`tools/verificar-movimento.py`), e o liga/desliga é o mesmo do karaokê da letra.
 
-**Riscos a verificar** (hipóteses, ainda não medidas): que a ordem dos `g.measure` no SVG é a ordem escrita dos compassos do `.mscx` (anacruse, compassos excluídos da contagem, compasso de uma nota só), e que o `class="measure"` sobrevive à limpeza do SVG no Rust.
+**Riscos (verificados na etapa 1, nos 5 hinos de amostra):** a ordem dos `g.measure` no SVG **é** a ordem escrita dos compassos do `.mscx`. O número de compassos do SVG é o que o conversor usa (11, 8, 18, 56 e 38), e cada início da passada normal do conversor corresponde ao `g.measure[i]` pelo id que o Verovio atribui; no final do 457 (só existe expandido no `timemap`), os 37 compassos têm início e comprimento idênticos aos do `timemap`. **Ainda a verificar na etapa 2:** que o `class="measure"` sobrevive à limpeza do SVG no Rust.
 
 ### Critérios de aceitação (propostos)
 - O destaque na partitura e o da letra andam juntos, na pausa congelam e ao mudar o andamento seguem no lugar certo.
