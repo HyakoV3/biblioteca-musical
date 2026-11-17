@@ -806,6 +806,9 @@ async function principal() {
   })()`;
   const clicarGrande = (indice) => av(`document.querySelectorAll('#painel-afinador .grande')[${indice}].click(); 1`);
 
+  // "Outra nota" é um cartão FECHADO de saída (com a nota e a frequência na linha de cima) e o volume não está na tela (é o do celular).
+  const fechado = await av(`(() => { const d = document.querySelector('#painel-afinador details'); return { aberto: d.open, resumo: d.querySelector('summary').textContent.replace(/\\s+/g, ' ').trim(), controleDeVolume: document.querySelectorAll('#painel-afinador input[type="range"]').length }; })()`);
+  confere(fechado.aberto === false && /C4.*262|Dó4.*262|Do4.*262/.test(fechado.resumo) && fechado.controleDeVolume === 0, `Afinador: "Outra nota" começa fechado, mostra a nota e a frequência, e não há controle de volume na tela: ${JSON.stringify(fechado)}`);
   await clicarGrande(0); // Lá 440 Hz
   await dormir(900);
   const la = await av(hzDoTom);
@@ -814,6 +817,8 @@ async function principal() {
   confere(pressionado === "true", `o botão do Lá fica pressionado enquanto toca: aria-pressed=${pressionado}`);
 
   // Outra nota: Mi♭4 (311,13 Hz). Ligar a outra nota com o Lá soando TROCA de nota; mudar a oitava com ela soando a afina na hora (Mi♭5, 622,25 Hz).
+  await av(`document.querySelector('#painel-afinador details summary').click(); 1`); // abre o cartão, como a pessoa faria
+  await dormir(300);
   await av(`document.querySelector('#painel-afinador input[type="radio"][value="3"]').click(); 1`);
   await clicarGrande(1);
   await dormir(900);
@@ -825,6 +830,16 @@ async function principal() {
   confere(mib5.hz && Math.abs(mib5.hz - 622.254) <= 2, `subir a oitava com a nota soando a afina na hora (Mi♭5, 622,25 Hz): ${JSON.stringify(mib5)}`);
   const lista = await av(`document.querySelector('#painel-afinador .freq').textContent.replace(/\\s+/g, ' ').trim()`);
   confere(/E♭5/.test(lista) && /622/.test(lista), `a tela mostra o nome e a frequência da nota: ${lista}`);
+
+  // Fechar o cartão "Outra nota" com a nota soando a para (o botão de parar fica dentro dele).
+  await av(`document.querySelector('#painel-afinador details summary').click(); 1`);
+  await dormir(900);
+  const aposFechar = await av(`({ tocando: window.__bmccbTom.tocando, aberto: document.querySelector('#painel-afinador details').open })`);
+  confere(aposFechar.tocando === false && aposFechar.aberto === false, `fechar o cartão "Outra nota" com a nota soando para o som: ${JSON.stringify(aposFechar)}`);
+  await av(`document.querySelector('#painel-afinador details summary').click(); 1`); // reabre para o resto do teste
+  await dormir(300);
+  await clicarGrande(1);
+  await dormir(900);
 
   // Sair da aba para o som (e o áudio é devolvido).
   await av(`document.getElementById('aba-hinos').click(); 1`);
@@ -872,6 +887,8 @@ async function principal() {
   const recuperou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), tocando: window.__bmccbTom?.tocando })`);
   confere(!recuperou.aviso && recuperou.tocando === true, `tentar de novo funciona e o aviso some: ${JSON.stringify(recuperou)}`);
   await clicarGrande(0); // desliga o Lá
+  await av(`document.querySelector('#painel-afinador details summary').click(); 1`); // abre o cartão (a tela foi recarregada: volta fechado)
+  await dormir(300);
   await clicarGrande(1); // liga a nota escolhida
   await dormir(900);
   await av(`window.__resumeOriginal = AudioContext.prototype.resume; AudioContext.prototype.resume = () => Promise.reject(new Error('resume falhou')); 1`);

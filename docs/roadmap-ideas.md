@@ -314,7 +314,7 @@ verso, títulos). O desenho exato depende das fotos.
 
 ## I-13 — Afinador: dar o tom e mostrar se a nota está baixa ou alta
 
-- **Status:** **etapa 1 em implementação.** Feito (2026-11-17): a aba **Afinador** com o **Lá 440 Hz** e **outra nota** (12 notas, oitava, volume, tom sustentado com contexto de áudio próprio, um som de cada vez), o `afinador.ts` puro e testado, e o teste de ponta a ponta que **mede o som gerado** (440,3 Hz). **Falta:** o **"Tom de um hino"** (o conversor ainda não grava `armadura`, `modo` e `tonalidade`) e depois a **etapa 2** (ouvir e medir), que começa pelo teste do microfone no aparelho. Especificada e revisada por subagente Opus 5 em 2026-11-17 (18 achados, aplicados; ver "Revisão").
+- **Status:** **etapa 1 em implementação.** Feito (2026-11-17): a aba **Afinador** com o **Lá 440 Hz** e **outra nota** (12 notas num cartão fechado, oitava, tom sustentado com contexto de áudio próprio, um som de cada vez; sem volume na tela), o `afinador.ts` puro e testado, e o teste de ponta a ponta que **mede o som gerado** (440,3 Hz). **Falta:** o **"Tom de um hino"** (o conversor ainda não grava `armadura`, `modo` e `tonalidade`) e depois a **etapa 2** (ouvir e medir), que começa pelo teste do microfone no aparelho. Especificada e revisada por subagente Opus 5 em 2026-11-17 (18 achados, aplicados; ver "Revisão").
 - **Origem:** pedido do responsável, 2026-11-14; especificada em 2026-11-17.
 - **Prioridade:** a definir. Depende da **I-28** (a aba Afinador na tela inicial), que entra **junto** com a primeira tela do afinador.
 
@@ -344,9 +344,9 @@ indo para baixo ou para cima da nota certa.
 │   │      ▶  Lá 440 Hz                │       │
 │   └──────────────────────────────────┘       │
 │                                              │
-│   Outra nota                                 │
-│   [Dó][Dó♯][Ré][Mi♭][Mi][Fá][Fá♯][Sol]…      │
-│   Oitava  [−] 4 [+]      Mi♭4 · 311 Hz       │
+│   ▸ Outra nota                Dó4 · 262 Hz   │
+│     (fechado; abre para escolher a nota,     │
+│      a oitava e tocar)                       │
 │                                              │
 │   Tom de um hino                             │
 │   Hino nº [ 276 ]        Mi♭ maior           │
@@ -360,10 +360,10 @@ indo para baixo ou para cima da nota certa.
 
 **O que faz**
 - **Lá 440 Hz.** Um botão toca o lá central (A4) e **sustenta** a nota até ser apertado de novo (botão de ligar e desligar, com `aria-pressed`).
-- **Outra nota.** A pessoa escolhe a nota entre **12 botões** e a **oitava** (2 a 6). A tela mostra o nome e a frequência; o mesmo botão toca e para. **Grafia fixa dos 12:** Dó, Dó♯, Ré, Mi♭, Mi, Fá, Fá♯, Sol, Lá♭, Lá, Si♭, Si (os bemóis dos tons que os hinos mais usam e os sustenidos só onde faltam). Os botões formam um `radiogroup`, e cada um leva um `aria-label` **por extenso** ("Mi bemol"), porque o leitor de tela pode ler "♭" e "♯" como símbolos.
+- **Outra nota.** É um **cartão fechado** (o mesmo `Cartao.svelte` de Ajustes): a linha de cima mostra a nota e a frequência ("Dó4 · 262 Hz") e quem quiser o abre. Dentro, a pessoa escolhe a nota entre **12 botões** e a **oitava** (2 a 6), vê o nome e a frequência e toca; o mesmo botão toca e para. O cartão **não é lembrado** (começa fechado) e **fechá-lo com a nota soando a para**, porque o botão de parar fica dentro dele. **Grafia fixa dos 12:** Dó, Dó♯, Ré, Mi♭, Mi, Fá, Fá♯, Sol, Lá♭, Lá, Si♭, Si (os bemóis dos tons que os hinos mais usam e os sustenidos só onde faltam). Os botões formam um `radiogroup`, e cada um leva um `aria-label` **por extenso** ("Mi bemol"), porque o leitor de tela pode ler "♭" e "♯" como símbolos.
 - **Tom de um hino.** A pessoa escolhe o hino (campo com o número, a mesma busca da lista) e a tela mostra a **tonalidade** ("Mi♭ maior", no idioma da interface). **Dar o tom** toca a **tônica** dessa tonalidade. A **oitava padrão é a 4** (de Dó4 a Si4); abaixo da 3 o alto-falante do celular quase não reproduz o som, e a tela **avisa**. Hino sem tonalidade no hinário (conteúdo importado antes desta mudança) deixa o botão desligado com a explicação "importe um hinário atualizado".
 - **Som.** Timbre **sintetizado** `orgao_suave` (`src/lib/instrumentos.ts`: quase uma onda simples, **sem vibrato**, fácil de afinar de ouvido). Os instrumentos gravados ficam de fora porque o afinador **tem de funcionar sem nenhum pacote baixado** (o `smplr` até tem laço, `loadLoopData`, mas isso não muda o motivo).
-- **Volume** próprio, lembrado no aparelho. Afinação de referência fixa em **440 Hz** nesta etapa (temperamento igual).
+- **Sem controle de volume na tela** (decisão do responsável, 2026-11-17: "como é celular, não faz sentido ter volume ali; a pessoa controla nos botões físicos"). O tom tem ganho fixo e quem ajusta é o volume de mídia do celular. Afinação de referência fixa em **440 Hz** nesta etapa (temperamento igual).
 
 **Áudio: um contexto próprio e um som de cada vez** (achado de bloqueio da revisão)
 - O hino toca num `AudioContext` **privado** do `Sintetizador` (nasce dentro de `tocar()`), e a pausa do hino é `ctx.suspend()`. Se o afinador usasse o mesmo contexto, **pausar o hino calaria o tom**. Logo o afinador tem o **seu próprio** `AudioContext`, criado e retomado **no toque** (o áudio só inicia depois de um gesto do usuário). **Reaproveita os perfis e a construção das ondas, não o contexto.**

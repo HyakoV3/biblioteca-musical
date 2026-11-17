@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { afinadorPadrao, cartoesPadrao, lerAfinador, lerCartoes, lerKaraoke, salvarAfinador, salvarCartoes, salvarKaraoke } from "../src/lib/preferencias";
+import { cartoesPadrao, lerCartoes, lerKaraoke, salvarCartoes, salvarKaraoke } from "../src/lib/preferencias";
 
 // localStorage simples, em memória.
 let mem: Record<string, string>;
@@ -63,41 +63,5 @@ describe("karaokê", () => {
     });
     expect(lerKaraoke()).toBe(true);
     expect(() => salvarKaraoke(false)).not.toThrow();
-  });
-});
-
-describe("afinador", () => {
-  it("padrão: volume 0,6; salvar e ler", () => {
-    expect(afinadorPadrao()).toEqual({ volume: 0.6 });
-    expect(lerAfinador()).toEqual({ volume: 0.6 }); // nada salvo
-    salvarAfinador({ volume: 0.25 });
-    expect(lerAfinador()).toEqual({ volume: 0.25 });
-  });
-
-  it("o volume salvo fica entre 0 e 1", () => {
-    mem["prefs.afinador"] = '{"volume":7}';
-    expect(lerAfinador().volume).toBe(1);
-    mem["prefs.afinador"] = '{"volume":-2}';
-    expect(lerAfinador().volume).toBe(0);
-  });
-
-  it("JSON inválido, lista, e valor que não é número voltam ao padrão", () => {
-    for (const ruim of ["{ quebrado", "[1]", "null", '{"volume":"alto"}', '{"volume":null}', '{"outro":1}', "7"]) {
-      mem["prefs.afinador"] = ruim;
-      expect(lerAfinador(), ruim).toEqual({ volume: 0.6 });
-    }
-  });
-
-  it("sem armazenamento (erro ao ler ou gravar) não quebra e vale o padrão", () => {
-    vi.stubGlobal("localStorage", {
-      getItem: () => {
-        throw new Error("bloqueado");
-      },
-      setItem: () => {
-        throw new Error("bloqueado");
-      },
-    });
-    expect(lerAfinador()).toEqual({ volume: 0.6 });
-    expect(() => salvarAfinador({ volume: 0.3 })).not.toThrow();
   });
 });

@@ -5,8 +5,9 @@
 import { INSTRUMENTOS } from "./instrumentos";
 
 const PERFIL = INSTRUMENTOS.orgao_suave;
-/** O volume 1 da tela é metade do fundo de escala: forte o bastante e sem estourar. */
-const GANHO_MAXIMO = 0.5;
+/** Ganho fixo do tom (30% do fundo de escala: forte o bastante e sem estourar). Não há controle de volume na tela: quem ajusta é o volume de
+ *  mídia do celular, pelos botões físicos. */
+const GANHO = 0.3;
 
 /** Só no servidor de desenvolvimento (e, portanto, no teste de ponta a ponta): deixa o teste MEDIR o som que o app gera. */
 declare global {
@@ -33,7 +34,7 @@ export class TomSustentado {
    * Toca `frequencia` (Hz) até `parar()`. Se já havia uma nota, ela sai com a sua soltura enquanto a nova entra. Chamar a partir de um toque
    * da pessoa: o áudio só inicia depois de um gesto.
    */
-  async tocar(frequencia: number, volume: number): Promise<void> {
+  async tocar(frequencia: number): Promise<void> {
     const minha = ++this.geracao;
     if (!this.ctx || this.ctx.state === "closed") {
       this.ctx = new AudioContext();
@@ -52,7 +53,7 @@ export class TomSustentado {
     osc.frequency.value = frequencia;
     const env = ctx.createGain();
     env.gain.setValueAtTime(0, agora);
-    env.gain.linearRampToValueAtTime(volume * GANHO_MAXIMO, agora + PERFIL.ataque);
+    env.gain.linearRampToValueAtTime(GANHO, agora + PERFIL.ataque);
     osc.connect(env).connect(ctx.destination);
     if (import.meta.env.DEV) this.sonda(ctx, env);
     osc.start(agora);
@@ -65,18 +66,6 @@ export class TomSustentado {
   parar(): void {
     this.geracao++;
     this.soltar();
-  }
-
-  /** Muda o volume da nota que soa, sem degrau. */
-  volume(v: number): void {
-    const { ctx, env } = this;
-    if (!ctx || !env) return;
-    const t = ctx.currentTime;
-    // Cancela o que estava agendado: a rampa de entrada da nota termina no volume ANTIGO e sobrescreveria a mudança feita durante ela. Mantém o
-    // ganho de agora (sem pulo) e vai ao novo valor.
-    env.gain.cancelScheduledValues(t);
-    env.gain.setValueAtTime(env.gain.value, t);
-    env.gain.setTargetAtTime(v * GANHO_MAXIMO, t, 0.02);
   }
 
   /** Para a nota e devolve o áudio ao aparelho (fecha o contexto depois da soltura). */
