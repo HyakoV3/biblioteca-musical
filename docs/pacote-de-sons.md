@@ -45,6 +45,12 @@ bancos (mesma escala, volume igualado), decidiu trocar todos pelo **GeneralUser 
   Para voltar a ~30 MB basta baixar o `KBPS` do renderizador para 64.
 - **Volume:** `ganho` de cada instrumento recalculado para **todos no mesmo nível médio no ouvido**, −24,6 dB (a mediana de
   antes, então o volume geral não mudou): `python3 tools/analisar-timbres.py --fonte <amostras> --calibrar --escrever`.
+- **Nível por nota (I-23, etapa A):** dentro de um instrumento as notas variam de 2,5 a 10 dB (o agudo é o mais forte), e com quatro vozes o
+  equilíbrio muda a cada nota. `src/lib/niveis-gravados.json` guarda, por gravado e por nota, a correção em dB que leva a nota ao nível médio
+  (em potência) da faixa de uso do instrumento, e o app a aplica pela `velocity` do smplr (ganho = `velocity²/16129`; 90 é a base e 127 o máximo,
+  +5,9 dB de reforço). Gerado por `python3 tools/analisar-timbres.py --fonte <amostras> --mapa-notas --escrever` e conferido, com outras janelas
+  de tempo e a curva do celular, por `--validar-mapa`. **Refazer sempre que as amostras mudarem**, junto com os `ganho`. O mapa mora no app, e
+  não no pacote de sons. Em Ajustes, "Nivelar as notas" liga e desliga (padrão: ligado), para comparar de ouvido.
   Refazer sempre que as amostras mudarem.
 - **Compatibilidade:** o `manifesto.json` do app guarda o SHA-256 de cada arquivo. APKs até o 009 esperam os arquivos do
   FluidR3, então **recusam os novos** até serem atualizados (e o contrário também). A pasta compartilhada do servidor guarda

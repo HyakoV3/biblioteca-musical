@@ -16,7 +16,7 @@ import {
   vozesDaVez,
   type ParteDoTudo,
 } from "./vezes";
-import { lerVoz } from "./preferencias";
+import { lerNivelar, lerVoz } from "./preferencias";
 import { Sintetizador, type Voz } from "./sintetizador";
 
 export type Estado = "parado" | "tocando" | "pausado";
@@ -145,6 +145,7 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
       transposicao: c.transposicao,
       instrumentos: [...c.instrumentos],
       volumes: hino.vozes.map((_, i) => efetivo(c, i)),
+      nivelar: lerNivelar(),
     });
     if (g !== geracao) {
       sint.parar(); // Parar foi tocado enquanto o áudio iniciava: não deixa o som começar
@@ -207,6 +208,7 @@ async function reagendar(batida: number, pausado: boolean): Promise<boolean> {
         transposicao: c.transposicao,
         instrumentos: [...c.instrumentos],
         volumes: agendado.vozes.map((_, i) => efetivo(c, i)),
+        nivelar: lerNivelar(),
       },
       { aPartirDe: batida, pausado },
     );

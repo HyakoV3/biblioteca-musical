@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { cartoesPadrao, lerCartoes, lerKaraoke, salvarCartoes, salvarKaraoke } from "../src/lib/preferencias";
+import { cartoesPadrao, lerCartoes, lerKaraoke, lerNivelar, salvarCartoes, salvarKaraoke, salvarNivelar } from "../src/lib/preferencias";
 
 // localStorage simples, em memória.
 let mem: Record<string, string>;
@@ -63,5 +63,38 @@ describe("karaokê", () => {
     });
     expect(lerKaraoke()).toBe(true);
     expect(() => salvarKaraoke(false)).not.toThrow();
+  });
+});
+
+describe("nivelar as notas dos gravados (I-23)", () => {
+  it("vem ligado por padrão, e salvar vale entre aberturas", () => {
+    expect(lerNivelar()).toBe(true);
+    salvarNivelar(false);
+    expect(mem["prefs.nivelar"]).toBe("0");
+    expect(lerNivelar()).toBe(false);
+    salvarNivelar(true);
+    expect(mem["prefs.nivelar"]).toBe("1");
+    expect(lerNivelar()).toBe(true);
+  });
+
+  it("é independente do karaokê (cada um tem a sua chave)", () => {
+    salvarNivelar(false);
+    expect(lerKaraoke()).toBe(true);
+    salvarKaraoke(false);
+    salvarNivelar(true);
+    expect(lerKaraoke()).toBe(false);
+  });
+
+  it("sem armazenamento (erro ao ler ou gravar) não quebra e vale o padrão (ligado)", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("bloqueado");
+      },
+      setItem: () => {
+        throw new Error("bloqueado");
+      },
+    });
+    expect(lerNivelar()).toBe(true);
+    expect(() => salvarNivelar(false)).not.toThrow();
   });
 });

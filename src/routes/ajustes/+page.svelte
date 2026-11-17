@@ -10,6 +10,7 @@
   import { IDIOMAS, i18n, type Idioma } from "$lib/i18n/index.svelte";
   import { usarVoltar } from "$lib/navegacao";
   import { reproducao } from "$lib/reproducao.svelte";
+  import { lerNivelar, salvarNivelar } from "$lib/preferencias";
   import { ESTILOS, TEMAS, estilo, tema } from "$lib/tema.svelte";
   import { CREDITOS, textoDaLicenca } from "$lib/licencas";
   import { traduzirErro } from "$lib/erros";
@@ -21,6 +22,8 @@
 
   let resultado = $state<{ tipo: "sucesso" | "erro"; texto: string } | null>(null);
   let confirmando = $state(false);
+  // I-23: nivelar o volume de cada nota dos gravados (preferência do aparelho, padrão ligado).
+  let nivelar = $state(lerNivelar());
   // O texto do "Sobre o app" é longo: fica num card fechado, que a pessoa abre se quiser ler.
   let sobreAberto = $state(false);
   // Os créditos também ficam num card fechado: é informação de licença, que quase ninguém precisa ler no dia a dia.
@@ -213,6 +216,23 @@
   <section>
     <h2>{t("sons.titulo")}</h2>
     <p class="meta">{t("sons.explica")}</p>
+    <!-- I-23: nivelar o volume de cada nota dos gravados. Vale já na próxima vez que tocar; desligado, o som é o de antes. -->
+    <div class="pacote">
+      <div class="pacote-info">
+        <strong>{t("sons.nivelar")}</strong>
+        <span class="meta">{t("sons.nivelar_ajuda")}</span>
+      </div>
+      <button
+        class="botao"
+        role="switch"
+        aria-checked={nivelar}
+        aria-label={t("sons.nivelar")}
+        onclick={() => {
+          nivelar = !nivelar;
+          salvarNivelar(nivelar);
+        }}>{nivelar ? t("sons.nivelar_ligado") : t("sons.nivelar_desligado")}</button
+      >
+    </div>
     {#each sons.pacotes as p (p.id)}
       {@const and = sons.andamento(p.id)}
       {@const instalado = sons.pacoteInstalado(p)}

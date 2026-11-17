@@ -659,6 +659,19 @@ async function principal() {
   const aceita = await av(`document.querySelector('input[type="file"]').getAttribute('accept')`);
   confere(/json/.test(aceita) && !/zip/i.test(aceita), `Importar hinário aceita só .json: accept="${aceita}"`);
 
+  // I-23: "Nivelar as notas" (sons gravados) vem ligado, e o clique liga/desliga e grava a preferência (que o player lê a cada vez que toca).
+  const nivelarEstado = () => av(`(() => { const b = document.querySelector('.pacote button[role="switch"]'); return { achou: !!b, marcado: b?.getAttribute('aria-checked') ?? null, texto: b?.textContent?.trim() ?? null, salvo: localStorage.getItem('prefs.nivelar') }; })()`);
+  const n0 = await nivelarEstado();
+  confere(n0.achou && n0.marcado === "true" && n0.salvo === null, `"Nivelar as notas" vem ligado por padrão: ${JSON.stringify(n0)}`);
+  await av(`document.querySelector('.pacote button[role="switch"]').click(); 1`);
+  await dormir(200);
+  const n1 = await nivelarEstado();
+  confere(n1.marcado === "false" && n1.salvo === "0" && n1.texto !== n0.texto, `clicar desliga e grava a preferência: ${JSON.stringify(n1)}`);
+  await av(`document.querySelector('.pacote button[role="switch"]').click(); 1`);
+  await dormir(200);
+  const n2 = await nivelarEstado();
+  confere(n2.marcado === "true" && n2.salvo === "1" && n2.texto === n0.texto, `clicar de novo religa: ${JSON.stringify(n2)}`);
+
   // Arquivo acima de 20 MB: recusado pelo tamanho, sem ser lido. O arquivo é ESPARSO (só o tamanho conta, não ocupa disco).
   const raiz = (await enviar("DOM.getDocument", {})).result.root.nodeId;
   const entrada = (await enviar("DOM.querySelector", { nodeId: raiz, selector: 'input[type="file"]' })).result.nodeId;
