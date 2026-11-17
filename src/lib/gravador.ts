@@ -46,6 +46,53 @@ export function motivoDoErro(e: unknown): MotivoDoErro {
   return "falhou";
 }
 
+// ---- Medidor de som (o que o microfone está ouvindo) ----
+
+/** Abaixo de −60 dBFS o medidor mostra silêncio; 0 dBFS é o fundo de escala (o máximo que o microfone entrega). */
+export const PISO_DB = -60;
+
+/** O nível de 0 a 1 que a barra mostra, a partir do RMS das amostras (−1 a 1), em escala de decibéis (é assim que o ouvido percebe volume). */
+export function nivelDeRms(rms: number): number {
+  if (!Number.isFinite(rms) || rms <= 0) return 0;
+  return Math.min(1, Math.max(0, (20 * Math.log10(rms) - PISO_DB) / -PISO_DB));
+}
+
+/** Raiz da média dos quadrados das amostras (a "força" do som). Sem amostras, 0. */
+export function rmsDeAmostras(amostras: ArrayLike<number>): number {
+  const n = amostras.length;
+  if (n === 0) return 0;
+  let soma = 0;
+  for (let i = 0; i < n; i++) soma += amostras[i] * amostras[i];
+  return Math.sqrt(soma / n);
+}
+
+/** Nível a partir do qual conta como "tem som" (cerca de −48 dBFS: acima do chiado de um microfone parado, abaixo de uma voz baixa). */
+export const LIMIAR_SOM = 0.2;
+/** Quanto tempo sem som até avisar que o microfone não está ouvindo nada. */
+export const SILENCIO_MS = 3000;
+
+/**
+ * Acompanha o nível do microfone e diz se há som agora e se faz tempo demais que não há (para avisar "não estou ouvindo nada"). O tempo vem de fora
+ * (`agora`, em milissegundos), o que deixa a conta testável. `reiniciar` marca o começo de uma gravação.
+ */
+export class DetectorDeSom {
+  private ultimoSom = 0;
+  constructor(
+    private readonly limiar = LIMIAR_SOM,
+    private readonly silencioMs = SILENCIO_MS,
+  ) {}
+
+  reiniciar(agora: number): void {
+    this.ultimoSom = agora;
+  }
+
+  atualizar(nivel: number, agora: number): { comSom: boolean; semSom: boolean } {
+    const comSom = nivel >= this.limiar;
+    if (comSom) this.ultimoSom = agora;
+    return { comSom, semSom: agora - this.ultimoSom >= this.silencioMs };
+  }
+}
+
 /** 64 kbps: bom para voz e instrumento e compacto (o padrão do navegador gravava a cerca de 135 kbps, o dobro, sem ganho que se ouça). */
 export const BITS_POR_SEGUNDO = 64000;
 
@@ -78,6 +125,10 @@ export type Gravacao = { url: string; tipo: string; bytes: number; segundos: num
 export class Gravador {
   private fluxo: MediaStream | null = null;
   private gravador: MediaRecorder | null = null;
+  /** Medidor de nível: um `AudioContext` só para escutar o microfone (não toca nada), com o analisador e o buffer de amostras. */
+  private contexto: AudioContext | null = null;
+  private analisador: AnalyserNode | null = null;
+  private amostras: Float32Array<ArrayBuffer> | null = null;
   private pedacos: Blob[] = [];
   private inicio = 0;
   /** Quando a gravação terminou (por `parar` ou porque a trilha do microfone acabou); 0 enquanto grava. */
@@ -94,10 +145,18 @@ export class Gravador {
   async iniciar(): Promise<void> {
     if (this.gravando) return;
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") throw new DOMException("sem gravação", "NotSupportedError");
-    this.fluxo = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
-    });
+    // O contexto do medidor nasce AGORA, no toque (o navegador só deixa o áudio iniciar depois de um gesto), e não depois da espera pela permissão.
+    this.abrirMedidor();
     try {
+      this.fluxo = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
+      });
+    } catch (e) {
+      this.soltar();
+      throw e;
+    }
+    try {
+      this.ligarMedidor(this.fluxo);
       const preferido = escolherFormato((t) => MediaRecorder.isTypeSupported(t));
       this.gravador = preferido
         ? new MediaRecorder(this.fluxo, { mimeType: preferido, audioBitsPerSecond: BITS_POR_SEGUNDO })
@@ -120,6 +179,51 @@ export class Gravador {
     } catch (e) {
       this.soltar();
       throw e;
+    }
+  }
+
+  /**
+   * O medidor está funcionando (há analisador e o contexto de áudio está rodando). Sem ele, `nivel()` devolve sempre 0, e quem usa NÃO deve tirar
+   * disso a conclusão de que "não há som": o aviso de "sem som" só vale com o medidor ativo.
+   */
+  get medidorAtivo(): boolean {
+    return this.analisador !== null && this.contexto?.state === "running";
+  }
+
+  /** O nível do microfone agora, de 0 a 1 (0 se o medidor não está disponível). */
+  nivel(): number {
+    if (!this.analisador || !this.amostras) return 0;
+    try {
+      this.analisador.getFloatTimeDomainData(this.amostras);
+      return nivelDeRms(rmsDeAmostras(this.amostras));
+    } catch {
+      return 0;
+    }
+  }
+
+  private abrirMedidor(): void {
+    try {
+      const g = globalThis as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+      const Contexto = g.AudioContext ?? g.webkitAudioContext; // WebViews e Safari antigos só têm o nome com prefixo
+      if (!Contexto) return;
+      this.contexto = new Contexto();
+      void this.contexto.resume().catch(() => {});
+    } catch {
+      this.contexto = null; // sem medidor, a gravação segue igual
+    }
+  }
+
+  private ligarMedidor(fluxo: MediaStream): void {
+    if (!this.contexto) return;
+    try {
+      this.analisador = this.contexto.createAnalyser();
+      this.analisador.fftSize = 1024;
+      this.amostras = new Float32Array(new ArrayBuffer(this.analisador.fftSize * 4));
+      // Só escuta: a fonte NÃO vai para a saída (senão o microfone tocaria no alto-falante).
+      this.contexto.createMediaStreamSource(fluxo).connect(this.analisador);
+    } catch {
+      this.analisador = null;
+      this.amostras = null;
     }
   }
 
@@ -161,5 +265,9 @@ export class Gravador {
     }
     this.gravador = null;
     this.pedacos = [];
+    this.analisador = null;
+    this.amostras = null;
+    void this.contexto?.close().catch(() => {});
+    this.contexto = null;
   }
 }
