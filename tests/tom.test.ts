@@ -99,7 +99,7 @@ afterEach(() => {
 describe("TomSustentado", () => {
   it("tocar inicia um oscilador na frequência pedida, e parar o solta", async () => {
     const tom = new TomSustentado();
-    const p = tom.tocar(440, 0.6);
+    const p = tom.tocar(440);
     ctx().terminarResume();
     await p;
     expect(iniciados()).toBe(1);
@@ -112,7 +112,7 @@ describe("TomSustentado", () => {
 
   it("parar() durante a espera do áudio: o tom NÃO começa depois (corrida)", async () => {
     const tom = new TomSustentado();
-    const p = tom.tocar(440, 0.6); // o resume() ainda não terminou
+    const p = tom.tocar(440); // o resume() ainda não terminou
     tom.parar(); // a pessoa apertou de novo, ou saiu da aba
     ctx().terminarResume();
     await p;
@@ -122,7 +122,7 @@ describe("TomSustentado", () => {
 
   it("fechar() durante a espera do áudio: nada começa no contexto que vai ser fechado (corrida)", async () => {
     const tom = new TomSustentado();
-    const p = tom.tocar(440, 0.6);
+    const p = tom.tocar(440);
     const antigo = ctx();
     tom.fechar();
     antigo.terminarResume();
@@ -135,8 +135,8 @@ describe("TomSustentado", () => {
 
   it("dois pedidos seguidos: só o último toca (o primeiro, ainda esperando o áudio, fica sem efeito)", async () => {
     const tom = new TomSustentado();
-    const primeiro = tom.tocar(440, 0.6);
-    const segundo = tom.tocar(311, 0.6);
+    const primeiro = tom.tocar(440);
+    const segundo = tom.tocar(311);
     ctx().terminarResume();
     await Promise.all([primeiro, segundo]);
     expect(iniciados()).toBe(1);
@@ -145,33 +145,16 @@ describe("TomSustentado", () => {
 
   it("depois de fechar, tocar de novo cria outro contexto", async () => {
     const tom = new TomSustentado();
-    let p = tom.tocar(440, 0.6);
+    let p = tom.tocar(440);
     ctx().terminarResume();
     await p;
     tom.fechar();
     vi.advanceTimersByTime(1000);
-    p = tom.tocar(220, 0.6);
+    p = tom.tocar(220);
     expect(ContextoFalso.criados).toHaveLength(2);
     ctx().terminarResume();
     await p;
     expect(tom.tocando).toBe(true);
     expect(ctx().osciladores[0].frequency.value).toBe(220);
-  });
-
-  it("mudar o volume cancela o que estava agendado (a entrada da nota) antes de ir ao novo valor", async () => {
-    const tom = new TomSustentado();
-    const p = tom.tocar(440, 0.6);
-    ctx().terminarResume();
-    await p;
-    const ganho = ctx().ganhos[0].gain;
-    ganho.chamadas.length = 0;
-    tom.volume(0.2);
-    // sem o cancelamento, a rampa de entrada (que termina no volume antigo) sobrescreveria a mudança feita durante ela
-    expect(ganho.chamadas[0]).toBe("cancela");
-    expect(ganho.chamadas.at(-1)).toBe(`alvo:${0.2 * 0.5}`);
-  });
-
-  it("mudar o volume sem nada tocando não quebra", () => {
-    expect(() => new TomSustentado().volume(0.3)).not.toThrow();
   });
 });

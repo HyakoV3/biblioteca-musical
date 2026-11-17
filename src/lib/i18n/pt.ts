@@ -162,7 +162,6 @@ export const pt = {
   "afinador.tocar_nota": "Tocar {nota}",
   "afinador.tocando": "Tocando {nota}, {hz} hertz",
   "afinador.aviso_grave": "Abaixo da oitava 3, o alto-falante do celular quase não reproduz o som. Use fone ou escolha uma oitava mais alta.",
-  "afinador.volume": "Volume",
   "hino.aba_letra": "Letra",
   "hino.aba_ouvir": "Ouvir",
   "hino.aba_partitura": "Partitura",

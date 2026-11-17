@@ -162,7 +162,6 @@ export const es: Dicionario = {
   "afinador.tocar_nota": "Tocar {nota}",
   "afinador.tocando": "Sonando {nota}, {hz} hercios",
   "afinador.aviso_grave": "Por debajo de la octava 3, el altavoz del móvil casi no reproduce el sonido. Usa auriculares o elige una octava más alta.",
-  "afinador.volume": "Volumen",
   "hino.aba_letra": "Letra",
   "hino.aba_ouvir": "Escuchar",
   "hino.aba_partitura": "Partitura",
