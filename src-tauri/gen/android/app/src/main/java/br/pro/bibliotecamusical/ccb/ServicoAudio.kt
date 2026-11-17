@@ -32,6 +32,15 @@ class ServicoAudio : Service() {
         /** Avisa o JavaScript que a pessoa tocou em "Parar" na notificação (definido pela ponte; nulo com o app fechado). */
         @Volatile
         var aoParar: (() -> Unit)? = null
+
+        /**
+         * `startForegroundService` obriga o serviço a chamar `startForeground` em poucos segundos; se a parada chegasse antes (tocar e pausar logo em
+         * seguida), o serviço seria destruído sem tê-lo chamado e o Android derrubaria o app. Então, enquanto o serviço ainda não chegou lá
+         * (`aguardandoPrimeiroPlano`), a ponte não o para: só marca `paradaPendente`, e o serviço se encerra sozinho DEPOIS de chamar `startForeground`.
+         * Tudo isso roda na thread principal (a ponte passa para ela e `onStartCommand` já roda nela), então não precisa de trava.
+         */
+        var aguardandoPrimeiroPlano = false
+        var paradaPendente = false
     }
 
     private var wakeLock: PowerManager.WakeLock? = null
@@ -45,12 +54,29 @@ class ServicoAudio : Service() {
             return START_NOT_STICKY
         }
         val titulo = intent?.getStringExtra(EXTRA_TITULO)?.takeIf { it.isNotBlank() } ?: getString(R.string.app_name)
-        criarCanal()
-        val notificacao = montarNotificacao(titulo)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(ID_NOTIFICACAO, notificacao, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
-        } else {
-            startForeground(ID_NOTIFICACAO, notificacao)
+        try {
+            criarCanal()
+            val notificacao = montarNotificacao(titulo)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(ID_NOTIFICACAO, notificacao, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+            } else {
+                startForeground(ID_NOTIFICACAO, notificacao)
+            }
+        } catch (e: Exception) {
+            // O Android recusou (ForegroundServiceStartNotAllowedException no 12+, SecurityException sem a permissão do tipo de mídia, restrição
+            // do fabricante): o hino segue tocando como antes, só sem a proteção, e o app não cai.
+            android.util.Log.w("bmccb", "startForeground recusado; o hino segue sem o serviço", e)
+            aguardandoPrimeiroPlano = false
+            paradaPendente = false
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        aguardandoPrimeiroPlano = false
+        if (paradaPendente) {
+            // A pessoa já tinha pausado ou parado enquanto o serviço subia: agora que ele chamou `startForeground`, pode sair sem derrubar o app.
+            paradaPendente = false
+            encerrar()
+            return START_NOT_STICKY
         }
         segurarCpu()
         // Se o sistema matar o processo, o hino já se perdeu: não faz sentido ressuscitar o serviço sem som.
