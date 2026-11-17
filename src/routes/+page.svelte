@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { tick } from "svelte";
+  import Abas from "$lib/Abas.svelte";
+  import Afinador from "$lib/Afinador.svelte";
   import Aviso from "$lib/Aviso.svelte";
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
@@ -7,8 +10,22 @@
   import { traduzirErro } from "$lib/erros";
   import { i18n } from "$lib/i18n/index.svelte";
   import { casaComNumero, zerosAEsquerda } from "$lib/numero";
+  import { inicio, type AbaInicio } from "$lib/inicio.svelte";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
+
+  // As abas da tela inicial (I-28): a lista de hinos e as ferramentas. A rolagem é da página (não de um contêiner): ao trocar de aba, ela guarda a
+  // posição da que sai e restaura a da que entra, senão a aba curta cortaria a rolagem da lista longa.
+  const ABAS: AbaInicio[] = ["hinos", "afinador"];
+  const ROTULOS = { hinos: "inicio.aba_hinos", afinador: "inicio.aba_afinador" } as const;
+  async function trocarAba(id: string) {
+    const nova = id as AbaInicio;
+    if (nova === inicio.aba) return;
+    inicio.rolagem[inicio.aba] = window.scrollY;
+    inicio.aba = nova;
+    await tick();
+    window.scrollTo(0, inicio.rolagem[nova]);
+  }
 
   // Busca sem diferenciar maiúsculas/minúsculas nem acentos.
   const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
@@ -34,6 +51,9 @@
 </Barra>
 
 <main class="coluna conteudo">
+  <!-- Os dois painéis ficam montados (só um visível): a busca e a rolagem da lista não se perdem ao trocar de aba. A aba Afinador não depende
+       do hinário carregado. -->
+  <div role="tabpanel" id="painel-hinos" aria-labelledby="aba-hinos" hidden={inicio.aba !== "hinos"}>
   {#if biblioteca.erro}
     <Aviso tipo="erro">{t("erro.carregar", { erro: traduzirErro(biblioteca.erro, t) })}</Aviso>
     <button class="botao" onclick={() => biblioteca.carregar()}>{t("erro.tentar")}</button>
@@ -88,7 +108,19 @@
       {/if}
     </p>
   {/if}
+  </div>
+  <div role="tabpanel" id="painel-afinador" aria-labelledby="aba-afinador" hidden={inicio.aba !== "afinador"}>
+    <Afinador ativa={inicio.aba === "afinador"} />
+  </div>
 </main>
+
+<!-- As abas ficam embaixo (ao alcance do polegar); com o celular deitado, numa barra lateral à esquerda. -->
+<Abas
+  abas={ABAS.map((id) => ({ id, rotulo: t(ROTULOS[id]) }))}
+  selecionada={inicio.aba}
+  aoSelecionar={trocarAba}
+  rotulo={t("inicio.abas")}
+/>
 
 <style>
   .busca { position: relative; margin-bottom: 0.8rem; }

@@ -148,3 +148,32 @@ export function salvarZoomPartitura(passo: number) {
     /* sem armazenamento: vale só nesta sessão */
   }
 }
+
+/** O afinador (I-13): o volume do tom de referência, de 0 a 1, lembrado no aparelho. */
+export type PrefsAfinador = { volume: number };
+
+const CHAVE_AFINADOR = "prefs.afinador";
+
+export const afinadorPadrao = (): PrefsAfinador => ({ volume: 0.6 });
+
+export function lerAfinador(): PrefsAfinador {
+  const p = afinadorPadrao();
+  try {
+    const bruto = localStorage.getItem(CHAVE_AFINADOR);
+    const o = bruto ? JSON.parse(bruto) : null;
+    if (o && typeof o === "object" && !Array.isArray(o) && typeof o.volume === "number" && Number.isFinite(o.volume)) {
+      p.volume = Math.min(1, Math.max(0, o.volume));
+    }
+  } catch {
+    /* sem armazenamento ou JSON inválido: vale o padrão */
+  }
+  return p;
+}
+
+export function salvarAfinador(p: PrefsAfinador) {
+  try {
+    localStorage.setItem(CHAVE_AFINADOR, JSON.stringify({ volume: p.volume }));
+  } catch {
+    /* sem armazenamento: vale só nesta sessão */
+  }
+}
