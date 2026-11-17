@@ -56,3 +56,10 @@ describe("motivo do erro", () => {
     expect(motivoDoErro({ name: "NotAllowedError" })).toBe("negada");
   });
 });
+
+describe("duração do WebM gravado ao vivo", () => {
+  it("o bitrate é compacto, de voz", async () => {
+    const { BITS_POR_SEGUNDO } = await import("../src/lib/gravador");
+    expect(BITS_POR_SEGUNDO).toBe(64000);
+  });
+});

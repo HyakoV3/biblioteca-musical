@@ -46,6 +46,27 @@ export function motivoDoErro(e: unknown): MotivoDoErro {
   return "falhou";
 }
 
+/** 64 kbps: bom para voz e instrumento e compacto (o padrão do navegador gravava a cerca de 135 kbps, o dobro, sem ganho que se ouça). */
+export const BITS_POR_SEGUNDO = 64000;
+
+/**
+ * O WebM gravado ao vivo não traz a duração: o player acha que é infinita e a barra de progresso fica errada. O remédio conhecido do Chromium é
+ * pular para um ponto absurdo, o que o obriga a ler o arquivo e descobrir o fim, e voltar ao começo. Devolve a função que desfaz o ouvinte.
+ */
+export function corrigirDuracao(audio: HTMLAudioElement): () => void {
+  const aoCarregar = () => {
+    if (audio.duration !== Infinity) return;
+    const volta = () => {
+      audio.removeEventListener("timeupdate", volta);
+      audio.currentTime = 0;
+    };
+    audio.addEventListener("timeupdate", volta);
+    audio.currentTime = 1e101;
+  };
+  audio.addEventListener("loadedmetadata", aoCarregar);
+  return () => audio.removeEventListener("loadedmetadata", aoCarregar);
+}
+
 export type Gravacao = { url: string; tipo: string; bytes: number; segundos: number };
 
 /**
@@ -73,7 +94,9 @@ export class Gravador {
     });
     try {
       const preferido = escolherFormato((t) => MediaRecorder.isTypeSupported(t));
-      this.gravador = preferido ? new MediaRecorder(this.fluxo, { mimeType: preferido }) : new MediaRecorder(this.fluxo);
+      this.gravador = preferido
+        ? new MediaRecorder(this.fluxo, { mimeType: preferido, audioBitsPerSecond: BITS_POR_SEGUNDO })
+        : new MediaRecorder(this.fluxo, { audioBitsPerSecond: BITS_POR_SEGUNDO });
       this.tipo = this.gravador.mimeType || preferido || "";
       this.pedacos = [];
       this.gravador.ondataavailable = (e) => {

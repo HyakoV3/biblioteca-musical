@@ -2,7 +2,7 @@
   import { onDestroy } from "svelte";
   import Aviso from "./Aviso.svelte";
   import Icone from "./Icone.svelte";
-  import { Gravador, formatarTamanho, formatarTempo, motivoDoErro, nomeDoFormato, type Gravacao, type MotivoDoErro } from "./gravador";
+  import { Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nomeDoFormato, type Gravacao, type MotivoDoErro } from "./gravador";
   import { i18n } from "./i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
 
@@ -29,6 +29,12 @@
     indisponivel: "gravador.erro_indisponivel",
     falhou: "gravador.erro_falhou",
   };
+
+  /** Ação do <audio>: corrige a duração de um WebM sem ela (ver `corrigirDuracao`). */
+  function duracaoReal(audio: HTMLAudioElement) {
+    const desfazer = corrigirDuracao(audio);
+    return { destroy: desfazer };
+  }
 
   function pararRelogio() {
     if (relogio !== null) clearInterval(relogio);
@@ -129,7 +135,7 @@
   {#if gravacao}
     <section class="resultado" aria-labelledby="titulo-gravacao">
       <h2 id="titulo-gravacao">{t("gravador.sua_gravacao")}</h2>
-      <audio id="ouvir-gravacao" controls src={gravacao.url}></audio>
+      <audio id="ouvir-gravacao" controls src={gravacao.url} use:duracaoReal></audio>
       <p class="meta" id="info-gravacao">
         {formatarTempo(gravacao.segundos)} · {formatarTamanho(gravacao.bytes, i18n.idioma)} · {nomeDoFormato(gravacao.tipo)}
       </p>

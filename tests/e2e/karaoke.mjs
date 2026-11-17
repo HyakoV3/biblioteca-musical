@@ -870,8 +870,8 @@ async function principal() {
   await dormir(900);
   const g2 = await estadoGravador();
   confere(g2.pressionado === "false" && g2.audio === true && g2.ativos === 0 && /^0:0[1-3] · .+ · (webm|ogg|mp4)/.test(g2.info ?? ""), `Gravador: ao parar entrega a gravação (tempo, tamanho e formato) e devolve o microfone: ${JSON.stringify(g2)}`);
-  const tocavel = await av(`new Promise((ok) => { const a = document.getElementById('ouvir-gravacao'); const fim = setTimeout(() => ok(null), 4000); a.addEventListener('loadedmetadata', () => { clearTimeout(fim); ok({ duracao: a.duration, erro: !!a.error }); }, { once: true }); a.load(); })`);
-  confere(tocavel && tocavel.erro === false, `Gravador: o arquivo gravado carrega no player de áudio: ${JSON.stringify(tocavel)}`);
+  const tocavel = await av(`new Promise((ok) => { const a = document.getElementById('ouvir-gravacao'); const fim = setTimeout(() => ok(null), 4000); a.addEventListener('durationchange', () => { if (Number.isFinite(a.duration)) { clearTimeout(fim); ok({ duracao: a.duration, erro: !!a.error }); } }); a.load(); })`);
+  confere(tocavel && tocavel.erro === false && Number.isFinite(tocavel.duracao) && tocavel.duracao > 1 && tocavel.duracao < 4, `Gravador: o arquivo gravado carrega no player, com a duração certa (~2 s, e não infinita): ${JSON.stringify(tocavel)}`);
   await av(`document.getElementById('descartar').click(); 1`);
   await dormir(300);
   const g3 = await estadoGravador();
