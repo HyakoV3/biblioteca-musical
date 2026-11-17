@@ -176,7 +176,7 @@ O que se aprendeu, e que a ferramenta já faz:
 
 ## I-12 — Karaokê na partitura (fase B)
 
-- **Status:** **escolhida como a próxima frente** pelo responsável (2026-11-16); **passo 0 (medição) feito**; **etapa 1 (os dados) feita**: o conversor emite `compassos` e o app os lê (`docs/FORMATO.md`); **etapa 2 (a interface) feita**: o compasso que toca fica destacado na aba Partitura, com rolagem e o mesmo botão do karaokê da letra. **Falta o responsável testar no celular** (APK 025). O **cursor por nota** continua para depois (a **fase A**, o karaokê na letra, está feita: ver [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md))
+- **Status:** **escolhida como a próxima frente** pelo responsável (2026-11-16); **passo 0 (medição) feito**; **etapa 1 (os dados) feita**: o conversor emite `compassos` e o app os lê (`docs/FORMATO.md`); **etapa 2 (a interface) feita e testada no celular pelo responsável (APK 025/026: "funcionou")**: o compasso que toca fica destacado na aba Partitura, com rolagem e o mesmo botão do karaokê da letra. **Ele esperava a NOTA, e não o compasso**: o cursor por nota virou a **I-26** (a **fase A**, o karaokê na letra, está feita: ver [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md))
 - **Origem:** sugestão do responsável: um karaokê "tanto na letra das músicas como nas partituras".
 - **Prioridade:** depende da I-08 (aba Partitura)
 
@@ -499,6 +499,11 @@ celular, ela cai para 0,8 a 1,2 dB). **Mas o responsável testou no celular e n�
 - **Método:** a medição acertou o número e errou o alvo. A próxima tentativa **não deve começar por uma correção medida, e sim por prévias A/B renderizadas** para o responsável escolher de ouvido, como foi feito com os timbres
   (`tools/previas-timbres.mjs`): a cadeia atual contra variantes (sem o compressor, com margem, com o grave reforçado para a caixinha), no celular e no fone. Só depois do que ele escolher se implementa.
 
+### Esclarecimento do responsável (2026-11-17): é um equalizador de CANAIS, não de um único áudio
+O responsável pediu para registrar que **o nivelador não fez efeito** e que **o que é necessário é um equalizador de canais de som** (o balanço entre as vozes, a mistura de soprano, contralto, tenor e baixo, como numa mesa de
+mixagem), **e não equalizar um único áudio** (o nível das notas dentro de **um** instrumento, que foi o que a etapa A fez). Isso muda o alvo da I-23: o que ficou sem tentar, e agora é o caminho, é a **mistura entre os canais**
+(o balanço entre as 4 vozes, e a cadeia de saída que as soma: o compressor), e não o nível de cada nota de cada instrumento.
+
 ### Revisão (2026-11-16, subagente Opus 5)
 
 **Como foi feita.** Leitura crítica do rascunho contra o código, mais uma **medição offline do revisor** nas amostras locais (`sons-fonte/`, fora do Git): `ffmpeg` e as
@@ -780,6 +785,66 @@ Como o plugin de HTTP do Tauri trata cabeçalhos condicionais (ETag) no Android;
 - No máximo **uma consulta por dia**, e nenhuma se a verificação estiver desligada.
 - Um **APK antigo** não oferece um pacote que não entende.
 - O servidor de teste, com um manifesto de mentira, cobre isso num teste automatizado (o app não depende do servidor real para o CI passar).
+
+## I-26 — Karaokê na partitura por NOTA (cursor por nota)
+
+- **Status:** anotada, **rascunho** (a revisar com o subagente Opus antes de implementar); amplia a I-12 (fase B), que hoje destaca o **compasso**
+- **Origem:** pedido do responsável, 2026-11-17, ao testar o APK 025/026: "tu tá marcando no karaokê apenas o compasso né? Achei que tu marcaria a nota."
+- **Prioridade:** a definir (o destaque do compasso funciona; a nota é o que ele esperava)
+
+### O problema
+O destaque de hoje (I-12, etapa 2) pinta o **compasso inteiro**. Quem acompanha cantando ou tocando tem várias notas por compasso, e o compasso aceso não diz **qual nota soa agora**.
+
+### O que se deseja
+A(s) nota(s) que soa(m) **agora** ficam destacadas na partitura, **no instante em que soam**, e o destaque anda **nota a nota**.
+
+### O que já se sabe (medido em 2026-11-17, nos 5 hinos de amostra)
+- O `timemap` do Verovio traz, para cada instante, os ids das notas que **começam** (`on`) e que **terminam** (`off`): é a matéria-prima.
+- **A dificuldade das repetições, a mesma do compasso:** o `timemap` é expandido, e nas repetições traz ids de notas **copiadas** que não existem no SVG (hino 457: **669** notas distintas no `timemap` contra **459** desenhadas).
+  **A função `getExpansionIdsForElement` do Verovio resolve as 669 para ids reais do desenho (100%), e nenhuma nota do desenho fica sem evento.** Nos outros 4 hinos (sem repetição) os ids do `timemap` já são os do SVG.
+  Isso torna o destaque por nota **viável e robusto**.
+- **Os ids mudam a cada desenho:** o retrato e a paisagem **não têm nenhum id em comum** (medido na I-12), então o mapa de notas é **por versão** (2 por hino).
+
+### Perguntas em aberto
+1. **Todas as vozes ou só a melodia (soprano)?** Destacar as 4 vozes acende ~8 cabeças de nota juntas (2 pautas); só a melodia é mais limpa; talvez uma cor por voz.
+2. **Como destacar a nota:** trocar a cor da cabeça e da haste, um halo atrás, ou os dois? **Mantém o destaque do compasso** (mais fraco, como contexto) ou o troca por completo?
+3. **Notas ligadas** (ligadura de prolongamento): a segunda nota acende? E as pausas, e as notas de enfeite?
+4. Basta o botão do karaokê, ou **uma opção em Ajustes** (compasso, nota, desligado)?
+
+### Impacto técnico (hipóteses, a verificar)
+- **Dados:** o gerador (`tools/gerar-partituras.py`) emitiria, por versão, um `hino-N[-paisagem].notas.json`: para cada nota do desenho, `[índice do compasso escrito, início e fim dentro do compasso, em batidas]`, com o id do SVG. A posição dentro do compasso vem do `timemap`
+  (relativa ao início do compasso daquela passada), e o instante no fluxo vem da lista `compassos` que o hinário **já traz** (início do compasso + posição), então **não depende do deslocamento de cada fluxo** (o final do 457 começa em 48).
+- **Pacote e Rust:** o zip passa a aceitar o arquivo novo (nomes exatos, limites, validação) e `ler_partitura` devolve o mapa junto do SVG; o prefixo `bmccb-p-` que a limpeza põe nos ids do SVG tem de valer também no mapa.
+- **Interface:** como o destaque do compasso: lê `reproducao.ponto()` e marca os elementos pelo id, só quando muda.
+- **Pacote novo (004) e APK novo.** O pacote 003 não tem o mapa: as partituras instaladas precisam ser **baixadas de novo**.
+- **Tamanho:** os `timemap` brutos têm de 7 a 26 KB por hino e versão; o mapa compacto, bem menos.
+
+### Critérios de aceitação (propostos)
+- A nota destacada é a que soa, em cada instante, nos 5 hinos de amostra, **inclusive nas repetições e no final do 457**.
+- Pausado, congela; ao arrastar o slider, acompanha; fora da aba, some.
+- Sem o mapa de notas (pacote antigo), o app **cai no destaque por compasso**.
+- Legível em todos os temas (contraste).
+
+---
+
+## I-27 — Mostrar na tela de versão qual APK está instalado e em que estado
+
+- **Status:** anotada
+- **Origem:** ideia do assistente, 2026-11-17, depois do incidente do APK 025 (a aba Partitura e o botão de baixar sumiram no aparelho; voltou ao limpar os dados; a causa não foi achada)
+- **Prioridade:** a definir (pequena)
+
+### O problema
+O número da versão (`0.3.0`) é o mesmo em todos os zips; só o **commit** os distingue, e o **número do zip** (025, 026) não aparece em lugar nenhum. Quando algo some, não há como saber **qual APK** está instalado nem **em que estado** (qual hinário, quantas partituras) o app está.
+
+### O que se deseja
+Na linha de versão, algo como **"0.3.0 · teste 026 (43449fe)"**, e uma linha de diagnóstico, por exemplo no card "Sobre": **"Hinário: amostra-teste · Partituras instaladas: 5"**.
+
+### Perguntas em aberto
+1. Só em APK de teste (o build recebe o número por uma variável) ou sempre?
+2. O `id` do hinário e a contagem de partituras podem aparecer? (Não são dados pessoais.)
+
+### Impacto técnico (hipóteses)
+Uma variável de ambiente no build (por exemplo `BMCCB_TESTE=026`) lida pelo `vite.config.js`; a linha em Ajustes; o texto nos 3 idiomas; um teste.
 
 ---
 
