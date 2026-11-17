@@ -4,7 +4,7 @@
   import Cartao from "./Cartao.svelte";
   import Icone from "./Icone.svelte";
   import { LA_PADRAO, OITAVA_MAX, OITAVA_MIN, OITAVA_PADRAO, frequenciaDe, limitarOitava, midiDe, nomeDaNota, nomeDaNotaPorExtenso } from "./afinador";
-  import { Contagem, LIMITES, type Limite } from "./contagem";
+  import { Contagem, LIMITES, fracaoFeita, type Limite } from "./contagem";
   import { i18n } from "./i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
   import { TomSustentado } from "./tom";
@@ -141,6 +141,9 @@
   <!-- Um só trecho de texto (sem os espaços que o Svelte tira do começo de um <span>): "Parar · faltam 14 s". A contagem fica escondida do leitor de tela
        (o nome do botão segue sendo "Parar" e a contagem não é lida segundo a segundo); só o fim é avisado, no texto de status. -->
   <span>{t("audio.parar")}{#if restante !== null}<span aria-hidden="true">{` · ${t("afinador.faltam", { n: restante })}`}</span>{/if}</span>
+  <!-- A barra de progresso: um fio na borda de baixo do botão que cresce da esquerda para a direita, em passos de 1 s (só `width`, sem transição: assim
+       já respeita "reduzir movimento"). Decorativa: o leitor de tela não a lê. -->
+  {#if restante !== null}<span class="barra" aria-hidden="true" style:width={`${fracaoFeita(limite, restante) * 100}%`}></span>{/if}
 {/snippet}
 
 <div class="afinador">
@@ -218,7 +221,9 @@
 <style>
   .afinador { display: grid; gap: 1rem; }
   .afinador > p { margin: 0; }
-  .grande { min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
+  .grande { position: relative; overflow: hidden; min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
+  /* O fio de progresso do temporizador, na borda de baixo do botão (a cor do texto do botão, um pouco apagada). */
+  .barra { position: absolute; left: 0; bottom: 0; height: 0.3125rem; background: var(--acento-texto); opacity: 0.75; }
 
   /* As 12 notas e as 4 opções de tempo: botões de rádio (teclado e leitor de tela de graça); a escolhida leva "✓", negrito e borda de acento (não só cor). */
   .opcoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--minimo, 4.5rem), 1fr)); gap: 0.4rem; margin: 0; padding: 0; border: 0; }

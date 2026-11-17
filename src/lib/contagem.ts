@@ -12,6 +12,12 @@ const PASSO_MS = 250;
 /** Segundos inteiros que faltam até `fimMs`, arredondando para CIMA (a tela mostra "1" até zerar, e nunca "0" com o tom ainda soando). Nunca negativo. */
 export const segundosRestantes = (fimMs: number, agoraMs: number): number => Math.max(0, Math.ceil((fimMs - agoraMs) / 1000));
 
+/** Quanto da contagem já passou, de 0 a 1 (para a barra de progresso). Sem contagem (`restante` nulo) ou sem limite, é 0. */
+export function fracaoFeita(limite: number, restante: number | null): number {
+  if (restante === null || !Number.isFinite(limite) || limite <= 0) return 0;
+  return Math.min(1, Math.max(0, (limite - restante) / limite));
+}
+
 export class Contagem {
   private relogio: ReturnType<typeof setInterval> | null = null;
 

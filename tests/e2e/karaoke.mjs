@@ -538,6 +538,8 @@ async function principal() {
   // Zoom: 125% passa da largura da tela e rola de lado; o passo fica salvo; "restaurar" volta a 100%.
   const botoesZoom = await av(`[...document.querySelectorAll('#painel-partitura .controle-tamanho button')].map((b) => b.getAttribute('aria-label'))`);
   confere(botoesZoom.length === 3, `a barra de zoom tem 3 botões: ${JSON.stringify(botoesZoom)}`);
+  const ordemTamanho = await av(`[...document.querySelectorAll('#painel-letra .controle-tamanho button, #painel-partitura .controle-tamanho button')].map((b) => b.closest('[role="tabpanel"]').id.replace('painel-', '') + ':' + b.dataset.acao)`);
+  confere(JSON.stringify(ordemTamanho) === '["letra:mais","letra:padrao","letra:menos","partitura:mais","partitura:padrao","partitura:menos"]', `o controle de tamanho é "+ ⟲ −" (mais, restaurar, menos) na letra e na partitura: ${JSON.stringify(ordemTamanho)}`);
   await av("document.querySelector('#painel-partitura .controle-tamanho [data-acao=mais]').click(); 1");
   await dormir(200);
   const z1 = await av(`(() => {
@@ -917,7 +919,8 @@ async function principal() {
   await clicarGrande(0);
   await dormir(11500);
   const semLimite = { soando: await soando(), faltam: await faltam() };
-  confere(semLimite.soando === true && semLimite.faltam === null, `Temporizador em "até parar": depois de 11 s o tom segue soando e não há contagem: ${JSON.stringify(semLimite)}`);
+  semLimite.barra = await av(`!!document.querySelector('#painel-afinador .barra')`);
+  confere(semLimite.soando === true && semLimite.faltam === null && semLimite.barra === false, `Temporizador em "até parar": depois de 11 s o tom segue soando, sem contagem e sem barra de progresso: ${JSON.stringify(semLimite)}`);
   await clicarGrande(0); // para
   await dormir(300);
 
@@ -930,6 +933,9 @@ async function principal() {
   confere(tmp1.aberto === true && /10 s/.test(tmp1.resumo), `Temporizador: escolher 10 s aparece no resumo do cartão: ${JSON.stringify(tmp1)}`);
   await clicarGrande(0);
   await dormir(1500);
+  const barra = () => av(`(() => { const b = document.querySelector('#painel-afinador .grande[aria-pressed="true"]'); const r = b?.querySelector('.barra'); return r ? r.getBoundingClientRect().width / b.getBoundingClientRect().width : null; })()`);
+  const b1 = await barra();
+  confere(b1 !== null && b1 >= 0.05 && b1 <= 0.25, `Temporizador de 10 s: a barra de progresso começa pequena (~10% aos 1,5 s): ${b1 === null ? "sem barra" : Math.round(b1 * 100) + "%"}`);
   const f1 = await faltam();
   confere(f1 !== null && f1 >= 8 && f1 <= 10 && (await soando()), `Temporizador de 10 s: o botão mostra o que falta (8 a 10 s após 1,5 s) e o tom soa: faltam ${f1}`);
   const rotuloAcessivel = await av(`document.querySelector('#painel-afinador .grande[aria-pressed="true"]').textContent.replace(/\\s+/g, ' ').trim()`);
@@ -937,6 +943,8 @@ async function principal() {
 
   // Trocar de nota recomeça a contagem: aos ~7 s faltam ~3; ao tocar a outra nota, voltam a faltar ~10.
   await dormir(5500);
+  const b2 = await barra();
+  confere(b2 !== null && b2 >= 0.5 && b2 <= 0.85, `Temporizador de 10 s: aos ~7 s a barra de progresso está em ~70%: ${b2 === null ? "sem barra" : Math.round(b2 * 100) + "%"}`);
   const f2 = await faltam();
   confere(f2 !== null && f2 >= 2 && f2 <= 4, `Temporizador de 10 s: aos ~7 s faltam ~3: faltam ${f2}`);
   await av(`document.querySelector('#painel-afinador details summary').click(); 1`); // abre "Outra nota"

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Contagem, LIMITES, segundosRestantes } from "../src/lib/contagem";
+import { Contagem, LIMITES, fracaoFeita, segundosRestantes } from "../src/lib/contagem";
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -28,6 +28,24 @@ describe("segundosRestantes", () => {
     expect(segundosRestantes(10_000, 9_001)).toBe(1); // 0,999 s mostra 1, não 0
     expect(segundosRestantes(10_000, 10_000)).toBe(0);
     expect(segundosRestantes(10_000, 12_000)).toBe(0); // passou do fim
+  });
+});
+
+describe("fracaoFeita (a barra de progresso)", () => {
+  it("começa em 0, passa por 0,5 no meio e chega a 1 no fim", () => {
+    expect(fracaoFeita(10, 10)).toBe(0);
+    expect(fracaoFeita(10, 5)).toBe(0.5);
+    expect(fracaoFeita(20, 5)).toBe(0.75);
+    expect(fracaoFeita(10, 1)).toBeCloseTo(0.9, 9);
+    expect(fracaoFeita(10, 0)).toBe(1);
+  });
+
+  it("sem contagem ou sem limite não há barra (0), e valor fora da faixa não passa de 0 a 1", () => {
+    expect(fracaoFeita(10, null)).toBe(0);
+    expect(fracaoFeita(0, 5)).toBe(0); // "até parar"
+    expect(fracaoFeita(NaN, 5)).toBe(0);
+    expect(fracaoFeita(10, 15)).toBe(0); // sobra maior que o limite
+    expect(fracaoFeita(10, -3)).toBe(1);
   });
 });
 
