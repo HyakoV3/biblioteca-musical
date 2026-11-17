@@ -149,6 +149,30 @@ estrofe, a linha e a sílaba que está soando. O conversor `mscx2json` gera o ca
   estrutura malformada (tempo negativo, `de >= ate`, estrofe 0) é descartada **sem recusar o hino**.
 - Sem `sincronia`, o hino funciona como sempre e o botão "Karaokê" não aparece.
 
+### Compassos (destaque na partitura)
+
+Opcionalmente o hino ganha `compassos`: **em que instante cada compasso da partitura começa a tocar**, para a aba Partitura destacar o compasso
+que soa (I-12, fase B). O conversor `mscx2json` gera o campo sozinho.
+
+```json
+"compassos": {
+  "normal":     [ [0, 0], [4, 1], [8, 2] ],
+  "final":      [ [0, 0], [4, 1], [8, 3], [12, 4], [16, 5] ],
+  "introducao": [ [0, 0], [4, 1] ]
+}
+```
+
+- Cada item é `[inicio_em_batidas, indice_do_compasso]`. O **índice conta os compassos escritos** da partitura, a partir de 0, na ordem em que aparecem,
+  que é também a **ordem dos `g.measure` do SVG** da partitura (conferido nos hinos de amostra, comparando com os ids que o Verovio atribui). Um compasso
+  que se repete na execução (as repetições e as casas de volta) aparece nas listas com o mesmo índice, em instantes diferentes.
+- O **tempo está na régua do próprio fluxo**, a mesma das notas (`vozes`, `final.vozes`, `introducao.vozes`): `normal` vale para as vezes normais, `final`
+  (só em hino com final) para a última vez, e `introducao` para a introdução (os compassos que começam antes do marcador `*`; o que contém o `*` entra).
+  O conversor usa a mesma conta que já monta cada passada, então o instante de um compasso é exatamente onde as notas dele caem.
+- **Por que não o `timemap` do Verovio:** ele expande as repetições com ids de compasso que **não existem no SVG** (no hino 457, 56 compassos únicos contra
+  38 desenhados). O conversor, que lê o `.mscx` e conhece as repetições de cada passada, é quem sabe qual compasso escrito toca em cada instante.
+- Cada lista tem de ter ao menos um item, com tempos finitos, não negativos e **estritamente crescentes**. Se estiver malformada, é **descartada na leitura,
+  sem recusar o hino**. Sem `compassos`, o hino e a partitura funcionam como sempre, só sem o destaque.
+
 `partitura` é opcional e vale `"partituras/hino-N.svg"` quando o pacote traz a partitura do hino. Ele só **informa**: o app lê a
 partitura pelo **número do hino**, nunca pelo caminho que o JSON traz (assim um JSON malicioso não aponta para um arquivo
 qualquer). Todos os campos além de `numero` e `titulo` são opcionais.
