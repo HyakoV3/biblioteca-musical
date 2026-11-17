@@ -4,7 +4,6 @@
 // Para mudar instrumento, andamento ou tom no meio do hino, `tocar` reagenda tudo a partir de uma posição em batidas.
 import { Soundfont } from "smplr";
 import { INSTRUMENTOS, PADRAO, type InstrumentoId, type SinteticoId } from "./instrumentos";
-import { velocidadeDaNota } from "./niveis";
 import { REALISTAS, ehRealista, urlDoRealista, type RealistaId } from "./realista";
 import { armazenamentoDoSmplr } from "./sons/armazenamento";
 import { perfilDaNota } from "./timbres";
@@ -17,8 +16,6 @@ export type Opcoes = {
   transposicao: number; // semitons
   instrumentos: InstrumentoId[]; // um por voz
   volumes: number[]; // 0..1 por voz (0 = silenciada)
-  /** Nivela o volume de cada nota dos gravados (I-23, src/lib/niveis.ts). Padrão: ligado. */
-  nivelar?: boolean;
 };
 
 export const frequencia = (midi: number) => 440 * 2 ** ((midi - 69) / 12);
@@ -198,15 +195,11 @@ export class Sintetizador {
     vozes.forEach((voz, i) => {
       const real = reais[i];
       if (real) {
-        // Gravado: o smplr agenda cada nota (início e duração em segundos do relógio do AudioContext). `real` só existe quando o pedido é um
-        // gravado. A velocity leva a nota ao nível médio do instrumento (I-23); com `nivelar` desligado é a de sempre (90).
-        const gravado = opcoes.instrumentos[i] as RealistaId;
-        const nivelar = opcoes.nivelar ?? true;
+        // Gravado: o smplr agenda cada nota (início e duração em segundos do relógio do AudioContext).
         for (const [t, dur, midi] of notasAPartirDe(voz.notas, aPartirDe)) {
           const ini = inicio + t * seg;
           const duracao = Math.max(dur * seg, 0.05);
-          const soando = midi + opcoes.transposicao;
-          real.start({ note: soando, velocity: velocidadeDaNota(gravado, soando, nivelar), time: ini, duration: duracao });
+          real.start({ note: midi + opcoes.transposicao, velocity: 90, time: ini, duration: duracao });
           fim = Math.max(fim, ini + duracao - inicio);
         }
         this.reaisAtivos.push(real);
