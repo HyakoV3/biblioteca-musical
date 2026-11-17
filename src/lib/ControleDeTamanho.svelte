@@ -26,14 +26,14 @@
 </script>
 
 <div class="controle-tamanho" role="group" aria-label={rotulos.grupo}>
-  <button class="botao-barra" data-acao="menos" aria-label={rotulos.diminuir} title={rotulos.diminuir} disabled={!podeDiminuir} onclick={aoDiminuir}>
-    <Icone nome="menos" tamanho={24} />
+  <button class="botao-barra" data-acao="mais" aria-label={rotulos.aumentar} title={rotulos.aumentar} disabled={!podeAumentar} onclick={aoAumentar}>
+    <Icone nome="mais" tamanho={24} />
   </button>
   <button class="botao-barra" data-acao="padrao" aria-label={rotulos.restaurar} title={rotulos.restaurar} disabled={noPadrao} onclick={aoRestaurar}>
     <Icone nome="restaurar" tamanho={24} />
   </button>
-  <button class="botao-barra" data-acao="mais" aria-label={rotulos.aumentar} title={rotulos.aumentar} disabled={!podeAumentar} onclick={aoAumentar}>
-    <Icone nome="mais" tamanho={24} />
+  <button class="botao-barra" data-acao="menos" aria-label={rotulos.diminuir} title={rotulos.diminuir} disabled={!podeDiminuir} onclick={aoDiminuir}>
+    <Icone nome="menos" tamanho={24} />
   </button>
 </div>
 
