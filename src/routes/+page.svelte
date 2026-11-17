@@ -2,6 +2,7 @@
   import { tick } from "svelte";
   import Abas from "$lib/Abas.svelte";
   import Afinador from "$lib/Afinador.svelte";
+  import Gravador from "$lib/Gravador.svelte";
   import Aviso from "$lib/Aviso.svelte";
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
@@ -16,8 +17,8 @@
 
   // As abas da tela inicial (I-28): a lista de hinos e as ferramentas. A rolagem é da página (não de um contêiner): ao trocar de aba, ela guarda a
   // posição da que sai e restaura a da que entra, senão a aba curta cortaria a rolagem da lista longa.
-  const ABAS: AbaInicio[] = ["hinos", "afinador"];
-  const ROTULOS = { hinos: "inicio.aba_hinos", afinador: "inicio.aba_afinador" } as const;
+  const ABAS: AbaInicio[] = ["hinos", "afinador", "gravador"];
+  const ROTULOS = { hinos: "inicio.aba_hinos", afinador: "inicio.aba_afinador", gravador: "inicio.aba_gravador" } as const;
   async function trocarAba(id: string) {
     const nova = id as AbaInicio;
     if (nova === inicio.aba) return;
@@ -111,6 +112,9 @@
   </div>
   <div role="tabpanel" id="painel-afinador" aria-labelledby="aba-afinador" hidden={inicio.aba !== "afinador"}>
     <Afinador ativa={inicio.aba === "afinador"} />
+  </div>
+  <div role="tabpanel" id="painel-gravador" aria-labelledby="aba-gravador" hidden={inicio.aba !== "gravador"}>
+    <Gravador ativa={inicio.aba === "gravador"} />
   </div>
 </main>
 

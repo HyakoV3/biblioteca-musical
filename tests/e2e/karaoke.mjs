@@ -194,7 +194,7 @@ async function principal() {
   perfil = mkdtempSync(join(tmpdir(), "bmccb-e2e-"));
   const chrome = spawn(
     acharChrome(),
-    ["--headless=new", "--no-sandbox", "--disable-gpu", "--mute-audio", "--autoplay-policy=no-user-gesture-required",
+    ["--headless=new", "--no-sandbox", "--disable-gpu", "--mute-audio", "--autoplay-policy=no-user-gesture-required", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream",
       "--window-size=412,915", `--user-data-dir=${perfil}`, `--remote-debugging-port=${PORTA_CHROME}`, "about:blank"],
     { stdio: "ignore", detached: true },
   );
@@ -780,7 +780,7 @@ async function principal() {
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-afinador')`)); ) await dormir(250);
   await dormir(500);
   const abasInicio = await av(`({ abas: [...document.querySelectorAll('[role="tab"]')].map((a) => a.id), hinos: !document.getElementById('painel-hinos').hidden, afinador: !document.getElementById('painel-afinador').hidden })`);
-  confere(abasInicio.abas.join() === "aba-hinos,aba-afinador" && abasInicio.hinos && !abasInicio.afinador, `a tela inicial tem as abas Hinos e Afinador e abre em Hinos: ${JSON.stringify(abasInicio)}`);
+  confere(abasInicio.abas.join() === "aba-hinos,aba-afinador,aba-gravador" && abasInicio.hinos && !abasInicio.afinador, `a tela inicial tem as abas Hinos, Afinador e Gravador e abre em Hinos: ${JSON.stringify(abasInicio)}`);
 
   // A busca da lista sobrevive à troca de aba (os painéis ficam montados).
   await av(`(() => { const i = document.querySelector('#painel-hinos input[type="search"]'); i.value = '998'; i.dispatchEvent(new Event('input', { bubbles: true })); })()`);
@@ -853,6 +853,40 @@ async function principal() {
   confere(aposSair.tocando === false && aposSair.pressionado === "false" && aposSair.contexto === "closed", `sair da aba Afinador para o som e devolve o áudio (contexto fechado): ${JSON.stringify(aposSair)}`);
   const buscaFicou = await av(`document.querySelector('#painel-hinos input[type="search"]').value`);
   confere(buscaFicou === "998", `a busca da lista sobrevive à troca de aba: "${buscaFicou}"`);
+
+  // Gravador (I-03): grava o microfone (o do teste é falso, do Chrome), ouve de volta e descarta; sair da aba com a gravação em curso para e devolve o microfone.
+  await av(`document.getElementById('aba-gravador').click(); 1`);
+  await dormir(400);
+  const estadoGravador = () => av(`({ pressionado: document.getElementById('gravar').getAttribute('aria-pressed'), audio: !!document.getElementById('ouvir-gravacao'), info: document.getElementById('info-gravacao')?.textContent.replace(/\\s+/g, ' ').trim() ?? null, erro: !!document.querySelector('#painel-gravador .aviso.erro'), ativos: window.__microfones.filter((t) => t.readyState === 'live').length })`);
+  await av(`window.__microfones = []; const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = async (c) => { window.__pedido = c; const f = await pedir(c); f.getTracks().forEach((t) => window.__microfones.push(t)); return f; }; 1`);
+  const g0 = await estadoGravador();
+  confere(g0.pressionado === "false" && g0.audio === false && g0.erro === false, `Gravador: começa parado, sem gravação e sem erro: ${JSON.stringify(g0)}`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(2300);
+  const g1 = await estadoGravador();
+  const pedido = await av(`window.__pedido`);
+  confere(g1.pressionado === "true" && g1.ativos === 1 && pedido?.audio?.echoCancellation === false && pedido?.audio?.autoGainControl === false, `Gravador: ao gravar o microfone está ligado, sem os efeitos de voz: ${JSON.stringify({ g1, pedido })}`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(900);
+  const g2 = await estadoGravador();
+  confere(g2.pressionado === "false" && g2.audio === true && g2.ativos === 0 && /^0:0[1-3] · .+ · (webm|ogg|mp4)/.test(g2.info ?? ""), `Gravador: ao parar entrega a gravação (tempo, tamanho e formato) e devolve o microfone: ${JSON.stringify(g2)}`);
+  const tocavel = await av(`new Promise((ok) => { const a = document.getElementById('ouvir-gravacao'); const fim = setTimeout(() => ok(null), 4000); a.addEventListener('loadedmetadata', () => { clearTimeout(fim); ok({ duracao: a.duration, erro: !!a.error }); }, { once: true }); a.load(); })`);
+  confere(tocavel && tocavel.erro === false, `Gravador: o arquivo gravado carrega no player de áudio: ${JSON.stringify(tocavel)}`);
+  await av(`document.getElementById('descartar').click(); 1`);
+  await dormir(300);
+  const g3 = await estadoGravador();
+  confere(g3.audio === false, `Gravador: descartar apaga a gravação: ${JSON.stringify(g3)}`);
+  // Sair da aba com a gravação em curso: para, devolve o microfone e a gravação feita até ali fica.
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(1500);
+  await av(`document.getElementById('aba-hinos').click(); 1`);
+  await dormir(1200);
+  await av(`document.getElementById('aba-gravador').click(); 1`);
+  await dormir(400);
+  const g4 = await estadoGravador();
+  confere(g4.pressionado === "false" && g4.ativos === 0 && g4.audio === true, `Gravador: sair da aba com a gravação em curso a para, devolve o microfone e guarda o que foi gravado: ${JSON.stringify(g4)}`);
+  await av(`document.getElementById('descartar').click(); document.getElementById('aba-hinos').click(); 1`);
+  await dormir(300);
 
   // Um som de cada vez: dar o tom PARA o hino que estava tocando. Abre o hino, toca, volta à lista (client-side) e liga o Lá.
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
