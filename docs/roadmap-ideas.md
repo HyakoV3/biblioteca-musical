@@ -176,7 +176,7 @@ O que se aprendeu, e que a ferramenta já faz:
 
 ## I-12 — Karaokê na partitura (fase B)
 
-- **Status:** anotada (a **fase A**, o karaokê na letra, está feita: ver [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md))
+- **Status:** **escolhida como a próxima frente** pelo responsável (2026-11-16); **passo 0 (medição) feito**, implementação não começou (a **fase A**, o karaokê na letra, está feita: ver [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md))
 - **Origem:** sugestão do responsável: um karaokê "tanto na letra das músicas como nas partituras".
 - **Prioridade:** depende da I-08 (aba Partitura)
 
@@ -188,6 +188,20 @@ Um cursor ou destaque de compasso na **partitura** acompanhando a música, como 
    compasso: o conversor precisaria gerar também os tempos de cada compasso ou nota.)
 2. O histórico e as decisões da fase A (posição do botão, como a sílaba acende, latência da saída de áudio) estão em
    [`archive/ideias-implementadas.md`](archive/ideias-implementadas.md), seção I-12.
+
+### Passo 0: casar o tempo do app com o `timemap` do Verovio (2026-11-16, medido)
+Antes de construir, mediu-se nos 5 hinos de amostra se o tempo das notas que o app toca casa com o `timemap` que o Verovio gera (`tools/gerar-partituras.py` já o grava por hino e por versão).
+
+- **A escala é a mesma.** O `qstamp` do `timemap` conta semínimas; no app a colcheia vale 0,5 batida e a semínima 1. Não há conversão de unidade.
+- **O app tem até 3 fluxos de notas por hino:** a vez normal, a introdução e o final. Pareando cada nota do soprano com os eventos do `timemap` pela altura, **100% das notas de cada fluxo casam num único deslocamento constante** (`qstamp - t`): a vez normal e a introdução em **0**, e o **final do 457 em 48 batidas** (a duração da vez normal). Hinos 1, 276, 283, 398: normal 48/48, 25/25, 80/80, 138/138 e introdução 18/18, 11/11, 20/20, 12/12 em 0; 457: normal 55/55, introdução 13/13 e final 110/110.
+- **Mas o `timemap` expande as repetições com ids que não existem no SVG.** No 457 o desenho tem 38 compassos e o `timemap` lista 56 compassos de ids **únicos**. O destaque **não pode usar os ids do `timemap`** (os dos compassos repetidos não estão no SVG).
+
+**Decisão proposta (a confirmar com o responsável):**
+1. **Destaque por compasso**, não cursor por nota (pergunta 1): é o que dá para fazer de forma robusta e legível; o cursor por nota fica para depois.
+2. **Quem diz qual compasso toca em cada instante é o conversor** (`tools/mscx2json`), que já conhece o instante de cada compasso e as repetições e casas de volta de cada passada (`Estrutura`: `inicio_compasso`, a passada normal e a do final). Ele emitiria, por fluxo, uma lista `[batida local, índice do compasso escrito]`, no mesmo molde da `sincronia` da letra. O app marca o N-ésimo `g.measure` do SVG (a ordem no documento seria a ordem escrita). **Sem o `timemap` no pacote.**
+3. **A rolagem** que acompanha o compasso tem de respeitar "reduzir movimento" (`tools/verificar-movimento.py`), e o liga/desliga é o mesmo do karaokê da letra.
+
+**Riscos a verificar** (hipóteses, ainda não medidas): que a ordem dos `g.measure` no SVG é a ordem escrita dos compassos do `.mscx` (anacruse, compassos excluídos da contagem, compasso de uma nota só), e que o `class="measure"` sobrevive à limpeza do SVG no Rust.
 
 ### Critérios de aceitação (propostos)
 - O destaque na partitura e o da letra andam juntos, na pausa congelam e ao mudar o andamento seguem no lugar certo.
