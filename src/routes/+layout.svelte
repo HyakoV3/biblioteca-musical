@@ -5,6 +5,8 @@
   import { biblioteca } from "$lib/biblioteca.svelte";
   import { i18n } from "$lib/i18n/index.svelte";
   import Miniplayer from "$lib/Miniplayer.svelte";
+  import { reproducao } from "$lib/reproducao.svelte";
+  import { aoPararPelaNotificacao, sincronizarServico } from "$lib/servico";
   import { sons } from "$lib/sons/pacotes.svelte";
   import { aplicarEstilo, aplicarTema, estilo, tema } from "$lib/tema.svelte";
 
@@ -14,6 +16,12 @@
   onMount(() => {
     biblioteca.carregar();
     sons.atualizar(); // quais sons gravados já estão instalados
+    aoPararPelaNotificacao(() => reproducao.parar()); // o botão "Parar" da notificação do Android (I-22)
+  });
+
+  // No Android, o serviço em primeiro plano segura o app vivo enquanto um hino toca (I-22); fora dele a ponte não existe e isto não faz nada.
+  $effect(() => {
+    sincronizarServico(reproducao.estado === "tocando", reproducao.atual?.titulo ?? "");
   });
 
   // Mantém o atributo lang do documento em sintonia com o idioma escolhido.

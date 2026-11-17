@@ -533,7 +533,7 @@ acentuado, que se liga e desliga.
 
 ## I-22 — Continuar tocando com a tela bloqueada
 
-- **Status:** anotada
+- **Status:** **teste no emulador feito e implementação do caminho 1 em andamento (2026-11-17).** **Teste (emulador Android 17, APK 029 em diante, sem nada de segundo plano):** o hino 1 tocou com a tela **bloqueada** por mais de 1 minuto e o som **não cortou**: o stream de áudio do app seguiu `started` (`dumpsys audio`) e, ao desbloquear, o hino estava em 1:14, na 2ª estrofe (o relógio do JavaScript seguiu). **Não vale como prova para o celular do responsável:** o emulador não imita as economias de bateria dos fabricantes nem o Doze depois de vários minutos no bolso, e não deu para testar o "hino todo" com as pausas de 2 s. O teste de trocar de aplicativo (Home) foi **inconclusivo** (a tela apagou por tempo). **Implementado (falta o teste no aparelho):** serviço em primeiro plano de mídia (`ServicoAudio.kt`) com notificação (título do hino e botão "Parar"), `WAKE_LOCK` parcial e a ponte `window.BmccbServico` (`PonteServico.kt`), ligada e desligada pelo `reproducao.estado` no layout (`servico.ts`). Ainda **não há** MediaSession (controles na tela de bloqueio além do "Parar" e botões do fone).
 - **Origem:** pedido do responsável, 2026-11-16: "o miniplayer, mesmo com a tela do celular bloqueada, se ele estiver ativo, deve continuar tocando o som... com a tela bloqueada etc."
 - **Prioridade:** a definir (para quem estuda ouvindo o hino com o celular no bolso, é quase requisito)
 
