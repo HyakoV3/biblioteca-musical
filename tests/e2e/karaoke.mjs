@@ -237,23 +237,26 @@ async function principal() {
     console.log(`${ok ? "ok    " : "FALHOU"} ${msg}`);
   };
 
-  // 4. toca o hino todo (aba Ouvir) e vai para a aba Letra
-  const clicou = await av(`(() => {
-    const b = [...document.querySelectorAll('#painel-ouvir button')].find(x => /hino todo|whole|todo/i.test(x.textContent));
-    if (!b) return false; b.click(); return true; })()`);
-  confere(clicou, 'botão "tocar o hino todo" encontrado e clicado');
-  await dormir(500);
+  // 4. A aba Letra tem de existir e mostrar o botão do karaokê antes de a música começar.
   await av("document.getElementById('aba-letra').click(); 1");
   await dormir(300);
   confere(await av("!!document.querySelector('.chave-karaoke')"), "botão Karaokê aparece (hino com sincronia)");
+  await av("document.getElementById('aba-ouvir').click(); 1");
+  await dormir(300);
 
-  // 5. amostra o destaque a cada 25 ms
+  // 5. Amostra o destaque a cada 25 ms ANTES de a música começar, e só então toca e abre a aba Letra, no mesmo instante. Assim a 1ª sílaba ("do",
+  // que dura 1 s) é vista por inteiro mesmo num servidor lento: antes, o teste tocava, esperava 0,8 s e só depois começava a amostrar, e com
+  // mais de ~0,3 s de atraso (CI carregado) perdia o "do" e falhava a ordem das sílabas, sem nada ter quebrado no app.
   await av(`window.__am = []; window.__t0 = performance.now();
     window.__iv = setInterval(() => {
       const tr = document.querySelector('.trecho');
       const e = document.querySelector('.estrofe.da-vez h2');
       window.__am.push([Math.round(performance.now() - window.__t0), tr ? tr.textContent : null, e ? e.textContent : null]);
     }, 25); 1`);
+  const clicou = await av(`(() => {
+    const b = [...document.querySelectorAll('#painel-ouvir button')].find(x => /hino todo|whole|todo/i.test(x.textContent));
+    if (!b) return false; b.click(); document.getElementById('aba-letra').click(); return true; })()`);
+  confere(clicou, 'botão "tocar o hino todo" encontrado e clicado (e a aba Letra aberta no mesmo instante)');
   // A pausa é ancorada no que o teste OBSERVA, e não num tempo fixo (que dependeria de atrasos de início que ninguém mede):
   // espera a sílaba "re" da 2ª estrofe aparecer na amostragem e pede a pausa meia batida depois, no meio dela. Essa sílaba dura
   // 2 batidas (1 s); a "mi" só acende 1 s depois do início da "re". (Antes esperava 15 s, depois do fim da música, que dura 12 s:
@@ -937,8 +940,8 @@ async function principal() {
   confere(obs.length >= 8, `trocas de sílaba observadas até a pausa: ${obs.length} (esperado pelo menos 8)`);
   confere(obs.every((o, i) => o.tr === alvo[i].tr), `sílabas na ordem certa: ${obs.map((o) => o.tr).join(" ")}`);
   confere(obs.every((o, i) => (o.est ?? "").includes(alvo[i].est)), "a estrofe acesa é a 1 na 1ª vez e a 2 na 2ª");
-  // A 1ª sílaba já estava acesa quando a amostragem começou (o tempo dela está cortado), então a referência dos
-  // intervalos é a 2ª troca.
+  // O instante da 1ª sílaba inclui o atraso para a música começar a soar (não é o início exato dela), então a referência dos
+  // intervalos continua sendo a 2ª troca. O que importa da 1ª é que seja VISTA: a amostragem já estava rodando quando a música começou.
   let maior = 0;
   for (let i = 2; i < obs.length; i++) maior = Math.max(maior, Math.abs(obs[i].ms - obs[i - 1].ms - (alvo[i].b - alvo[i - 1].b) * MS_POR_BATIDA));
   confere(maior <= 120, `maior desvio entre trocas: ${Math.round(maior)} ms (limite 120 ms)`);
