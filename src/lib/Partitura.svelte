@@ -225,9 +225,9 @@
   .folha :global(svg g.dir), .folha :global(svg g.dynam), .folha :global(svg g.mNum) { font-style: italic; }
   .folha :global(svg g.label) { font-weight: normal; }
   .folha :global(svg g.placeholder) { visibility: hidden; }
-  /* Karaokê (I-12, fase B): o compasso que toca. Dourado do tema, translúcido e ATRÁS das notas; o contorno tem 2 px na tela em qualquer zoom. Usa só
+  /* Karaokê (I-12, fase B): o compasso que toca. Dourado do tema, translúcido e ATRÁS das notas; o contorno tem 0,125 rem na tela em qualquer zoom (em rem, como o resto: acompanha o tamanho da fonte do sistema). Usa só
      cores do tema (no alto contraste, amarelo sobre preto: o contorno carrega o destaque e o preenchimento escurece o fundo, sem apagar as notas). */
   .folha :global(svg rect.destaque-compasso) {
-    fill: var(--ouro); fill-opacity: 0.3; stroke: var(--ouro-linha); stroke-width: 2px; vector-effect: non-scaling-stroke; pointer-events: none;
+    fill: var(--ouro); fill-opacity: 0.3; stroke: var(--ouro-linha); stroke-width: 0.125rem; vector-effect: non-scaling-stroke; pointer-events: none;
   }
 </style>
