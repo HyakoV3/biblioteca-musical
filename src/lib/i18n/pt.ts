@@ -156,7 +156,7 @@ export const pt = {
   "hino.karaoke": "Karaokê",
   "hino.karaoke_ligado": "Ligado",
   "hino.karaoke_desligado": "Desligado",
-  "hino.karaoke_ajuda": "Acompanha a letra enquanto o hino toca.",
+  "hino.karaoke_ajuda": "Acompanha a letra e a partitura enquanto o hino toca.",
   "hino.nao_encontrado": "Hino não encontrado.",
   "hino.estrofe": "Estrofe {n}",
   "ajustes.titulo": "Ajustes",
