@@ -1270,7 +1270,8 @@ pub fn converter_com(
     }
     let autoria = (!nomes.is_empty()).then(|| nomes.join(" · "));
 
-    let (armadura, modo_escrito) = ler_armadura(&doc);
+    let (armadura, modo_escrito, aviso_armadura) = ler_armadura(&doc);
+    avisos.extend(aviso_armadura);
     let modo = modo_escrito
         .or_else(|| modo_pelo_baixo(armadura, &vozes, passada_final.as_deref()))
         .unwrap_or_else(|| {
@@ -1300,14 +1301,10 @@ pub fn converter_com(
 
 /// Armadura e modo escrito (se houver) do primeiro `KeySig` da partitura. MuseScore 2 e 3 gravam `<accidental>`; o 4 pode gravar
 /// `<concertKey>` e `<mode>` (não confirmado: aceita o que existir). Modulações no meio da peça são ignoradas.
-fn ler_armadura(doc: &Document) -> (i8, Option<&'static str>) {
+fn ler_armadura(doc: &Document) -> (i8, Option<&'static str>, Option<String>) {
     let Some(ks) = doc.descendants().find(|n| n.has_tag_name("KeySig")) else {
-        return (0, None);
+        return (0, None, None);
     };
-    let a = numero::<i64>(ks, "accidental")
-        .or_else(|| numero::<i64>(ks, "concertKey"))
-        .filter(|a| (-7..=7).contains(a))
-        .unwrap_or(0) as i8;
     let modo = match texto(ks, "mode")
         .map(|m| m.trim().to_lowercase())
         .as_deref()
@@ -1316,7 +1313,23 @@ fn ler_armadura(doc: &Document) -> (i8, Option<&'static str>) {
         Some("minor" | "menor" | "aeolian") => Some("menor"),
         _ => None,
     };
-    (a, modo)
+    // Sem o número, a armadura é 0 (o MuseScore pode omitir o 0); com o número inválido, vira 0 COM aviso.
+    let bruto = ["accidental", "concertKey"]
+        .iter()
+        .find_map(|n| filho(ks, n).and_then(|x| x.text()).map(str::trim));
+    let Some(bruto) = bruto else {
+        return (0, modo, None);
+    };
+    match bruto.parse::<i64>() {
+        Ok(a) if (-7..=7).contains(&a) => (a as i8, modo, None),
+        _ => (
+            0,
+            modo,
+            Some(format!(
+                "tonalidade: armadura inválida ({bruto}); assumido 0"
+            )),
+        ),
+    }
 }
 
 /// Classe de nota (0 = Dó) da tônica da tonalidade maior com essa armadura, ou da relativa menor.
@@ -3288,9 +3301,20 @@ mod testes {
     }
 
     #[test]
-    fn armadura_fora_de_faixa_vira_zero_e_so_o_primeiro_keysig_vale() {
+    fn armadura_invalida_vira_zero_com_aviso_e_so_o_primeiro_keysig_vale() {
         let h = com_armadura(&ks(9), &[48, 48]);
         assert_eq!(h.armadura, 0);
+        assert!(
+            h.avisos.iter().any(|a| a.contains("armadura inválida (9)")),
+            "{:?}",
+            h.avisos
+        );
+        let h = com_armadura("<KeySig><accidental>x</accidental></KeySig>", &[48, 48]);
+        assert!(h.avisos.iter().any(|a| a.contains("armadura inválida (x)")));
+        // KeySig sem número (o 0 pode vir omitido): Dó, sem aviso.
+        let h = com_armadura("<KeySig></KeySig>", &[48, 48]);
+        assert_eq!(h.armadura, 0);
+        assert!(!h.avisos.iter().any(|a| a.contains("armadura")));
         let dois = format!("{}{}", ks(1), ks(-2));
         let h = com_armadura(&dois, &[55, 55]);
         assert_eq!((h.armadura, h.modo), (1, "maior"));
