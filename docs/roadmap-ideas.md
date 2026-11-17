@@ -314,7 +314,7 @@ verso, títulos). O desenho exato depende das fotos.
 
 ## I-13 — Afinador: dar o tom e mostrar se a nota está baixa ou alta
 
-- **Status:** **especificada** com o responsável em 2026-11-17 e **revisada por subagente Opus 5** no mesmo dia (18 achados, aplicados abaixo; ver "Revisão"). A **etapa 1** ("dar o tom") está pronta para implementar; a **etapa 2** ("ouvir e medir") começa por um **teste do microfone no aparelho** (ver "Etapas de entrega").
+- **Status:** **etapa 1 em implementação.** Feito (2026-11-17): a aba **Afinador** com o **Lá 440 Hz** e **outra nota** (12 notas, oitava, volume, tom sustentado com contexto de áudio próprio, um som de cada vez), o `afinador.ts` puro e testado, e o teste de ponta a ponta que **mede o som gerado** (440,3 Hz). **Falta:** o **"Tom de um hino"** (o conversor ainda não grava `armadura`, `modo` e `tonalidade`) e depois a **etapa 2** (ouvir e medir), que começa pelo teste do microfone no aparelho. Especificada e revisada por subagente Opus 5 em 2026-11-17 (18 achados, aplicados; ver "Revisão").
 - **Origem:** pedido do responsável, 2026-11-14; especificada em 2026-11-17.
 - **Prioridade:** a definir. Depende da **I-28** (a aba Afinador na tela inicial), que entra **junto** com a primeira tela do afinador.
 
@@ -774,7 +774,7 @@ instrumento por voz): quanto mais combinações possíveis, mais a calibração 
 
 ## I-24 — Ajustes em cartões, com um cartão de Conteúdo (hinário, partituras e sons gravados)
 
-- **Status:** **reescrita em 2026-11-17 sobre o estado atual da tela** (a primeira versão, de 2026-11-16, era anterior à PR #42 e descrevia partituras sem cartão próprio) e **revisada por subagente Opus 5** no mesmo dia (12 achados, aplicados; ver "Revisão"). Pronta para implementar depois das respostas às perguntas 1 a 5.
+- **Status:** **fatias 1 e 2 implementadas** (2026-11-17): `Cartao.svelte` e `LinhaPacote.svelte` (o player e Ajustes migraram sem mudar a aparência) e Ajustes em cartões, com a linha de estado e o cartão **Conteúdo** (o Hinário sem caixa, com os botões lado a lado, por pedido do responsável ao testar). **Faltam:** a fatia 3 (lembrar os cartões abertos, `prefs.ajustes`) e a 4 (o link `?abrir=partituras` da aba Partitura). Reescrita em 2026-11-17 sobre o estado atual da tela (a primeira versão, de 2026-11-16, era anterior à PR #42) e revisada por subagente Opus 5 no mesmo dia (12 achados, aplicados; ver "Revisão").
 - **Origem:** pedido do responsável, 2026-11-16: "no Ajustes já cabe uns cards... o de temas, o de importação (importar hinário agora, apesar de que no futuro não existe, mas teria o importar partituras e importar sons gravados dentro)". E, em 2026-11-17: "tá me atrapalhando já um pouco o Ajustes".
 - **Prioridade:** **a próxima**, depois da I-13 (o responsável, 2026-11-17).
 
@@ -1007,7 +1007,7 @@ Uma variável de ambiente no build (por exemplo `BMCCB_TESTE=026`) lida pelo `vi
 
 ## I-28 — Abas na tela inicial (Hinos | Afinador | Gravador | …)
 
-- **Status:** anotada, **revisada por subagente Opus 5** em 2026-11-17 (achados aplicados); entra **junto com a primeira tela do afinador** (I-13, etapa 1), porque a barra só aparece com mais de uma aba
+- **Status:** **implementada** (2026-11-17) junto com a aba Afinador (I-13, etapa 1): a barra `Hinos | Afinador` na tela inicial, o mesmo `Abas.svelte` do hino, os painéis montados, a busca preservada ao trocar de aba e a aba reaberta ao voltar de um hino. **Em aberto:** a rolagem de cada aba é guardada e restaurada, mas isso ainda não tem teste de ponta a ponta; e a ordem das abas (assumi `Hinos` primeiro) espera a confirmação do responsável. Revisada por subagente Opus 5 em 2026-11-17 (achados aplicados).
 - **Origem:** pedido do responsável, 2026-11-17: "o Afinador vai ser o primeiro tab na tela inicial de lista, lá vai ter Hinos | Afinador | Gravador... entre outras, no mesmo estilo do que temos dentro do hino para Ouvir | Letra | Partituras", e "podemos até reaproveitar o frontend do componente, talvez o backend".
 - **Prioridade:** a definir (a primeira peça das ferramentas de estudo: afinador I-13, gravador I-03 e, talvez, metrônomo I-20)
 
