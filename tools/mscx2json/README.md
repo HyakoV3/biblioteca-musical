@@ -15,7 +15,11 @@ cargo run --release -- --correcoes correcoes.json --id meu-hinario --nome "Meu h
 - Entende o `.mscx` do **MuseScore 2** (vozes soltas no compasso, com `<tick>`/`<track>`) e a
   estrutura do MuseScore 3 (`<voice>`).
 - Suporta pontos, pausas, anacruse, ligaduras, quiálteras, acordes e várias pautas.
-  Apojaturas são ignoradas. Dinâmica e tonalidade **não** são extraídas.
+  Apojaturas são ignoradas. Dinâmica **não** é extraída.
+- **Tonalidade (I-13):** grava `armadura` (−7 a +7, do **primeiro** `KeySig`; sem o elemento, 0; modulações ficam de fora),
+  `modo` (`"maior"`/`"menor"`) e `tonalidade` em texto (pt, ex.: "Mi♭ maior"). O modo vem do `<mode>` do arquivo, quando houver;
+  senão da **nota final do baixo** (última voz; da passada final, se existir): se for a tônica menor, menor; senão, maior. Se o
+  baixo não terminar numa tônica, usa a primeira nota do baixo; se ainda assim não bater, assume maior e **avisa**.
 - **Letra:** lida da primeira pauta que tiver `<Lyrics>`. Cada estrofe (`<no>`) vira uma
   sequência de linhas, estrofes separadas por linha vazia e a primeira linha numerada ("1. ..."). A linha acompanha o
   **verso**: quebra na respiração (`<Breath>`) em que a próxima palavra começa em **maiúscula** (a continuação do verso vem em

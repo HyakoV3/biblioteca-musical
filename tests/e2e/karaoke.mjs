@@ -809,7 +809,7 @@ async function principal() {
     const lagFino = d === 0 ? melhor : melhor + (a - c) / (2 * d);
     return { hz: sr / lagFino, tocando: t.tocando, pedida: t.frequencia, rms: Math.sqrt(energia / n) };
   })()`;
-  const clicarGrande = (indice) => av(`document.querySelectorAll('#painel-afinador .grande')[${indice}].click(); 1`);
+  const clicarGrande = (indice) => av(`document.querySelectorAll('#painel-afinador :is(.grande, .tocar-pilula)')[${indice}].click(); 1`);
 
   // "Outra nota" é um cartão FECHADO de saída (com a nota e a frequência na linha de cima) e o volume não está na tela (é o do celular).
   const fechado = await av(`(() => { const d = document.querySelector('#painel-afinador details'); return { aberto: d.open, resumo: d.querySelector('summary').textContent.replace(/\\s+/g, ' ').trim(), controleDeVolume: document.querySelectorAll('#painel-afinador input[type="range"]').length }; })()`);
@@ -818,7 +818,7 @@ async function principal() {
   await dormir(900);
   const la = await av(hzDoTom);
   confere(la.hz && Math.abs(la.hz - 440) <= 1 && la.tocando, `o Lá toca a 440 Hz (medido no som gerado, com folga de 1 Hz): ${JSON.stringify(la)}`);
-  const pressionado = await av(`document.querySelectorAll('#painel-afinador .grande')[0].getAttribute('aria-pressed')`);
+  const pressionado = await av(`document.querySelectorAll('#painel-afinador :is(.grande, .tocar-pilula)')[0].getAttribute('aria-pressed')`);
   confere(pressionado === "true", `o botão do Lá fica pressionado enquanto toca: aria-pressed=${pressionado}`);
 
   // Outra nota: Mi♭4 (311,13 Hz). Ligar a outra nota com o Lá soando TROCA de nota; mudar a oitava com ela soando a afina na hora (Mi♭5, 622,25 Hz).
@@ -836,11 +836,11 @@ async function principal() {
   const lista = await av(`document.querySelector('#painel-afinador .freq').textContent.replace(/\\s+/g, ' ').trim()`);
   confere(/E♭5/.test(lista) && /622/.test(lista), `a tela mostra o nome e a frequência da nota: ${lista}`);
 
-  // Fechar o cartão "Outra nota" com a nota soando a para (o botão de parar fica dentro dele).
+  // A pílula: o Play fica na linha do cartão, e fechar o cartão com a nota soando NÃO a para (o botão de parar está fora dele).
   await av(`document.querySelector('#painel-afinador details summary').click(); 1`);
   await dormir(900);
-  const aposFechar = await av(`({ tocando: window.__bmccbTom.tocando, aberto: document.querySelector('#painel-afinador details').open })`);
-  confere(aposFechar.tocando === false && aposFechar.aberto === false, `fechar o cartão "Outra nota" com a nota soando para o som: ${JSON.stringify(aposFechar)}`);
+  const aposFechar = await av(`({ tocando: window.__bmccbTom.tocando, aberto: document.querySelector('#painel-afinador details').open, pressionado: document.querySelector('#painel-afinador .tocar-pilula').getAttribute('aria-pressed') })`);
+  confere(aposFechar.tocando !== false && aposFechar.aberto === false && aposFechar.pressionado === "true", `fechar o cartão "Outra nota" com a nota soando não para o som (o Play da pílula segue à vista): ${JSON.stringify(aposFechar)}`);
   await av(`document.querySelector('#painel-afinador details summary').click(); 1`); // reabre para o resto do teste
   await dormir(300);
   await clicarGrande(1);
@@ -849,7 +849,7 @@ async function principal() {
   // Sair da aba para o som (e o áudio é devolvido).
   await av(`document.getElementById('aba-hinos').click(); 1`);
   await dormir(900); // a soltura da nota (0,1 s) e o fechamento do contexto
-  const aposSair = await av(`({ tocando: window.__bmccbTom.tocando, pressionado: document.querySelectorAll('#painel-afinador .grande')[1].getAttribute('aria-pressed'), contexto: window.__bmccbTom.analisador.context.state })`);
+  const aposSair = await av(`({ tocando: window.__bmccbTom.tocando, pressionado: document.querySelectorAll('#painel-afinador :is(.grande, .tocar-pilula)')[1].getAttribute('aria-pressed'), contexto: window.__bmccbTom.analisador.context.state })`);
   confere(aposSair.tocando === false && aposSair.pressionado === "false" && aposSair.contexto === "closed", `sair da aba Afinador para o som e devolve o áudio (contexto fechado): ${JSON.stringify(aposSair)}`);
   const buscaFicou = await av(`document.querySelector('#painel-hinos input[type="search"]').value`);
   confere(buscaFicou === "998", `a busca da lista sobrevive à troca de aba: "${buscaFicou}"`);
@@ -884,7 +884,7 @@ async function principal() {
   await av(`window.__ACOriginal = window.AudioContext; window.AudioContext = class { constructor() { throw new Error('sem áudio'); } }; 1`);
   await clicarGrande(0);
   await dormir(600);
-  const audioFalhou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), pressionado: document.querySelectorAll('#painel-afinador .grande')[0].getAttribute('aria-pressed'), rejeicoes: window.__rejeicoes.length })`);
+  const audioFalhou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), pressionado: document.querySelectorAll('#painel-afinador :is(.grande, .tocar-pilula)')[0].getAttribute('aria-pressed'), rejeicoes: window.__rejeicoes.length })`);
   confere(audioFalhou.aviso && audioFalhou.pressionado === "false" && audioFalhou.rejeicoes === 0, `áudio indisponível: aviso na tela, botão normal e nenhuma promessa rejeitada solta: ${JSON.stringify(audioFalhou)}`);
   await av(`window.AudioContext = window.__ACOriginal; 1`);
   await clicarGrande(0);
@@ -899,7 +899,7 @@ async function principal() {
   await av(`window.__resumeOriginal = AudioContext.prototype.resume; AudioContext.prototype.resume = () => Promise.reject(new Error('resume falhou')); 1`);
   await av(`[...document.querySelectorAll('#painel-afinador .botao-barra')].find((b) => /up|acima|arriba/i.test(b.getAttribute('aria-label'))).click(); 1`);
   await dormir(700);
-  const trocaFalhou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), pressionado: document.querySelectorAll('#painel-afinador .grande')[1].getAttribute('aria-pressed'), soando: window.__bmccbTom.tocando, rejeicoes: window.__rejeicoes.length })`);
+  const trocaFalhou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), pressionado: document.querySelectorAll('#painel-afinador :is(.grande, .tocar-pilula)')[1].getAttribute('aria-pressed'), soando: window.__bmccbTom.tocando, rejeicoes: window.__rejeicoes.length })`);
   confere(trocaFalhou.aviso && trocaFalhou.pressionado === "false" && trocaFalhou.soando === false && trocaFalhou.rejeicoes === 0, `a troca de nota que falha para a nota antiga, avisa e não deixa rejeição solta: ${JSON.stringify(trocaFalhou)}`);
   await av(`AudioContext.prototype.resume = window.__resumeOriginal; 1`);
 
@@ -910,7 +910,7 @@ async function principal() {
   await av(`document.getElementById('aba-afinador').click(); 1`);
   await dormir(600);
   const estadoTemporizador = () => av(`(() => { const d = document.getElementById('cartao-temporizador'); return { aberto: d.open, resumo: d.querySelector('summary').textContent.replace(/\\s+/g, ' ').trim() }; })()`);
-  const faltam = () => av(`(() => { const s = document.querySelector('#painel-afinador .grande[aria-pressed="true"] span[aria-hidden="true"]'); const m = s?.textContent.match(/\\d+/); return m ? Number(m[0]) : null; })()`);
+  const faltam = () => av(`(() => { const s = document.querySelector('#painel-afinador :is(.grande, .tocar-pilula)[aria-pressed="true"] span[aria-hidden="true"]'); const m = s?.textContent.match(/\\d+/); return m ? Number(m[0]) : null; })()`);
   const soando = () => av(`window.__bmccbTom?.tocando === true`);
   const tmp0 = await estadoTemporizador();
   confere(tmp0.aberto === false && /Until stopped|Até parar|Hasta parar/.test(tmp0.resumo), `Temporizador: o cartão começa fechado e em "até parar": ${JSON.stringify(tmp0)}`);
@@ -933,12 +933,12 @@ async function principal() {
   confere(tmp1.aberto === true && /10 s/.test(tmp1.resumo), `Temporizador: escolher 10 s aparece no resumo do cartão: ${JSON.stringify(tmp1)}`);
   await clicarGrande(0);
   await dormir(1500);
-  const barra = () => av(`(() => { const b = document.querySelector('#painel-afinador .grande[aria-pressed="true"]'); const r = b?.querySelector('.barra'); return r ? r.getBoundingClientRect().width / b.getBoundingClientRect().width : null; })()`);
+  const barra = () => av(`(() => { const b = document.querySelector('#painel-afinador :is(.grande, .tocar-pilula)[aria-pressed="true"]'); const r = b?.querySelector('.barra'); return r ? r.getBoundingClientRect().width / b.getBoundingClientRect().width : null; })()`);
   const b1 = await barra();
   confere(b1 !== null && b1 >= 0.05 && b1 <= 0.25, `Temporizador de 10 s: a barra de progresso começa pequena (~10% aos 1,5 s): ${b1 === null ? "sem barra" : Math.round(b1 * 100) + "%"}`);
   const f1 = await faltam();
   confere(f1 !== null && f1 >= 8 && f1 <= 10 && (await soando()), `Temporizador de 10 s: o botão mostra o que falta (8 a 10 s após 1,5 s) e o tom soa: faltam ${f1}`);
-  const rotuloAcessivel = await av(`document.querySelector('#painel-afinador .grande[aria-pressed="true"]').textContent.replace(/\\s+/g, ' ').trim()`);
+  const rotuloAcessivel = await av(`document.querySelector('#painel-afinador :is(.grande, .tocar-pilula)[aria-pressed="true"]').textContent.replace(/\\s+/g, ' ').trim()`);
   confere(/^(Stop|Parar|Detener) · (\d+ s left|faltam \d+ s|faltan \d+ s)$/.test(rotuloAcessivel), `Temporizador: o botão segue sendo o de parar, com a contagem junto e o separador com espaços: "${rotuloAcessivel}"`);
 
   // Trocar de nota recomeça a contagem: aos ~7 s faltam ~3; ao tocar a outra nota, voltam a faltar ~10.
@@ -956,7 +956,7 @@ async function principal() {
 
   // Passados os 10 s, o tom para sozinho: o botão volta a "tocar" e o leitor de tela é avisado.
   await dormir(10500);
-  const fim10 = await av(`({ soando: window.__bmccbTom.tocando, pressionados: document.querySelectorAll('#painel-afinador .grande[aria-pressed="true"]').length, aviso: document.querySelector('#painel-afinador [role="status"]').textContent.trim() })`);
+  const fim10 = await av(`({ soando: window.__bmccbTom.tocando, pressionados: document.querySelectorAll('#painel-afinador :is(.grande, .tocar-pilula)[aria-pressed="true"]').length, aviso: document.querySelector('#painel-afinador [role="status"]').textContent.trim() })`);
   confere(fim10.soando === false && fim10.pressionados === 0 && /timer|temporizador/i.test(fim10.aviso), `Temporizador: passado o tempo o tom para sozinho, os botões voltam a "tocar" e o leitor de tela é avisado: ${JSON.stringify(fim10)}`);
 
   // Mudar o tempo com o tom soando vale a partir de agora: 30 s recomeça a contagem de 30; "até parar" cancela a contagem.

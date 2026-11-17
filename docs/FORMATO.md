@@ -11,7 +11,9 @@ dados **fictícios**, só para mostrar a estrutura:
     {
       "numero": 1,
       "titulo": "Título de exemplo",
-      "tonalidade": "Dó",
+      "armadura": 0,
+      "modo": "maior",
+      "tonalidade": "Dó maior",
       "andamento": 90,
       "letra": ["Linha 1 fictícia", "Linha 2 fictícia"],
       "partitura": "partituras/001.pdf",
