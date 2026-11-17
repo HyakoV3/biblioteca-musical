@@ -114,7 +114,7 @@ export function corrigirDuracao(audio: HTMLAudioElement): () => void {
   return () => audio.removeEventListener("loadedmetadata", aoCarregar);
 }
 
-export type Gravacao = { url: string; tipo: string; bytes: number; segundos: number };
+export type Gravacao = { url: string; blob: Blob; tipo: string; bytes: number; segundos: number };
 
 /**
  * Uma sessão de gravação do microfone. `iniciar` pede o microfone (a permissão é pedida aqui, a partir de um toque), `parar` entrega o arquivo e
@@ -248,7 +248,7 @@ export class Gravador {
     const segundos = ((this.fim || performance.now()) - this.inicio) / 1000;
     const blob = new Blob(this.pedacos, { type: tipo });
     this.soltar();
-    return blob.size > 0 ? { url: URL.createObjectURL(blob), tipo, bytes: blob.size, segundos } : null;
+    return blob.size > 0 ? { url: URL.createObjectURL(blob), blob, tipo, bytes: blob.size, segundos } : null;
   }
 
   /** Devolve o microfone ao aparelho (apaga o ícone de gravação do Android), esquece o gravador e os pedaços. */

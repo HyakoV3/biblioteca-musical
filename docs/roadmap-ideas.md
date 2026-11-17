@@ -18,7 +18,7 @@ Status possíveis: **anotada** · **em análise** · **planejada** · **feita** 
 
 ## I-03 — Gravador de áudio para estudo e envio aos instrutores
 
-- **Status:** anotada
+- **Status:** **em implementação (2026-11-17).** Feito: a aba **Gravador** (só microfone; formato Opus/webm a 64 kbps; permissão pedida só ao gravar; microfone devolvido ao parar, ao sair da aba e ao esconder o app; **medidor de som no botão** e aviso de "sem som"; **gravações guardadas** no armazenamento do app, **sem limite**, em lista paginada (10 por vez, carrega mais quando o fim chega perto da tela), com nome de data e hora, resumo de quantidade e espaço usado, "Ouvir" e "Apagar" com confirmação e "Apagar todas"). **Testado no aparelho do responsável:** a gravação e o medidor (a gravação funcionou). **Falta:** **enviar o áudio** (WhatsApp, pela folha de compartilhamento do Android: precisa de código nativo), **gravar junto com o hino no fone** (depende da detecção de fone e da decisão da pergunta 1 abaixo), renomear a gravação e ligá-la a um hino, e o fone Bluetooth (atraso).
 - **Origem:** pedido do responsável, 2026-11-14.
 - **Prioridade:** a definir
 - **Nota (2026-11-17):** o responsável quer o Gravador como uma **aba da tela inicial** (`Hinos | Afinador | Gravador | …`): ver a **I-28**. A permissão de microfone e a detecção de fone se decidem **junto com o afinador** (I-13, etapas 2 e 3): a pesquisa de 2026-11-17 está lá.
