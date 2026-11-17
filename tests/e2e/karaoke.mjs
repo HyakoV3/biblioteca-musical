@@ -901,6 +901,70 @@ async function principal() {
   confere(trocaFalhou.aviso && trocaFalhou.pressionado === "false" && trocaFalhou.soando === false && trocaFalhou.rejeicoes === 0, `a troca de nota que falha para a nota antiga, avisa e não deixa rejeição solta: ${JSON.stringify(trocaFalhou)}`);
   await av(`AudioContext.prototype.resume = window.__resumeOriginal; 1`);
 
+  // ---- Temporizador do afinador (I-13): o padrão é "até parar" (como sempre); com 10 s o tom para sozinho; trocar de nota recomeça a contagem ----
+  await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-afinador')`)); ) await dormir(250);
+  await dormir(500);
+  await av(`document.getElementById('aba-afinador').click(); 1`);
+  await dormir(600);
+  const estadoTemporizador = () => av(`(() => { const d = document.getElementById('cartao-temporizador'); return { aberto: d.open, resumo: d.querySelector('summary').textContent.replace(/\\s+/g, ' ').trim() }; })()`);
+  const faltam = () => av(`(() => { const s = document.querySelector('#painel-afinador .grande[aria-pressed="true"] span[aria-hidden="true"]'); const m = s?.textContent.match(/\\d+/); return m ? Number(m[0]) : null; })()`);
+  const soando = () => av(`window.__bmccbTom?.tocando === true`);
+  const tmp0 = await estadoTemporizador();
+  confere(tmp0.aberto === false && /Until stopped|Até parar|Hasta parar/.test(tmp0.resumo), `Temporizador: o cartão começa fechado e em "até parar": ${JSON.stringify(tmp0)}`);
+
+  // Padrão ("até parar"): o tom NÃO para sozinho, nem depois de mais que o maior tempo oferecido.
+  await clicarGrande(0);
+  await dormir(11500);
+  const semLimite = { soando: await soando(), faltam: await faltam() };
+  confere(semLimite.soando === true && semLimite.faltam === null, `Temporizador em "até parar": depois de 11 s o tom segue soando e não há contagem: ${JSON.stringify(semLimite)}`);
+  await clicarGrande(0); // para
+  await dormir(300);
+
+  // 10 s: o botão mostra o que falta e o tom para sozinho.
+  await av(`document.querySelector('#cartao-temporizador summary').click(); 1`);
+  await dormir(300);
+  await av(`document.querySelector('#painel-afinador input[name="limite"][value="10"]').click(); 1`);
+  await dormir(300);
+  const tmp1 = await estadoTemporizador();
+  confere(tmp1.aberto === true && /10 s/.test(tmp1.resumo), `Temporizador: escolher 10 s aparece no resumo do cartão: ${JSON.stringify(tmp1)}`);
+  await clicarGrande(0);
+  await dormir(1500);
+  const f1 = await faltam();
+  confere(f1 !== null && f1 >= 8 && f1 <= 10 && (await soando()), `Temporizador de 10 s: o botão mostra o que falta (8 a 10 s após 1,5 s) e o tom soa: faltam ${f1}`);
+  const rotuloAcessivel = await av(`document.querySelector('#painel-afinador .grande[aria-pressed="true"]').textContent.replace(/\\s+/g, ' ').trim()`);
+  confere(/^(Stop|Parar|Detener) · (\d+ s left|faltam \d+ s|faltan \d+ s)$/.test(rotuloAcessivel), `Temporizador: o botão segue sendo o de parar, com a contagem junto e o separador com espaços: "${rotuloAcessivel}"`);
+
+  // Trocar de nota recomeça a contagem: aos ~7 s faltam ~3; ao tocar a outra nota, voltam a faltar ~10.
+  await dormir(5500);
+  const f2 = await faltam();
+  confere(f2 !== null && f2 >= 2 && f2 <= 4, `Temporizador de 10 s: aos ~7 s faltam ~3: faltam ${f2}`);
+  await av(`document.querySelector('#painel-afinador details summary').click(); 1`); // abre "Outra nota"
+  await dormir(300);
+  await clicarGrande(1);
+  await dormir(1300);
+  const f3 = await faltam();
+  confere(f3 !== null && f3 >= 8 && (await soando()), `Temporizador: tocar outra nota recomeça a contagem (faltam ${f3}, e sem recomeçar seriam ~1)`);
+
+  // Passados os 10 s, o tom para sozinho: o botão volta a "tocar" e o leitor de tela é avisado.
+  await dormir(10500);
+  const fim10 = await av(`({ soando: window.__bmccbTom.tocando, pressionados: document.querySelectorAll('#painel-afinador .grande[aria-pressed="true"]').length, aviso: document.querySelector('#painel-afinador [role="status"]').textContent.trim() })`);
+  confere(fim10.soando === false && fim10.pressionados === 0 && /timer|temporizador/i.test(fim10.aviso), `Temporizador: passado o tempo o tom para sozinho, os botões voltam a "tocar" e o leitor de tela é avisado: ${JSON.stringify(fim10)}`);
+
+  // Mudar o tempo com o tom soando vale a partir de agora: 30 s recomeça a contagem de 30; "até parar" cancela a contagem.
+  await clicarGrande(0);
+  await dormir(1200);
+  await av(`document.querySelector('#painel-afinador input[name="limite"][value="30"]').click(); 1`);
+  await dormir(1200);
+  const f4 = await faltam();
+  confere(f4 !== null && f4 >= 27 && f4 <= 30, `Temporizador: mudar para 30 s com o tom soando recomeça a contagem (faltam ${f4})`);
+  await av(`document.querySelector('#painel-afinador input[name="limite"][value="0"]').click(); 1`);
+  await dormir(700);
+  const f5 = { faltam: await faltam(), soando: await soando() };
+  confere(f5.faltam === null && f5.soando === true, `Temporizador: voltar a "até parar" com o tom soando cancela a contagem e o tom segue: ${JSON.stringify(f5)}`);
+  await clicarGrande(0); // para
+  await dormir(300);
+
   // ---- Ajustes: o que ficou aberto é lembrado, o valor ruim volta ao padrão e o link da aba Partitura abre o Conteúdo sem gravar (I-24, fatias 3 e 4) ----
   const AJ = `http://127.0.0.1:${PORTA_VITE}/ajustes`;
   const irParaAjustes = async (url) => {

@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import Aviso from "./Aviso.svelte";
   import Cartao from "./Cartao.svelte";
   import Icone from "./Icone.svelte";
   import { LA_PADRAO, OITAVA_MAX, OITAVA_MIN, OITAVA_PADRAO, frequenciaDe, limitarOitava, midiDe, nomeDaNota, nomeDaNotaPorExtenso } from "./afinador";
+  import { Contagem, LIMITES, type Limite } from "./contagem";
   import { i18n } from "./i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
   import { TomSustentado } from "./tom";
@@ -11,7 +13,8 @@
   // novo. Não usa microfone nem pede permissão. O som tem contexto de áudio próprio (ver `tom.ts`) e é um de cada vez: dar o tom para o hino
   // que estiver tocando, e o hino que começar cala o tom. `ativa` diz se a aba está à vista: ao sair dela o som para e o áudio é devolvido.
   // Sem controle de volume na tela: quem ajusta é o volume de mídia do celular, pelos botões físicos. "Outra nota" fica num cartão fechado:
-  // quem quiser a abre, escolhe a nota e a oitava e toca.
+  // quem quiser a abre, escolhe a nota e a oitava e toca. O cartão "Temporizador" (fechado, não lembrado) faz o tom parar sozinho depois de 10, 20 ou
+  // 30 segundos; o padrão é "até parar", o de sempre. Vale para o Lá e para a outra nota, e a contagem recomeça a cada nota nova.
   let { ativa }: { ativa: boolean } = $props();
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
@@ -21,6 +24,20 @@
   let oitava = $state(OITAVA_PADRAO);
   /** O cartão "Outra nota" começa fechado e não é lembrado. */
   let outraAberta = $state(false);
+  /** O cartão "Temporizador" começa fechado e não é lembrado; o tempo começa em "até parar" (0) a cada abertura do app. */
+  let temporizadorAberto = $state(false);
+  let limite = $state<Limite>(0);
+  /** Segundos que faltam para o tom parar sozinho, ou nulo sem contagem (até parar, ou nada tocando). */
+  let restante = $state<number | null>(null);
+  /** O último tom parou por causa do temporizador: o leitor de tela é avisado (a tela já voltou ao botão de tocar). */
+  let encerrou = $state(false);
+  const contagem = new Contagem(
+    (r) => (restante = r),
+    () => {
+      encerrou = true;
+      parar();
+    },
+  );
   /** O que está soando: o Lá 440, a nota escolhida, ou nada. */
   let tocando = $state<"la" | "nota" | null>(null);
   /** O áudio não pôde iniciar (indisponível ou bloqueado neste aparelho): a tela avisa, em vez de o botão voltar sem explicação. */
@@ -37,6 +54,7 @@
 
   function parar() {
     tentativa++;
+    contagem.cancelar();
     tom.parar();
     tocando = null;
   }
@@ -44,6 +62,7 @@
   /** Sai de cena: para o som e DEVOLVE o áudio ao aparelho (fecha o contexto; ligar de novo cria outro). */
   function sair() {
     tentativa++;
+    contagem.cancelar();
     tom.fechar();
     tocando = null;
   }
@@ -52,9 +71,12 @@
   async function soar(qual: "la" | "nota", freq: number) {
     const minha = ++tentativa;
     erroAudio = false;
+    encerrou = false;
+    contagem.cancelar(); // a contagem da nota anterior não pode terminar no meio da troca
     tocando = qual;
     try {
       await tom.tocar(freq);
+      if (minha === tentativa) contagem.iniciar(limite); // a contagem começa quando o tom começa de fato, e recomeça a cada nota nova
     } catch (e) {
       console.warn("afinador: não foi possível tocar o tom", e);
       if (minha === tentativa) {
@@ -84,6 +106,13 @@
     if (tocando === "nota") void soar("nota", frequenciaDe(midiDe(classe, nova), LA_PADRAO));
   }
 
+  // Mudar o tempo com o tom soando vale a partir de agora ("até parar" cancela a contagem).
+  $effect(() => {
+    void limite;
+    untrack(() => {
+      if (tocando) contagem.iniciar(limite);
+    });
+  });
   // O som para ao sair da aba, ao ir para segundo plano e quando o hino começa; ao fechar a tela, o áudio é devolvido ao aparelho.
   $effect(() => {
     if (!ativa) sair();
@@ -102,10 +131,17 @@
     document.addEventListener("visibilitychange", aoEsconder);
     return () => {
       document.removeEventListener("visibilitychange", aoEsconder);
+      contagem.cancelar();
       tom.fechar();
     };
   });
 </script>
+
+{#snippet rotuloParar()}
+  <!-- Um só trecho de texto (sem os espaços que o Svelte tira do começo de um <span>): "Parar · faltam 14 s". A contagem fica escondida do leitor de tela
+       (o nome do botão segue sendo "Parar" e a contagem não é lida segundo a segundo); só o fim é avisado, no texto de status. -->
+  <span>{t("audio.parar")}{#if restante !== null}<span aria-hidden="true">{` · ${t("afinador.faltam", { n: restante })}`}</span>{/if}</span>
+{/snippet}
 
 <div class="afinador">
   <p class="meta">{t("afinador.explica")}</p>
@@ -113,11 +149,11 @@
 
   <button class="botao primario grande" aria-pressed={tocando === "la"} onclick={() => alternar("la")}>
     <Icone nome={tocando === "la" ? "stop" : "play"} tamanho={24} />
-    {tocando === "la" ? t("audio.parar") : rotuloLa}
+    {#if tocando === "la"}{@render rotuloParar()}{:else}{rotuloLa}{/if}
   </button>
 
   <Cartao titulo={t("afinador.outra_nota")} resumo={`${nomeNota} · ${hz(freqNota)} Hz`} bind:aberto={outraAberta} grade>
-    <fieldset class="notas" aria-label={t("afinador.outra_nota")}>
+    <fieldset class="opcoes" aria-label={t("afinador.outra_nota")}>
       {#each Array.from({ length: 12 }, (_, n) => n) as n (n)}
         <label class:ativo={classe === n}>
           <input
@@ -149,13 +185,33 @@
 
     <button class="botao primario grande" aria-pressed={tocando === "nota"} onclick={() => alternar("nota")}>
       <Icone nome={tocando === "nota" ? "stop" : "play"} tamanho={24} />
-      {tocando === "nota" ? t("audio.parar") : t("afinador.tocar_nota", { nota: nomeNota })}
+      {#if tocando === "nota"}{@render rotuloParar()}{:else}{t("afinador.tocar_nota", { nota: nomeNota })}{/if}
     </button>
+  </Cartao>
+
+  <Cartao id="cartao-temporizador" titulo={t("afinador.temporizador")} resumo={limite === 0 ? t("afinador.ate_parar") : `${limite} s`} bind:aberto={temporizadorAberto} grade>
+    <p class="meta" id="rotulo-limite">{t("afinador.parar_sozinho")}</p>
+    <fieldset class="opcoes tempos" aria-labelledby="rotulo-limite">
+      {#each LIMITES as l (l)}
+        <label class:ativo={limite === l}>
+          <input
+            type="radio"
+            name="limite"
+            value={l}
+            checked={limite === l}
+            aria-label={l === 0 ? t("afinador.ate_parar") : t("afinador.segundos", { n: l })}
+            onchange={() => (limite = l)}
+          />
+          <span>{#if limite === l}<Icone nome="ok" tamanho={16} />{/if}{l === 0 ? t("afinador.ate_parar") : `${l} s`}</span>
+        </label>
+      {/each}
+    </fieldset>
+    <p class="meta">{t("afinador.temporizador_vale")}</p>
   </Cartao>
 
   <!-- Só para o leitor de tela: o que está soando (o texto muda ao ligar, desligar ou trocar de nota). -->
   <p class="so-leitor" role="status">
-    {tocando === "la" ? t("afinador.tocando", { nota: nomeDaNota(9, i18n.idioma) + "4", hz: hz(LA_PADRAO) }) : tocando === "nota" ? t("afinador.tocando", { nota: nomeNota, hz: hz(freqNota) }) : ""}
+    {#if tocando === "la"}{t("afinador.tocando", { nota: nomeDaNota(9, i18n.idioma) + "4", hz: hz(LA_PADRAO) })}{:else if tocando === "nota"}{t("afinador.tocando", { nota: nomeNota, hz: hz(freqNota) })}{:else if encerrou}{t("afinador.encerrou")}{/if}
   </p>
 </div>
 
@@ -164,17 +220,20 @@
   .afinador > p { margin: 0; }
   .grande { min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
 
-  /* As 12 notas: botões de rádio (teclado e leitor de tela de graça); a escolhida leva "✓", negrito e borda de acento (não só cor). */
-  .notas { display: grid; grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr)); gap: 0.4rem; margin: 0; padding: 0; border: 0; }
-  .notas label { position: relative; }
-  .notas input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-  .notas span {
+  /* As 12 notas e as 4 opções de tempo: botões de rádio (teclado e leitor de tela de graça); a escolhida leva "✓", negrito e borda de acento (não só cor). */
+  .opcoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--minimo, 4.5rem), 1fr)); gap: 0.4rem; margin: 0; padding: 0; border: 0; }
+  /* As 4 opções de tempo cabem numa linha no celular em pé ("Até parar" quebra em duas linhas); com a fonte do sistema grande passam a 2 por linha. */
+  .tempos { --minimo: 4rem; }
+  .tempos span { text-align: center; line-height: 1.2; }
+  .opcoes label { position: relative; }
+  .opcoes input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .opcoes span {
     display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 3rem; box-sizing: border-box;
     padding: 0 0.4rem; border-radius: 0.75rem; font-size: 1rem;
     border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
-  .notas .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
-  .notas input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
+  .opcoes .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
+  .opcoes input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
 
   .linha { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; }
   .oitava { display: flex; align-items: center; gap: 0.5rem; }
