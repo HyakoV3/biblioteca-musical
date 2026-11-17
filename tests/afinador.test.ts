@@ -1,0 +1,140 @@
+import { describe, expect, it } from "vitest";
+import {
+  LA_PADRAO,
+  OITAVA_MAX,
+  OITAVA_MIN,
+  OITAVA_PADRAO,
+  centsEntre,
+  classeDe,
+  frequenciaDe,
+  limitarOitava,
+  midiDe,
+  nomeDaNota,
+  nomeDaNotaPorExtenso,
+  notaMaisProxima,
+} from "../src/lib/afinador";
+
+describe("nome das notas", () => {
+  it("12 notas com a grafia fixa, em cada idioma", () => {
+    expect([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((n) => nomeDaNota(n, "pt"))).toEqual(
+      ["Dó", "Dó♯", "Ré", "Mi♭", "Mi", "Fá", "Fá♯", "Sol", "Lá♭", "Lá", "Si♭", "Si"],
+    );
+    expect(nomeDaNota(3, "en")).toBe("E♭");
+    expect(nomeDaNota(9, "en")).toBe("A");
+    expect(nomeDaNota(0, "es")).toBe("Do");
+    expect(nomeDaNota(8, "es")).toBe("La♭");
+  });
+
+  it("os nomes por extenso (para o leitor de tela) não levam símbolo", () => {
+    for (const idioma of ["pt", "en", "es"] as const) {
+      for (let n = 0; n < 12; n++) expect(nomeDaNotaPorExtenso(n, idioma), `${idioma} ${n}`).not.toMatch(/[♭♯]/);
+    }
+    expect(nomeDaNotaPorExtenso(3, "pt")).toBe("Mi bemol");
+    expect(nomeDaNotaPorExtenso(6, "pt")).toBe("Fá sustenido");
+    expect(nomeDaNotaPorExtenso(1, "en")).toBe("C sharp");
+    expect(nomeDaNotaPorExtenso(10, "es")).toBe("Si bemol");
+  });
+
+  it("a classe fica de 0 a 11, também com número negativo ou fora da faixa", () => {
+    expect(classeDe(12)).toBe(0);
+    expect(classeDe(-1)).toBe(11);
+    expect(classeDe(-13)).toBe(11);
+    expect(classeDe(61)).toBe(1);
+    expect(nomeDaNota(-3, "pt")).toBe("Lá"); // -3 é Lá (9)
+    expect(nomeDaNota(21, "pt")).toBe("Lá");
+  });
+});
+
+describe("oitava", () => {
+  it("fica dentro da faixa oferecida e o que não é número volta à padrão", () => {
+    expect(limitarOitava(0)).toBe(OITAVA_MIN);
+    expect(limitarOitava(99)).toBe(OITAVA_MAX);
+    expect(limitarOitava(3.6)).toBe(4);
+    for (const ruim of [NaN, Infinity, "4", null, undefined, {}, []]) expect(limitarOitava(ruim), String(ruim)).toBe(OITAVA_PADRAO);
+  });
+});
+
+describe("midi e frequência", () => {
+  it("Dó central é o 60 e o Lá central é o 69", () => {
+    expect(midiDe(0, 4)).toBe(60);
+    expect(midiDe(9, 4)).toBe(69);
+    expect(midiDe(3, 4)).toBe(63); // Mi♭4
+    expect(midiDe(0, 2)).toBe(36);
+  });
+
+  it("o lá central dá a afinação de referência, e cada oitava dobra a frequência", () => {
+    expect(frequenciaDe(69)).toBe(440);
+    expect(frequenciaDe(81)).toBeCloseTo(880, 9);
+    expect(frequenciaDe(57)).toBeCloseTo(220, 9);
+    expect(frequenciaDe(69, 442)).toBe(442);
+    expect(LA_PADRAO).toBe(440);
+  });
+
+  it("valores de referência do temperamento igual", () => {
+    expect(frequenciaDe(60)).toBeCloseTo(261.6256, 3); // Dó central
+    expect(frequenciaDe(63)).toBeCloseTo(311.1270, 3); // Mi♭4 (o 311 Hz do esboço)
+    expect(frequenciaDe(21)).toBeCloseTo(27.5, 9); // Lá0
+    expect(frequenciaDe(108)).toBeCloseTo(4186.009, 2); // Dó8
+  });
+});
+
+describe("cents", () => {
+  it("um semitom são 100 cents e uma oitava, 1200", () => {
+    expect(centsEntre(880, 440)).toBeCloseTo(1200, 9);
+    expect(centsEntre(220, 440)).toBeCloseTo(-1200, 9);
+    expect(centsEntre(frequenciaDe(70), frequenciaDe(69))).toBeCloseTo(100, 9);
+    expect(centsEntre(440, 440)).toBe(0);
+  });
+
+  it("uma frequência ligeiramente acima ou abaixo dá cents com o sinal certo", () => {
+    expect(centsEntre(440 * 2 ** (20 / 1200), 440)).toBeCloseTo(20, 9);
+    expect(centsEntre(440 * 2 ** (-15 / 1200), 440)).toBeCloseTo(-15, 9);
+  });
+});
+
+describe("nota mais próxima", () => {
+  it("o lá exato dá Lá4 com 0 cent", () => {
+    const n = notaMaisProxima(440)!;
+    expect(n.midi).toBe(69);
+    expect(n.classe).toBe(9);
+    expect(n.oitava).toBe(4);
+    expect(n.cents).toBeCloseTo(0, 9);
+  });
+
+  it("20 cents acima e abaixo de um lá", () => {
+    const alta = notaMaisProxima(440 * 2 ** (20 / 1200))!;
+    expect(alta.midi).toBe(69);
+    expect(alta.cents).toBeCloseTo(20, 6);
+    const baixa = notaMaisProxima(440 * 2 ** (-20 / 1200))!;
+    expect(baixa.midi).toBe(69);
+    expect(baixa.cents).toBeCloseTo(-20, 6);
+  });
+
+  it("passando de 50 cents a nota mais próxima é a vizinha, e os cents voltam a ser pequenos e do outro sinal", () => {
+    const n = notaMaisProxima(440 * 2 ** (60 / 1200))!; // 60 cents acima do lá é 40 abaixo do si♭
+    expect(n.midi).toBe(70);
+    expect(n.classe).toBe(10);
+    expect(n.cents).toBeCloseTo(-40, 6);
+  });
+
+  it("Mi♭4 e Dó central (oitava e classe)", () => {
+    const mib = notaMaisProxima(frequenciaDe(63))!;
+    expect([mib.classe, mib.oitava]).toEqual([3, 4]);
+    const dó = notaMaisProxima(261.6256)!;
+    expect([dó.classe, dó.oitava]).toEqual([0, 4]);
+  });
+
+  it("com outra afinação de referência", () => {
+    const n = notaMaisProxima(442, 442)!;
+    expect(n.midi).toBe(69);
+    expect(n.cents).toBeCloseTo(0, 9);
+  });
+
+  it("frequência inválida não dá nota", () => {
+    for (const ruim of [0, -5, NaN, Infinity]) expect(notaMaisProxima(ruim), String(ruim)).toBeNull();
+  });
+
+  it("afinação de referência inválida (zero, negativa, não finita) também não dá nota", () => {
+    for (const ruim of [0, -440, NaN, Infinity, -Infinity]) expect(notaMaisProxima(440, ruim), String(ruim)).toBeNull();
+  });
+});

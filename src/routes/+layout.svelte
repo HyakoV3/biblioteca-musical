@@ -76,6 +76,8 @@
   :global(.botao.tocando .bandeira-final) { color: inherit; }
   :global(.botao.perigo) { color: var(--perigo); border-color: var(--perigo); }
   :global(.botao:disabled) { opacity: 0.5; cursor: not-allowed; }
+  /* Cartão: a moldura dos cartões do player e de Ajustes (Cartao.svelte e o cartão fixo "Tocar"). */
+  :global(.cartao) { border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
   /* Botão quadrado das barras de controle (tamanho e alinhamento da letra, tamanho da partitura): 3 rem, só ícone; o que está
      ligado (aria-pressed) leva borda dourada. */
   :global(.botao-barra) {

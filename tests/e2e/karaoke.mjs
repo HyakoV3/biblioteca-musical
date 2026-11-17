@@ -732,6 +732,12 @@ async function principal() {
   // Ajustes: "Importar hinário" aceita SÓ .json (o hinário vai deixar de ser importado; as partituras têm o card próprio).
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes` });
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('input[type="file"]')`)); ) await dormir(250);
+  // Os blocos de Ajustes são cartões fechados de saída, com o estado na linha de cima (I-24): o Conteúdo mostra o hinário, as partituras e os sons.
+  const resumoFechado = await av(`(() => { const d = document.getElementById('conteudo'); return { aberto: d.open, resumo: d.querySelector('summary').innerText.replace(/\\s+/g, ' ') }; })()`);
+  confere(!resumoFechado.aberto && /\d+\s+(scores?|partituras?)/i.test(resumoFechado.resumo), `Ajustes: o cartão Conteúdo começa fechado e mostra o estado na linha de cima: ${JSON.stringify(resumoFechado)}`);
+  // O texto de um cartão fechado não é renderizado: abre o Conteúdo antes de ler o que há dentro (hinário, partituras, sons).
+  await av("document.getElementById('conteudo').open = true; 1");
+  await dormir(400);
   const aceita = await av(`document.querySelector('input[type="file"]').getAttribute('accept')`);
   confere(/json/.test(aceita) && !/zip/i.test(aceita), `Importar hinário aceita só .json: accept="${aceita}"`);
 
@@ -763,6 +769,117 @@ async function principal() {
     ? /not installed|não instaladas|no instaladas/i.test(card2.texto) && card2.botoes === 1
     : /not yet available|ainda não|aún no/i.test(card2.texto) && card2.botoes === 0;
   confere(esperado && card2.entradaArquivo === 0, `sem partituras (${publicado ? "com pacote publicado: Não instaladas e o botão Baixar" : "sem pacote publicado: ainda não disponíveis e nenhum botão"}), sem importar arquivo: ${JSON.stringify({ botoes: card2.botoes, arquivo: card2.entradaArquivo, texto: card2.texto.slice(-60) })}`);
+
+  // ---- Tela inicial com abas (I-28) e o afinador (I-13, etapa 1: dar o tom) ----
+  await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-afinador')`)); ) await dormir(250);
+  await dormir(500);
+  const abasInicio = await av(`({ abas: [...document.querySelectorAll('[role="tab"]')].map((a) => a.id), hinos: !document.getElementById('painel-hinos').hidden, afinador: !document.getElementById('painel-afinador').hidden })`);
+  confere(abasInicio.abas.join() === "aba-hinos,aba-afinador" && abasInicio.hinos && !abasInicio.afinador, `a tela inicial tem as abas Hinos e Afinador e abre em Hinos: ${JSON.stringify(abasInicio)}`);
+
+  // A busca da lista sobrevive à troca de aba (os painéis ficam montados).
+  await av(`(() => { const i = document.querySelector('#painel-hinos input[type="search"]'); i.value = '998'; i.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+  await dormir(200);
+  await av(`document.getElementById('aba-afinador').click(); 1`);
+  await dormir(500);
+  const noAfinador = await av(`({ hinos: document.getElementById('painel-hinos').hidden, afinador: !document.getElementById('painel-afinador').hidden, selecionada: document.getElementById('aba-afinador').getAttribute('aria-selected') })`);
+  confere(noAfinador.hinos && noAfinador.afinador && noAfinador.selecionada === "true", `trocar para o Afinador mostra o painel dele e esconde a lista: ${JSON.stringify(noAfinador)}`);
+
+  // Mede o SOM que o app gera, com o analisador que o app expõe só no servidor de desenvolvimento: autocorrelação com interpolação parabólica.
+  const hzDoTom = `(() => {
+    const t = window.__bmccbTom;
+    if (!t) return { erro: 'sem sonda' };
+    const an = t.analisador, buf = new Float32Array(an.fftSize);
+    an.getFloatTimeDomainData(buf);
+    const sr = an.context.sampleRate, n = buf.length, lagMax = Math.floor(sr / 60), lagMin = Math.floor(sr / 1500);
+    let energia = 0; for (let i = 0; i < n; i++) energia += buf[i] * buf[i];
+    if (energia / n < 1e-6) return { erro: 'silêncio', rms: Math.sqrt(energia / n) };
+    const r = new Float64Array(lagMax + 2);
+    for (let lag = lagMin - 1; lag <= lagMax + 1; lag++) { let a = 0; for (let i = 0; i + lag < n; i++) a += buf[i] * buf[i + lag]; r[lag] = a; }
+    let max = 0; for (let lag = lagMin; lag <= lagMax; lag++) if (r[lag] > max) max = r[lag];
+    let melhor = -1;
+    for (let lag = lagMin; lag <= lagMax; lag++) if (r[lag] > 0.97 * max && r[lag] >= r[lag - 1] && r[lag] >= r[lag + 1]) { melhor = lag; break; }
+    if (melhor < 0) return { erro: 'sem pico' };
+    const a = r[melhor - 1], b = r[melhor], c = r[melhor + 1], d = a - 2 * b + c;
+    const lagFino = d === 0 ? melhor : melhor + (a - c) / (2 * d);
+    return { hz: sr / lagFino, tocando: t.tocando, pedida: t.frequencia, rms: Math.sqrt(energia / n) };
+  })()`;
+  const clicarGrande = (indice) => av(`document.querySelectorAll('#painel-afinador .grande')[${indice}].click(); 1`);
+
+  await clicarGrande(0); // Lá 440 Hz
+  await dormir(900);
+  const la = await av(hzDoTom);
+  confere(la.hz && Math.abs(la.hz - 440) <= 1 && la.tocando, `o Lá toca a 440 Hz (medido no som gerado, com folga de 1 Hz): ${JSON.stringify(la)}`);
+  const pressionado = await av(`document.querySelectorAll('#painel-afinador .grande')[0].getAttribute('aria-pressed')`);
+  confere(pressionado === "true", `o botão do Lá fica pressionado enquanto toca: aria-pressed=${pressionado}`);
+
+  // Outra nota: Mi♭4 (311,13 Hz). Ligar a outra nota com o Lá soando TROCA de nota; mudar a oitava com ela soando a afina na hora (Mi♭5, 622,25 Hz).
+  await av(`document.querySelector('#painel-afinador input[type="radio"][value="3"]').click(); 1`);
+  await clicarGrande(1);
+  await dormir(900);
+  const mib4 = await av(hzDoTom);
+  confere(mib4.hz && Math.abs(mib4.hz - 311.127) <= 1, `o Mi♭4 toca a 311,13 Hz, trocando o Lá: ${JSON.stringify(mib4)}`);
+  await av(`[...document.querySelectorAll('#painel-afinador .botao-barra')].find((b) => /up|acima|arriba/i.test(b.getAttribute('aria-label'))).click(); 1`);
+  await dormir(900);
+  const mib5 = await av(hzDoTom);
+  confere(mib5.hz && Math.abs(mib5.hz - 622.254) <= 2, `subir a oitava com a nota soando a afina na hora (Mi♭5, 622,25 Hz): ${JSON.stringify(mib5)}`);
+  const lista = await av(`document.querySelector('#painel-afinador .freq').textContent.replace(/\\s+/g, ' ').trim()`);
+  confere(/E♭5/.test(lista) && /622/.test(lista), `a tela mostra o nome e a frequência da nota: ${lista}`);
+
+  // Sair da aba para o som (e o áudio é devolvido).
+  await av(`document.getElementById('aba-hinos').click(); 1`);
+  await dormir(900); // a soltura da nota (0,1 s) e o fechamento do contexto
+  const aposSair = await av(`({ tocando: window.__bmccbTom.tocando, pressionado: document.querySelectorAll('#painel-afinador .grande')[1].getAttribute('aria-pressed'), contexto: window.__bmccbTom.analisador.context.state })`);
+  confere(aposSair.tocando === false && aposSair.pressionado === "false" && aposSair.contexto === "closed", `sair da aba Afinador para o som e devolve o áudio (contexto fechado): ${JSON.stringify(aposSair)}`);
+  const buscaFicou = await av(`document.querySelector('#painel-hinos input[type="search"]').value`);
+  confere(buscaFicou === "998", `a busca da lista sobrevive à troca de aba: "${buscaFicou}"`);
+
+  // Um som de cada vez: dar o tom PARA o hino que estava tocando. Abre o hino, toca, volta à lista (client-side) e liga o Lá.
+  await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('a[href="/hino/999"]')`)); ) await dormir(250);
+  await av(`document.querySelector('a[href="/hino/999"]').click(); 1`);
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('#painel-ouvir button')`)); ) await dormir(250);
+  await dormir(500);
+  await av(`[...document.querySelectorAll('#painel-ouvir button')].find((x) => /hino todo|whole|todo/i.test(x.textContent)).click(); 1`);
+  await dormir(700);
+  await av(`document.querySelector('button.voltar').click(); 1`);
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-afinador')`)); ) await dormir(250);
+  const miniAntes = await av(`!!document.querySelector('.mini')`);
+  await av(`document.getElementById('aba-afinador').click(); 1`);
+  await dormir(500);
+  await clicarGrande(0);
+  await dormir(900);
+  const depoisDoTom = await av(`({ mini: !!document.querySelector('.mini'), tom: window.__bmccbTom?.tocando })`);
+  confere(miniAntes === true && depoisDoTom.mini === false && depoisDoTom.tom === true, `dar o tom para o hino que tocava (o miniplayer some e o tom soa): antes=${miniAntes}, depois=${JSON.stringify(depoisDoTom)}`);
+  await clicarGrande(0); // desliga o tom
+
+  // Falha do áudio (Web Audio bloqueado ou indisponível): o aviso aparece, o botão volta ao normal, nada fica "tocando" e nenhuma promessa
+  // rejeitada fica solta. Vale para ligar uma nota e também para a TROCA de nota/oitava com uma nota soando (a antiga tem de parar).
+  await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-afinador')`)); ) await dormir(250);
+  await dormir(500);
+  await av(`window.__rejeicoes = []; addEventListener('unhandledrejection', (e) => window.__rejeicoes.push(String(e.reason))); 1`);
+  await av(`document.getElementById('aba-afinador').click(); 1`);
+  await dormir(400);
+  await av(`window.__ACOriginal = window.AudioContext; window.AudioContext = class { constructor() { throw new Error('sem áudio'); } }; 1`);
+  await clicarGrande(0);
+  await dormir(600);
+  const audioFalhou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), pressionado: document.querySelectorAll('#painel-afinador .grande')[0].getAttribute('aria-pressed'), rejeicoes: window.__rejeicoes.length })`);
+  confere(audioFalhou.aviso && audioFalhou.pressionado === "false" && audioFalhou.rejeicoes === 0, `áudio indisponível: aviso na tela, botão normal e nenhuma promessa rejeitada solta: ${JSON.stringify(audioFalhou)}`);
+  await av(`window.AudioContext = window.__ACOriginal; 1`);
+  await clicarGrande(0);
+  await dormir(900);
+  const recuperou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), tocando: window.__bmccbTom?.tocando })`);
+  confere(!recuperou.aviso && recuperou.tocando === true, `tentar de novo funciona e o aviso some: ${JSON.stringify(recuperou)}`);
+  await clicarGrande(0); // desliga o Lá
+  await clicarGrande(1); // liga a nota escolhida
+  await dormir(900);
+  await av(`window.__resumeOriginal = AudioContext.prototype.resume; AudioContext.prototype.resume = () => Promise.reject(new Error('resume falhou')); 1`);
+  await av(`[...document.querySelectorAll('#painel-afinador .botao-barra')].find((b) => /up|acima|arriba/i.test(b.getAttribute('aria-label'))).click(); 1`);
+  await dormir(700);
+  const trocaFalhou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), pressionado: document.querySelectorAll('#painel-afinador .grande')[1].getAttribute('aria-pressed'), soando: window.__bmccbTom.tocando, rejeicoes: window.__rejeicoes.length })`);
+  confere(trocaFalhou.aviso && trocaFalhou.pressionado === "false" && trocaFalhou.soando === false && trocaFalhou.rejeicoes === 0, `a troca de nota que falha para a nota antiga, avisa e não deixa rejeição solta: ${JSON.stringify(trocaFalhou)}`);
+  await av(`AudioContext.prototype.resume = window.__resumeOriginal; 1`);
   ws.close();
 
   // 6. análise: trocas de sílaba antes da pausa

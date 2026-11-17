@@ -5,6 +5,8 @@
   import { formatarMB } from "$lib/sons/formato";
   import { bytesDoPacote } from "$lib/sons/tipos";
   import Aviso from "$lib/Aviso.svelte";
+  import Cartao from "$lib/Cartao.svelte";
+  import LinhaPacote from "$lib/LinhaPacote.svelte";
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
   import { IDIOMAS, i18n, type Idioma } from "$lib/i18n/index.svelte";
@@ -21,6 +23,10 @@
 
   let resultado = $state<{ tipo: "sucesso" | "erro"; texto: string } | null>(null);
   let confirmando = $state(false);
+  // Cada bloco é um cartão recolhível, fechado de saída: a linha de resumo ao lado do título mostra o estado sem abrir.
+  let aparenciaAberta = $state(false);
+  let idiomaAberto = $state(false);
+  let conteudoAberto = $state(false);
   // O texto do "Sobre o app" é longo: fica num card fechado, que a pessoa abre se quiser ler.
   let sobreAberto = $state(false);
   // Os créditos também ficam num card fechado: é informação de licença, que quase ninguém precisa ler no dia a dia.
@@ -75,6 +81,33 @@
     return traduzirErro(e.bruto, t);
   });
 
+  // --- Resumos dos cartões fechados. ---
+  const resumoAparencia = $derived(
+    // O Alto contraste tem paleta própria e ignora o estilo: só ele aparece.
+    tema.atual === "alto-contraste" ? t("tema.alto-contraste") : `${t(`tema.${tema.atual}`)} · ${t(`estilo.${estilo.atual}`)}`,
+  );
+  // O resumo do Conteúdo: o hinário, as partituras e os sons. Durante um download ou depois de um erro, mostra isso (com ícone no erro),
+  // porque o progresso e o aviso ficam DENTRO do cartão e não se veriam com ele fechado.
+  const resumoConteudo = $derived.by((): { texto: string; alerta: boolean } => {
+    const sonsAndamento = sons.pacotes.map((p) => sons.andamento(p.id));
+    if (partituras.andamento.fase === "erro" || sonsAndamento.some((a) => a.fase === "erro")) {
+      return { texto: t("ajustes.resumo_erro"), alerta: true };
+    }
+    const np = Math.round(partituras.andamento.progresso * 100);
+    if (partituras.andamento.fase === "baixando") return { texto: `${t("partituras.titulo")}: ${t("partituras.baixando", { n: np })}`, alerta: false };
+    if (partituras.andamento.fase === "conferindo") return { texto: `${t("partituras.titulo")}: ${t("partituras.conferindo")}`, alerta: false };
+    if (partituras.andamento.fase === "instalando") return { texto: `${t("partituras.titulo")}: ${t("partituras.instalando")}`, alerta: false };
+    const ativo = sonsAndamento.find((a) => a.fase === "baixando" || a.fase === "conferindo");
+    if (ativo) {
+      const texto = ativo.fase === "baixando" ? t("sons.baixando", { n: Math.round(ativo.progresso * 100) }) : t("sons.conferindo");
+      return { texto: `${t("sons.titulo")}: ${texto}`, alerta: false };
+    }
+    const hinario = !biblioteca.pacote ? "…" : biblioteca.pacote.exemplo ? t("ajustes.resumo_exemplo") : biblioteca.pacote.hinario.hinario.nome;
+    const parts = instaladas > 0 ? i18n.tn("plural.partituras", instaladas) : t("ajustes.resumo_sem_partituras");
+    const algumSom = sons.pacotes.some((p) => sons.pacoteInstalado(p));
+    return { texto: `${hinario} · ${parts} · ${algumSom ? t("ajustes.resumo_sons") : t("ajustes.resumo_sem_sons")}`, alerta: false };
+  });
+
   async function remover() {
     confirmando = false;
     try {
@@ -92,169 +125,144 @@
 <Barra titulo={t("ajustes.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />
 
 <main class="coluna conteudo">
-  <section>
-    <h2>{t("ajustes.aparencia")}</h2>
-    <!-- Duas escolhas que se combinam: o modo (claro ou escuro) e o estilo de cor. O próprio rótulo visível dá o nome
-         ao grupo (aria-labelledby), então texto visível e nome acessível são sempre o mesmo. -->
-    <p class="rotulo-grupo" id="rotulo-modo">{t("ajustes.modo")}</p>
-    <fieldset class="segmentos modo" aria-labelledby="rotulo-modo">
-      {#each TEMAS as id}
-        <label class:ativo={tema.atual === id}>
-          <input type="radio" name="tema" value={id} checked={tema.atual === id} onchange={() => (tema.atual = id)} />
-          <span class="opcao-tema">{#if tema.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`tema.${id}`)}</span>
-        </label>
-      {/each}
-    </fieldset>
-    <p class="rotulo-grupo" id="rotulo-estilo">{t("ajustes.estilo")}</p>
-    <!-- O Alto contraste tem paleta própria: com ele o estilo não vale, então o grupo fica desativado e uma nota diz por quê. -->
-    <fieldset class="segmentos" aria-labelledby="rotulo-estilo" disabled={tema.atual === "alto-contraste"}>
-      {#each ESTILOS as id}
-        <label class:ativo={estilo.atual === id}>
-          <input type="radio" name="estilo" value={id} checked={estilo.atual === id} onchange={() => (estilo.atual = id)} />
-          <span class="opcao-tema">{#if estilo.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`estilo.${id}`)}</span>
-        </label>
-      {/each}
-    </fieldset>
-    {#if tema.atual === "alto-contraste"}<p class="meta">{t("ajustes.estilo_alto_contraste")}</p>{/if}
-  </section>
-
-  <section>
-    <h2>{t("ajustes.idioma")}</h2>
-    <select
-      aria-label={t("ajustes.idioma")}
-      value={i18n.idioma}
-      onchange={(e) => (i18n.idioma = e.currentTarget.value as Idioma)}
-    >
-      <!-- Cada nome está na própria língua: o lang faz o leitor de tela pronunciar certo. -->
-      {#each Object.entries(IDIOMAS) as [id, l]}<option value={id} lang={id}>{l.nome}</option>{/each}
-    </select>
-  </section>
-
-  <section>
-    <h2>{t("ajustes.biblioteca")}</h2>
-    {#if biblioteca.pacote}
-      <p class="meta">
-        {#if biblioteca.pacote.exemplo}
-          {t("biblioteca.aviso_exemplo")}
-        {:else}
-          {t("ajustes.fonte_atual", {
-            nome: biblioteca.pacote.hinario.hinario.nome,
-            total: i18n.tn("plural.hinos", biblioteca.pacote.hinario.hinos.length),
-          })}
-        {/if}
-      </p>
-    {/if}
-
-    <div class="acoes">
-      <label class="botao primario">
-        {t("importar.botao")}
-        <input type="file" accept=".json,application/json" onchange={importar} hidden />
-      </label>
-      {#if biblioteca.pacote && !biblioteca.pacote.exemplo}
-        <button class="botao perigo" onclick={() => (confirmando = true)}>{t("importar.remover")}</button>
-      {/if}
-    </div>
-
-    {#if confirmando}
-      <div class="confirma" role="alertdialog" aria-labelledby="confirma-titulo" aria-describedby="confirma-texto">
-        <h3 id="confirma-titulo">{t("ajustes.remover_titulo")}</h3>
-        <p id="confirma-texto">{t("ajustes.remover_texto")}</p>
-        <div class="acoes">
-          <button class="botao" onclick={() => (confirmando = false)}>{t("ajustes.cancelar")}</button>
-          <button class="botao perigo" onclick={remover}>{t("ajustes.confirmar_remocao")}</button>
-        </div>
-      </div>
-    {/if}
-
-    {#if resultado}<Aviso tipo={resultado.tipo}>{resultado.texto}</Aviso>{/if}
-  </section>
-
-  <section id="partituras">
-    <h2>{t("partituras.titulo")}</h2>
-    <p class="meta">{t("partituras.explica")}</p>
-    <div class="pacote">
-      <div class="pacote-info">
-        <strong>{t("partituras.pacote")}</strong>
-        <span class="meta">{estadoPartituras}</span>
-      </div>
-      {#if partituras.andamento.fase === "baixando"}
-        <progress
-          value={partituras.andamento.progresso}
-          max="1"
-          aria-label={t("partituras.baixando", { n: Math.round(partituras.andamento.progresso * 100) })}
-        ></progress>
-        <span class="meta">{t("partituras.baixando", { n: Math.round(partituras.andamento.progresso * 100) })}</span>
-      {:else if partituras.andamento.fase === "conferindo"}
-        <span class="meta" role="status">{t("partituras.conferindo")}</span>
-      {:else if partituras.andamento.fase === "instalando"}
-        <span class="meta" role="status">{t("partituras.instalando")}</span>
-      {:else if instaladas > 0}
-        <button class="botao" onclick={() => partituras.remover()}>{t("partituras.remover")}</button>
-      {:else if partituras.disponivel}
-        <button class="botao primario" onclick={() => partituras.baixar()}>
-          {t("partituras.baixar", { tamanho: formatarMB(partituras.bytes, i18n.idioma) })}
-        </button>
-      {/if}
-    </div>
-    {#if partituras.andamento.fase === "erro"}
-      <Aviso tipo="erro">{erroDasPartituras}</Aviso>
-    {/if}
-    {#if partituras.recusadas.length > 0}
-      <Aviso tipo="info">
-        {t("partituras.recusadas", {
-          total: partituras.recusadas.length,
-          lista: listaCurta(partituras.recusadas.map((x) => x.numero)),
-          motivo: partituras.recusadas[0].motivo,
-        })}
-      </Aviso>
-    {/if}
-  </section>
-
-  <section>
-    <h2>{t("sons.titulo")}</h2>
-    <p class="meta">{t("sons.explica")}</p>
-    {#each sons.pacotes as p (p.id)}
-      {@const and = sons.andamento(p.id)}
-      {@const instalado = sons.pacoteInstalado(p)}
-      {@const tamanho = formatarMB(bytesDoPacote(p), i18n.idioma)}
-      <div class="pacote">
-        <div class="pacote-info">
-          <strong>{t(`sons.pacote_${p.id}` as Chave)}</strong>
-          <span class="meta">{tamanho} · {instalado ? t("sons.instalado") : t("sons.nao_instalado")}</span>
-        </div>
-        {#if and.fase === "baixando"}
-          <progress
-            value={and.progresso}
-            max="1"
-            aria-label={t("sons.baixando", { n: Math.round(and.progresso * 100) })}
-          ></progress>
-          <span class="meta">{t("sons.baixando", { n: Math.round(and.progresso * 100) })}</span>
-        {:else if and.fase === "conferindo"}
-          <span class="meta" role="status">{t("sons.conferindo")}</span>
-        {:else if instalado}
-          <button class="botao" onclick={() => sons.remover(p.id)}>{t("sons.remover")}</button>
-        {:else}
-          <button class="botao primario" onclick={() => sons.baixar(p.id)}>{t("sons.baixar", { tamanho })}</button>
-        {/if}
-      </div>
-      {#if and.fase === "erro"}
-        <Aviso tipo="erro">{t(erroDoSom(and.erro))}</Aviso>
-      {/if}
-    {/each}
-  </section>
-
   <!-- Aviso: o app não tem ligação com a CCB. Vem antes do "Sobre", em destaque. -->
   <section>
     <Aviso tipo="info"><strong>{t("sobre.aviso_titulo")}</strong><br />{t("sobre.aviso")}</Aviso>
   </section>
 
   <section>
-    <details class="cartao" bind:open={sobreAberto}>
-      <summary>
-        <span>{t("ajustes.sobre")}</span>
-        <Icone nome={sobreAberto ? "fechar" : "abrir"} tamanho={24} />
-      </summary>
-      <div class="corpo sobre">
+    <Cartao titulo={t("ajustes.aparencia")} resumo={resumoAparencia} bind:aberto={aparenciaAberta}>
+      <!-- Duas escolhas que se combinam: o modo (claro ou escuro) e o estilo de cor. O próprio rótulo visível dá o nome
+           ao grupo (aria-labelledby), então texto visível e nome acessível são sempre o mesmo. -->
+      <p class="rotulo-grupo" id="rotulo-modo">{t("ajustes.modo")}</p>
+      <fieldset class="segmentos modo" aria-labelledby="rotulo-modo">
+        {#each TEMAS as id}
+          <label class:ativo={tema.atual === id}>
+            <input type="radio" name="tema" value={id} checked={tema.atual === id} onchange={() => (tema.atual = id)} />
+            <span class="opcao-tema">{#if tema.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`tema.${id}`)}</span>
+          </label>
+        {/each}
+      </fieldset>
+      <p class="rotulo-grupo" id="rotulo-estilo">{t("ajustes.estilo")}</p>
+      <!-- O Alto contraste tem paleta própria: com ele o estilo não vale, então o grupo fica desativado e uma nota diz por quê. -->
+      <fieldset class="segmentos" aria-labelledby="rotulo-estilo" disabled={tema.atual === "alto-contraste"}>
+        {#each ESTILOS as id}
+          <label class:ativo={estilo.atual === id}>
+            <input type="radio" name="estilo" value={id} checked={estilo.atual === id} onchange={() => (estilo.atual = id)} />
+            <span class="opcao-tema">{#if estilo.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`estilo.${id}`)}</span>
+          </label>
+        {/each}
+      </fieldset>
+      {#if tema.atual === "alto-contraste"}<p class="meta">{t("ajustes.estilo_alto_contraste")}</p>{/if}
+    </Cartao>
+  </section>
+
+  <section>
+    <Cartao titulo={t("ajustes.idioma")} resumo={IDIOMAS[i18n.idioma].nome} bind:aberto={idiomaAberto}>
+      <select
+        aria-label={t("ajustes.idioma")}
+        value={i18n.idioma}
+        onchange={(e) => (i18n.idioma = e.currentTarget.value as Idioma)}
+      >
+        <!-- Cada nome está na própria língua: o lang faz o leitor de tela pronunciar certo. -->
+        {#each Object.entries(IDIOMAS) as [id, l]}<option value={id} lang={id}>{l.nome}</option>{/each}
+      </select>
+    </Cartao>
+  </section>
+
+  <!-- Conteúdo: o hinário, as partituras e os sons gravados no mesmo desenho de linha (LinhaPacote). -->
+  <section>
+    <Cartao id="conteudo" titulo={t("ajustes.conteudo")} bind:aberto={conteudoAberto}>
+      {#snippet resumo()}{#if resumoConteudo.alerta}<Icone nome="alerta" tamanho={16} /> {/if}{resumoConteudo.texto}{/snippet}
+      <h3 class="sub primeiro">{t("ajustes.hinario")}</h3>
+      <p class="hinario-info">
+        <strong>{!biblioteca.pacote ? "…" : biblioteca.pacote.exemplo ? t("ajustes.hinario_exemplo") : biblioteca.pacote.hinario.hinario.nome}</strong>
+        <span class="meta">{!biblioteca.pacote ? "" : biblioteca.pacote.exemplo ? t("biblioteca.aviso_exemplo") : i18n.tn("plural.hinos", biblioteca.pacote.hinario.hinos.length)}</span>
+      </p>
+      <div class="acoes lado-a-lado">
+        <label class="botao primario">
+          {t("importar.botao")}
+          <input type="file" accept=".json,application/json" onchange={importar} hidden />
+        </label>
+        {#if biblioteca.pacote && !biblioteca.pacote.exemplo}
+          <button class="botao perigo" onclick={() => (confirmando = true)}>{t("importar.remover")}</button>
+        {/if}
+      </div>
+      {#if confirmando}
+        <div class="confirma" role="alertdialog" aria-labelledby="confirma-titulo" aria-describedby="confirma-texto">
+          <h3 id="confirma-titulo">{t("ajustes.remover_titulo")}</h3>
+          <p id="confirma-texto">{t("ajustes.remover_texto")}</p>
+          <div class="acoes">
+            <button class="botao" onclick={() => (confirmando = false)}>{t("ajustes.cancelar")}</button>
+            <button class="botao perigo" onclick={remover}>{t("ajustes.confirmar_remocao")}</button>
+          </div>
+        </div>
+      {/if}
+
+      {#if resultado}<Aviso tipo={resultado.tipo}>{resultado.texto}</Aviso>{/if}
+
+      <div id="partituras">
+        <h3 class="sub">{t("partituras.titulo")}</h3>
+        <p class="meta">{t("partituras.explica")}</p>
+        <LinhaPacote
+          titulo={t("partituras.pacote")}
+          detalhe={estadoPartituras}
+          fase={partituras.andamento.fase === "baixando" || partituras.andamento.fase === "conferindo" || partituras.andamento.fase === "instalando" ? partituras.andamento.fase : "ocioso"}
+          progresso={partituras.andamento.progresso}
+          textoBaixando={t("partituras.baixando", { n: Math.round(partituras.andamento.progresso * 100) })}
+          textoConferindo={t("partituras.conferindo")}
+          textoInstalando={t("partituras.instalando")}
+          instalado={instaladas > 0}
+          rotuloRemover={t("partituras.remover")}
+          aoRemover={() => partituras.remover()}
+          rotuloBaixar={partituras.disponivel ? t("partituras.baixar", { tamanho: formatarMB(partituras.bytes, i18n.idioma) }) : undefined}
+          aoBaixar={() => partituras.baixar()}
+        />
+        {#if partituras.andamento.fase === "erro"}
+          <Aviso tipo="erro">{erroDasPartituras}</Aviso>
+        {/if}
+        {#if partituras.recusadas.length > 0}
+          <Aviso tipo="info">
+            {t("partituras.recusadas", {
+              total: partituras.recusadas.length,
+              lista: listaCurta(partituras.recusadas.map((x) => x.numero)),
+              motivo: partituras.recusadas[0].motivo,
+            })}
+          </Aviso>
+        {/if}
+      </div>
+
+      <div>
+        <h3 class="sub">{t("sons.titulo")}</h3>
+        <p class="meta">{t("sons.explica")}</p>
+        {#each sons.pacotes as p (p.id)}
+          {@const and = sons.andamento(p.id)}
+          {@const instalado = sons.pacoteInstalado(p)}
+          {@const tamanho = formatarMB(bytesDoPacote(p), i18n.idioma)}
+          <LinhaPacote
+            titulo={t(`sons.pacote_${p.id}` as Chave)}
+            detalhe={`${tamanho} · ${instalado ? t("sons.instalado") : t("sons.nao_instalado")}`}
+            fase={and.fase === "baixando" || and.fase === "conferindo" ? and.fase : "ocioso"}
+            progresso={and.progresso}
+            textoBaixando={t("sons.baixando", { n: Math.round(and.progresso * 100) })}
+            textoConferindo={t("sons.conferindo")}
+            {instalado}
+            rotuloRemover={t("sons.remover")}
+            aoRemover={() => sons.remover(p.id)}
+            rotuloBaixar={t("sons.baixar", { tamanho })}
+            aoBaixar={() => sons.baixar(p.id)}
+          />
+          {#if and.fase === "erro"}
+            <Aviso tipo="erro">{t(erroDoSom(and.erro))}</Aviso>
+          {/if}
+        {/each}
+      </div>
+    </Cartao>
+  </section>
+
+  <section>
+    <Cartao titulo={t("ajustes.sobre")} bind:aberto={sobreAberto}>
+      <div class="sobre">
         <p>{t("sobre.intro")}</p>
 
         <h3>{t("sobre.fazer_titulo")}</h3>
@@ -274,16 +282,12 @@
         <h3>{t("sobre.codigo_titulo")}</h3>
         <p>{t("sobre.codigo")}</p>
       </div>
-    </details>
+    </Cartao>
   </section>
 
   <section>
-    <details class="cartao" bind:open={creditosAberto}>
-      <summary>
-        <span>{t("ajustes.creditos")}</span>
-        <Icone nome={creditosAberto ? "fechar" : "abrir"} tamanho={24} />
-      </summary>
-      <div class="corpo sobre">
+    <Cartao titulo={t("ajustes.creditos")} bind:aberto={creditosAberto}>
+      <div class="sobre">
         <p>{t("creditos.intro")}</p>
         <ul class="creditos">
           {#each CREDITOS as c (c.id)}
@@ -303,7 +307,7 @@
           {/each}
         </ul>
       </div>
-    </details>
+    </Cartao>
   </section>
 
   <!-- A versão fica sozinha no fim, centralizada, fora do card. -->
@@ -311,18 +315,8 @@
 </main>
 
 <style>
-  section { margin-bottom: 1.8rem; }
-  .cartao { border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
-  summary {
-    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 3rem;
-    padding: 0 0.9rem; font-weight: 600; cursor: pointer; list-style: none;
-  }
-  summary::-webkit-details-marker { display: none; }
-  .corpo { padding: 0.2rem 0.9rem 0.9rem; }
+  section { margin-bottom: 0.9rem; }
   .versao { margin: 0 0 1.5rem; text-align: center; }
-  .pacote { display: grid; gap: 0.5rem; margin: 0.6rem 0; padding: 0.8rem 0.9rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
-  .pacote-info { display: grid; gap: 0.15rem; }
-  .pacote progress { width: 100%; height: 0.625rem; accent-color: var(--acento); }
   .sobre p, .sobre li { line-height: 1.5; }
   .sobre h3 { margin: 1.1rem 0 0.3rem; font-size: 0.95rem; }
   .sobre ul { margin: 0; padding-left: 1.2rem; }
@@ -330,9 +324,14 @@
   .creditos li { display: grid; gap: 0.15rem; padding: 0.7rem 0; border-top: 0.0625rem solid var(--borda-controle); }
   .creditos li:first-child { border-top: 0; }
   .creditos .url { overflow-wrap: anywhere; }
-  .licenca summary { min-height: 2.75rem; padding: 0; font-weight: 500; color: var(--acento); }
+  .licenca summary {
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; cursor: pointer; list-style: none;
+    min-height: 2.75rem; padding: 0; font-weight: 500; color: var(--acento);
+  }
+  .licenca summary::-webkit-details-marker { display: none; }
   .licenca pre { margin: 0.4rem 0 0.8rem; font: 0.78rem/1.45 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
-  h2 { margin: 0 0 0.6rem; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--suave); }
+  .sub { margin: 1.1rem 0 0.2rem; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--suave); }
+  .sub.primeiro { margin-top: 0.4rem; }
   select {
     width: 100%; box-sizing: border-box; /* ocupa toda a largura, como as opções de aparência */
     min-height: 3rem; font-size: 1rem; padding: 0 0.6rem; border-radius: 0.75rem;
@@ -357,6 +356,10 @@
   .segmentos .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
   .segmentos input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
   .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0; }
+  /* Os botões do hinário ficam sempre lado a lado, cada um com metade da linha; o texto quebra em duas linhas quando não cabe. */
+  .acoes.lado-a-lado { flex-wrap: nowrap; }
+  .acoes.lado-a-lado .botao { flex: 1 1 0; min-width: 0; padding: 0.4rem 0.5rem; text-align: center; line-height: 1.2; }
+  .hinario-info { display: grid; gap: 0.15rem; margin: 0.2rem 0 0.4rem; }
   .confirma { margin: 0.8rem 0; padding: 1rem; border: 0.0625rem solid var(--perigo); border-radius: 0.75rem; background: var(--superficie); }
   .confirma h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
   .confirma p { margin: 0 0 0.6rem; line-height: 1.5; }
