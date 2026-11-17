@@ -973,6 +973,24 @@ async function principal() {
   await clicarGrande(0); // para
   await dormir(300);
 
+  // A corrida da troca de nota: se a contagem ANTIGA zera enquanto o áudio da nota nova ainda está iniciando, ela não pode parar a nota nova.
+  // Atrasa o início do áudio em 4 s (o `resume` do AudioContext) e troca de nota aos ~7,5 s de uma contagem de 10 s: a antiga zeraria 2,5 s depois
+  // do clique, DENTRO da espera. Com a contagem antiga cancelada no começo da troca, a nota nova toca depois do atraso e a contagem recomeça.
+  const aberta = await av(`document.querySelector('#painel-afinador details').open`);
+  if (!aberta) await av(`document.querySelector('#painel-afinador details summary').click(); 1`);
+  await dormir(300);
+  await av(`document.querySelector('#painel-afinador input[name="limite"][value="10"]').click(); 1`);
+  await clicarGrande(0);
+  await dormir(7500);
+  await av(`window.__resumeLento = AudioContext.prototype.resume; AudioContext.prototype.resume = function () { return new Promise((ok) => setTimeout(() => ok(window.__resumeLento.call(this)), 4000)); }; 1`);
+  await clicarGrande(1); // troca para a outra nota (o áudio dela demora 4 s para iniciar)
+  await dormir(5800);
+  const corridaDaTroca = { soando: await soando(), faltam: await faltam() };
+  confere(corridaDaTroca.soando === true && corridaDaTroca.faltam !== null && corridaDaTroca.faltam >= 7 && corridaDaTroca.faltam <= 10, `Temporizador: a contagem antiga zerar durante o início da nota nova não a para; a contagem recomeça com ela (faltam ${corridaDaTroca.faltam}): ${JSON.stringify(corridaDaTroca)}`);
+  await av(`AudioContext.prototype.resume = window.__resumeLento; 1`);
+  await clicarGrande(1); // para
+  await dormir(300);
+
   // ---- Ajustes: o que ficou aberto é lembrado, o valor ruim volta ao padrão e o link da aba Partitura abre o Conteúdo sem gravar (I-24, fatias 3 e 4) ----
   const AJ = `http://127.0.0.1:${PORTA_VITE}/ajustes`;
   const irParaAjustes = async (url) => {
