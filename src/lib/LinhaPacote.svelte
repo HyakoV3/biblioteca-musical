@@ -1,10 +1,7 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
-
   // Uma linha de conteúdo que se instala e se remove (partituras, sons gravados e, em Ajustes, o hinário): o título, um detalhe (tamanho e
   // estado) e a ação do momento. A LÓGICA de baixar, conferir e instalar não é daqui: fica nas lojas de estado (`sons/pacotes.svelte.ts`,
-  // `partituras/partituras.svelte.ts`); esta linha só desenha o que elas informam. Quem tem ações próprias (o hinário: importar e remover)
-  // passa o trecho `acoes`, que substitui os controles de baixar e remover.
+  // `partituras/partituras.svelte.ts`); esta linha só desenha o que elas informam.
   type Fase = "baixando" | "conferindo" | "instalando" | "ocioso";
   let {
     titulo,
@@ -19,7 +16,6 @@
     aoRemover,
     rotuloBaixar,
     aoBaixar,
-    acoes,
   }: {
     titulo: string;
     detalhe: string;
@@ -36,7 +32,6 @@
     /** Sem rótulo, não há botão de baixar (por exemplo, nenhum pacote publicado). */
     rotuloBaixar?: string;
     aoBaixar?: () => void;
-    acoes?: Snippet;
   } = $props();
 </script>
 
@@ -45,9 +40,7 @@
     <strong>{titulo}</strong>
     <span class="meta">{detalhe}</span>
   </div>
-  {#if acoes}
-    {@render acoes()}
-  {:else if fase === "baixando"}
+  {#if fase === "baixando"}
     <progress value={progresso} max="1" aria-label={textoBaixando}></progress>
     <span class="meta">{textoBaixando}</span>
   {:else if fase === "conferindo"}

@@ -175,22 +175,19 @@
     <Cartao id="conteudo" titulo={t("ajustes.conteudo")} bind:aberto={conteudoAberto}>
       {#snippet resumo()}{#if resumoConteudo.alerta}<Icone nome="alerta" tamanho={16} /> {/if}{resumoConteudo.texto}{/snippet}
       <h3 class="sub primeiro">{t("ajustes.hinario")}</h3>
-      <LinhaPacote
-        titulo={biblioteca.pacote && !biblioteca.pacote.exemplo ? biblioteca.pacote.hinario.hinario.nome : t("ajustes.hinario_exemplo")}
-        detalhe={!biblioteca.pacote ? "" : biblioteca.pacote.exemplo ? t("biblioteca.aviso_exemplo") : i18n.tn("plural.hinos", biblioteca.pacote.hinario.hinos.length)}
-      >
-        {#snippet acoes()}
-          <div class="acoes">
-            <label class="botao primario">
-              {t("importar.botao")}
-              <input type="file" accept=".json,application/json" onchange={importar} hidden />
-            </label>
-            {#if biblioteca.pacote && !biblioteca.pacote.exemplo}
-              <button class="botao perigo" onclick={() => (confirmando = true)}>{t("importar.remover")}</button>
-            {/if}
-          </div>
-        {/snippet}
-      </LinhaPacote>
+      <p class="hinario-info">
+        <strong>{biblioteca.pacote && !biblioteca.pacote.exemplo ? biblioteca.pacote.hinario.hinario.nome : t("ajustes.hinario_exemplo")}</strong>
+        <span class="meta">{!biblioteca.pacote ? "" : biblioteca.pacote.exemplo ? t("biblioteca.aviso_exemplo") : i18n.tn("plural.hinos", biblioteca.pacote.hinario.hinos.length)}</span>
+      </p>
+      <div class="acoes lado-a-lado">
+        <label class="botao primario">
+          {t("importar.botao")}
+          <input type="file" accept=".json,application/json" onchange={importar} hidden />
+        </label>
+        {#if biblioteca.pacote && !biblioteca.pacote.exemplo}
+          <button class="botao perigo" onclick={() => (confirmando = true)}>{t("importar.remover")}</button>
+        {/if}
+      </div>
       {#if confirmando}
         <div class="confirma" role="alertdialog" aria-labelledby="confirma-titulo" aria-describedby="confirma-texto">
           <h3 id="confirma-titulo">{t("ajustes.remover_titulo")}</h3>
@@ -359,6 +356,10 @@
   .segmentos .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
   .segmentos input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
   .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0; }
+  /* Os botões do hinário ficam sempre lado a lado, cada um com metade da linha; o texto quebra em duas linhas quando não cabe. */
+  .acoes.lado-a-lado { flex-wrap: nowrap; }
+  .acoes.lado-a-lado .botao { flex: 1 1 0; min-width: 0; padding: 0.4rem 0.5rem; text-align: center; line-height: 1.2; }
+  .hinario-info { display: grid; gap: 0.15rem; margin: 0.2rem 0 0.4rem; }
   .confirma { margin: 0.8rem 0; padding: 1rem; border: 0.0625rem solid var(--perigo); border-radius: 0.75rem; background: var(--superficie); }
   .confirma h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
   .confirma p { margin: 0 0 0.6rem; line-height: 1.5; }

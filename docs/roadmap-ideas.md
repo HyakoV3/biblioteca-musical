@@ -820,7 +820,7 @@ O que incomoda:
 - **"Importar hinário" aceita só `.json`** ("no futuro não existe": o hinário virá de um pacote). O teste confere o `accept`.
 
 ### O que se deseja
-Ajustes em **cartões recolhíveis**, cada um com uma **linha de estado quando fechado** (recolher não esconde o que importa), e um cartão **Conteúdo** com as três coisas instaláveis no **mesmo desenho de linha**:
+Ajustes em **cartões recolhíveis**, cada um com uma **linha de estado quando fechado** (recolher não esconde o que importa), e um cartão **Conteúdo** com as três coisas instaláveis. **Decisão do responsável ao testar (2026-11-17):** o **Hinário** não leva caixa (o texto do hinário e os dois botões **lado a lado**); as **partituras** e os **sons** ficam no desenho de linha (`LinhaPacote`):
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -829,15 +829,18 @@ Ajustes em **cartões recolhíveis**, cada um com uma **linha de estado quando f
 │ ▸ Aparência        Automático · Normal               │
 │ ▸ Idioma           Português                         │
 │ ▾ Conteúdo         Amostra · 5 partituras · sem sons │
+│   HINÁRIO                                            │
+│   Amostra de teste                                   │
+│   5 hinos                                            │
+│   [Importar hinário]    [Remover importação]         │
+│   PARTITURAS                                         │
 │   ┌────────────────────────────────────────────┐     │
-│   │ Hinário                                    │     │
-│   │ Amostra de teste · 5 hinos                 │     │
-│   │ [Importar arquivo]    [Remover importação] │     │
-│   ├────────────────────────────────────────────┤     │
-│   │ Partituras                                 │     │
+│   │ Todas as partituras                        │     │
 │   │ Instaladas: 5                    [Remover] │     │
-│   ├────────────────────────────────────────────┤     │
-│   │ Sons gravados                              │     │
+│   └────────────────────────────────────────────┘     │
+│   SONS GRAVADOS                                      │
+│   ┌────────────────────────────────────────────┐     │
+│   │ Todos os sons gravados                     │     │
 │   │ 36 MB · Não instalado    [Baixar (36 MB)]  │     │
 │   └────────────────────────────────────────────┘     │
 │ ▸ Sobre o app                                        │
