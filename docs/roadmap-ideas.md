@@ -21,6 +21,7 @@ Status possíveis: **anotada** · **em análise** · **planejada** · **feita** 
 - **Status:** anotada
 - **Origem:** pedido do responsável, 2026-11-14.
 - **Prioridade:** a definir
+- **Nota (2026-11-17):** o responsável quer o Gravador como uma **aba da tela inicial** (`Hinos | Afinador | Gravador | …`): ver a **I-28**. A permissão de microfone e a detecção de fone se decidem **junto com o afinador** (I-13, etapas 2 e 3): a pesquisa de 2026-11-17 está lá.
 
 ### O que se deseja (nas palavras do responsável)
 
@@ -313,65 +314,177 @@ verso, títulos). O desenho exato depende das fotos.
 
 ## I-13 — Afinador: dar o tom e mostrar se a nota está baixa ou alta
 
-- **Status:** anotada
-- **Origem:** pedido do responsável, 2026-11-14.
-- **Prioridade:** a definir
+- **Status:** **especificada** com o responsável em 2026-11-17 e **revisada por subagente Opus 5** no mesmo dia (18 achados, aplicados abaixo; ver "Revisão"). A **etapa 1** ("dar o tom") está pronta para implementar; a **etapa 2** ("ouvir e medir") começa por um **teste do microfone no aparelho** (ver "Etapas de entrega").
+- **Origem:** pedido do responsável, 2026-11-14; especificada em 2026-11-17.
+- **Prioridade:** a definir. Depende da **I-28** (a aba Afinador na tela inicial), que entra **junto** com a primeira tela do afinador.
 
-### O que se deseja (nas palavras do responsável)
+### O que se deseja (nas palavras do responsável, 2026-11-14)
 
 Um **afinador** que **dá o tom** e, se a pessoa estiver de **fone de ouvido**, oferece **escutar o som** do instrumento
 ou da voz e mostrar se está **baixo ou alto**, num **medidor (gauge) parecido com o de um acelerador**, com o ponteiro
 indo para baixo ou para cima da nota certa.
 
-### Ideia de comportamento (a validar)
+### Decisões do responsável (2026-11-17)
 
-Duas funções na mesma tela:
+1. **Duas etapas.** Primeiro **dar o tom** (não usa microfone nem permissão), depois **ouvir e medir**.
+2. **O tom do hino vem da partitura.** O conversor passa a ler a **tonalidade** do arquivo do MuseScore e a gravá-la no hinário (ver "Dados: a tonalidade").
+3. **Onde fica:** uma **aba da tela inicial** (`Hinos | Afinador | Gravador | …`), no mesmo estilo do `Ouvir | Letra | Partitura` de dentro do hino. É a **I-28**, que reaproveita o componente de abas.
 
-1. **Dar o tom.** O app toca uma nota de referência: o **lá** (padrão 440 Hz) ou uma nota escolhida. Para o músico de
-   hinário, a nota mais útil é a **tonalidade do hino** (o campo `tonalidade` já existe no hino), então a tela pode
-   oferecer "dar o tom do hino". Sai pelo mesmo sintetizador do app, com os timbres que já existem.
-2. **Ouvir e medir** (só **com fone**). O app escuta o microfone, descobre a nota e mostra **quantos cents** ela está
-   acima ou abaixo (1 semitom = 100 cents), num **ponteiro** que vai de "baixo" a "alto" passando pelo centro
-   ("afinado"). O ponteiro não pode depender só de cor: leva também o número em cents e a palavra ("baixo", "alto",
-   "afinado"), e respeita "reduzir movimento".
+### Etapa 1 — Dar o tom
 
-**Por que o fone:** se o app toca a nota de referência no alto-falante e escuta ao mesmo tempo, o microfone capta a
-própria nota de referência e confunde a medição. Com fone, a pessoa **ouve a referência no ouvido** e o microfone capta
-**só o instrumento**. Sem fone, o app oferece uma função por vez (dar o tom **ou** escutar). É a mesma ideia do
-gravador (I-03).
+**A aba Afinador** (esboço, no celular em pé; a barra de baixo é a da I-28):
 
-### Perguntas em aberto
+```
+┌──────────────────────────────────────────────┐
+│ Biblioteca Musical                      ⚙    │
+├──────────────────────────────────────────────┤
+│ Afinador                                     │
+│                                              │
+│   ┌──────────────────────────────────┐       │
+│   │      ▶  Lá 440 Hz                │       │
+│   └──────────────────────────────────┘       │
+│                                              │
+│   Outra nota                                 │
+│   [Dó][Dó♯][Ré][Mi♭][Mi][Fá][Fá♯][Sol]…      │
+│   Oitava  [−] 4 [+]      Mi♭4 · 311 Hz       │
+│                                              │
+│   Tom de um hino                             │
+│   Hino nº [ 276 ]        Mi♭ maior           │
+│   ┌──────────────────────────────────┐       │
+│   │      ▶  Dar o tom                │       │
+│   └──────────────────────────────────┘       │
+├──────────────────────────────────────────────┤
+│    Hinos        ▌ Afinador ▐    Gravador     │
+└──────────────────────────────────────────────┘
+```
 
-1. **Instrumentos que transpõem** (trompete e clarinete em si bemol, sax em mi bemol, trompa em fá): mostrar a nota
-   **tocada** (a que o músico lê) ou a **real**? O app já transpõe os hinos em semitons, então talvez haja
-   uma opção "instrumento" que ajuste a leitura.
-2. **Afinação de referência** configurável (440 ou 442 Hz), e **temperamento** igual (o usual).
-3. **Voz cantada** também, ou só instrumentos? A voz oscila mais e o ponteiro precisa de suavização.
-4. **Onde fica:** um atalho na aba Ouvir, uma tela própria ou dentro de Ajustes?
+**O que faz**
+- **Lá 440 Hz.** Um botão toca o lá central (A4) e **sustenta** a nota até ser apertado de novo (botão de ligar e desligar, com `aria-pressed`).
+- **Outra nota.** A pessoa escolhe a nota entre **12 botões** e a **oitava** (2 a 6). A tela mostra o nome e a frequência; o mesmo botão toca e para. **Grafia fixa dos 12:** Dó, Dó♯, Ré, Mi♭, Mi, Fá, Fá♯, Sol, Lá♭, Lá, Si♭, Si (os bemóis dos tons que os hinos mais usam e os sustenidos só onde faltam). Os botões formam um `radiogroup`, e cada um leva um `aria-label` **por extenso** ("Mi bemol"), porque o leitor de tela pode ler "♭" e "♯" como símbolos.
+- **Tom de um hino.** A pessoa escolhe o hino (campo com o número, a mesma busca da lista) e a tela mostra a **tonalidade** ("Mi♭ maior", no idioma da interface). **Dar o tom** toca a **tônica** dessa tonalidade. A **oitava padrão é a 4** (de Dó4 a Si4); abaixo da 3 o alto-falante do celular quase não reproduz o som, e a tela **avisa**. Hino sem tonalidade no hinário (conteúdo importado antes desta mudança) deixa o botão desligado com a explicação "importe um hinário atualizado".
+- **Som.** Timbre **sintetizado** `orgao_suave` (`src/lib/instrumentos.ts`: quase uma onda simples, **sem vibrato**, fácil de afinar de ouvido). Os instrumentos gravados ficam de fora porque o afinador **tem de funcionar sem nenhum pacote baixado** (o `smplr` até tem laço, `loadLoopData`, mas isso não muda o motivo).
+- **Volume** próprio, lembrado no aparelho. Afinação de referência fixa em **440 Hz** nesta etapa (temperamento igual).
 
-### Impacto técnico (hipóteses, não verificadas)
+**Áudio: um contexto próprio e um som de cada vez** (achado de bloqueio da revisão)
+- O hino toca num `AudioContext` **privado** do `Sintetizador` (nasce dentro de `tocar()`), e a pausa do hino é `ctx.suspend()`. Se o afinador usasse o mesmo contexto, **pausar o hino calaria o tom**. Logo o afinador tem o **seu próprio** `AudioContext`, criado e retomado **no toque** (o áudio só inicia depois de um gesto do usuário). **Reaproveita os perfis e a construção das ondas, não o contexto.**
+- **Nota sustentada é código novo:** `agendarNota` exige a duração e agenda a soltura de antemão. A nota do afinador precisa de rampa de entrada, nota sem fim, rampa de saída e `stop` do oscilador só depois da soltura (sem estalo).
+- **Dar o tom para o hino** que estiver tocando. Como `reproducao.pausar()` **não faz nada enquanto o hino ainda carrega** (`trocando`), o afinador **observa `reproducao.estado`** e só toca quando o hino não está tocando nem carregando.
+- **O caminho inverso também vale:** se a pessoa der "Tocar" no miniplayer (ou na tela do hino) **com o tom soando**, o tom **se cala**. O hino **não volta sozinho** depois que o tom para.
+- **Quando o tom para:** ao apertar de novo, ao sair da aba, quando a página vai para segundo plano (`visibilitychange`) e quando o hino começa.
 
-- **Detecção de altura (pitch):** algoritmos conhecidos são a autocorrelação, o **YIN** e o **McLeod (MPM)**. Antes de
-  escrever qualquer coisa, **pesquisar bibliotecas** que já fazem isso no navegador (por exemplo `pitchy`, de MPM, e
-  `pitchfinder`, de YIN), conferindo licença, tamanho e desempenho no celular, como foi feito com os sons.
-- **Microfone:** `getUserMedia` e a permissão `RECORD_AUDIO`, com o mesmo teste no Tauri Mobile da I-03. A permissão é
-  pedida só ao usar a escuta, com explicação, e o app funciona normalmente se for negada (dar o tom não precisa dela).
-- **Detecção de fone:** o mesmo problema da I-03 (pergunta 6): `enumerateDevices()` e `devicechange`, ou código nativo.
-- **Fone Bluetooth:** o atraso (100 a 300 ms) não atrapalha medir a nota, mas **a referência chega atrasada** ao ouvido.
-  Para afinar não importa, para o gravador importa.
-- **Baixa latência:** o ponteiro precisa reagir em poucas dezenas de milissegundos; ler o áudio com `AudioWorklet`, e
-  não com temporizadores, para ele não ficar "pulando".
-- **Ruído e harmônicos:** metais e saxofones têm harmônicos fortes que confundem algoritmos simples; testar com
-  instrumentos reais no celular do responsável.
+**Dados: a tonalidade** (o conversor e o formato)
+
+Hoje o conversor **não grava `tonalidade`**: o campo existe no formato (`docs/FORMATO.md`, e `Hino.tonalidade` no Rust) e a tela já o mostra, mas nos 5 hinos de amostra ele vem vazio. O arquivo do MuseScore traz a **armadura** (`<KeySig><accidental>-3</accidental>`: número de bemóis, negativo, ou de sustenidos, positivo) e, nos arquivos de amostra, **não traz o modo** (todos são do MuseScore **2.06**; que o MuseScore 4 grave `<concertKey>` e um `<mode>` **não foi confirmado**: aceitar o que existir e usar o modo escrito quando houver).
+
+- **Armadura:** a do **primeiro** `KeySig` da partitura (um braço `"KeySig"` em `percorrer`, como o `"Tempo"`, que também guarda só o primeiro); sem o elemento, armadura 0. Modulações no meio da peça são ignoradas (documentar).
+- **Tônica e modo (hipótese a validar):** a tônica **maior** da armadura é `(armadura × 7)` módulo 12 (em Rust, **`rem_euclid`**, porque o resto de um número negativo é negativo); a da **relativa menor** fica 3 semitons abaixo. O modo sai da **nota final do baixo**: se bate com a menor, **menor**; senão, **maior**. A "nota final" é a da passada **final**, se o hino tiver uma, ou a da normal. Se não bater com nenhuma, usa a **primeira** nota do baixo; se ainda não bater, assume maior e o conversor **avisa** na saída.
+- **Medido nos 5 hinos de amostra:** 4 trazem `KeySig` (−3, −3, +1 e −2) e o 457 não traz o elemento (a primeira nota do baixo é Dó: armadura 0). Nos 4 com armadura, a nota final do baixo é a tônica **maior** (Mi♭, Mi♭, Sol e Si♭) e igual à primeira nota do baixo. **Nenhum hino de amostra é menor**, então o ramo "menor" ainda não foi visto em dado real.
+- **O nome vem da armadura, não da tônica** (a mesma classe de nota tem dois nomes: +6 é Fá♯ maior e −6 é Sol♭ maior). Tabela, da armadura à tonalidade (maior / relativa menor):
+
+  | Armadura | −7 | −6 | −5 | −4 | −3 | −2 | −1 | 0 | +1 | +2 | +3 | +4 | +5 | +6 | +7 |
+  |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+  | Maior | Dó♭ | Sol♭ | Ré♭ | Lá♭ | Mi♭ | Si♭ | Fá | Dó | Sol | Ré | Lá | Mi | Si | Fá♯ | Dó♯ |
+  | Menor | Lá♭ | Mi♭ | Si♭ | Fá | Dó | Sol | Ré | Lá | Mi | Si | Fá♯ | Dó♯ | Sol♯ | Ré♯ | Lá♯ |
+
+- **O que se grava no hinário** (opcional; hinários antigos continuam válidos): `armadura` (−7 a +7), `modo` (`"maior"` ou `"menor"`) e, por compatibilidade com versões antigas do app, `tonalidade` em texto no idioma do hinário. **A tônica não é gravada:** o app a deriva de `armadura` e `modo` (função pura e testada em `afinador.ts`).
+- **Nomes por idioma:** o app **monta o nome** a partir de `armadura` e `modo` no idioma da **interface** (pt "Mi♭ maior", en "E♭ major", es "Mi♭ mayor"), e usa o texto `tonalidade` só se os campos faltarem. Efeito colateral a decidir: a **lista de hinos** e o cabeçalho do hino passam a mostrar a tonalidade de cada hino (o código já existe e hoje não aparece nada).
+- **Rust (`src-tauri/src/hinario.rs`):** declarar `armadura: Option<i64>` e `modo: Option<String>` (não um tipo mais estreito): um **tipo errado** num campo declarado faz o serde **recusar o hinário inteiro** (`json_invalido`), ao contrário de `compassos`, cujo descarte só acontece com o tipo certo e o conteúdo inválido. Validar **depois** de ler (armadura em −7 a 7, modo em `maior`/`menor`) e, se algo estiver inválido, **descartar os dois sem recusar o hino**. Sem declarar, o serde os descartaria em silêncio na ida ao front.
+- **`docs/FORMATO.md`:** o exemplo traz `"tonalidade": "Dó"`, sem modo; atualizar.
+- **Reconverter e reimportar o hinário** é parte do teste (a mesma lição dos `compassos`).
+
+**Impacto técnico da etapa 1 (hipóteses)**
+- `tools/mscx2json`: o braço `"KeySig"`, o modo, os campos novos (`armadura`, `modo`, `tonalidade`) e testes com armaduras de −7 a +7, ausência de `KeySig`, hino menor e caso ambíguo.
+- `src-tauri/src/hinario.rs` e `src/lib/biblioteca.svelte.ts`: os campos e a validação.
+- `src/lib/afinador.ts` (**funções puras**, testáveis no Vitest): `tonicaDe(armadura, modo)`, nome da nota e da tonalidade por idioma (pt, en, es), frequência de uma nota dada a afinação (`440 × 2^((n−69)/12)`; já existe `frequencia` em `sintetizador.ts`), cents entre duas frequências e nota mais próxima. Serve também à etapa 2.
+- Um módulo do **tom sustentado** (com o `AudioContext` próprio), usando os perfis de `src/lib/instrumentos.ts`.
+- Componente `Afinador.svelte` com a prop `ativa`, como a `Partitura.svelte`. Textos nos 3 idiomas, tamanhos em `rem`, botões com `aria-pressed`.
+- **Teste de ponta a ponta:** o teste de hoje não alcança o grafo de áudio privado do app, e o Chrome do `tests/e2e/karaoke.mjs` roda com `--autoplay-policy=no-user-gesture-required`, o que **esconde** o problema do gesto. Então: (1) conferir a frequência com um **nó de teste** exposto só em modo de teste, ou com um `OfflineAudioContext` que renderiza o mesmo perfil, e (2) rodar o trecho do gesto **sem essa flag** (mantendo `--mute-audio`) para provar que o toque inicia o áudio.
+
+### Etapa 2 — Ouvir e medir
+
+O app escuta o microfone, descobre a nota e mostra **quantos cents** ela está acima ou abaixo (1 semitom = 100 cents), num **ponteiro** que vai de "baixo" a "alto" passando pelo centro ("afinado").
+
+**O medidor**
+- Mostra o **nome da nota** mais próxima, o **número de cents** (com sinal) e a **palavra** ("baixo", "alto", "afinado"); o ponteiro nunca depende só da cor, e respeita "reduzir movimento".
+- **"Afinado":** ±5 cents (a banda mais comum nos afinadores; o limiar de percepção fica em 5 a 6 cents), com **histerese** para a palavra não piscar na borda. A tolerância fica configurável.
+- **Faixa:** de cerca de 65 Hz (Dó2) a 2100 Hz (Dó7); fora dela, "sem nota".
+- Sem som ou com sinal fraco, o medidor **descansa** e diz "toque ou cante uma nota", em vez de inventar uma leitura.
+- **Leitor de tela:** o medidor leva `aria-live` com **taxa limitada** (anunciar a mudança de nota e de palavra, no máximo uma vez por segundo, e não cada leitura em cents).
+
+**Como detecta (pesquisado em 2026-11-17)**
+- **Biblioteca: `pitchy`** (algoritmo MPM, de McLeod): tipos TypeScript, cerca de 2,8 KB comprimida (com a dependência `fft.js`), versão 4.1.0 de janeiro de 2024. Licença **MIT** no pacote do npm e **0BSD** no repositório (conferidos na revisão): as duas servem a um projeto MIT. API: `PitchDetector.forFloat32Array(N).findPitch(buffer, taxa)` devolve a frequência e uma **clareza** de 0 a 1. Ressalva: o último lançamento tem quase 3 anos (há commits recentes e uma issue de lançamento automático aberta), mas é pequeno o bastante para **copiar para o repositório** se for abandonado.
+- **Recusadas:** `pitchfinder` (a licença é "GNU v3" no `package.json`, sem arquivo de licença, e o YIN vem do aubio, que é GPL), `aubiojs` (aubio é GPL-3.0; 427 KB) e CREPE (precisa do TensorFlow.js e de um modelo; pesado demais). `@audio/pitch` (MIT, 2026) é uma alternativa **muito nova** (3 estrelas) e de cálculo O(N²).
+- **Janela:** 2048 amostras (de 42,7 a 46,4 ms a 48 e 44,1 kHz) cobrem dois períodos até ~65 Hz. **Ler a cada quadro** (~16 ms), com janelas sobrepostas, e não a cada 50 a 100 ms: a mediana abaixo precisa de várias leituras e, com leituras espaçadas, o atraso passaria de 400 ms. A latência de captura pesa pouco perto da janela, então **começar com `AnalyserNode`** (`getFloatTimeDomainData`), mais simples que um `AudioWorklet`, e só passar ao `AudioWorklet` se o teste no aparelho pedir.
+- **Filtros por cima do detector** (a biblioteca não os traz): corte por **clareza** (começar em 0,9 e calibrar entre 0,7 e 0,9, como relatam usuários do `pitchy`), corte por **volume** (RMS), **mediana sobre ~200 ms** (cerca de 12 leituras a ~16 ms) para o vibrato da voz (taxa de 4 a 7 Hz) e **regra de oitava**: travar a faixa e ignorar saltos de ~1200 cents até que persistam por N quadros. São **inferências**, a calibrar com voz e instrumentos reais.
+- **Precisão em voz cantada e metais não tem número publicado** que eu tenha achado (o mantenedor do `pitchy` nunca testou voz; há relatos de picos espúrios), então o desempenho **só se confirma testando** com a voz e os instrumentos do responsável.
+
+**Microfone no Tauri 2 para Android (pesquisado em 2026-11-17)**
+- O **wry trata o pedido de permissão da WebView** (`RustWebChromeClient.kt`, conferido na revisão): para captura de áudio ele pede `RECORD_AUDIO` e `MODIFY_AUDIO_SETTINGS` em tempo de execução e só concede se a pessoa aceitar; senão nega. As versões atuais são wry 0.57.2 e tauri 2.12.6.
+- **O manifesto precisa declarar** `RECORD_AUDIO` e `MODIFY_AUDIO_SETTINGS` (hoje só tem `INTERNET`, em `src-tauri/gen/android/app/src/main/AndroidManifest.xml`, que está versionado; nada em `capabilities/` nem em `tauri.conf.json` afeta o microfone). Sem a segunda há relato de `NotReadableError` (discussão tauri-apps/tauri#12732). Essa discussão sugere código extra na `MainActivity`; **não foi possível confirmar se ainda é necessário**.
+- Chamar `getUserMedia` **uma vez só, a partir de um toque**, sem chamadas paralelas: há uma issue aberta no wry (#1917) em que um resultado de permissão vazio é tratado como concedido e dois pedidos simultâneos se sobrescrevem.
+- **Não mudar `useHttpsScheme`:** muda a origem do armazenamento da WebView (e os dados do app). Que `http://tauri.localhost` conte como contexto seguro **não foi confirmado**, embora a discussão indique que funciona.
+- iOS: `NSMicrophoneUsageDescription` em `src-tauri/Info.ios.plist` (fora do escopo agora).
+- Não há plugin oficial; o plugin de comunidade encontrado **grava** nativamente e não serve para Web Audio. **Nada disso foi testado em Android 12 a 15**: é o motivo do teste de aparelho antes de construir o medidor.
+
+**Restrições de áudio**
+- Pedir `echoCancellation`, `noiseSuppression` e `autoGainControl` como `false` (como `ideal`), `channelCount: 1`, e **conferir o que valeu** com `track.getSettings()`. No código atual do Chromium para Android, sem o cancelamento de eco ele **não usa o caminho de chamada** (que mexe no sinal). Há um relato isolado de que desligar o AGC e o NS não evitou quedas de volume em vogais sustentadas; **testar com a voz**.
+
+**Casos de borda da escuta**
+- **Permissão negada "para sempre":** o app só pode **explicar** e mandar a pessoa para os ajustes do aparelho (não há plugin para abri-los daqui). **Dar o tom continua funcionando.**
+- **Segundo plano e bloqueio de tela:** soltar o microfone em `visibilitychange`.
+- **Chamada telefônica e foco de áudio:** o comportamento da WebView com Web Audio **não foi confirmado**; testar no aparelho.
+
+**Fone, Bluetooth e o ciclo de áudio** (a premissa original muda; **proposta minha, não decisão do responsável**: ver a pergunta 1)
+- O rascunho dizia "só com fone". Se os dois modos forem **exclusivos** (ao escutar, a nota de referência **para**; ao tocar a nota, o microfone **fecha**), o app não cria o ciclo alto-falante → microfone por conta própria e **não precisa detectar fone** na v1. Ao ligar a escuta, o app também **pausa** o hino que estiver tocando.
+- Ouvir e tocar **ao mesmo tempo** (a ideia original, com fone) exige saber se há fone. No navegador isso é **pouco confiável** na WebView do Android (o evento `devicechange` só existe a partir do Chrome 132, os nomes dos dispositivos podem vir vazios, relatos de só aparecer o dispositivo `default`). O caminho sustentável é um **plugin Tauri pequeno em Kotlin** com `AudioManager.getDevices` e `registerAudioDeviceCallback`, que avisa o JavaScript (não achei plugin pronto). Fica para uma etapa 3, junto com o gravador (I-03), que tem a mesma necessidade.
+- **Fone Bluetooth:** quando o microfone usado é o do fone Bluetooth, o Chromium coloca o Android em **modo de comunicação** e a saída passa do perfil de música (A2DP) para o de voz (SCO), de qualidade de chamada (commit `78d0de138346e6edfc8c33bdd22c45b3eec4f3d0` do Chromium, "android audio: Set communication mode when using Bluetooth microphone"; a revisão leu a mensagem do commit, não o código). Recomendação: **fone com fio (ou USB-C)** ou o microfone do próprio aparelho. Forçar o microfone do aparelho por `deviceId` quando houver Bluetooth é uma ideia **não testada**.
+
+### Perguntas em aberto (com a minha recomendação)
+
+1. **Abandonar a premissa "só com fone" na v1** (modos exclusivos, sem detectar fone)? É **proposta minha**; o responsável pediu a escuta "se a pessoa estiver de fone". **Recomendo sim**: entrega a escuta sem depender de um plugin nativo, e a escuta e o tom ao mesmo tempo ficam para a etapa 3.
+2. **Atalho "Dar o tom" dentro do player do hino**, usando a **transposição** escolhida (o cartão "Andamento e Tom")? **Recomendo sim, depois da etapa 1**: é a hora em que a pessoa mais precisa.
+3. **Nota inicial de cada voz** (soprano, contralto, tenor e baixo) além da tônica? **Recomendo sim, é barato**: os dados já existem em `vozes`.
+4. **Tocar o acorde da tônica** (tônica, terça e quinta), e não só a nota? **Recomendo só a nota na v1.**
+5. **Mostrar a tonalidade na lista de hinos** e no cabeçalho do hino (o código já existe)? **Recomendo sim**, é pequena e útil a quem canta.
+6. **Instrumentos que transpõem** (si bemol, mi bemol, fá): **mostrar a nota real** (a que soa) na etapa 2, e uma opção "instrumento" depois.
+7. **Afinação de referência** de 440 para 442 Hz: **fixa em 440 Hz** na etapa 1; configurável na etapa 2.
+8. **Voz cantada** também? **Sim desde a etapa 2** (a mediana trata o vibrato); validar com a voz do responsável.
+9. **Escolher o microfone** (aparelho, fio, Bluetooth) numa lista? **Só se o teste de aparelho mostrar o problema do Bluetooth.**
+
+### Etapas de entrega (pull requests, nesta ordem)
+
+1. **Conversor, Rust e formato:** `armadura`, `modo` e `tonalidade` (com testes e `docs/FORMATO.md`). Sozinha já é útil: a tonalidade aparece nos hinos reconvertidos.
+2. **Aba Afinador, "dar o tom", junto com a I-28** (a barra de abas só aparece com mais de uma aba, então a I-28 sozinha não mostraria nada): `afinador.ts`, o tom sustentado, a tela e os testes. **Fim da etapa 1.**
+3. **Teste do microfone no aparelho (spike, antes de qualquer medidor):** um APK de teste com as duas permissões no manifesto e uma tela mínima que chama `getUserMedia`, mostra `track.getSettings()` e o nível do sinal. Confere, no aparelho do responsável, se pede a permissão, se funciona e como fica com fone com fio e Bluetooth.
+4. **Medição e medidor:** detector (`pitchy`), filtros e o ponteiro.
+5. **Mais tarde:** escuta e nota ao mesmo tempo com fone (plugin Kotlin), junto com o gravador.
 
 ### Critérios de aceitação (propostos)
 
-- O app toca o lá 440 Hz e a tonalidade de um hino de amostra, com o timbre escolhido.
-- Com um tom puro de 440 Hz vindo de outra fonte, o medidor marca "afinado" (±5 cents); a 20 cents abaixo ou acima,
-  marca "baixo" ou "alto" com o número certo.
-- Sem fone, o app não tenta tocar e escutar ao mesmo tempo e diz por quê.
-- Sem a permissão de microfone, dar o tom continua funcionando.
+**Etapa 1**
+- O Lá toca a 440 Hz (medido no teste, com folga de 1 Hz) e para ao apertar de novo, ao sair da aba, ao ir para segundo plano e quando o hino começa.
+- **Pausar o hino não cala o tom**, e o tom não começa **por cima** de um hino que está tocando ou carregando; dar "Tocar" no miniplayer com o tom soando **cala o tom**; o hino **não volta sozinho** depois do tom.
+- O toque inicia o áudio **sem** a flag de autoplay do Chrome de teste.
+- Para uma nota escolhida e para a tônica de um hino de amostra, a frequência bate com a fórmula do temperamento igual.
+- A tonalidade dos hinos de amostra sai certa no hinário (hinos 1, 276, 283, 398 e 457: Mi♭ maior, Mi♭ maior, Sol maior, Si♭ maior e Dó maior), os nomes saem corretos em pt, en e es, e um hino sem ela tem o botão desligado com a explicação.
+- Nenhum estalo ao ligar e desligar. Legível em todos os temas, em `rem`, com o teclado e o leitor de tela (o nome da nota é anunciado por extenso).
+
+**Etapa 2**
+- Com um tom puro de 440 Hz vindo de outra fonte, o medidor marca **afinado** (±5 cents); a 20 cents abaixo ou acima, marca **baixo** ou **alto** com o número certo (±3 cents).
+- Funciona com a voz do responsável e com pelo menos um instrumento de sopro, sem pular de oitava de forma visível.
+- Ao negar a permissão de microfone, **dar o tom continua funcionando** e a tela explica o que aconteceu.
+- Ao escutar, a nota de referência está parada; ao tocar a nota, o microfone está fechado; o hino que tocava é pausado.
 - O medidor se entende sem cor (número e palavra) e com "reduzir movimento".
+
+### Revisão
+
+Revisão por subagente **Opus 5** em 2026-11-17, só leitura, com o código aberto: **18 achados** (1 bloqueio, 15 a corrigir e 2 sugestões), todos aplicados acima; os mais pesados foram conferidos por mim no código antes de aplicar.
+- **Bloqueio:** o `AudioContext` do hino é privado e a pausa dele é `ctx.suspend()`; um afinador no mesmo contexto calaria ao pausar o hino. Agora o afinador tem contexto próprio.
+- **Mudou o desenho:** `reproducao.pausar()` não age enquanto o hino carrega (o afinador observa o estado); o serde **recusa o hinário inteiro** se um campo declarado vier com tipo errado (campos `Option<i64>` e `Option<String>`, validados depois); nomes de tonalidade pela armadura (tabela) e montados no idioma da interface; a I-28 entra junto com a aba Afinador; leitura a cada quadro, não a cada 50 a 100 ms.
+- **Corrigido por engano meu:** "as amostras gravadas não fazem laço" (o `smplr` tem laço); trocada a justificativa do timbre sintetizado.
+- **Confirmado pela revisão:** a matemática (fórmula, 65 a 2093 Hz, janela de 42,7 a 46,4 ms, relativa menor 3 semitons abaixo), os dados medidos nas amostras, a licença do `pitchy` (MIT no npm, 0BSD no repositório), o tratamento de permissão no wry e o commit do Chromium (hash completo acima).
+- **Não confirmado:** o `<mode>`/`<concertKey>` do MuseScore 4, o foco de áudio da WebView em chamada, o "desde 2022" do wry e a duração de ~3 s das amostras gravadas (que deixei de usar como argumento).
+- **Risco que mais preocupava o revisor:** o contexto compartilhado, que deixaria a etapa 1 muda justamente no caso "pausar o hino". Resolvido pelo contexto próprio e pelos critérios de aceitação acima.
 
 ---
 
@@ -380,6 +493,7 @@ gravador (I-03).
 - **Status:** anotada
 - **Origem:** pedido do responsável, 2026-11-16: "fazer um metrônomo também, embutido".
 - **Prioridade:** a definir
+- **Nota (2026-11-17):** a tela inicial vai ter abas de ferramentas (I-28: `Hinos | Afinador | Gravador | …`, "entre outras"). Se o metrônomo também for uma aba, a pergunta 3 ("onde fica") se resolve por ela.
 
 ### O problema
 Quem estuda uma voz precisa de um pulso firme, e hoje o app só dá o pulso dentro da música tocada. Para praticar sem o hino
@@ -845,6 +959,51 @@ Na linha de versão, algo como **"0.3.0 · teste 026 (43449fe)"**, e uma linha d
 
 ### Impacto técnico (hipóteses)
 Uma variável de ambiente no build (por exemplo `BMCCB_TESTE=026`) lida pelo `vite.config.js`; a linha em Ajustes; o texto nos 3 idiomas; um teste.
+
+## I-28 — Abas na tela inicial (Hinos | Afinador | Gravador | …)
+
+- **Status:** anotada, **revisada por subagente Opus 5** em 2026-11-17 (achados aplicados); entra **junto com a primeira tela do afinador** (I-13, etapa 1), porque a barra só aparece com mais de uma aba
+- **Origem:** pedido do responsável, 2026-11-17: "o Afinador vai ser o primeiro tab na tela inicial de lista, lá vai ter Hinos | Afinador | Gravador... entre outras, no mesmo estilo do que temos dentro do hino para Ouvir | Letra | Partituras", e "podemos até reaproveitar o frontend do componente, talvez o backend".
+- **Prioridade:** a definir (a primeira peça das ferramentas de estudo: afinador I-13, gravador I-03 e, talvez, metrônomo I-20)
+
+### O problema
+A tela inicial é só a lista de hinos. As ferramentas de estudo que pedimos (afinador, gravador, metrônomo) não pertencem a um hino específico, e não há onde pô-las. Dentro do hino o app já resolveu o problema parecido com **abas** (`Ouvir | Letra | Partitura`).
+
+### O que se deseja
+A tela inicial ganha uma **barra de abas** igual à do hino: **`Hinos | Afinador | Gravador | …`**. A aba **Hinos** é a lista de hoje (busca e lista); cada ferramenta nova entra como uma aba. A engrenagem de Ajustes continua no cabeçalho.
+
+**Atenção à frase do responsável:** "o Afinador vai ser o **primeiro** tab" pode querer dizer a **primeira aba nova** (depois de Hinos) ou a **primeira da barra**. Os dois exemplos dele listam `Hinos | Afinador | Gravador`, então leio como a primeira nova; **confirmar** (pergunta 1).
+
+### O que se reaproveita (conferido no código na revisão)
+- **`src/lib/Abas.svelte`, como está:** não tem nada preso ao hino. Barra fixa embaixo, **trilho lateral** com o celular deitado, as variáveis `--altura-navegacao` e `--largura-trilho` (o `.conteudo` do layout e o `Miniplayer` já as leem e abrem espaço) e a semântica WAI-ARIA de abas (`aba-<id>` e `painel-<id>`).
+- **O padrão de painéis do hino:** todos ficam **montados** e só um fica visível (`hidden`), então a **busca** (que mora em `biblioteca.busca`) **não se perde** ao trocar de aba. A lógica é a mesma do hino (`aba` como `$state`, lista de abas derivada, rótulos pelo i18n); **não** pede abstração nova agora, só a segunda ocupação do mesmo padrão.
+- **A barra só aparece com mais de uma aba**, como no hino: enquanto só existir **Hinos** e **Afinador**, são duas; o Gravador entra quando existir (I-03).
+
+### Comportamento
+- **A aba Afinador existe sempre**, também **fora** do `{#if biblioteca.pacote}` de `+page.svelte`: o Lá 440 não depende de hinário carregado (hoje essa condição envolve a tela toda).
+- **Cada ferramenta recebe `ativa`**, como a `Partitura.svelte`, e **solta o que usa** quando a aba não está à vista (nota do afinador, microfone).
+- **A rolagem não é do contêiner, é do documento:** a lista de hinos é longa e a aba Afinador é curta; ao trocar para ela, a página encurta e o navegador **corta a rolagem**, que se perde. Então a tela **guarda e restaura o `scrollY` de cada aba**.
+- **Voltar de um hino para a lista** reabre a aba em que a pessoa estava (estado guardado em módulo, como a busca), em vez de sempre voltar a **Hinos**.
+- **Áudio:** uma ferramenta que toca ou escuta **pausa** o hino que estiver tocando no miniplayer (um som de cada vez; ver as regras do tom na I-13).
+- O miniplayer continua aparecendo **acima** da barra de abas, como já faz dentro do hino.
+
+### Perguntas em aberto
+1. **Ordem e aba inicial:** `Hinos` à **esquerda** e aberta ao iniciar o app, com o Afinador em seguida? **Recomendo sim** (e confirmar a frase do responsável acima).
+2. A aba escolhida **fica lembrada** ao fechar o app, ou o app sempre abre em Hinos? **Recomendo abrir sempre em Hinos.**
+3. Com o celular **deitado**, o trilho lateral divide a largura com a lista (que já respeita `--largura-trilho`): conferir se a lista fica confortável.
+
+### Impacto técnico (hipóteses, a verificar)
+- `src/routes/+page.svelte`: envolver a lista num painel e acrescentar a barra; o componente `Afinador.svelte` (I-13) como segundo painel, **fora** da condição do pacote carregado.
+- **i18n:** a chave do rótulo de cada aba (`rotulo` de `Abas`) nos 3 idiomas, e o `aria-labelledby` **condicional** nos painéis (como no hino, que só o põe quando há mais de uma aba).
+- Teste de ponta a ponta: trocar de aba mantém a busca, o foco e a **rolagem de cada aba**, e a barra some se houver uma só aba.
+- O que a barra publica (`--altura-navegacao`) já é lido pelo `.conteudo` e pelo miniplayer.
+
+### Critérios de aceitação (propostos)
+- A tela inicial mostra a barra com as abas existentes, no celular em pé (embaixo) e deitado (trilho), igual à do hino.
+- Trocar de aba não apaga a busca nem a rolagem da lista (cada aba volta onde estava); o teclado e o leitor de tela se comportam como no hino.
+- A aba Afinador abre **sem hinário carregado**.
+- Sair da aba de uma ferramenta a solta (sem som, sem microfone aberto).
+- O miniplayer não cobre a barra nem o conteúdo.
 
 ---
 
