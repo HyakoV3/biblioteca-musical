@@ -170,8 +170,10 @@ que soa (I-12, fase B). O conversor `mscx2json` gera o campo sozinho.
   O conversor usa a mesma conta que já monta cada passada, então o instante de um compasso é exatamente onde as notas dele caem.
 - **Por que não o `timemap` do Verovio:** ele expande as repetições com ids de compasso que **não existem no SVG** (no hino 457, 56 compassos únicos contra
   38 desenhados). O conversor, que lê o `.mscx` e conhece as repetições de cada passada, é quem sabe qual compasso escrito toca em cada instante.
-- Cada lista tem de ter ao menos um item, com tempos finitos, não negativos e **estritamente crescentes**. Se estiver malformada, é **descartada na leitura,
-  sem recusar o hino**. Sem `compassos`, o hino e a partitura funcionam como sempre, só sem o destaque.
+- Cada lista tem de ter ao menos um item, com tempos finitos, não negativos e **estritamente crescentes**. Se **alguma** lista estiver malformada (inclusive
+  `final` ou `introducao`, que são opcionais), o campo `compassos` **inteiro** é descartado na leitura, **sem recusar o hino**: uma lista ruim derruba também a
+  `normal` válida, e as notas e a letra seguem como sempre. O conversor não gera esse caso; só um JSON editado à mão. Sem `compassos`, o hino e a partitura
+  funcionam como sempre, só sem o destaque.
 
 `partitura` é opcional e vale `"partituras/hino-N.svg"` quando o pacote traz a partitura do hino. Ele só **informa**: o app lê a
 partitura pelo **número do hino**, nunca pelo caminho que o JSON traz (assim um JSON malicioso não aponta para um arquivo
