@@ -133,4 +133,8 @@ describe("nota mais próxima", () => {
   it("frequência inválida não dá nota", () => {
     for (const ruim of [0, -5, NaN, Infinity]) expect(notaMaisProxima(ruim), String(ruim)).toBeNull();
   });
+
+  it("afinação de referência inválida (zero, negativa, não finita) também não dá nota", () => {
+    for (const ruim of [0, -440, NaN, Infinity, -Infinity]) expect(notaMaisProxima(440, ruim), String(ruim)).toBeNull();
+  });
 });

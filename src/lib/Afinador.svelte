@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Aviso from "./Aviso.svelte";
   import Icone from "./Icone.svelte";
   import { LA_PADRAO, OITAVA_MAX, OITAVA_MIN, OITAVA_PADRAO, frequenciaDe, limitarOitava, midiDe, nomeDaNota, nomeDaNotaPorExtenso } from "./afinador";
   import { i18n } from "./i18n/index.svelte";
@@ -19,6 +20,10 @@
   let volume = $state(lerAfinador().volume);
   /** O que está soando: o Lá 440, a nota escolhida, ou nada. */
   let tocando = $state<"la" | "nota" | null>(null);
+  /** O áudio não pôde iniciar (indisponível ou bloqueado neste aparelho): a tela avisa, em vez de o botão voltar sem explicação. */
+  let erroAudio = $state(false);
+  /** Numera os pedidos de som: uma falha só apaga o estado se nenhum pedido mais novo (nem uma parada) veio depois dela. */
+  let tentativa = 0;
 
   const midi = $derived(midiDe(classe, oitava));
   const freqNota = $derived(frequenciaDe(midi, LA_PADRAO));
@@ -28,32 +33,52 @@
   const grave = $derived(oitava < 3);
 
   function parar() {
+    tentativa++;
     tom.parar();
     tocando = null;
+  }
+
+  /** Sai de cena: para o som e DEVOLVE o áudio ao aparelho (fecha o contexto; ligar de novo cria outro). */
+  function sair() {
+    tentativa++;
+    tom.fechar();
+    tocando = null;
+  }
+
+  /** Pede o som. Nunca rejeita: uma falha vai para o console e para a tela, e só apaga o estado se este ainda é o pedido mais novo. */
+  async function soar(qual: "la" | "nota", freq: number) {
+    const minha = ++tentativa;
+    erroAudio = false;
+    tocando = qual;
+    try {
+      await tom.tocar(freq, volume);
+    } catch (e) {
+      console.warn("afinador: não foi possível tocar o tom", e);
+      if (minha === tentativa) {
+        tom.parar(); // uma troca de nota que falha não deixa a nota antiga soando com a tela em "parado"
+        tocando = null;
+        erroAudio = true;
+      }
+    }
   }
 
   /** Liga ou desliga uma das duas notas; ligar uma com a outra soando troca de nota. */
   async function alternar(qual: "la" | "nota") {
     if (tocando === qual) return parar();
     reproducao.parar(); // um som de cada vez: dar o tom para o hino que tocava (ou que ainda estava carregando)
-    tocando = qual;
-    try {
-      await tom.tocar(qual === "la" ? LA_PADRAO : freqNota, volume);
-    } catch {
-      tocando = null;
-    }
+    await soar(qual, qual === "la" ? LA_PADRAO : freqNota);
   }
 
   function escolherNota(n: number) {
     classe = n;
-    if (tocando === "nota") void tom.tocar(frequenciaDe(midiDe(n, oitava), LA_PADRAO), volume);
+    if (tocando === "nota") void soar("nota", frequenciaDe(midiDe(n, oitava), LA_PADRAO));
   }
 
   function mudarOitava(delta: number) {
     const nova = limitarOitava(oitava + delta);
     if (nova === oitava) return;
     oitava = nova;
-    if (tocando === "nota") void tom.tocar(frequenciaDe(midiDe(classe, nova), LA_PADRAO), volume);
+    if (tocando === "nota") void soar("nota", frequenciaDe(midiDe(classe, nova), LA_PADRAO));
   }
 
   function mudarVolume(v: number) {
@@ -64,14 +89,14 @@
 
   // O som para ao sair da aba, ao ir para segundo plano e quando o hino começa; ao fechar a tela, o áudio é devolvido ao aparelho.
   $effect(() => {
-    if (!ativa) parar();
+    if (!ativa) sair();
   });
   $effect(() => {
     if (reproducao.estado === "tocando") parar();
   });
   $effect(() => {
     const aoEsconder = () => {
-      if (document.hidden) parar();
+      if (document.hidden) sair();
     };
     document.addEventListener("visibilitychange", aoEsconder);
     return () => {
@@ -83,6 +108,7 @@
 
 <div class="afinador">
   <p class="meta">{t("afinador.explica")}</p>
+  {#if erroAudio}<Aviso tipo="erro">{t("player.erro_audio")}</Aviso>{/if}
 
   <section class="cartao bloco">
     <button class="botao primario grande" aria-pressed={tocando === "la"} onclick={() => alternar("la")}>

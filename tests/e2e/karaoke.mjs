@@ -828,9 +828,9 @@ async function principal() {
 
   // Sair da aba para o som (e o áudio é devolvido).
   await av(`document.getElementById('aba-hinos').click(); 1`);
-  await dormir(500);
-  const aposSair = await av(`({ tocando: window.__bmccbTom.tocando, pressionado: document.querySelectorAll('#painel-afinador .grande')[1].getAttribute('aria-pressed') })`);
-  confere(aposSair.tocando === false && aposSair.pressionado === "false", `sair da aba Afinador para o som: ${JSON.stringify(aposSair)}`);
+  await dormir(900); // a soltura da nota (0,1 s) e o fechamento do contexto
+  const aposSair = await av(`({ tocando: window.__bmccbTom.tocando, pressionado: document.querySelectorAll('#painel-afinador .grande')[1].getAttribute('aria-pressed'), contexto: window.__bmccbTom.analisador.context.state })`);
+  confere(aposSair.tocando === false && aposSair.pressionado === "false" && aposSair.contexto === "closed", `sair da aba Afinador para o som e devolve o áudio (contexto fechado): ${JSON.stringify(aposSair)}`);
   const buscaFicou = await av(`document.querySelector('#painel-hinos input[type="search"]').value`);
   confere(buscaFicou === "998", `a busca da lista sobrevive à troca de aba: "${buscaFicou}"`);
 
@@ -852,6 +852,34 @@ async function principal() {
   const depoisDoTom = await av(`({ mini: !!document.querySelector('.mini'), tom: window.__bmccbTom?.tocando })`);
   confere(miniAntes === true && depoisDoTom.mini === false && depoisDoTom.tom === true, `dar o tom para o hino que tocava (o miniplayer some e o tom soa): antes=${miniAntes}, depois=${JSON.stringify(depoisDoTom)}`);
   await clicarGrande(0); // desliga o tom
+
+  // Falha do áudio (Web Audio bloqueado ou indisponível): o aviso aparece, o botão volta ao normal, nada fica "tocando" e nenhuma promessa
+  // rejeitada fica solta. Vale para ligar uma nota e também para a TROCA de nota/oitava com uma nota soando (a antiga tem de parar).
+  await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-afinador')`)); ) await dormir(250);
+  await dormir(500);
+  await av(`window.__rejeicoes = []; addEventListener('unhandledrejection', (e) => window.__rejeicoes.push(String(e.reason))); 1`);
+  await av(`document.getElementById('aba-afinador').click(); 1`);
+  await dormir(400);
+  await av(`window.__ACOriginal = window.AudioContext; window.AudioContext = class { constructor() { throw new Error('sem áudio'); } }; 1`);
+  await clicarGrande(0);
+  await dormir(600);
+  const audioFalhou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), pressionado: document.querySelectorAll('#painel-afinador .grande')[0].getAttribute('aria-pressed'), rejeicoes: window.__rejeicoes.length })`);
+  confere(audioFalhou.aviso && audioFalhou.pressionado === "false" && audioFalhou.rejeicoes === 0, `áudio indisponível: aviso na tela, botão normal e nenhuma promessa rejeitada solta: ${JSON.stringify(audioFalhou)}`);
+  await av(`window.AudioContext = window.__ACOriginal; 1`);
+  await clicarGrande(0);
+  await dormir(900);
+  const recuperou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), tocando: window.__bmccbTom?.tocando })`);
+  confere(!recuperou.aviso && recuperou.tocando === true, `tentar de novo funciona e o aviso some: ${JSON.stringify(recuperou)}`);
+  await clicarGrande(0); // desliga o Lá
+  await clicarGrande(1); // liga a nota escolhida
+  await dormir(900);
+  await av(`window.__resumeOriginal = AudioContext.prototype.resume; AudioContext.prototype.resume = () => Promise.reject(new Error('resume falhou')); 1`);
+  await av(`[...document.querySelectorAll('#painel-afinador .botao-barra')].find((b) => /up|acima|arriba/i.test(b.getAttribute('aria-label'))).click(); 1`);
+  await dormir(700);
+  const trocaFalhou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), pressionado: document.querySelectorAll('#painel-afinador .grande')[1].getAttribute('aria-pressed'), soando: window.__bmccbTom.tocando, rejeicoes: window.__rejeicoes.length })`);
+  confere(trocaFalhou.aviso && trocaFalhou.pressionado === "false" && trocaFalhou.soando === false && trocaFalhou.rejeicoes === 0, `a troca de nota que falha para a nota antiga, avisa e não deixa rejeição solta: ${JSON.stringify(trocaFalhou)}`);
+  await av(`AudioContext.prototype.resume = window.__resumeOriginal; 1`);
   ws.close();
 
   // 6. análise: trocas de sílaba antes da pausa

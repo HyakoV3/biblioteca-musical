@@ -47,9 +47,9 @@ export const frequenciaDe = (midi: number, la: number = LA_PADRAO): number => la
 /** Quantos cents `freq` está acima (positivo) ou abaixo (negativo) de `referencia`. */
 export const centsEntre = (freq: number, referencia: number): number => 1200 * Math.log2(freq / referencia);
 
-/** A nota mais próxima de uma frequência e quantos cents faltam (ou sobram) para ela. Frequência inválida: nulo. */
+/** A nota mais próxima de uma frequência e quantos cents faltam (ou sobram) para ela. Frequência ou afinação de referência inválida: nulo. */
 export function notaMaisProxima(freq: number, la: number = LA_PADRAO): { midi: number; classe: number; oitava: number; cents: number } | null {
-  if (!Number.isFinite(freq) || freq <= 0) return null;
+  if (!Number.isFinite(freq) || freq <= 0 || !Number.isFinite(la) || la <= 0) return null;
   const midi = Math.round(69 + 12 * Math.log2(freq / la));
   return { midi, classe: classeDe(midi), oitava: Math.floor(midi / 12) - 1, cents: centsEntre(freq, frequenciaDe(midi, la)) };
 }

@@ -176,7 +176,7 @@
       {#snippet resumo()}{#if resumoConteudo.alerta}<Icone nome="alerta" tamanho={16} /> {/if}{resumoConteudo.texto}{/snippet}
       <h3 class="sub primeiro">{t("ajustes.hinario")}</h3>
       <p class="hinario-info">
-        <strong>{biblioteca.pacote && !biblioteca.pacote.exemplo ? biblioteca.pacote.hinario.hinario.nome : t("ajustes.hinario_exemplo")}</strong>
+        <strong>{!biblioteca.pacote ? "…" : biblioteca.pacote.exemplo ? t("ajustes.hinario_exemplo") : biblioteca.pacote.hinario.hinario.nome}</strong>
         <span class="meta">{!biblioteca.pacote ? "" : biblioteca.pacote.exemplo ? t("biblioteca.aviso_exemplo") : i18n.tn("plural.hinos", biblioteca.pacote.hinario.hinos.length)}</span>
       </p>
       <div class="acoes lado-a-lado">

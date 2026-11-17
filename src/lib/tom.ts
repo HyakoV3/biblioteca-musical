@@ -21,6 +21,8 @@ export class TomSustentado {
   private osc: OscillatorNode | null = null;
   private env: GainNode | null = null;
   private hz = 0;
+  /** Muda a cada `tocar()`, `parar()` e `fechar()`: um `tocar()` que ainda esperava o áudio e vê o número mudado já não vale. */
+  private geracao = 0;
 
   /** Há uma nota soando (ou entrando)? */
   get tocando(): boolean {
@@ -32,12 +34,16 @@ export class TomSustentado {
    * da pessoa: o áudio só inicia depois de um gesto.
    */
   async tocar(frequencia: number, volume: number): Promise<void> {
+    const minha = ++this.geracao;
     if (!this.ctx || this.ctx.state === "closed") {
       this.ctx = new AudioContext();
       this.onda = null; // a onda pertence ao contexto
     }
     const ctx = this.ctx;
     await ctx.resume();
+    // Enquanto o áudio iniciava, a pessoa pode ter parado o tom, saído da aba (fechar) ou pedido outra nota: esta já não vale, e o
+    // oscilador não pode nascer depois (nem num contexto que vai ser fechado).
+    if (minha !== this.geracao || this.ctx !== ctx) return;
     this.soltar();
     this.onda ??= ctx.createPeriodicWave(new Float32Array(PERFIL.harmonicos.length), Float32Array.from(PERFIL.harmonicos));
     const agora = ctx.currentTime;
@@ -57,16 +63,25 @@ export class TomSustentado {
 
   /** A nota sai com a sua soltura (sem estalo). */
   parar(): void {
+    this.geracao++;
     this.soltar();
   }
 
   /** Muda o volume da nota que soa, sem degrau. */
   volume(v: number): void {
-    if (this.env && this.ctx) this.env.gain.setTargetAtTime(v * GANHO_MAXIMO, this.ctx.currentTime, 0.02);
+    const { ctx, env } = this;
+    if (!ctx || !env) return;
+    const t = ctx.currentTime;
+    // Cancela o que estava agendado: a rampa de entrada da nota termina no volume ANTIGO e sobrescreveria a mudança feita durante ela. Mantém o
+    // ganho de agora (sem pulo) e vai ao novo valor.
+    env.gain.cancelScheduledValues(t);
+    env.gain.setValueAtTime(env.gain.value, t);
+    env.gain.setTargetAtTime(v * GANHO_MAXIMO, t, 0.02);
   }
 
   /** Para a nota e devolve o áudio ao aparelho (fecha o contexto depois da soltura). */
   fechar(): void {
+    this.geracao++;
     this.soltar();
     const ctx = this.ctx;
     this.ctx = null;
