@@ -538,6 +538,8 @@ async function principal() {
   // Zoom: 125% passa da largura da tela e rola de lado; o passo fica salvo; "restaurar" volta a 100%.
   const botoesZoom = await av(`[...document.querySelectorAll('#painel-partitura .controle-tamanho button')].map((b) => b.getAttribute('aria-label'))`);
   confere(botoesZoom.length === 3, `a barra de zoom tem 3 botões: ${JSON.stringify(botoesZoom)}`);
+  const ordemTamanho = await av(`[...document.querySelectorAll('#painel-letra .controle-tamanho button, #painel-partitura .controle-tamanho button')].map((b) => b.closest('[role="tabpanel"]').id.replace('painel-', '') + ':' + b.dataset.acao)`);
+  confere(JSON.stringify(ordemTamanho) === '["letra:mais","letra:padrao","letra:menos","partitura:mais","partitura:padrao","partitura:menos"]', `o controle de tamanho é "+ ⟲ −" (mais, restaurar, menos) na letra e na partitura: ${JSON.stringify(ordemTamanho)}`);
   await av("document.querySelector('#painel-partitura .controle-tamanho [data-acao=mais]').click(); 1");
   await dormir(200);
   const z1 = await av(`(() => {
@@ -700,7 +702,7 @@ async function principal() {
     return { aba: true, abas: [...document.querySelectorAll('[role="tab"]')].map((t) => t.id), href: a?.getAttribute('href') ?? null, botao: a?.classList.contains('botao') ?? false,
       svg: !!document.querySelector('#painel-partitura .folha svg'), visivel: !document.getElementById('painel-partitura').hidden };
   })()`);
-  confere(aviso.aba && aviso.href === "/ajustes" && aviso.botao && !aviso.svg && aviso.visivel, `sem pacote com partituras: a aba aparece com o aviso e o botão para Ajustes: ${JSON.stringify(aviso)}`);
+  confere(aviso.aba && aviso.href === "/ajustes?abrir=partituras" && aviso.botao && !aviso.svg && aviso.visivel, `sem pacote com partituras: a aba aparece com o aviso e o botão para Ajustes: ${JSON.stringify(aviso)}`);
   await av("sessionStorage.removeItem('e2e-sem-partituras'); sessionStorage.setItem('e2e-falha-partitura', '1'); 1");
 
   // Falha na leitura da partitura: o aviso de erro traz "Tentar de novo", e ele lê outra vez (não fica preso para sempre).
@@ -901,6 +903,137 @@ async function principal() {
   confere(trocaFalhou.aviso && trocaFalhou.pressionado === "false" && trocaFalhou.soando === false && trocaFalhou.rejeicoes === 0, `a troca de nota que falha para a nota antiga, avisa e não deixa rejeição solta: ${JSON.stringify(trocaFalhou)}`);
   await av(`AudioContext.prototype.resume = window.__resumeOriginal; 1`);
 
+  // ---- Temporizador do afinador (I-13): o padrão é "até parar" (como sempre); com 10 s o tom para sozinho; trocar de nota recomeça a contagem ----
+  await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-afinador')`)); ) await dormir(250);
+  await dormir(500);
+  await av(`document.getElementById('aba-afinador').click(); 1`);
+  await dormir(600);
+  const estadoTemporizador = () => av(`(() => { const d = document.getElementById('cartao-temporizador'); return { aberto: d.open, resumo: d.querySelector('summary').textContent.replace(/\\s+/g, ' ').trim() }; })()`);
+  const faltam = () => av(`(() => { const s = document.querySelector('#painel-afinador .grande[aria-pressed="true"] span[aria-hidden="true"]'); const m = s?.textContent.match(/\\d+/); return m ? Number(m[0]) : null; })()`);
+  const soando = () => av(`window.__bmccbTom?.tocando === true`);
+  const tmp0 = await estadoTemporizador();
+  confere(tmp0.aberto === false && /Until stopped|Até parar|Hasta parar/.test(tmp0.resumo), `Temporizador: o cartão começa fechado e em "até parar": ${JSON.stringify(tmp0)}`);
+
+  // Padrão ("até parar"): o tom NÃO para sozinho, nem depois de mais que o maior tempo oferecido.
+  await clicarGrande(0);
+  await dormir(11500);
+  const semLimite = { soando: await soando(), faltam: await faltam() };
+  semLimite.barra = await av(`!!document.querySelector('#painel-afinador .barra')`);
+  confere(semLimite.soando === true && semLimite.faltam === null && semLimite.barra === false, `Temporizador em "até parar": depois de 11 s o tom segue soando, sem contagem e sem barra de progresso: ${JSON.stringify(semLimite)}`);
+  await clicarGrande(0); // para
+  await dormir(300);
+
+  // 10 s: o botão mostra o que falta e o tom para sozinho.
+  await av(`document.querySelector('#cartao-temporizador summary').click(); 1`);
+  await dormir(300);
+  await av(`document.querySelector('#painel-afinador input[name="limite"][value="10"]').click(); 1`);
+  await dormir(300);
+  const tmp1 = await estadoTemporizador();
+  confere(tmp1.aberto === true && /10 s/.test(tmp1.resumo), `Temporizador: escolher 10 s aparece no resumo do cartão: ${JSON.stringify(tmp1)}`);
+  await clicarGrande(0);
+  await dormir(1500);
+  const barra = () => av(`(() => { const b = document.querySelector('#painel-afinador .grande[aria-pressed="true"]'); const r = b?.querySelector('.barra'); return r ? r.getBoundingClientRect().width / b.getBoundingClientRect().width : null; })()`);
+  const b1 = await barra();
+  confere(b1 !== null && b1 >= 0.05 && b1 <= 0.25, `Temporizador de 10 s: a barra de progresso começa pequena (~10% aos 1,5 s): ${b1 === null ? "sem barra" : Math.round(b1 * 100) + "%"}`);
+  const f1 = await faltam();
+  confere(f1 !== null && f1 >= 8 && f1 <= 10 && (await soando()), `Temporizador de 10 s: o botão mostra o que falta (8 a 10 s após 1,5 s) e o tom soa: faltam ${f1}`);
+  const rotuloAcessivel = await av(`document.querySelector('#painel-afinador .grande[aria-pressed="true"]').textContent.replace(/\\s+/g, ' ').trim()`);
+  confere(/^(Stop|Parar|Detener) · (\d+ s left|faltam \d+ s|faltan \d+ s)$/.test(rotuloAcessivel), `Temporizador: o botão segue sendo o de parar, com a contagem junto e o separador com espaços: "${rotuloAcessivel}"`);
+
+  // Trocar de nota recomeça a contagem: aos ~7 s faltam ~3; ao tocar a outra nota, voltam a faltar ~10.
+  await dormir(5500);
+  const b2 = await barra();
+  confere(b2 !== null && b2 >= 0.5 && b2 <= 0.85, `Temporizador de 10 s: aos ~7 s a barra de progresso está em ~70%: ${b2 === null ? "sem barra" : Math.round(b2 * 100) + "%"}`);
+  const f2 = await faltam();
+  confere(f2 !== null && f2 >= 2 && f2 <= 4, `Temporizador de 10 s: aos ~7 s faltam ~3: faltam ${f2}`);
+  await av(`document.querySelector('#painel-afinador details summary').click(); 1`); // abre "Outra nota"
+  await dormir(300);
+  await clicarGrande(1);
+  await dormir(1300);
+  const f3 = await faltam();
+  confere(f3 !== null && f3 >= 8 && (await soando()), `Temporizador: tocar outra nota recomeça a contagem (faltam ${f3}, e sem recomeçar seriam ~1)`);
+
+  // Passados os 10 s, o tom para sozinho: o botão volta a "tocar" e o leitor de tela é avisado.
+  await dormir(10500);
+  const fim10 = await av(`({ soando: window.__bmccbTom.tocando, pressionados: document.querySelectorAll('#painel-afinador .grande[aria-pressed="true"]').length, aviso: document.querySelector('#painel-afinador [role="status"]').textContent.trim() })`);
+  confere(fim10.soando === false && fim10.pressionados === 0 && /timer|temporizador/i.test(fim10.aviso), `Temporizador: passado o tempo o tom para sozinho, os botões voltam a "tocar" e o leitor de tela é avisado: ${JSON.stringify(fim10)}`);
+
+  // Mudar o tempo com o tom soando vale a partir de agora: 30 s recomeça a contagem de 30; "até parar" cancela a contagem.
+  await clicarGrande(0);
+  await dormir(1200);
+  await av(`document.querySelector('#painel-afinador input[name="limite"][value="30"]').click(); 1`);
+  await dormir(1200);
+  const f4 = await faltam();
+  confere(f4 !== null && f4 >= 27 && f4 <= 30, `Temporizador: mudar para 30 s com o tom soando recomeça a contagem (faltam ${f4})`);
+  await av(`document.querySelector('#painel-afinador input[name="limite"][value="0"]').click(); 1`);
+  await dormir(700);
+  const f5 = { faltam: await faltam(), soando: await soando() };
+  confere(f5.faltam === null && f5.soando === true, `Temporizador: voltar a "até parar" com o tom soando cancela a contagem e o tom segue: ${JSON.stringify(f5)}`);
+  await clicarGrande(0); // para
+  await dormir(300);
+
+  // A corrida da troca de nota: se a contagem ANTIGA zera enquanto o áudio da nota nova ainda está iniciando, ela não pode parar a nota nova.
+  // Atrasa o início do áudio em 4 s (o `resume` do AudioContext) e troca de nota aos ~7,5 s de uma contagem de 10 s: a antiga zeraria 2,5 s depois
+  // do clique, DENTRO da espera. Com a contagem antiga cancelada no começo da troca, a nota nova toca depois do atraso e a contagem recomeça.
+  const aberta = await av(`document.querySelector('#painel-afinador details').open`);
+  if (!aberta) await av(`document.querySelector('#painel-afinador details summary').click(); 1`);
+  await dormir(300);
+  await av(`document.querySelector('#painel-afinador input[name="limite"][value="10"]').click(); 1`);
+  await clicarGrande(0);
+  await dormir(7500);
+  await av(`window.__resumeLento = AudioContext.prototype.resume; AudioContext.prototype.resume = function () { return new Promise((ok) => setTimeout(() => ok(window.__resumeLento.call(this)), 4000)); }; 1`);
+  await clicarGrande(1); // troca para a outra nota (o áudio dela demora 4 s para iniciar)
+  await dormir(5800);
+  const corridaDaTroca = { soando: await soando(), faltam: await faltam() };
+  confere(corridaDaTroca.soando === true && corridaDaTroca.faltam !== null && corridaDaTroca.faltam >= 7 && corridaDaTroca.faltam <= 10, `Temporizador: a contagem antiga zerar durante o início da nota nova não a para; a contagem recomeça com ela (faltam ${corridaDaTroca.faltam}): ${JSON.stringify(corridaDaTroca)}`);
+  await av(`AudioContext.prototype.resume = window.__resumeLento; 1`);
+  await clicarGrande(1); // para
+  await dormir(300);
+
+  // ---- Ajustes: o que ficou aberto é lembrado, o valor ruim volta ao padrão e o link da aba Partitura abre o Conteúdo sem gravar (I-24, fatias 3 e 4) ----
+  const AJ = `http://127.0.0.1:${PORTA_VITE}/ajustes`;
+  const irParaAjustes = async (url) => {
+    await enviar("Page.navigate", { url });
+    for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('cartao-aparencia')`)); ) await dormir(250);
+    await dormir(500);
+  };
+  const estadoCartoes = () => av(`(() => { const a = (id) => document.getElementById(id)?.open; return { aparencia: a('cartao-aparencia'), idioma: a('cartao-idioma'), conteudo: a('conteudo'), salvo: localStorage.getItem('prefs.ajustes') }; })()`);
+  await irParaAjustes(AJ);
+  await av(`localStorage.removeItem('prefs.ajustes'); 1`);
+  await irParaAjustes(AJ);
+  const aj0 = await estadoCartoes();
+  confere(aj0.aparencia === false && aj0.idioma === false && aj0.conteudo === false && aj0.salvo === null, `Ajustes: sem nada salvo, todos os cartões começam fechados: ${JSON.stringify(aj0)}`);
+  await av(`document.querySelector('#cartao-aparencia summary').click(); 1`); // a pessoa abre a Aparência
+  await dormir(300);
+  await irParaAjustes(AJ); // fecha e abre a tela
+  const aj1 = await estadoCartoes();
+  confere(aj1.aparencia === true && aj1.idioma === false && aj1.conteudo === false && aj1.salvo === '{"aparencia":true,"idioma":false,"conteudo":false}', `Ajustes: o cartão que a pessoa abriu continua aberto ao voltar: ${JSON.stringify(aj1)}`);
+  await av(`document.querySelector('#cartao-aparencia summary').click(); 1`); // fecha de novo
+  await dormir(300);
+  await irParaAjustes(AJ);
+  const aj2 = await estadoCartoes();
+  confere(aj2.aparencia === false && aj2.salvo === '{"aparencia":false,"idioma":false,"conteudo":false}', `Ajustes: fechar também é lembrado: ${JSON.stringify(aj2)}`);
+  await av(`localStorage.setItem('prefs.ajustes', '{"aparencia":"sim","idioma":7,"conteudo":null}'); 1`);
+  await irParaAjustes(AJ);
+  const aj3 = await estadoCartoes();
+  confere(aj3.aparencia === false && aj3.idioma === false && aj3.conteudo === false, `Ajustes: valor ruim guardado volta ao padrão (tudo fechado): ${JSON.stringify(aj3)}`);
+
+  // O link da aba Partitura: abre o Conteúdo, rola até as partituras e NÃO grava essa abertura.
+  await av(`localStorage.removeItem('prefs.ajustes'); 1`);
+  await irParaAjustes(`${AJ}?abrir=partituras`);
+  const viaLink = await av(`(() => { const c = document.getElementById('partituras'); const r = c.getBoundingClientRect(); return { conteudo: document.getElementById('conteudo').open, visivel: r.top >= 0 && r.top < window.innerHeight && r.height > 0, salvo: localStorage.getItem('prefs.ajustes') }; })()`);
+  confere(viaLink.conteudo === true && viaLink.visivel === true && viaLink.salvo === null, `Ajustes pelo link da aba Partitura: o Conteúdo abre, as partituras ficam à vista e nada é gravado: ${JSON.stringify(viaLink)}`);
+  await irParaAjustes(AJ);
+  const semLink = await estadoCartoes();
+  confere(semLink.conteudo === false, `Ajustes sem o parâmetro: o Conteúdo volta a abrir fechado (a abertura pelo link não ficou): ${JSON.stringify(semLink)}`);
+  // Se a pessoa fecha o Conteúdo depois de chegar pelo link, aí sim é uma escolha dela e é lembrada.
+  await irParaAjustes(`${AJ}?abrir=partituras`);
+  await av(`document.querySelector('#conteudo summary').click(); 1`);
+  await dormir(300);
+  const fechouDepois = await estadoCartoes();
+  confere(fechouDepois.conteudo === false && fechouDepois.salvo === '{"aparencia":false,"idioma":false,"conteudo":false}', `Ajustes: fechar o Conteúdo depois de chegar pelo link é lembrado: ${JSON.stringify(fechouDepois)}`);
+  await av(`localStorage.removeItem('prefs.ajustes'); 1`);
   // ---- Acessibilidade: o título de cada cartão é um título (heading) na ÁRVORE DE ACESSIBILIDADE, e o summary segue sendo o botão que abre e fecha ----
   const titulosNaArvore = async () => {
     await enviar("Accessibility.enable");

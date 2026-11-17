@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount, tick } from "svelte";
+  import { page } from "$app/state";
   import Icone from "$lib/Icone.svelte";
   import type { Chave } from "$lib/i18n/pt";
   import { sons } from "$lib/sons/pacotes.svelte";
@@ -17,16 +19,33 @@
   import { traduzirErro } from "$lib/erros";
   import { LIMITE_JSON_BYTES, listaCurta } from "$lib/pacote";
   import { partituras } from "$lib/partituras/partituras.svelte";
+  import { lerAjustes, salvarAjustes } from "$lib/preferencias";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const voltar = usarVoltar();
 
   let resultado = $state<{ tipo: "sucesso" | "erro"; texto: string } | null>(null);
   let confirmando = $state(false);
-  // Cada bloco é um cartão recolhível, fechado de saída: a linha de resumo ao lado do título mostra o estado sem abrir.
-  let aparenciaAberta = $state(false);
-  let idiomaAberto = $state(false);
-  let conteudoAberto = $state(false);
+  // Cada bloco é um cartão recolhível, fechado de saída: a linha de resumo ao lado do título mostra o estado sem abrir. Aparência, Idioma e
+  // Conteúdo lembram se a pessoa os deixou abertos (`prefs.ajustes`); Sobre e Créditos abrem sempre fechados.
+  const lembrado = lerAjustes();
+  let aparenciaAberta = $state(lembrado.aparencia);
+  let idiomaAberto = $state(lembrado.idioma);
+  let conteudoAberto = $state(lembrado.conteudo);
+  /** Grava só o que a PESSOA escolheu: o `Cartao` chama isto no clique, e não quando o programa abre um cartão (o link da aba Partitura). */
+  const lembrar = (cartao: keyof typeof lembrado) => (aberto: boolean) => {
+    lembrado[cartao] = aberto;
+    salvarAjustes(lembrado);
+  };
+
+  // O botão "Abrir Ajustes" da aba Partitura traz `?abrir=partituras`: abre o Conteúdo e rola até as partituras. Essa abertura NÃO é lembrada. Não conto
+  // com a abertura automática do <details> ao seguir um #hash (depende da versão da WebView): o cartão é aberto por aqui.
+  onMount(async () => {
+    if (page.url.searchParams.get("abrir") !== "partituras") return;
+    conteudoAberto = true;
+    await tick();
+    document.getElementById("partituras")?.scrollIntoView({ block: "start" });
+  });
   // O texto do "Sobre o app" é longo: fica num card fechado, que a pessoa abre se quiser ler.
   let sobreAberto = $state(false);
   // Os créditos também ficam num card fechado: é informação de licença, que quase ninguém precisa ler no dia a dia.
@@ -131,7 +150,7 @@
   </section>
 
   <section>
-    <Cartao titulo={t("ajustes.aparencia")} resumo={resumoAparencia} bind:aberto={aparenciaAberta}>
+    <Cartao id="cartao-aparencia" titulo={t("ajustes.aparencia")} resumo={resumoAparencia} bind:aberto={aparenciaAberta} aoAlternar={lembrar("aparencia")}>
       <!-- Duas escolhas que se combinam: o modo (claro ou escuro) e o estilo de cor. O próprio rótulo visível dá o nome
            ao grupo (aria-labelledby), então texto visível e nome acessível são sempre o mesmo. -->
       <p class="rotulo-grupo" id="rotulo-modo">{t("ajustes.modo")}</p>
@@ -158,7 +177,7 @@
   </section>
 
   <section>
-    <Cartao titulo={t("ajustes.idioma")} resumo={IDIOMAS[i18n.idioma].nome} bind:aberto={idiomaAberto}>
+    <Cartao id="cartao-idioma" titulo={t("ajustes.idioma")} resumo={IDIOMAS[i18n.idioma].nome} bind:aberto={idiomaAberto} aoAlternar={lembrar("idioma")}>
       <select
         aria-label={t("ajustes.idioma")}
         value={i18n.idioma}
@@ -172,7 +191,7 @@
 
   <!-- Conteúdo: o hinário, as partituras e os sons gravados no mesmo desenho de linha (LinhaPacote). -->
   <section>
-    <Cartao id="conteudo" titulo={t("ajustes.conteudo")} bind:aberto={conteudoAberto}>
+    <Cartao id="conteudo" titulo={t("ajustes.conteudo")} bind:aberto={conteudoAberto} aoAlternar={lembrar("conteudo")}>
       {#snippet resumo()}{#if resumoConteudo.alerta}<Icone nome="alerta" tamanho={16} /> {/if}{resumoConteudo.texto}{/snippet}
       <h3 class="sub primeiro">{t("ajustes.hinario")}</h3>
       <p class="hinario-info">

@@ -148,3 +148,33 @@ export function salvarZoomPartitura(passo: number) {
     /* sem armazenamento: vale só nesta sessão */
   }
 }
+
+/** Quais cartões de Ajustes ficam abertos. Sobre e Créditos não entram: abrem sempre fechados. */
+export type AjustesAbertos = { aparencia: boolean; idioma: boolean; conteudo: boolean };
+
+const CHAVE_AJUSTES = "prefs.ajustes";
+
+/** Padrão: todos fechados, cada um com o estado na linha de cima. */
+export const ajustesPadrao = (): AjustesAbertos => ({ aparencia: false, idioma: false, conteudo: false });
+
+export function lerAjustes(): AjustesAbertos {
+  const p = ajustesPadrao();
+  try {
+    const bruto = localStorage.getItem(CHAVE_AJUSTES);
+    const o = bruto ? JSON.parse(bruto) : null;
+    if (o && typeof o === "object" && !Array.isArray(o)) {
+      for (const k of Object.keys(p) as (keyof AjustesAbertos)[]) if (typeof o[k] === "boolean") p[k] = o[k];
+    }
+  } catch {
+    /* sem armazenamento ou JSON inválido: vale o padrão */
+  }
+  return p;
+}
+
+export function salvarAjustes(a: AjustesAbertos) {
+  try {
+    localStorage.setItem(CHAVE_AJUSTES, JSON.stringify({ aparencia: a.aparencia, idioma: a.idioma, conteudo: a.conteudo }));
+  } catch {
+    /* sem armazenamento: vale só nesta sessão */
+  }
+}

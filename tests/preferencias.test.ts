@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { cartoesPadrao, lerCartoes, lerKaraoke, salvarCartoes, salvarKaraoke } from "../src/lib/preferencias";
+import { ajustesPadrao, cartoesPadrao, lerAjustes, lerCartoes, lerKaraoke, salvarAjustes, salvarCartoes, salvarKaraoke } from "../src/lib/preferencias";
 
 // localStorage simples, em memória.
 let mem: Record<string, string>;
@@ -63,5 +63,55 @@ describe("karaokê", () => {
     });
     expect(lerKaraoke()).toBe(true);
     expect(() => salvarKaraoke(false)).not.toThrow();
+  });
+});
+
+describe("cartões abertos de Ajustes", () => {
+  const TODOS_FECHADOS = { aparencia: false, idioma: false, conteudo: false };
+  const com = (v: string) => {
+    mem["prefs.ajustes"] = v;
+    return lerAjustes();
+  };
+
+  it("padrão: todos fechados; a chave é própria (a prefs.cartoes é do player)", () => {
+    expect(ajustesPadrao()).toEqual(TODOS_FECHADOS);
+    expect(lerAjustes()).toEqual(TODOS_FECHADOS); // nada salvo
+    mem["prefs.cartoes"] = '{"ajustes":true,"vozes":true,"instrumentos":true}';
+    expect(lerAjustes()).toEqual(TODOS_FECHADOS); // o do player não vaza para Ajustes
+  });
+
+  it("salvar e ler: os cartões são livres (vários abertos ao mesmo tempo)", () => {
+    salvarAjustes({ aparencia: true, idioma: false, conteudo: true });
+    expect(lerAjustes()).toEqual({ aparencia: true, idioma: false, conteudo: true });
+    expect(JSON.parse(mem["prefs.ajustes"])).toEqual({ aparencia: true, idioma: false, conteudo: true });
+  });
+
+  it("valor que não é booleano volta ao padrão só naquele cartão", () => {
+    expect(com('{"aparencia":true,"idioma":"sim","conteudo":1}')).toEqual({ aparencia: true, idioma: false, conteudo: false });
+  });
+
+  it("JSON inválido, lista, texto e nulo voltam ao padrão", () => {
+    for (const ruim of ["{ quebrado", "[true,true,true]", "null", "7", '"aberto"', ""]) {
+      expect(com(ruim), ruim).toEqual(TODOS_FECHADOS);
+    }
+  });
+
+  it("chaves desconhecidas são ignoradas (Sobre e Créditos não entram)", () => {
+    expect(com('{"sobre":true,"creditos":true,"conteudo":true}')).toEqual({ aparencia: false, idioma: false, conteudo: true });
+    salvarAjustes({ aparencia: false, idioma: true, conteudo: false, sobre: true } as never);
+    expect(JSON.parse(mem["prefs.ajustes"])).toEqual({ aparencia: false, idioma: true, conteudo: false });
+  });
+
+  it("sem armazenamento (erro ao ler ou gravar) não quebra e vale o padrão", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("bloqueado");
+      },
+      setItem: () => {
+        throw new Error("bloqueado");
+      },
+    });
+    expect(lerAjustes()).toEqual(TODOS_FECHADOS);
+    expect(() => salvarAjustes({ aparencia: true, idioma: true, conteudo: true })).not.toThrow();
   });
 });

@@ -7,7 +7,9 @@
   // (`bind:aberto`), que o lembra ou não. `name` junta cartões num acordeão nativo (abrir um fecha os outros); `grade` dá ao corpo o
   // espaçamento em grade do player. O título é um <h2> DENTRO do <summary> (o HTML permite título no summary): o leitor de tela continua achando os
   // cartões pela navegação por títulos, e o <summary> segue sendo o botão que abre e fecha (conferido na árvore de acessibilidade do Chrome). O resumo é
-  // um texto ou um trecho (por exemplo, um ícone e um número).
+  // um texto ou um trecho (por exemplo, um ícone e um número). `aoAlternar` avisa só quando a PESSOA abre ou fecha (clique, Enter ou Espaço no título),
+  // com o novo estado: uma abertura feita pelo programa (um link que leva a este cartão) não passa por ele, e assim quem lembra o estado grava só o
+  // que a pessoa escolheu.
   let {
     titulo,
     resumo,
@@ -15,6 +17,7 @@
     name,
     id,
     grade = false,
+    aoAlternar,
     children,
   }: {
     titulo: string;
@@ -23,12 +26,13 @@
     name?: string;
     id?: string;
     grade?: boolean;
+    aoAlternar?: (aberto: boolean) => void;
     children: Snippet;
   } = $props();
 </script>
 
 <details class="cartao" {id} {name} bind:open={aberto}>
-  <summary>
+  <summary onclick={() => aoAlternar?.(!aberto)}>
     <h2 class="titulo">{titulo}</h2>
     <span class="direita">
       {#if resumo}<span class="resumo">{#if typeof resumo === "string"}{resumo}{:else}{@render resumo()}{/if}</span>{/if}
