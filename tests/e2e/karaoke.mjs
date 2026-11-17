@@ -897,6 +897,29 @@ async function principal() {
   const trocaFalhou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), pressionado: document.querySelectorAll('#painel-afinador .grande')[1].getAttribute('aria-pressed'), soando: window.__bmccbTom.tocando, rejeicoes: window.__rejeicoes.length })`);
   confere(trocaFalhou.aviso && trocaFalhou.pressionado === "false" && trocaFalhou.soando === false && trocaFalhou.rejeicoes === 0, `a troca de nota que falha para a nota antiga, avisa e não deixa rejeição solta: ${JSON.stringify(trocaFalhou)}`);
   await av(`AudioContext.prototype.resume = window.__resumeOriginal; 1`);
+
+  // ---- Acessibilidade: o título de cada cartão é um título (heading) na ÁRVORE DE ACESSIBILIDADE, e o summary segue sendo o botão que abre e fecha ----
+  const titulosNaArvore = async () => {
+    await enviar("Accessibility.enable");
+    const r = await enviar("Accessibility.getFullAXTree");
+    const nos = r.result.nodes.filter((x) => !x.ignored);
+    return {
+      titulos: nos.filter((x) => x.role?.value === "heading").map((x) => `${x.name?.value}:${x.properties?.find((p) => p.name === "level")?.value?.value}`),
+      botoes: nos.filter((x) => x.role?.value === "DisclosureTriangle").map((x) => x.name?.value),
+    };
+  };
+  await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-afinador')`)); ) await dormir(250);
+  await av(`document.getElementById('aba-afinador').click(); 1`);
+  await dormir(600);
+  const axAfinador = await titulosNaArvore();
+  confere(axAfinador.titulos.some((t) => /^(Another note|Outra nota|Otra nota):2$/.test(t)) && axAfinador.botoes.some((b) => /Another note|Outra nota|Otra nota/.test(b)), `Afinador: "Outra nota" é um título de nível 2 e também o botão que abre o cartão (árvore de acessibilidade): ${JSON.stringify(axAfinador)}`);
+  await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes` });
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('conteudo')`)); ) await dormir(250);
+  await dormir(500);
+  const axAjustes = await titulosNaArvore();
+  const titulosCartoes = axAjustes.titulos.filter((t) => /:2$/.test(t));
+  confere(titulosCartoes.length >= 5 && axAjustes.botoes.length >= 5, `Ajustes: os 5 cartões (Aparência, Idioma, Conteúdo, Sobre e Créditos) são títulos de nível 2 e botões na árvore: ${JSON.stringify(axAjustes)}`);
   ws.close();
 
   // 6. análise: trocas de sílaba antes da pausa
