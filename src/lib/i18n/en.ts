@@ -49,7 +49,7 @@ export const en: Dicionario = {
   "partitura.carregando": "Loading the score…",
   "partitura.erro": "Could not show the score: {erro}",
   "partitura.sem_pacote_titulo": "This hymnal has no scores installed",
-  "partitura.sem_pacote_texto": "To see the scores, download them in Settings, in the Scores card.",
+  "partitura.sem_pacote_texto": "To see the scores, download them in Settings, under Content.",
   "partitura.abrir_ajustes": "Open Settings",
   "letra.alinhamento": "Lyrics alignment",
   "letra.alinhar_esquerda": "Align left",

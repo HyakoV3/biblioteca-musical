@@ -700,7 +700,7 @@ async function principal() {
     return { aba: true, abas: [...document.querySelectorAll('[role="tab"]')].map((t) => t.id), href: a?.getAttribute('href') ?? null, botao: a?.classList.contains('botao') ?? false,
       svg: !!document.querySelector('#painel-partitura .folha svg'), visivel: !document.getElementById('painel-partitura').hidden };
   })()`);
-  confere(aviso.aba && aviso.href === "/ajustes" && aviso.botao && !aviso.svg && aviso.visivel, `sem pacote com partituras: a aba aparece com o aviso e o botão para Ajustes: ${JSON.stringify(aviso)}`);
+  confere(aviso.aba && aviso.href === "/ajustes?abrir=partituras" && aviso.botao && !aviso.svg && aviso.visivel, `sem pacote com partituras: a aba aparece com o aviso e o botão para Ajustes: ${JSON.stringify(aviso)}`);
   await av("sessionStorage.removeItem('e2e-sem-partituras'); sessionStorage.setItem('e2e-falha-partitura', '1'); 1");
 
   // Falha na leitura da partitura: o aviso de erro traz "Tentar de novo", e ele lê outra vez (não fica preso para sempre).
@@ -901,6 +901,49 @@ async function principal() {
   confere(trocaFalhou.aviso && trocaFalhou.pressionado === "false" && trocaFalhou.soando === false && trocaFalhou.rejeicoes === 0, `a troca de nota que falha para a nota antiga, avisa e não deixa rejeição solta: ${JSON.stringify(trocaFalhou)}`);
   await av(`AudioContext.prototype.resume = window.__resumeOriginal; 1`);
 
+  // ---- Ajustes: o que ficou aberto é lembrado, o valor ruim volta ao padrão e o link da aba Partitura abre o Conteúdo sem gravar (I-24, fatias 3 e 4) ----
+  const AJ = `http://127.0.0.1:${PORTA_VITE}/ajustes`;
+  const irParaAjustes = async (url) => {
+    await enviar("Page.navigate", { url });
+    for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('cartao-aparencia')`)); ) await dormir(250);
+    await dormir(500);
+  };
+  const estadoCartoes = () => av(`(() => { const a = (id) => document.getElementById(id)?.open; return { aparencia: a('cartao-aparencia'), idioma: a('cartao-idioma'), conteudo: a('conteudo'), salvo: localStorage.getItem('prefs.ajustes') }; })()`);
+  await irParaAjustes(AJ);
+  await av(`localStorage.removeItem('prefs.ajustes'); 1`);
+  await irParaAjustes(AJ);
+  const aj0 = await estadoCartoes();
+  confere(aj0.aparencia === false && aj0.idioma === false && aj0.conteudo === false && aj0.salvo === null, `Ajustes: sem nada salvo, todos os cartões começam fechados: ${JSON.stringify(aj0)}`);
+  await av(`document.querySelector('#cartao-aparencia summary').click(); 1`); // a pessoa abre a Aparência
+  await dormir(300);
+  await irParaAjustes(AJ); // fecha e abre a tela
+  const aj1 = await estadoCartoes();
+  confere(aj1.aparencia === true && aj1.idioma === false && aj1.conteudo === false && aj1.salvo === '{"aparencia":true,"idioma":false,"conteudo":false}', `Ajustes: o cartão que a pessoa abriu continua aberto ao voltar: ${JSON.stringify(aj1)}`);
+  await av(`document.querySelector('#cartao-aparencia summary').click(); 1`); // fecha de novo
+  await dormir(300);
+  await irParaAjustes(AJ);
+  const aj2 = await estadoCartoes();
+  confere(aj2.aparencia === false && aj2.salvo === '{"aparencia":false,"idioma":false,"conteudo":false}', `Ajustes: fechar também é lembrado: ${JSON.stringify(aj2)}`);
+  await av(`localStorage.setItem('prefs.ajustes', '{"aparencia":"sim","idioma":7,"conteudo":null}'); 1`);
+  await irParaAjustes(AJ);
+  const aj3 = await estadoCartoes();
+  confere(aj3.aparencia === false && aj3.idioma === false && aj3.conteudo === false, `Ajustes: valor ruim guardado volta ao padrão (tudo fechado): ${JSON.stringify(aj3)}`);
+
+  // O link da aba Partitura: abre o Conteúdo, rola até as partituras e NÃO grava essa abertura.
+  await av(`localStorage.removeItem('prefs.ajustes'); 1`);
+  await irParaAjustes(`${AJ}?abrir=partituras`);
+  const viaLink = await av(`(() => { const c = document.getElementById('partituras'); const r = c.getBoundingClientRect(); return { conteudo: document.getElementById('conteudo').open, visivel: r.top >= 0 && r.top < window.innerHeight && r.height > 0, salvo: localStorage.getItem('prefs.ajustes') }; })()`);
+  confere(viaLink.conteudo === true && viaLink.visivel === true && viaLink.salvo === null, `Ajustes pelo link da aba Partitura: o Conteúdo abre, as partituras ficam à vista e nada é gravado: ${JSON.stringify(viaLink)}`);
+  await irParaAjustes(AJ);
+  const semLink = await estadoCartoes();
+  confere(semLink.conteudo === false, `Ajustes sem o parâmetro: o Conteúdo volta a abrir fechado (a abertura pelo link não ficou): ${JSON.stringify(semLink)}`);
+  // Se a pessoa fecha o Conteúdo depois de chegar pelo link, aí sim é uma escolha dela e é lembrada.
+  await irParaAjustes(`${AJ}?abrir=partituras`);
+  await av(`document.querySelector('#conteudo summary').click(); 1`);
+  await dormir(300);
+  const fechouDepois = await estadoCartoes();
+  confere(fechouDepois.conteudo === false && fechouDepois.salvo === '{"aparencia":false,"idioma":false,"conteudo":false}', `Ajustes: fechar o Conteúdo depois de chegar pelo link é lembrado: ${JSON.stringify(fechouDepois)}`);
+  await av(`localStorage.removeItem('prefs.ajustes'); 1`);
   // ---- Acessibilidade: o título de cada cartão é um título (heading) na ÁRVORE DE ACESSIBILIDADE, e o summary segue sendo o botão que abre e fecha ----
   const titulosNaArvore = async () => {
     await enviar("Accessibility.enable");

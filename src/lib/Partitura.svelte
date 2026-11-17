@@ -164,7 +164,7 @@
   <div class="sem-pacote" role="status">
     <h2>{t("partitura.sem_pacote_titulo")}</h2>
     <p>{t("partitura.sem_pacote_texto")}</p>
-    <a class="botao primario" href="/ajustes">{t("partitura.abrir_ajustes")}</a>
+    <a class="botao primario" href="/ajustes?abrir=partituras">{t("partitura.abrir_ajustes")}</a>
   </div>
 {:else}
   <div class="barra-zoom">

@@ -49,7 +49,7 @@ export const pt = {
   "partitura.carregando": "Carregando a partitura…",
   "partitura.erro": "Não foi possível mostrar a partitura: {erro}",
   "partitura.sem_pacote_titulo": "Este hinário não tem partituras instaladas",
-  "partitura.sem_pacote_texto": "Para ver as partituras, baixe-as em Ajustes, no cartão Partituras.",
+  "partitura.sem_pacote_texto": "Para ver as partituras, baixe-as em Ajustes, em Conteúdo.",
   "partitura.abrir_ajustes": "Abrir Ajustes",
   "letra.alinhamento": "Alinhamento da letra",
   "letra.alinhar_esquerda": "Alinhar à esquerda",

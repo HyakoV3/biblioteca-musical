@@ -49,7 +49,7 @@ export const es: Dicionario = {
   "partitura.carregando": "Cargando la partitura…",
   "partitura.erro": "No se pudo mostrar la partitura: {erro}",
   "partitura.sem_pacote_titulo": "Este himnario no tiene partituras instaladas",
-  "partitura.sem_pacote_texto": "Para ver las partituras, descárguelas en Ajustes, en la tarjeta Partituras.",
+  "partitura.sem_pacote_texto": "Para ver las partituras, descárguelas en Ajustes, en Contenido.",
   "partitura.abrir_ajustes": "Abrir Ajustes",
   "letra.alinhamento": "Alineación de la letra",
   "letra.alinhar_esquerda": "Alinear a la izquierda",
