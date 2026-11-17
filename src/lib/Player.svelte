@@ -165,13 +165,11 @@
     <Aviso tipo="erro">{t("player.erro_audio")}</Aviso>
   {/if}
 
-  <!-- Card 1: tocar, vezes e duração. Fixo. -->
-  <section class="cartao" aria-labelledby="tit-tocar">
-    <div class="cabecalho">
-      <span id="tit-tocar">{t("audio.tocar")}</span>
-      <span class="resumo">{t("player.duracao_tudo", { tempo: formatarTempo(duracaoPrevista) })}</span>
-    </div>
-    <div class="corpo">
+  <!-- Card 1: tocar e vezes. Fixo e sem cabeçalho: a duração prevista do "hino todo" (no andamento escolhido) vai dentro do
+       próprio botão, entre parênteses. Com o Parar ao lado falta espaço, e o "(04:00)" desce inteiro para a linha de baixo
+       (duas linhas cabem nos 3,5 rem do botão, então ele não muda de altura). -->
+  <section class="cartao" aria-label={t("audio.tocar")}>
+    <div class="corpo sem-cabecalho">
       <div class="principal">
         <button
           class="botao tocar primario"
@@ -179,7 +177,7 @@
           onclick={() => reproducao.alternar(hino, "tudo")}
         >
           <Icone nome={icone("tudo")} tamanho={24} />
-          {rotuloTudo}
+          <span class="texto-tocar">{rotuloTudo} <span class="duracao">({formatarTempo(duracaoPrevista)})</span></span>
         </button>
         {#if !parado}
           <button class="botao parar" onclick={() => reproducao.parar()}><Icone nome="stop" tamanho={22} /> {t("audio.parar")}</button>
@@ -423,6 +421,8 @@
   .principal { display: flex; gap: 0.5rem; }
   .principal :global(.botao) { gap: 0.5rem; }
   .tocar { flex: 1; min-height: 3.5rem; font-size: 1.15rem; }
+  .texto-tocar { text-align: center; }
+  .duracao { white-space: nowrap; font-variant-numeric: tabular-nums; }
   .parar { min-height: 3.5rem; }
   .tempos { display: flex; justify-content: space-between; margin-top: 0.3rem; font-size: 0.85rem; color: var(--suave); font-variant-numeric: tabular-nums; }
   .dica { margin: 0; }
@@ -472,7 +472,7 @@
 
   /* Cards: o primeiro (Tocar) é fixo; os outros abrem e fecham. Um resumo na linha de cima mostra o estado fechado. */
   .cartao { border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
-  summary, .cabecalho {
+  summary {
     display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 3rem;
     padding: 0 0.9rem; font-weight: 600;
   }
@@ -481,6 +481,7 @@
   .direita { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
   .resumo { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 400; color: var(--suave); font-size: 0.9rem; text-align: end; }
   .corpo { display: grid; gap: 0.8rem; padding: 0.2rem 0.9rem 0.9rem; }
+  .corpo.sem-cabecalho { padding-top: 0.9rem; }
   /* minmax(0, 1fr) + largura limitada: sem isso, o nome mais longo ("Órgão de palhetas gravado (teste)") alarga o
      seletor e ele passa da borda do painel. */
   .inst-linha { display: grid; grid-template-columns: minmax(5.5rem, 8rem) minmax(0, 1fr); align-items: center; gap: 0.5rem; }
