@@ -858,7 +858,7 @@ async function principal() {
   await av(`document.getElementById('aba-gravador').click(); 1`);
   await dormir(400);
   const estadoGravador = () => av(`({ pressionado: document.getElementById('gravar').getAttribute('aria-pressed'), audio: !!document.getElementById('ouvir-gravacao'), info: document.getElementById('info-gravacao')?.textContent.replace(/\\s+/g, ' ').trim() ?? null, erro: !!document.querySelector('#painel-gravador .aviso.erro'), ativos: window.__microfones.filter((t) => t.readyState === 'live').length })`);
-  await av(`window.__microfones = []; const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = async (c) => { window.__pedido = c; const f = await pedir(c); f.getTracks().forEach((t) => window.__microfones.push(t)); return f; }; 1`);
+  await av(`window.__microfones = []; const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = async (c) => { window.__pedido = c; await new Promise((r) => setTimeout(r, window.__atrasoMic ?? 0)); const f = await pedir(c); f.getTracks().forEach((t) => window.__microfones.push(t)); return f; }; 1`);
   const g0 = await estadoGravador();
   confere(g0.pressionado === "false" && g0.audio === false && g0.erro === false, `Gravador: começa parado, sem gravação e sem erro: ${JSON.stringify(g0)}`);
   await av(`document.getElementById('gravar').click(); 1`);
@@ -876,6 +876,25 @@ async function principal() {
   await dormir(300);
   const g3 = await estadoGravador();
   confere(g3.audio === false, `Gravador: descartar apaga a gravação: ${JSON.stringify(g3)}`);
+  // O diálogo de permissão do Android esconde a página enquanto o microfone ainda é pedido: isso NÃO pode cancelar o pedido (o bug do emulador, em que o
+  // microfone permitido era jogado fora). Simula o pedido demorado (1 s) e a página escondida no meio dele.
+  const esconder = (v) => av(`Object.defineProperty(document, 'hidden', { configurable: true, get: () => ${v} }); document.dispatchEvent(new Event('visibilitychange')); 1`);
+  await av(`window.__atrasoMic = 1000; 1`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(300);
+  await esconder(true);
+  await dormir(200);
+  await esconder(false);
+  await dormir(1300);
+  const g5 = await estadoGravador();
+  confere(g5.pressionado === "true" && g5.ativos === 1, `Gravador: esconder a página enquanto o microfone é pedido não cancela o pedido (a gravação começa): ${JSON.stringify(g5)}`);
+  await esconder(true); // agora com a gravação em curso: o app em segundo plano a para
+  await dormir(1200);
+  await esconder(false);
+  const g6 = await estadoGravador();
+  confere(g6.pressionado === "false" && g6.ativos === 0 && g6.audio === true, `Gravador: o app em segundo plano para a gravação em curso, devolve o microfone e guarda o gravado: ${JSON.stringify(g6)}`);
+  await av(`window.__atrasoMic = 0; document.getElementById('descartar').click(); 1`);
+  await dormir(300);
   // Sair da aba com a gravação em curso: para, devolve o microfone e a gravação feita até ali fica.
   await av(`document.getElementById('gravar').click(); 1`);
   await dormir(1500);

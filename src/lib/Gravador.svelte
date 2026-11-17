@@ -70,7 +70,7 @@
     if (!gravacao) erro = "falhou";
   }
 
-  /** Sai de cena (outra aba, app em segundo plano): para e DEVOLVE o microfone. O que já foi gravado fica. */
+  /** Sai de cena (outra aba): cancela um pedido de microfone que esperava, ou para a gravação, e DEVOLVE o microfone. O que já foi gravado fica. */
   async function sair() {
     if (!gravando) {
       tentativa++;
@@ -92,9 +92,12 @@
   $effect(() => {
     if (reproducao.estado === "tocando" && gravando) void parar();
   });
+  // App em segundo plano: para uma gravação EM CURSO e devolve o microfone. Um pedido de permissão que ainda espera NÃO é cancelado: o próprio
+  // diálogo de permissão do Android esconde a página por um instante, e cancelar ali jogava fora o microfone que a pessoa acabava de permitir
+  // (e a mensagem de "permissão negada").
   $effect(() => {
     const aoEsconder = () => {
-      if (document.hidden) void sair();
+      if (document.hidden && gravando) void parar();
     };
     document.addEventListener("visibilitychange", aoEsconder);
     return () => document.removeEventListener("visibilitychange", aoEsconder);
