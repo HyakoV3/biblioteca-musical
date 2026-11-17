@@ -858,7 +858,7 @@ async function principal() {
   await av(`document.getElementById('aba-gravador').click(); 1`);
   await dormir(400);
   const estadoGravador = () => av(`({ pressionado: document.getElementById('gravar').getAttribute('aria-pressed'), audio: !!document.getElementById('ouvir-gravacao'), info: document.getElementById('info-gravacao')?.textContent.replace(/\\s+/g, ' ').trim() ?? null, erro: !!document.querySelector('#painel-gravador .aviso.erro'), ativos: window.__microfones.filter((t) => t.readyState === 'live').length })`);
-  await av(`window.__microfones = []; const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = async (c) => { window.__pedido = c; await new Promise((r) => setTimeout(r, window.__atrasoMic ?? 0)); const f = await pedir(c); f.getTracks().forEach((t) => window.__microfones.push(t)); return f; }; 1`);
+  await av(`window.__microfones = []; const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = async (c) => { window.__pedido = c; await new Promise((r) => setTimeout(r, window.__atrasoMic ?? 0)); let f = await pedir(c); if (window.__micMudo) { f.getTracks().forEach((t) => t.stop()); const ctx = new AudioContext(); f = ctx.createMediaStreamDestination().stream; } f.getTracks().forEach((t) => window.__microfones.push(t)); return f; }; 1`);
   const g0 = await estadoGravador();
   confere(g0.pressionado === "false" && g0.audio === false && g0.erro === false, `Gravador: começa parado, sem gravação e sem erro: ${JSON.stringify(g0)}`);
   await av(`document.getElementById('gravar').click(); 1`);
@@ -876,6 +876,36 @@ async function principal() {
   await dormir(300);
   const g3 = await estadoGravador();
   confere(g3.audio === false, `Gravador: descartar apaga a gravação: ${JSON.stringify(g3)}`);
+  // Medidor de som: o microfone falso do Chrome apita; a barra do botão sobe com o som, o leitor de tela é avisado de que o som chegou e a barra
+  // volta a zero ao parar. Com um microfone MUDO, depois de 3 s aparece o aviso "não estou ouvindo nenhum som".
+  await av(`document.getElementById('gravar').click(); 1`);
+  const niveis = [];
+  for (let k = 0; k < 28; k++) {
+    await dormir(100);
+    niveis.push(await av(`Number(document.getElementById('gravar').dataset.nivel)`));
+  }
+  const barraLarga = await av(`(() => { const b = document.querySelector('#gravar .nivel'); return b ? b.getBoundingClientRect().width / document.getElementById('gravar').getBoundingClientRect().width : null; })()`);
+  const picoNivel = Math.max(...niveis);
+  const statusMedidor = await av(`document.querySelector('#painel-gravador [role="status"].so-leitor').textContent.trim()`);
+  confere(picoNivel > 0.3 && barraLarga !== null && /receiving sound|recebendo som|recibiendo sonido/i.test(statusMedidor), `Gravador: a barra do botão sobe com o som do microfone (pico ${picoNivel.toFixed(2)}) e o leitor de tela é avisado de que o som chegou: ${JSON.stringify({ barraLarga, statusMedidor })}`);
+  const avisoComSom = await av(`!!document.getElementById('sem-som')`);
+  confere(avisoComSom === false, `Gravador: com som entrando não aparece o aviso de "sem som"`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(800);
+  const nivelParado = await av(`({ nivel: Number(document.getElementById('gravar').dataset.nivel), barra: !!document.querySelector('#gravar .nivel') })`);
+  confere(nivelParado.nivel === 0 && nivelParado.barra === false, `Gravador: ao parar a barra do medidor some: ${JSON.stringify(nivelParado)}`);
+  await av(`document.getElementById('descartar').click(); window.__micMudo = true; 1`);
+  await dormir(300);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(1500);
+  const semAvisoCedo = await av(`!!document.getElementById('sem-som')`);
+  await dormir(2500);
+  const avisoMudo = await av(`document.getElementById('sem-som')?.textContent.trim() ?? null`);
+  confere(semAvisoCedo === false && /can't hear any sound|não estou ouvindo|no oigo/i.test(avisoMudo ?? ""), `Gravador: com o microfone mudo o aviso "sem som" só aparece depois de uns 3 s: ${JSON.stringify({ semAvisoCedo, avisoMudo })}`);
+  await av(`document.getElementById('gravar').click(); window.__micMudo = false; 1`);
+  await dormir(900);
+  await av(`document.getElementById('descartar')?.click(); 1`);
+  await dormir(300);
   // Toque duplo em "Gravar" enquanto o microfone é pedido: o segundo toque é ignorado (dois pedidos juntos deixavam um microfone órfão aceso).
   await av(`window.__atrasoMic = 800; window.__microfones.length = 0; 1`);
   await av(`document.getElementById('gravar').click(); 1`);

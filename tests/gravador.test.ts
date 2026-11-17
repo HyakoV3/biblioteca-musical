@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FORMATOS_PREFERIDOS, Gravador, corrigirDuracao, escolherFormato, formatarTamanho, formatarTempo, motivoDoErro, nomeDoFormato } from "../src/lib/gravador";
+import { DetectorDeSom, FORMATOS_PREFERIDOS, Gravador, LIMIAR_SOM, PISO_DB, SILENCIO_MS, corrigirDuracao, escolherFormato, formatarTamanho, formatarTempo, motivoDoErro, nivelDeRms, nomeDoFormato, rmsDeAmostras } from "../src/lib/gravador";
 
 describe("formato da gravação", () => {
   it("escolhe o primeiro formato preferido que o navegador grava", () => {
@@ -215,5 +215,61 @@ describe("Gravador (com um MediaRecorder falso)", () => {
     expect(trilha.parou).toBe(true);
     expect((g as unknown as { pedacos: Blob[] }).pedacos).toHaveLength(0);
     expect(await g.parar()).toBeNull();
+  });
+});
+
+describe("medidor de som", () => {
+  it("o nível vai de 0 (silêncio) a 1 (fundo de escala), em decibéis", () => {
+    expect(nivelDeRms(0)).toBe(0);
+    expect(nivelDeRms(1)).toBe(1);
+    expect(nivelDeRms(10 ** (PISO_DB / 20))).toBeCloseTo(0, 5); // −60 dBFS: no piso
+    expect(nivelDeRms(10 ** (-30 / 20))).toBeCloseTo(0.5, 5); // −30 dBFS: no meio
+    expect(nivelDeRms(1e-9)).toBe(0); // abaixo do piso
+    expect(nivelDeRms(5)).toBe(1); // acima do fundo de escala
+  });
+  it("entrada inválida vale 0", () => {
+    for (const v of [NaN, -1, Infinity, -Infinity]) expect(nivelDeRms(v), String(v)).toBe(0);
+  });
+  it("RMS: o valor de uma onda e o de nenhuma amostra", () => {
+    expect(rmsDeAmostras([])).toBe(0);
+    expect(rmsDeAmostras([0, 0, 0])).toBe(0);
+    expect(rmsDeAmostras([0.5, -0.5, 0.5, -0.5])).toBeCloseTo(0.5, 6);
+    const seno = Array.from({ length: 1000 }, (_, i) => Math.sin((2 * Math.PI * i) / 100));
+    expect(rmsDeAmostras(seno)).toBeCloseTo(Math.SQRT1_2, 3);
+  });
+  it("o limiar de som fica acima do chiado e abaixo de uma voz baixa", () => {
+    expect(nivelDeRms(10 ** (-55 / 20))).toBeLessThan(LIMIAR_SOM); // chiado de microfone parado
+    expect(nivelDeRms(10 ** (-35 / 20))).toBeGreaterThan(LIMIAR_SOM); // voz baixa
+  });
+});
+
+describe("detector de som", () => {
+  it("com som, avisa que há som e nunca que falta", () => {
+    const d = new DetectorDeSom();
+    d.reiniciar(0);
+    expect(d.atualizar(0.6, 100)).toEqual({ comSom: true, semSom: false });
+    expect(d.atualizar(0.6, 10000)).toEqual({ comSom: true, semSom: false });
+  });
+  it("sem som por 3 s, avisa que falta; antes disso, não", () => {
+    const d = new DetectorDeSom();
+    d.reiniciar(1000);
+    expect(d.atualizar(0.01, 2000).semSom).toBe(false);
+    expect(d.atualizar(0.01, 1000 + SILENCIO_MS - 1).semSom).toBe(false);
+    expect(d.atualizar(0.01, 1000 + SILENCIO_MS).semSom).toBe(true);
+  });
+  it("quando o som volta, o aviso some e a contagem recomeça", () => {
+    const d = new DetectorDeSom();
+    d.reiniciar(0);
+    expect(d.atualizar(0, 5000).semSom).toBe(true);
+    expect(d.atualizar(0.5, 5100)).toEqual({ comSom: true, semSom: false });
+    expect(d.atualizar(0, 7000).semSom).toBe(false); // só 1,9 s desde o último som
+    expect(d.atualizar(0, 8200).semSom).toBe(true);
+  });
+  it("reiniciar começa uma gravação nova do zero", () => {
+    const d = new DetectorDeSom();
+    d.reiniciar(0);
+    expect(d.atualizar(0, 9000).semSom).toBe(true);
+    d.reiniciar(9000);
+    expect(d.atualizar(0, 9500).semSom).toBe(false);
   });
 });

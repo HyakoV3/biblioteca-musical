@@ -174,6 +174,8 @@ export const es: Dicionario = {
   "gravador.gravar": "Grabar",
   "gravador.parar": "Detener",
   "gravador.gravando": "Grabando.",
+  "gravador.recebendo": "Recibiendo sonido.",
+  "gravador.sem_som": "No oigo ningún sonido. Compruebe que el micrófono no esté tapado y que el volumen de entrada del dispositivo esté activado.",
   "gravador.pronta": "Grabación lista, {tempo}.",
   "gravador.sua_gravacao": "Su grabación",
   "gravador.descartar": "Descartar",

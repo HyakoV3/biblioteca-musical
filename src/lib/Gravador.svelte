@@ -2,7 +2,7 @@
   import { onDestroy } from "svelte";
   import Aviso from "./Aviso.svelte";
   import Icone from "./Icone.svelte";
-  import { Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nomeDoFormato, type Gravacao, type MotivoDoErro } from "./gravador";
+  import { DetectorDeSom, Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nomeDoFormato, type Gravacao, type MotivoDoErro } from "./gravador";
   import { i18n } from "./i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
 
@@ -22,6 +22,15 @@
   /** Segundos gravados até agora (a tela só mostra; o tempo certo da gravação é o medido ao parar). */
   let decorrido = $state(0);
   let relogio: ReturnType<typeof setInterval> | null = null;
+  /** O medidor de som: lê o nível do microfone várias vezes por segundo e o mostra como uma barra no botão. */
+  let medidor: ReturnType<typeof setInterval> | null = null;
+  const detector = new DetectorDeSom();
+  /** Nível de 0 a 1 que a barra mostra: sobe na hora e desce devagar (senão a barra tremeria a cada sílaba). */
+  let nivel = $state(0);
+  /** Já entrou som nesta gravação (avisa o leitor de tela uma vez). */
+  let ouviu = $state(false);
+  /** Faz tempo demais sem som: o microfone pode estar tapado, mudo ou sem permissão de verdade. */
+  let semSom = $state(false);
   let gravacao = $state<Gravacao | null>(null);
   let erro = $state<MotivoDoErro | null>(null);
   /** Numera os pedidos: uma resposta tardia do microfone não vale se a pessoa já mandou parar ou saiu da aba. */
@@ -47,6 +56,11 @@
   function pararRelogio() {
     if (relogio !== null) clearInterval(relogio);
     relogio = null;
+    if (medidor !== null) clearInterval(medidor);
+    medidor = null;
+    nivel = 0;
+    ouviu = false;
+    semSom = false;
   }
 
   function descartar() {
@@ -74,6 +88,14 @@
     decorrido = 0;
     const comeco = performance.now();
     relogio = setInterval(() => (decorrido = (performance.now() - comeco) / 1000), 250);
+    detector.reiniciar(performance.now());
+    medidor = setInterval(() => {
+      const atual = gravador.nivel();
+      nivel = Math.max(atual, nivel * 0.8);
+      const r = detector.atualizar(atual, performance.now());
+      if (r.comSom) ouviu = true;
+      semSom = r.semSom;
+    }, 80);
     // O app já estava em segundo plano quando o microfone chegou (a permissão já estava dada e a pessoa saiu antes): o evento de esconder já passou.
     // Espera um instante antes de parar, porque o diálogo de permissão do Android também esconde a página por um momento.
     if (document.hidden) setTimeout(() => (gravando && document.hidden ? void parar() : undefined), 1000);
@@ -145,7 +167,10 @@
   <p class="meta">{t("gravador.explica")}</p>
   {#if erro}<Aviso tipo="erro">{t(textoErro[erro])}</Aviso>{/if}
 
-  <button id="gravar" class="botao primario grande" aria-pressed={gravando} onclick={alternar}>
+  <button id="gravar" class="botao primario grande" aria-pressed={gravando} data-nivel={nivel.toFixed(2)} onclick={alternar}>
+    <!-- O medidor: uma barra atrás do texto que cresce da esquerda para a direita com o som que entra no microfone (só a largura muda, sem animação,
+         então já respeita "reduzir movimento"). Decorativa: o leitor de tela é avisado só de que o som chegou ou de que não há som. -->
+    {#if gravando}<span class="nivel" aria-hidden="true" style:width={`${nivel * 100}%`}></span>{/if}
     {#if gravando}
       <Icone nome="stop" tamanho={24} />
       <span>{t("gravador.parar")} · <span class="tempo" aria-hidden="true">{formatarTempo(decorrido)}</span></span>
@@ -156,7 +181,8 @@
   </button>
 
   <!-- Só para o leitor de tela: começou e terminou (não anuncia o tempo segundo a segundo). -->
-  <p class="so-leitor" role="status">{#if gravando}{t("gravador.gravando")}{:else if gravacao}{t("gravador.pronta", { tempo: formatarTempo(gravacao.segundos) })}{/if}</p>
+  {#if gravando && semSom}<Aviso tipo="info"><span id="sem-som">{t("gravador.sem_som")}</span></Aviso>{/if}
+  <p class="so-leitor" role="status">{#if gravando}{ouviu ? t("gravador.recebendo") : t("gravador.gravando")}{:else if gravacao}{t("gravador.pronta", { tempo: formatarTempo(gravacao.segundos) })}{/if}</p>
 
   {#if gravacao}
     <section class="resultado" aria-labelledby="titulo-gravacao">
@@ -174,7 +200,10 @@
 <style>
   .gravador { display: grid; gap: 1rem; }
   .gravador > p { margin: 0; }
-  .grande { min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
+  .grande { position: relative; overflow: hidden; min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
+  /* A barra do medidor, atrás do texto: a cor do texto do botão, bem clara, para o texto seguir legível. */
+  .nivel { position: absolute; left: 0; top: 0; bottom: 0; background: var(--acento-texto); opacity: 0.22; pointer-events: none; }
+  .grande > :not(.nivel) { position: relative; }
   /* O círculo de "gravar": desenhado em CSS (o conjunto de ícones do app não tem um); a cor não é o único sinal, o botão diz "Gravar". */
   .bolinha { width: 1.1rem; height: 1.1rem; border-radius: 50%; background: currentColor; flex: none; }
   .tempo { font-variant-numeric: tabular-nums; }

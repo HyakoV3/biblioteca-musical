@@ -174,6 +174,8 @@ export const pt = {
   "gravador.gravar": "Gravar",
   "gravador.parar": "Parar",
   "gravador.gravando": "Gravando.",
+  "gravador.recebendo": "Recebendo som.",
+  "gravador.sem_som": "Não estou ouvindo nenhum som. Confira se o microfone não está tapado e se o volume de entrada do aparelho está ligado.",
   "gravador.pronta": "Gravação pronta, {tempo}.",
   "gravador.sua_gravacao": "Sua gravação",
   "gravador.descartar": "Descartar",

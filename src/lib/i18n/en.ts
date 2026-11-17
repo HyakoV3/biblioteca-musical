@@ -174,6 +174,8 @@ export const en: Dicionario = {
   "gravador.gravar": "Record",
   "gravador.parar": "Stop",
   "gravador.gravando": "Recording.",
+  "gravador.recebendo": "Receiving sound.",
+  "gravador.sem_som": "I can't hear any sound. Check that the microphone is not covered and that the device input volume is on.",
   "gravador.pronta": "Recording ready, {tempo}.",
   "gravador.sua_gravacao": "Your recording",
   "gravador.descartar": "Discard",
