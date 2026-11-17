@@ -76,4 +76,13 @@
   :global(.botao.tocando .bandeira-final) { color: inherit; }
   :global(.botao.perigo) { color: var(--perigo); border-color: var(--perigo); }
   :global(.botao:disabled) { opacity: 0.5; cursor: not-allowed; }
+  /* Botão quadrado das barras de controle (tamanho e alinhamento da letra, tamanho da partitura): 3 rem, só ícone; o que está
+     ligado (aria-pressed) leva borda dourada. */
+  :global(.botao-barra) {
+    display: inline-flex; align-items: center; justify-content: center; padding: 0; min-width: 3rem; height: 3rem;
+    border-radius: 0.75rem; line-height: 1; cursor: pointer;
+    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+  }
+  :global(.botao-barra:disabled) { opacity: 0.5; cursor: default; }
+  :global(.botao-barra[aria-pressed="true"]) { border: 0.125rem solid var(--ouro-linha); }
 </style>

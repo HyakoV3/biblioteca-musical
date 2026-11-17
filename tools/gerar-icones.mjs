@@ -32,6 +32,7 @@ const NOMES = {
   ok: "outline-check",
   mais: "outline-add",
   menos: "outline-remove",
+  restaurar: "outline-restart-alt", // seta circular: volta ao tamanho normal (letra e partitura)
   abrir: "outline-expand-more",
   fechar: "outline-expand-less",
   menu: "outline-menu", // hambúrguer (três linhas)

@@ -10,6 +10,7 @@
   import { i18n } from "./i18n/index.svelte";
   import { CONSULTA_PAISAGEM, ESCALAS_PARTITURA, ZOOM_PADRAO, escalaDoZoom, limitarZoom, varianteDaTela, type EstadoPartitura, type Variante } from "./partitura";
   import { lerZoomPartitura, salvarZoomPartitura } from "./preferencias";
+  import ControleDeTamanho from "./ControleDeTamanho.svelte";
 
   // O painel da aba Partitura (I-08). Com a partitura do hino instalada, mostra o SVG que o Rust entrega (já conferido na
   // importação e de novo na leitura) embutido na página, para seguir o tema; sem nenhuma partitura instalada, avisa e leva a Ajustes.
@@ -166,14 +167,21 @@
     <a class="botao primario" href="/ajustes">{t("partitura.abrir_ajustes")}</a>
   </div>
 {:else}
-  <div class="barra-zoom" role="group" aria-label={t("partitura.zoom")}>
-    <button aria-label={t("partitura.diminuir")} disabled={passo <= 0} onclick={() => mudarZoom("menos")}>−</button>
-    <button
-      aria-label={t("partitura.restaurar", { n: Math.round(ESCALAS_PARTITURA[ZOOM_PADRAO] * 100) })}
-      disabled={passo === ZOOM_PADRAO}
-      onclick={() => mudarZoom("padrao")}>{Math.round(escala * 100)}%</button
-    >
-    <button aria-label={t("partitura.aumentar")} disabled={passo >= ESCALAS_PARTITURA.length - 1} onclick={() => mudarZoom("mais")}>+</button>
+  <div class="barra-zoom">
+    <ControleDeTamanho
+      rotulos={{
+        grupo: t("partitura.zoom"),
+        diminuir: t("partitura.diminuir"),
+        restaurar: t("partitura.restaurar", { n: Math.round(ESCALAS_PARTITURA[ZOOM_PADRAO] * 100) }),
+        aumentar: t("partitura.aumentar"),
+      }}
+      podeDiminuir={passo > 0}
+      podeAumentar={passo < ESCALAS_PARTITURA.length - 1}
+      noPadrao={passo === ZOOM_PADRAO}
+      aoDiminuir={() => mudarZoom("menos")}
+      aoRestaurar={() => mudarZoom("padrao")}
+      aoAumentar={() => mudarZoom("mais")}
+    />
   </div>
 
   {#if carga === null}
@@ -199,14 +207,8 @@
   .sem-pacote h2 { margin: 0; font-size: 1.15rem; }
   .sem-pacote p { margin: 0; color: var(--suave); line-height: 1.5; }
 
-  /* Barra de zoom: os mesmos botões da barra da letra. */
-  .barra-zoom { display: flex; justify-content: flex-end; gap: 0.4rem; margin: 0 0 1rem; }
-  .barra-zoom button {
-    display: inline-flex; align-items: center; justify-content: center; padding: 0 0.5rem; min-width: 3rem; height: 3rem;
-    font-size: 1.1rem; font-weight: 600; border-radius: 0.75rem; line-height: 1; cursor: pointer;
-    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
-  }
-  .barra-zoom button:disabled { opacity: 0.5; cursor: default; }
+  /* Barra de zoom: o mesmo controle de tamanho da barra da letra (ControleDeTamanho), à direita. */
+  .barra-zoom { display: flex; justify-content: flex-end; margin: 0 0 1rem; }
   .tentar { display: block; margin: 0 auto; }
   .dica { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--suave); }
 
