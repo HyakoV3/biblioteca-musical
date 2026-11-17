@@ -31,6 +31,10 @@ pub struct Hino {
     pub titulo: String,
     pub autoria: Option<String>,
     pub andamento: Option<u32>,
+    /// Armadura de clave do primeiro `KeySig` (−7 a −1 bemóis, 0, +1 a +7 sustenidos); 0 quando a partitura não tem o elemento.
+    pub armadura: i8,
+    /// `"maior"` ou `"menor"` (do arquivo, quando ele traz o modo; senão deduzido da nota final do baixo).
+    pub modo: &'static str,
     /// Passada normal (uma volta do hino).
     pub vozes: Vec<Voz>,
     /// Última passada, quando o hino tem final: as mesmas vozes, na mesma ordem.
@@ -1266,11 +1270,24 @@ pub fn converter_com(
     }
     let autoria = (!nomes.is_empty()).then(|| nomes.join(" · "));
 
+    let (armadura, modo_escrito) = ler_armadura(&doc);
+    let modo = modo_escrito
+        .or_else(|| modo_pelo_baixo(armadura, &vozes, passada_final.as_deref()))
+        .unwrap_or_else(|| {
+            avisos.push(format!(
+                "tonalidade: o baixo não termina na tônica de {}; assumido maior",
+                nome_da_tonalidade(armadura, "maior")
+            ));
+            "maior"
+        });
+
     Ok(Hino {
         numero: numero_hino,
         titulo,
         autoria,
         andamento,
+        armadura,
+        modo,
         vozes,
         passada_final,
         introducao,
@@ -1279,6 +1296,84 @@ pub fn converter_com(
         compassos,
         avisos,
     })
+}
+
+/// Armadura e modo escrito (se houver) do primeiro `KeySig` da partitura. MuseScore 2 e 3 gravam `<accidental>`; o 4 pode gravar
+/// `<concertKey>` e `<mode>` (não confirmado: aceita o que existir). Modulações no meio da peça são ignoradas.
+fn ler_armadura(doc: &Document) -> (i8, Option<&'static str>) {
+    let Some(ks) = doc.descendants().find(|n| n.has_tag_name("KeySig")) else {
+        return (0, None);
+    };
+    let a = numero::<i64>(ks, "accidental")
+        .or_else(|| numero::<i64>(ks, "concertKey"))
+        .filter(|a| (-7..=7).contains(a))
+        .unwrap_or(0) as i8;
+    let modo = match texto(ks, "mode")
+        .map(|m| m.trim().to_lowercase())
+        .as_deref()
+    {
+        Some("major" | "maior" | "ionian") => Some("maior"),
+        Some("minor" | "menor" | "aeolian") => Some("menor"),
+        _ => None,
+    };
+    (a, modo)
+}
+
+/// Classe de nota (0 = Dó) da tônica da tonalidade maior com essa armadura, ou da relativa menor.
+fn tonica_pc(armadura: i8, menor: bool) -> u8 {
+    let maior = (i32::from(armadura) * 7).rem_euclid(12);
+    (if menor { maior + 9 } else { maior }).rem_euclid(12) as u8
+}
+
+/// Última nota (a que começa mais tarde) de uma voz.
+fn ultima_nota(v: &Voz) -> Option<u8> {
+    v.notas
+        .iter()
+        .max_by(|a, b| a.inicio.total_cmp(&b.inicio))
+        .map(|n| n.midi)
+}
+
+/// Modo pela nota final do baixo (última voz): da passada final, se houver, senão da normal; se não bater com nenhuma tônica,
+/// pela primeira nota do baixo. `None` quando nada bate (o chamador assume maior e avisa).
+fn modo_pelo_baixo(armadura: i8, vozes: &[Voz], final_: Option<&[Voz]>) -> Option<&'static str> {
+    let qual = |pc: u8| {
+        if pc == tonica_pc(armadura, false) {
+            Some("maior")
+        } else if pc == tonica_pc(armadura, true) {
+            Some("menor")
+        } else {
+            None
+        }
+    };
+    let fim = final_
+        .and_then(<[Voz]>::last)
+        .or(vozes.last())
+        .and_then(ultima_nota);
+    let inicio = vozes
+        .last()
+        .and_then(|v| v.notas.iter().min_by(|a, b| a.inicio.total_cmp(&b.inicio)))
+        .map(|n| n.midi);
+    fim.and_then(|m| qual(m % 12))
+        .or_else(|| inicio.and_then(|m| qual(m % 12)))
+}
+
+const NOMES_MAIOR: [&str; 15] = [
+    "Dó♭", "Sol♭", "Ré♭", "Lá♭", "Mi♭", "Si♭", "Fá", "Dó", "Sol", "Ré", "Lá", "Mi", "Si", "Fá♯",
+    "Dó♯",
+];
+const NOMES_MENOR: [&str; 15] = [
+    "Lá♭", "Mi♭", "Si♭", "Fá", "Dó", "Sol", "Ré", "Lá", "Mi", "Si", "Fá♯", "Dó♯", "Sol♯", "Ré♯",
+    "Lá♯",
+];
+
+/// Nome da tonalidade em português ("Mi♭ maior"), pelo nome da armadura (não da tônica: +6 é Fá♯, −6 é Sol♭).
+pub fn nome_da_tonalidade(armadura: i8, modo: &str) -> String {
+    let i = (i32::from(armadura) + 7).clamp(0, 14) as usize;
+    if modo == "menor" {
+        format!("{} menor", NOMES_MENOR[i])
+    } else {
+        format!("{} maior", NOMES_MAIOR[i])
+    }
 }
 
 /// Recorta o começo de cada voz, até `ate` batidas: notas que começam antes entram, e as que atravessam o corte
@@ -1317,6 +1412,12 @@ pub fn para_json(h: &Hino) -> Value {
     if let Some(a) = h.andamento {
         m.insert("andamento".into(), json!(a));
     }
+    m.insert("armadura".into(), json!(h.armadura));
+    m.insert("modo".into(), json!(h.modo));
+    m.insert(
+        "tonalidade".into(),
+        json!(nome_da_tonalidade(h.armadura, h.modo)),
+    );
     if !h.letra.is_empty() {
         m.insert("letra".into(), json!(h.letra));
     }
@@ -2325,6 +2426,8 @@ mod testes {
             passada_final: None,
             introducao: None,
             andamento: None,
+            armadura: 0,
+            modo: "maior",
             vozes: ["Parte I", "Parte II", "Parte III", "Parte IV", "Outra"]
                 .iter()
                 .map(|n| Voz {
@@ -2674,6 +2777,8 @@ mod testes {
             passada_final: Some(partes()),
             introducao: Some(partes()),
             andamento: None,
+            armadura: 0,
+            modo: "maior",
             vozes: partes(),
             letra: vec![],
             sincronia: None,
@@ -3082,5 +3187,112 @@ mod testes {
             compassos_da_introducao(&[0.0, 4.0, 8.0], 6.0),
             vec![(0.0, 0), (4.0, 1)]
         );
+    }
+
+    // ---- Tonalidade (I-13): armadura, modo e nome ----
+    fn com_armadura(ks: &str, baixo: &[u8]) -> Hino {
+        let corpo_s = format!("{C44}{ks}{}", acorde("whole", 72));
+        let corpo_b: String = baixo.iter().map(|&p| acorde("quarter", p)).collect();
+        let pautas = format!(
+            "{}{}",
+            pauta(1, &compasso(&corpo_s)),
+            pauta(2, &compasso(&format!("{C44}{corpo_b}")))
+        );
+        let partes = format!("{}{}", parte(1, "Soprano"), parte(2, "Baixo"));
+        converter(&doc(&partes, &pautas), 1).unwrap()
+    }
+    fn ks(n: i8) -> String {
+        format!("<KeySig><accidental>{n}</accidental></KeySig>")
+    }
+
+    #[test]
+    fn tonica_e_nome_de_todas_as_armaduras() {
+        // (armadura, tônica maior, nome maior, tônica menor, nome menor)
+        let t = [
+            (-7, 11, "Dó♭", 8, "Lá♭"),
+            (-6, 6, "Sol♭", 3, "Mi♭"),
+            (-5, 1, "Ré♭", 10, "Si♭"),
+            (-4, 8, "Lá♭", 5, "Fá"),
+            (-3, 3, "Mi♭", 0, "Dó"),
+            (-2, 10, "Si♭", 7, "Sol"),
+            (-1, 5, "Fá", 2, "Ré"),
+            (0, 0, "Dó", 9, "Lá"),
+            (1, 7, "Sol", 4, "Mi"),
+            (2, 2, "Ré", 11, "Si"),
+            (3, 9, "Lá", 6, "Fá♯"),
+            (4, 4, "Mi", 1, "Dó♯"),
+            (5, 11, "Si", 8, "Sol♯"),
+            (6, 6, "Fá♯", 3, "Ré♯"),
+            (7, 1, "Dó♯", 10, "Lá♯"),
+        ];
+        for (a, pm, nm, pn, nn) in t {
+            assert_eq!(tonica_pc(a, false), pm, "maior {a}");
+            assert_eq!(tonica_pc(a, true), pn, "menor {a}");
+            assert_eq!(nome_da_tonalidade(a, "maior"), format!("{nm} maior"));
+            assert_eq!(nome_da_tonalidade(a, "menor"), format!("{nn} menor"));
+        }
+    }
+
+    #[test]
+    fn armadura_e_modo_maior_pelo_baixo() {
+        let h = com_armadura(&ks(-3), &[51, 55, 58, 51]); // Mi♭ no fim
+        assert_eq!((h.armadura, h.modo), (-3, "maior"));
+        let j = para_json(&h);
+        assert_eq!(
+            (
+                j["armadura"].clone(),
+                j["modo"].clone(),
+                j["tonalidade"].clone()
+            ),
+            (json!(-3), json!("maior"), json!("Mi♭ maior"))
+        );
+        assert!(!h.avisos.iter().any(|a| a.contains("tonalidade")));
+    }
+
+    #[test]
+    fn hino_menor_pelo_baixo() {
+        let h = com_armadura(&ks(-3), &[48, 55, 51, 48]); // Dó no fim
+        assert_eq!((h.armadura, h.modo), (-3, "menor"));
+        assert_eq!(para_json(&h)["tonalidade"], json!("Dó menor"));
+    }
+
+    #[test]
+    fn sem_keysig_a_armadura_e_zero() {
+        let h = com_armadura("", &[48, 55, 48]);
+        assert_eq!((h.armadura, h.modo), (0, "maior"));
+        let h = com_armadura("", &[57, 52, 57]); // Lá no fim
+        assert_eq!((h.armadura, h.modo), (0, "menor"));
+    }
+
+    #[test]
+    fn baixo_que_nao_bate_usa_a_primeira_nota_e_depois_assume_maior_com_aviso() {
+        // fim em Ré (nada), primeira em Dó (maior de armadura 0)
+        let h = com_armadura("", &[48, 55, 50]);
+        assert_eq!(h.modo, "maior");
+        assert!(!h.avisos.iter().any(|a| a.contains("tonalidade")));
+        // nem o fim nem o começo batem
+        let h = com_armadura("", &[50, 55, 53]);
+        assert_eq!(h.modo, "maior");
+        assert!(
+            h.avisos.iter().any(|a| a.contains("tonalidade")),
+            "{:?}",
+            h.avisos
+        );
+    }
+
+    #[test]
+    fn modo_escrito_no_arquivo_vale_mais_que_o_baixo() {
+        let k = "<KeySig><accidental>-3</accidental><mode>minor</mode></KeySig>";
+        let h = com_armadura(k, &[51, 55, 51]);
+        assert_eq!(h.modo, "menor");
+    }
+
+    #[test]
+    fn armadura_fora_de_faixa_vira_zero_e_so_o_primeiro_keysig_vale() {
+        let h = com_armadura(&ks(9), &[48, 48]);
+        assert_eq!(h.armadura, 0);
+        let dois = format!("{}{}", ks(1), ks(-2));
+        let h = com_armadura(&dois, &[55, 55]);
+        assert_eq!((h.armadura, h.modo), (1, "maior"));
     }
 }
