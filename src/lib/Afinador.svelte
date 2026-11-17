@@ -111,12 +111,10 @@
   <p class="meta">{t("afinador.explica")}</p>
   {#if erroAudio}<Aviso tipo="erro">{t("player.erro_audio")}</Aviso>{/if}
 
-  <section class="cartao bloco">
-    <button class="botao primario grande" aria-pressed={tocando === "la"} onclick={() => alternar("la")}>
-      <Icone nome={tocando === "la" ? "stop" : "play"} tamanho={24} />
-      {tocando === "la" ? t("audio.parar") : rotuloLa}
-    </button>
-  </section>
+  <button class="botao primario grande" aria-pressed={tocando === "la"} onclick={() => alternar("la")}>
+    <Icone nome={tocando === "la" ? "stop" : "play"} tamanho={24} />
+    {tocando === "la" ? t("audio.parar") : rotuloLa}
+  </button>
 
   <Cartao titulo={t("afinador.outra_nota")} resumo={`${nomeNota} · ${hz(freqNota)} Hz`} bind:aberto={outraAberta} grade>
     <fieldset class="notas" aria-label={t("afinador.outra_nota")}>
@@ -164,7 +162,6 @@
 <style>
   .afinador { display: grid; gap: 1rem; }
   .afinador > p { margin: 0; }
-  .bloco { display: grid; gap: 0.8rem; padding: 0.9rem; margin: 0; }
   .grande { min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
 
   /* As 12 notas: botões de rádio (teclado e leitor de tela de graça); a escolhida leva "✓", negrito e borda de acento (não só cor). */
