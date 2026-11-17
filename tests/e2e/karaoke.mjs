@@ -906,6 +906,16 @@ async function principal() {
   await dormir(900);
   await av(`document.getElementById('descartar')?.click(); 1`);
   await dormir(300);
+  // Sem medidor (sem AudioContext) a gravação segue igual e NÃO aparece o aviso de "sem som" (o nível seria sempre 0, o que não prova que não há som).
+  await av(`window.__acOriginal = window.AudioContext; window.AudioContext = undefined; 1`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(3800);
+  const semMedidor = await av(`({ gravando: document.getElementById('gravar').getAttribute('aria-pressed'), aviso: !!document.getElementById('sem-som'), barra: !!document.querySelector('#gravar .nivel') })`);
+  confere(semMedidor.gravando === "true" && semMedidor.aviso === false, `Gravador: sem AudioContext grava igual e não mostra o aviso de "sem som": ${JSON.stringify(semMedidor)}`);
+  await av(`document.getElementById('gravar').click(); window.AudioContext = window.__acOriginal; 1`);
+  await dormir(900);
+  await av(`document.getElementById('descartar')?.click(); 1`);
+  await dormir(300);
   // Toque duplo em "Gravar" enquanto o microfone é pedido: o segundo toque é ignorado (dois pedidos juntos deixavam um microfone órfão aceso).
   await av(`window.__atrasoMic = 800; window.__microfones.length = 0; 1`);
   await av(`document.getElementById('gravar').click(); 1`);

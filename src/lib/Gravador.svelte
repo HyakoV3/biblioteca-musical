@@ -94,7 +94,8 @@
       nivel = Math.max(atual, nivel * 0.8);
       const r = detector.atualizar(atual, performance.now());
       if (r.comSom) ouviu = true;
-      semSom = r.semSom;
+      // Sem medidor (sem AudioContext, ou o navegador o deixou suspenso), o nível é sempre 0: isso não prova que não há som, então não avisa.
+      semSom = gravador.medidorAtivo && r.semSom;
     }, 80);
     // O app já estava em segundo plano quando o microfone chegou (a permissão já estava dada e a pessoa saiu antes): o evento de esconder já passou.
     // Espera um instante antes de parar, porque o diálogo de permissão do Android também esconde a página por um momento.

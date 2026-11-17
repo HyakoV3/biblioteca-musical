@@ -273,3 +273,93 @@ describe("detector de som", () => {
     expect(d.atualizar(0, 9500).semSom).toBe(false);
   });
 });
+
+describe("medidor do Gravador (com um AudioContext falso)", () => {
+  class Trilha extends EventTarget {
+    stop() {}
+  }
+  class RecorderFalso {
+    static isTypeSupported = () => true;
+    state: "inactive" | "recording" = "inactive";
+    mimeType = "audio/webm";
+    ondataavailable: ((e: { data: Blob }) => void) | null = null;
+    onstop: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    start() {
+      this.state = "recording";
+    }
+    stop() {
+      this.state = "inactive";
+    }
+  }
+  const criados: ContextoFalso[] = [];
+  class ContextoFalso {
+    state: "running" | "suspended" = "running";
+    resume() {
+      return Promise.resolve();
+    }
+    close() {
+      this.fechado = true;
+      return Promise.resolve();
+    }
+    fechado = false;
+    createAnalyser() {
+      return { fftSize: 0, getFloatTimeDomainData: (a: Float32Array) => a.fill(0.5) };
+    }
+    createMediaStreamSource() {
+      return { connect() {} };
+    }
+    constructor() {
+      criados.push(this);
+    }
+  }
+  function preparar(globais: Record<string, unknown>) {
+    vi.stubGlobal("MediaRecorder", RecorderFalso);
+    vi.stubGlobal("navigator", { mediaDevices: { getUserMedia: async () => ({ getTracks: () => [new Trilha()] }) } });
+    for (const [nome, valor] of Object.entries(globais)) vi.stubGlobal(nome, valor);
+  }
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    criados.length = 0;
+  });
+
+  it("com AudioContext rodando o medidor está ativo e mede o nível", async () => {
+    preparar({ AudioContext: ContextoFalso });
+    const g = new Gravador();
+    await g.iniciar();
+    expect(g.medidorAtivo).toBe(true);
+    expect(g.nivel()).toBeCloseTo(0.9, 2); // amostras em 0,5 (RMS 0,5): −6 dBFS, (−6 + 60) / 60
+    g.soltar();
+    expect(g.medidorAtivo).toBe(false);
+    expect(criados[0].fechado).toBe(true); // o contexto é devolvido ao aparelho
+  });
+
+  it("sem AudioContext o medidor não está ativo (nem se deve avisar \"sem som\")", async () => {
+    preparar({});
+    const g = new Gravador();
+    await g.iniciar();
+    expect(g.gravando).toBe(true); // a gravação segue igual
+    expect(g.medidorAtivo).toBe(false);
+    expect(g.nivel()).toBe(0);
+    g.soltar();
+  });
+
+  it("com o contexto suspenso (o navegador não deixou o áudio iniciar) o medidor não está ativo", async () => {
+    class Suspenso extends ContextoFalso {
+      override state = "suspended" as const;
+    }
+    preparar({ AudioContext: Suspenso });
+    const g = new Gravador();
+    await g.iniciar();
+    expect(g.medidorAtivo).toBe(false);
+    g.soltar();
+  });
+
+  it("usa o nome com prefixo (webkitAudioContext) quando é o único", async () => {
+    preparar({ webkitAudioContext: ContextoFalso });
+    const g = new Gravador();
+    await g.iniciar();
+    expect(g.medidorAtivo).toBe(true);
+    g.soltar();
+  });
+});

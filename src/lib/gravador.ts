@@ -182,6 +182,14 @@ export class Gravador {
     }
   }
 
+  /**
+   * O medidor está funcionando (há analisador e o contexto de áudio está rodando). Sem ele, `nivel()` devolve sempre 0, e quem usa NÃO deve tirar
+   * disso a conclusão de que "não há som": o aviso de "sem som" só vale com o medidor ativo.
+   */
+  get medidorAtivo(): boolean {
+    return this.analisador !== null && this.contexto?.state === "running";
+  }
+
   /** O nível do microfone agora, de 0 a 1 (0 se o medidor não está disponível). */
   nivel(): number {
     if (!this.analisador || !this.amostras) return 0;
@@ -195,7 +203,8 @@ export class Gravador {
 
   private abrirMedidor(): void {
     try {
-      const Contexto = (globalThis as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext;
+      const g = globalThis as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
+      const Contexto = g.AudioContext ?? g.webkitAudioContext; // WebViews e Safari antigos só têm o nome com prefixo
       if (!Contexto) return;
       this.contexto = new Contexto();
       void this.contexto.resume().catch(() => {});
