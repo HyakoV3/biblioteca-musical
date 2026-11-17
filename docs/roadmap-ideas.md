@@ -774,90 +774,132 @@ instrumento por voz): quanto mais combinações possíveis, mais a calibração 
 
 ## I-24 — Ajustes em cartões, com um cartão de Conteúdo (hinário, partituras e sons gravados)
 
-- **Status:** anotada, **rascunho** (a revisar com o subagente Opus antes de implementar)
-- **Origem:** pedido do responsável, 2026-11-16: "no Ajustes já cabe uns cards... o de temas, o de importação (importar hinário agora, apesar de que no futuro não existe, mas teria o importar partituras e importar sons gravados dentro)". E, ao tentar importar as partituras: "achei que ele teria um botão específico para ele, tipo o dos sons gravados".
-- **Prioridade:** a definir (a tela já está longa, e cada pacote novo, como as partituras, acrescenta mais botões)
+- **Status:** **reescrita em 2026-11-17 sobre o estado atual da tela** (a primeira versão, de 2026-11-16, era anterior à PR #42 e descrevia partituras sem cartão próprio) e **revisada por subagente Opus 5** no mesmo dia (12 achados, aplicados; ver "Revisão"). Pronta para implementar depois das respostas às perguntas 1 a 5.
+- **Origem:** pedido do responsável, 2026-11-16: "no Ajustes já cabe uns cards... o de temas, o de importação (importar hinário agora, apesar de que no futuro não existe, mas teria o importar partituras e importar sons gravados dentro)". E, em 2026-11-17: "tá me atrapalhando já um pouco o Ajustes".
+- **Prioridade:** **a próxima**, depois da I-13 (o responsável, 2026-11-17).
 
 ### O problema
-Hoje **Ajustes** é uma coluna de seções soltas, e só "Sobre o app" e "Créditos e licenças" são cartões que se recolhem (`<details class="cartao">`):
+Hoje **Ajustes** é uma coluna de **sete blocos soltos** mais a versão. Só "Sobre o app" e "Créditos e licenças" são cartões que se recolhem (`<details class="cartao">`):
 
 ```
-┌─ Ajustes ──────────────────────────────────────┐
-│ Aparência                                       │
-│   Modo    [Automático][Claro][Escuro][Alto contr.]│
-│   Estilo  [Normal][Pergaminho][Marinho]         │
-│ Idioma da interface            [ Português ▾ ]  │
-│ Biblioteca                                      │
-│   Conteúdo atual: Amostra de teste (5 hinos)    │
-│   [Importar hinário]  [Remover importação]      │
-│ Sons gravados                                   │
-│   Todos os sons gravados  36 MB · Não instalado │
-│                                [Baixar (36 MB)] │
-│   Órgão / Madeiras / Metais / Cordas ...        │
-│ ⓘ Aviso: o app não tem ligação com a CCB        │
-│ ▸ Sobre o app                                   │
-│ ▸ Créditos e licenças                           │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│ Ajustes                                              │
+│ APARÊNCIA                                            │
+│   Modo    [Automático][Claro][Escuro][Alto contr.]   │
+│   Estilo  [Normal][Pergaminho][Marinho]              │
+│ IDIOMA                                               │
+│   [ Português                                  ▾ ]   │
+│ BIBLIOTECA                                           │
+│   Amostra de teste · 5 hinos                         │
+│   [Importar hinário]  [Remover importação]           │
+│ PARTITURAS                             (#partituras) │
+│   ┌────────────────────────────────────────────┐     │
+│   │ Todas as partituras                        │     │
+│   │ Instaladas: 5                    [Remover] │     │
+│   └────────────────────────────────────────────┘     │
+│ SONS GRAVADOS                                        │
+│   ┌────────────────────────────────────────────┐     │
+│   │ Todos os sons gravados                     │     │
+│   │ 36 MB · Não instalado    [Baixar (36 MB)]  │     │
+│   └────────────────────────────────────────────┘     │
+│ ⓘ Aplicativo não oficial (sem ligação com a CCB)     │
+│ ▸ Sobre o app                                        │
+│ ▸ Créditos e licenças                                │
+│         Versão 0.3.0 (…)                             │
+└──────────────────────────────────────────────────────┘
 ```
 
-Três coisas incomodam:
-1. **O botão certo não está onde se espera.** As partituras não têm botão próprio: entram pelo mesmo "Importar hinário" (que aceita `.json` ou `.zip`). Quem procura "partituras" em Ajustes não acha nada, e o texto do botão não diz que ele serve para isso.
-2. **Cada pacote novo piora a tela.** Hinário, partituras e sons gravados são a **mesma coisa** para a pessoa (conteúdo que se instala, atualiza e remove), mas estão em desenhos diferentes: o de sons tem estado, "Baixar (tamanho)" e "Remover"; o do hinário só tem "Importar" e "Remover importação".
-3. **A tela fica comprida** (e mais ainda com a fonte do sistema grande, onde tudo cresce em `rem`).
+O que incomoda:
+1. **A tela é comprida**, e fica mais ainda com a fonte do sistema grande (tudo cresce em `rem`). Cada pacote novo (a I-25 acrescenta um estado "atualização" a cada linha) piora.
+2. **A mesma coisa, desenhos diferentes.** Hinário, partituras e sons gravados são **conteúdo que se instala e remove**, mas o hinário é um texto com botões soltos, enquanto partituras e sons usam o bloco `.pacote`.
+3. **Código duplicado.** O bloco `.pacote` está escrito **duas vezes** (Partituras e Sons) e o cartão com resumo (`.cartao` + `<summary>`) também (Ajustes e o **player**, que já tem "Andamento e Tom" com resumo na linha de cima). Um terceiro uso seria uma terceira cópia.
+
+### O que já está decidido (não reabrir)
+- **Partituras não têm importação manual.** O app **baixa** o pacote do servidor e confere o SHA-256 (PR #42; `docs/FORMATO.md`; o teste de ponta a ponta exige que o cartão não tenha campo de arquivo).
+- **O pacote de partituras é separado do hinário.** O `.zip` só aceita `partituras/…` e grava a marca `.hinario` com o `id` do hinário instalado (`src-tauri/src/pacote.rs`); baixar ou remover partituras **nunca** troca o hinário.
+- **"Importar hinário" aceita só `.json`** ("no futuro não existe": o hinário virá de um pacote). O teste confere o `accept`.
 
 ### O que se deseja
-Ajustes em **cartões recolhíveis**, cada um com **uma linha de estado quando fechado** (assim recolher não esconde o que importa), e um cartão **Conteúdo** com as três coisas instaláveis no **mesmo desenho de linha** que os sons gravados já têm.
+Ajustes em **cartões recolhíveis**, cada um com uma **linha de estado quando fechado** (recolher não esconde o que importa), e um cartão **Conteúdo** com as três coisas instaláveis no **mesmo desenho de linha**:
 
 ```
-┌─ Ajustes ──────────────────────────────────────┐
-│ ⓘ Aplicativo não oficial (aviso sempre à vista) │
-│ ▸ Aparência        Automático · Normal          │
-│ ▸ Idioma           Português                    │
-│ ▾ Conteúdo         Hinário · Partituras · Sons  │
-│ ┌────────────────────────────────────────────┐ │
-│ │ Hinário                                    │ │
-│ │ Amostra de teste · 5 hinos                 │ │
-│ │ [Importar arquivo]            [Remover]    │ │
-│ ├────────────────────────────────────────────┤ │
-│ │ Partituras                                 │ │
-│ │ 5 de 5 hinos · 0,2 MB · Instaladas         │ │
-│ │ [Baixar (15 MB)] [Importar .zip] [Remover] │ │
-│ ├────────────────────────────────────────────┤ │
-│ │ Sons gravados                              │ │
-│ │ 2 de 4 pacotes · 20 MB                     │ │
-│ │ Órgão    Instalado          [Remover]      │ │
-│ │ Cordas   ● Atualização      [Atualizar]    │ │
-│ └────────────────────────────────────────────┘ │
-│ ▸ Sobre o app                                   │
-│ ▸ Créditos e licenças                           │
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│ Ajustes                                              │
+│ ⓘ Aplicativo não oficial (aviso sempre à vista)      │
+│ ▸ Aparência        Automático · Normal               │
+│ ▸ Idioma           Português                         │
+│ ▾ Conteúdo         Amostra · 5 partituras · sem sons │
+│   ┌────────────────────────────────────────────┐     │
+│   │ Hinário                                    │     │
+│   │ Amostra de teste · 5 hinos                 │     │
+│   │ [Importar arquivo]    [Remover importação] │     │
+│   ├────────────────────────────────────────────┤     │
+│   │ Partituras                                 │     │
+│   │ Instaladas: 5                    [Remover] │     │
+│   ├────────────────────────────────────────────┤     │
+│   │ Sons gravados                              │     │
+│   │ 36 MB · Não instalado    [Baixar (36 MB)]  │     │
+│   └────────────────────────────────────────────┘     │
+│ ▸ Sobre o app                                        │
+│ ▸ Créditos e licenças                                │
+│         Versão 0.3.0 (…)                             │
+└──────────────────────────────────────────────────────┘
 ```
-(`●` é só um exemplo de indicador de atualização, ver I-25; nunca por cor sozinha.)
 
-**Princípios** (do projeto): medidas em `rem`; cores só das variáveis do tema; estado por **texto e ícone**, não só por cor; funciona nos temas claro, escuro e alto contraste; **teclado e leitor de tela** (o `<details>/<summary>` já dá isso de graça); textos em pt, es e en; com a fonte do sistema grande, a linha de estado **quebra**, não corta.
+O aviso "aplicativo não oficial" continua **sempre à vista** (não é cartão).
 
-### Perguntas em aberto
-1. **Um cartão "Conteúdo" com três linhas, ou três cartões?** Recomendação: **um**, porque são a mesma coisa para a pessoa e o desenho da linha é igual; o cartão de sons já tem 4 sublinhas.
-2. **Acordeão** (abrir um fecha os outros, como já é nos cartões do player) **ou livre?** Recomendação: **livre**, para comparar Conteúdo com Aparência; mas **lembrar** o que ficou aberto.
-3. **Qual cartão abre por padrão?** Recomendação: **todos fechados** no primeiro uso, com a linha de estado de cada um, **exceto** quando se chega pelo botão "Abrir Ajustes" da aba Partitura (aí abre o **Conteúdo**, já rolado até Partituras).
-4. **Onde vai o botão de importar de arquivo?** Recomendação: **em cada linha** do cartão (hinário aceita `.json`/`.zip`, partituras aceita `.zip`), no lugar do botão único de hoje; "Baixar" convive com ele até todo pacote ter servidor (I-25).
-5. **O pacote de partituras deve ser separado do hinário?** Hoje o `.zip` leva o `hinario.json` **junto** (a importação troca o hinário e as partituras de uma vez). Importar pela linha **Partituras** e ver o hinário mudar surpreende. Alternativa: um pacote de partituras **só com os SVG** e um manifesto com o `id` do hinário a que se aplica. É decisão de **formato** (mexe em `docs/FORMATO.md` e no Rust), a tomar antes de construir a linha.
-6. **"Importar hinário" no futuro não existe** (o responsável): o hinário também virá de um pacote. Até lá a linha **Hinário** tem "Importar arquivo"; depois ela vira "Baixar/Atualizar" como as outras e o importar de arquivo passa para um submenu **Avançado**, ou some?
-7. **Um comando para remover só as partituras** (hoje "Remover importação" apaga hinário **e** partituras): confirmar o texto de cada remoção (hoje há um diálogo só).
+**Princípios do projeto:** medidas em `rem`; cores só das variáveis do tema; estado por **texto e ícone**, nunca só por cor; vale nos temas claro, escuro e alto contraste; **teclado e leitor de tela** (o `<details>` e o `<summary>` já dão isso); textos nos 3 idiomas.
 
-### Impacto técnico (hipóteses)
-- `src/routes/ajustes/+page.svelte` (a tela, hoje com seções soltas): extrair um componente de **cartão** a partir do `.cartao` que já existe, e um de **linha de pacote** a partir do `.pacote` dos sons.
-- `src-tauri/src/pacote.rs` e `lib.rs`: um comando **`remover_partituras`** (a função `remover_partituras` já existe no Rust, só não é um comando) e, se a pergunta 5 for "separar", um importador só de SVG.
-- `src/lib/biblioteca.svelte.ts` e a tela da aba Partitura: o botão "Abrir Ajustes" passa a levar ao cartão Conteúdo (parâmetro na rota ou `#conteudo`).
-- Sem mudança de conteúdo nem de formato **se** a pergunta 5 for "continua junto".
+### O que se reaproveita
+- **`Cartao.svelte`** (novo, extraído do que já existe): props `titulo`, `resumo`, `aberto` (ligável) e `name` (opcional, para o acordeão nativo que o player usa). Substitui o `.cartao` duplicado do player (`Player.svelte`) e o de Ajustes; **o player migra junto**, para não ficarem três cópias.
+- **`LinhaPacote.svelte`** (novo, do bloco `.pacote`): título, detalhe, e a ação (baixar, andamento, remover, **atualizar**: a I-25). A **lógica** de baixar, conferir e instalar **já está separada** (`src/lib/sons/pacotes.svelte.ts`, `src/lib/partituras/partituras.svelte.ts`, os dois sobre `baixarZip`) e **não muda**: a duplicação é só do desenho.
+- **O molde de preferências** de `lerCartoes` (`src/lib/preferencias.ts`): leitura validada, valor ruim volta ao padrão, `try/catch`.
+
+### Comportamento
+- **Linha de estado dos cartões fechados:**
+  - **Aparência:** "{modo} · {estilo}"; com Alto contraste (que ignora o estilo), só "Alto contraste".
+  - **Idioma:** o nome do idioma, na própria língua.
+  - **Conteúdo:** hinário em uso, partituras instaladas e sons instalados (por exemplo "Amostra · 5 partituras · sem sons"). **Durante um download ou um erro**, a linha mostra "baixando N%" ou "erro" com ícone (não só cor), porque o `<Aviso>` e o progresso **ficam dentro** do cartão e sumiriam se ele estivesse fechado.
+- **Estado lembrado** (só Aparência, Idioma e Conteúdo): uma **chave nova** `prefs.ajustes` (a `prefs.cartoes` **já é do player**), com um objeto de booleanos, validado como `lerCartoes`. **Sobre e Créditos não entram** (continuam abrindo fechados). Padrão: **todos fechados**.
+- **"Abrir Ajustes" da aba Partitura** (hoje `<a href="/ajustes">`, em `Partitura.svelte`): passa a `/ajustes?abrir=partituras`. A tela lê o parâmetro ao montar, **abre o cartão Conteúdo**, espera (`tick`) e rola até `#partituras`. **Essa abertura forçada não é gravada.** O texto `partitura.sem_pacote_texto` ("… no cartão Partituras") muda nos 3 idiomas. Não conto com a abertura automática do `<details>` ao seguir um `#hash` (depende da versão da WebView); abro por código.
+- **Remover:** "Remover importação" (hinário) **tem diálogo** e apaga o hinário **e** as partituras (volta ao exemplo); o "Remover" das partituras e o dos sons **apagam na hora**, sem confirmar (o pacote se baixa de novo). Ver a pergunta 5.
+
+### Perguntas em aberto (com a minha recomendação)
+1. **Um cartão "Conteúdo" com as três linhas, ou três cartões?** **Um:** é a mesma coisa para a pessoa e o desenho da linha é o mesmo.
+2. **Cartões livres ou acordeão** (abrir um fecha os outros, como no player)? **Livre**, para comparar Conteúdo com Aparência; lembra só o que a pessoa abriu.
+3. **Padrão e a abertura pelo link da aba Partitura:** todos fechados no primeiro uso; quem chega pelo link vê o Conteúdo aberto e rolado, sem gravar isso. **Concordo.**
+4. **A linha "Hinário":** "Importar arquivo" (`.json`) como hoje, e, quando o hinário passar a vir de um pacote, ele **vai para um submenu "Avançado"**, em vez de sumir (serve para testar hinários sem servidor). **Concordo.**
+5. **"Remover" de partituras e de sons pede confirmação?** Hoje nenhum pede. **Recomendo não:** o pacote se baixa de novo; o diálogo fica só no "Remover importação", que **não** é recuperável.
+6. **O player migra para o `Cartao.svelte` na primeira fatia?** **Sim**: senão ficam três cópias do mesmo cartão. É o trecho mais arriscado (o player usa `name` e guarda o estado em `prefs.cartoes`).
+
+### Impacto técnico (hipóteses, a verificar)
+- `src/routes/ajustes/+page.svelte` (a tela): trocar as seções por `Cartao` e `LinhaPacote`; o resumo de cada cartão é `$derived`.
+- `src/lib/preferencias.ts` e `tests/preferencias.test.ts`: a chave `prefs.ajustes`, com testes de valor ruim.
+- `src/lib/i18n/pt.ts`, `en.ts` e `es.ts`: as chaves novas (resumos, rótulos); o `Dicionario` tipado faz o `svelte-check` exigir a paridade.
+- `src/lib/Partitura.svelte` e o texto `partitura.sem_pacote_texto`: o link com `?abrir=partituras`.
+- **Não muda:** o Rust (`remover_partituras` **já é** um comando, em `lib.rs`), o formato do pacote e as lojas de estado dos sons e das partituras.
+- **Teste de ponta a ponta** (`tests/e2e/karaoke.mjs`) depende de Ajustes: do `id="partituras"` (**manter na linha**), do `innerText` do cartão (com o `<details>` fechado o texto some: **abrir o cartão antes de ler**), de `href === "/ajustes"` (passa a `/ajustes?abrir=partituras`) e do primeiro `input[type=file]` da página (fica na linha Hinário, dentro de Conteúdo). Ajustar sem afrouxar o que ele afirma (sem campo de arquivo nas partituras; `accept` só `.json`).
+- **Cruza com a I-25:** a `LinhaPacote` precisa do estado "atualização disponível" (texto e ícone), e o interruptor de "verificar atualização" (pergunta 5 da I-25) precisa de um lugar: no cartão Conteúdo. A I-28 (abas da tela inicial) **não interage** com Ajustes.
+
+### Fatias de entrega (pull requests, nesta ordem)
+1. **`Cartao.svelte` e `LinhaPacote.svelte`**, migrando o player e Ajustes **sem mudar o comportamento** (o teste de ponta a ponta passa como está).
+2. **Ajustes em cartões, com a linha de estado** (o teste ajustado).
+3. **Estado lembrado** (`prefs.ajustes`) e os testes de preferências.
+4. **O link `?abrir=partituras`** da aba Partitura, com o texto nos 3 idiomas.
 
 ### Critérios de aceitação (propostos)
-- Com todos os cartões fechados, **cada um mostra uma linha de estado** correta (modo e estilo; idioma; hinário, partituras e sons instalados).
-- A aba Partitura sem partituras leva a **Conteúdo → Partituras**, que mostra o estado e a ação certa.
+- Com todos os cartões fechados, **cada um mostra a linha de estado correta** (modo e estilo, ou só Alto contraste; idioma; hinário, partituras e sons), **inclusive durante o download e depois de um erro**. É testável no e2e pelo texto do `<summary>`.
+- A aba Partitura sem partituras leva a **Conteúdo → Partituras**, com o cartão aberto e a linha à vista; a abertura não fica gravada.
 - **Teclado:** cada cartão abre e fecha com Enter e Espaço; a ordem de foco é a visual. **Leitor de tela:** o estado é lido junto do nome do cartão.
-- **Fonte do sistema no máximo** e os três temas (incluindo Alto contraste): nada cortado nem sobreposto (captura de tela conferida).
-- O que ficou aberto é **lembrado** entre aberturas, e as regras de `rem`/tema/i18n do projeto passam nos verificadores.
-- O e2e cobre: abrir/fechar, a linha de estado, o caminho da aba Partitura até o cartão e o importar de arquivo por linha.
+- **Capturas conferidas** (nada cortado nem sobreposto): fonte do sistema a **200%**, os **3 temas** (claro, escuro, alto contraste) e largura de **360 dp**.
+- O que ficou aberto é lembrado entre aberturas (só Aparência, Idioma e Conteúdo); valor ruim na chave volta ao padrão; as regras de `rem`, tema e i18n do projeto passam nos verificadores.
+- O e2e cobre: abrir e fechar, a linha de estado, o caminho da aba Partitura até o cartão, o importar do hinário (só `.json`) e que as partituras **seguem sem** campo de arquivo.
+
+### Revisão
+Revisão por subagente **Opus 5** em 2026-11-17, só leitura, com o código aberto: **12 achados** (4 bloqueios), todos aplicados; **os quatro bloqueios eu conferi no código** antes de reescrever.
+- **A seção original estava desatualizada**: foi escrita antes da PR #42 e descrevia um app que já mudou. O diagrama "hoje" não tinha a seção Partituras (que já existe, com estado, Baixar, progresso e Remover); o "problema 1" dizia que as partituras entravam pelo "Importar hinário" (falso: ele só aceita `.json`); a pergunta 4 e o desenho propunham um **"Importar .zip" de partituras**, que **reabria uma decisão tomada**; a pergunta 5 propunha **separar** o pacote de partituras do hinário, que **já é separado**; e o texto dizia que `remover_partituras` "não é um comando", mas é.
+- **Acrescentado pela revisão:** a chave `prefs.cartoes` já é do player (a nova é `prefs.ajustes`); o cartão com resumo **já existe** no player (extrair `Cartao.svelte` e migrar os dois); a abertura por link precisa ser feita por código; o e2e depende de `#partituras` e do texto dos cartões; o `<Aviso>` e o progresso dentro de um cartão fechado somem; a pergunta certa sobre remover é "pede confirmação?".
+- **Risco que mais preocupava o revisor:** implementar a partir da versão antiga, reabrindo decisões já tomadas e quebrando o teste de `#partituras` sem ninguém entender o porquê. Resolvido pela seção "O que já está decidido".
 
 ---
 
@@ -870,7 +912,7 @@ Ajustes em **cartões recolhíveis**, cada um com **uma linha de estado quando f
 ### O problema
 Os pacotes mudam (o banco dos sons já trocou uma vez, do FluidR3 para o GeneralUser GS; as partituras vão crescer de 5 para 480 hinos), mas **o app não sabe disso**:
 - O manifesto dos sons (`src/lib/sons/manifesto.json`, com o SHA-256 de cada pacote) está **embutido no app**: um pacote novo no servidor **exige um APK novo**, e o APK antigo **recusa** o pacote novo (foi o que aconteceu no zip 010).
-- As partituras não têm servidor ainda (ver a I-24 e a questão dos direitos, abaixo).
+- As partituras **já têm** cartão próprio em Ajustes e um pacote de teste no servidor de arquivos (PR #42; as 5 partituras de amostra), baixado como os sons. O que falta é a **publicação de verdade**, que depende da autorização do autor das transcrições (ver a pergunta 6, abaixo).
 - Quem instalou um pacote **não é avisado** de que há uma versão melhor, nem de que um arquivo foi corrigido.
 
 ### O que se deseja
