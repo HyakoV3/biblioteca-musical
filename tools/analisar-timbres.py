@@ -486,16 +486,46 @@ def medir_notas(arquivo, faixa, curva="ouvido", janela=JANELA_PADRAO):
     return saida
 
 
+def rotulo_da_fonte():
+    """Como o mapa identifica o banco de amostras de onde saiu (a pasta e a mãe dela: `GeneralUserGS/amostras`)."""
+    return f"{FONTE.parent.name}/{FONTE.name}"
+
+
+def gravados_do_catalogo():
+    """Os gravados de `src/lib/realista.ts`. Lista vazia é erro (o formato do arquivo pode ter mudado e a expressão regular deixou de casar)."""
+    lista = parse_realistas()
+    if not lista:
+        sys.exit("nenhum gravado encontrado em src/lib/realista.ts (o formato do arquivo mudou?)")
+    return lista
+
+
+def ler_mapa():
+    """O `niveis-gravados.json`, ou sai com a instrução de refazê-lo se não existir, estiver ilegível ou não tiver o formato esperado."""
+    refazer = "rode --fonte <amostras> --mapa-notas --escrever"
+    if not SAIDA_NIVEIS.exists():
+        sys.exit(f"não existe {SAIDA_NIVEIS.name}: {refazer}")
+    try:
+        dados = json.loads(SAIDA_NIVEIS.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        sys.exit(f"{SAIDA_NIVEIS.name} ilegível ({e}): {refazer}")
+    if not isinstance(dados, dict) or not isinstance(dados.get("instrumentos"), dict):
+        sys.exit(f"{SAIDA_NIVEIS.name} não tem o formato esperado (falta 'instrumentos'): {refazer}")
+    return dados
+
+
 def mapa_notas(curva, escrever):
     print(f"Curva: {curva}. Correção em dB que leva cada nota ao nível médio (em potência) da faixa de uso; limites {LIMITE_CORTE_DB} a +{LIMITE_REFORCO_DB} dB.\n")
     print(f"{'instrumento':<22}{'faixa':>9}{'notas':>6}{'mudas':>6} | {'amplitude antes':>16}{'depois':>8}{'limitadas':>10}")
     instrumentos = {}
-    for id_, arquivo, _ganho, vozes in parse_realistas():
+    for id_, arquivo, _ganho, vozes in gravados_do_catalogo():
         faixa = faixa_de_uso(vozes)
         niveis = medir_notas(arquivo, faixa, curva)
         if not niveis:
             sys.exit(f"{arquivo}: nenhuma nota medida em {FONTE}")
-        corr = correcoes_db(niveis, faixa)
+        try:
+            corr = correcoes_db(niveis, faixa)
+        except ValueError as e:  # só sobraram notas da margem de transposição: as da faixa de uso estão mudas
+            sys.exit(f"{arquivo}: {e} (faixa {faixa[0]}-{faixa[1]}) em {FONTE}")
         de, ate = min(niveis), max(niveis)
         # sem buraco: a nota muda (ou fora do banco) recebe 0 dB, como se não houvesse correção
         lista = [round(corr.get(m, 0.0), 2) for m in range(de, ate + 1)]
@@ -513,13 +543,19 @@ def mapa_notas(curva, escrever):
 def validar_mapa():
     """Confere o mapa gravado com medidas DIFERENTES das que o geraram (outras janelas de tempo e as duas curvas): se a variação entre as notas
     cai também nelas, o mapa vale para o som e não só para o critério que o produziu."""
-    dados = json.loads(SAIDA_NIVEIS.read_text(encoding="utf-8"))
+    dados = ler_mapa()
+    if dados.get("fonte") != rotulo_da_fonte():
+        sys.exit(f"o mapa foi gerado de {dados.get('fonte')}, mas --fonte aponta para {rotulo_da_fonte()}: validar outro banco daria números sem sentido")
+    realistas = gravados_do_catalogo()
+    ausentes = [id_ for id_, _, _, _ in realistas if id_ not in dados["instrumentos"]]
+    if ausentes:
+        sys.exit(f"{', '.join(ausentes)} não está(ão) em {SAIDA_NIVEIS.name}: rode --fonte <amostras> --mapa-notas --escrever")
     cenarios = [("ouvido", (0.45, 1.2)), ("ouvido", (0.15, 0.6)), ("ouvido", (1.0, 1.8)), ("celular", (0.45, 1.2))]
     print(f"Mapa: {SAIDA_NIVEIS.name} (gerado na curva {dados['curva']}). Amplitude entre as notas da faixa de uso, ANTES e DEPOIS da correção:\n")
     print(f"{'instrumento':<22}" + "".join(f"{c + ' ' + str(j[0]) + '-' + str(j[1]) + 's':>22}" for c, j in cenarios))
     somas = [[0.0, 0.0] for _ in cenarios]
     n = 0
-    for id_, arquivo, _ganho, vozes in parse_realistas():
+    for id_, arquivo, _ganho, vozes in realistas:
         faixa = faixa_de_uso(vozes)
         m = dados["instrumentos"][id_]
         corr = {m["de"] + i: v for i, v in enumerate(m["db"])}
@@ -581,6 +617,11 @@ def main():
     ap.add_argument("--orgaos", action="store_true", help="mede o órgão de tirantes e compara com os órgãos sintetizados")
     args = ap.parse_args()
     global FONTE
+    if (args.mapa_notas or args.validar_mapa) and not args.fonte:
+        # O banco padrão da ferramenta é o FluidR3 (o antigo); os gravados do app são do GeneralUser GS. Sem isto, `--mapa-notas --escrever` sobrescreveria o
+        # mapa do app com dados do banco errado, sem aviso.
+        sys.exit("--mapa-notas e --validar-mapa exigem --fonte: o padrão (sons-fonte/FluidR3_GM) NÃO é o banco dos gravados de hoje "
+                 "(use --fonte sons-fonte/GeneralUserGS/amostras)")
     if args.fonte:
         FONTE = args.fonte.expanduser().resolve()
     if not FONTE.is_dir():

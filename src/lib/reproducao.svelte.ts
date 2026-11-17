@@ -73,7 +73,7 @@ let painelNumero = $state<number | null>(null);
  * O que o som que está agendado usa: as vozes montadas (em batidas) e os ajustes do momento em que ele foi agendado.
  * Com a música pausada, se os ajustes mudarem, "continuar" reagenda a partir da posição atual (ver `continuar`).
  */
-type Agendado = { vozes: Voz[]; andamento: number; transposicao: number; instrumentos: string[] };
+type Agendado = { vozes: Voz[]; andamento: number; transposicao: number; instrumentos: string[]; nivelar: boolean };
 let agendado: Agendado | null = null;
 
 const mudou = (c: Config, a: Agendado) =>
@@ -140,12 +140,15 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
           : vozesDaVez(hino, typeof parte === "number" ? parte : 1, total);
     pararRelogio();
     const g = geracao;
+    // "Nivelar as notas" vale na próxima vez que TOCA: lida uma vez aqui, guardada em `agendado` e reusada por `reagendar`, para virar o
+    // interruptor em Ajustes com o hino tocando não mudar o resto da música (nem atrapalhar a comparação de ouvido).
+    const nivelar = lerNivelar();
     duracao = await sint.tocar(vozes, {
       andamento: c.andamento,
       transposicao: c.transposicao,
       instrumentos: [...c.instrumentos],
       volumes: hino.vozes.map((_, i) => efetivo(c, i)),
-      nivelar: lerNivelar(),
+      nivelar,
     });
     if (g !== geracao) {
       sint.parar(); // Parar foi tocado enquanto o áudio iniciava: não deixa o som começar
@@ -166,6 +169,7 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
       andamento: c.andamento,
       transposicao: c.transposicao,
       instrumentos: [...c.instrumentos],
+      nivelar,
     };
     decorrido = 0;
     estado = "tocando";
@@ -208,7 +212,7 @@ async function reagendar(batida: number, pausado: boolean): Promise<boolean> {
         transposicao: c.transposicao,
         instrumentos: [...c.instrumentos],
         volumes: agendado.vozes.map((_, i) => efetivo(c, i)),
-        nivelar: lerNivelar(),
+        nivelar: agendado.nivelar,
       },
       { aPartirDe: batida, pausado },
     );
@@ -222,6 +226,7 @@ async function reagendar(batida: number, pausado: boolean): Promise<boolean> {
       andamento: c.andamento,
       transposicao: c.transposicao,
       instrumentos: [...c.instrumentos],
+      nivelar: agendado.nivelar,
     };
     atual.andamento = c.andamento; // os marcos das partes estão em batidas; o andamento novo os converte
     decorrido = sint.decorrido();

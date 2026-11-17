@@ -3,11 +3,16 @@
 
 Uso:  python3 tools/test_analisar_timbres.py
 """
+import contextlib
 import importlib.util
+import io
 import json
 import math
+import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 
@@ -129,6 +134,113 @@ class NivelDaNota(unittest.TestCase):
         cedo = a.nivel_da_nota(x, "ouvido", (0.1, 0.8))
         tarde = a.nivel_da_nota(x, "ouvido", (1.5, 2.5))
         self.assertGreater(cedo - tarde, 10)
+
+
+def sai_com(teste, fn, *trechos):
+    """Roda `fn`; ela tem de terminar em SystemExit (mensagem, e não traceback) com todos os `trechos` no texto."""
+    with teste.assertRaises(SystemExit) as e:
+        fn()
+    texto = str(e.exception.code)
+    for t in trechos:
+        teste.assertIn(t, texto)
+    return texto
+
+
+class ErrosDaFerramenta(unittest.TestCase):
+    """Comentários do vandame na #50: entrada vazia, mapa ausente ou desatualizado, banco errado: sempre mensagem, nunca traceback nem arquivo vazio."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.mapa = Path(self.tmp.name) / "niveis.json"
+        p = mock.patch.object(a, "SAIDA_NIVEIS", self.mapa)
+        p.start()
+        self.addCleanup(p.stop)
+        self.addCleanup(self.tmp.cleanup)
+        self.um = [("real_flauta", "flute", 1.0, ["soprano"])]
+
+    def escreve(self, dados):
+        self.mapa.write_text(json.dumps(dados), encoding="utf-8")
+
+    # --- ler_mapa ---
+    def test_mapa_que_nao_existe(self):
+        sai_com(self, a.ler_mapa, "não existe", "--mapa-notas --escrever")
+
+    def test_mapa_ilegivel(self):
+        self.mapa.write_text("{isto não é json", encoding="utf-8")
+        sai_com(self, a.ler_mapa, "ilegível", "--mapa-notas --escrever")
+
+    def test_mapa_sem_a_chave_instrumentos_ou_com_outro_formato(self):
+        for dados in ({}, {"instrumentos": []}, [1, 2], {"instrumentos": "x"}):
+            self.escreve(dados)
+            sai_com(self, a.ler_mapa, "formato esperado")
+
+    def test_mapa_valido_e_devolvido(self):
+        self.escreve({"fonte": "x/y", "instrumentos": {}})
+        self.assertEqual(a.ler_mapa()["fonte"], "x/y")
+
+    # --- gravados_do_catalogo ---
+    def test_catalogo_vazio_e_erro(self):
+        with mock.patch.object(a, "parse_realistas", return_value=[]):
+            sai_com(self, a.gravados_do_catalogo, "nenhum gravado", "realista.ts")
+
+    # --- mapa_notas ---
+    def test_mapa_notas_com_catalogo_vazio_nao_grava_um_mapa_vazio(self):
+        with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(a, "parse_realistas", return_value=[]):
+            sai_com(self, lambda: a.mapa_notas("ouvido", True), "nenhum gravado")
+        self.assertFalse(self.mapa.exists(), "não pode ficar um niveis-gravados.json com instrumentos vazios")
+
+    def test_mapa_notas_so_com_notas_da_margem_diz_qual_instrumento_falhou(self):
+        # só a nota 50 foi medida; a faixa de uso do soprano é 60-81: correcoes_db levantava um ValueError cru
+        with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(a, "parse_realistas", return_value=self.um), \
+                mock.patch.object(a, "medir_notas", return_value={50: -20.0}):
+            sai_com(self, lambda: a.mapa_notas("ouvido", True), "flute", "60-81", "nenhuma nota medida dentro da faixa")
+        self.assertFalse(self.mapa.exists())
+
+    def test_mapa_notas_sem_nenhuma_nota_medida(self):
+        with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(a, "parse_realistas", return_value=self.um), \
+                mock.patch.object(a, "medir_notas", return_value={}):
+            sai_com(self, lambda: a.mapa_notas("ouvido", False), "flute", "nenhuma nota medida")
+
+    def test_mapa_notas_grava_o_banco_de_onde_saiu(self):
+        niveis = {m: -20.0 - (m - 60) * 0.5 for m in range(54, 88)}
+        with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(a, "parse_realistas", return_value=self.um), \
+                mock.patch.object(a, "medir_notas", return_value=niveis), mock.patch.object(a, "FONTE", Path("/x/GeneralUserGS/amostras")):
+            a.mapa_notas("ouvido", True)
+        dados = json.loads(self.mapa.read_text(encoding="utf-8"))
+        self.assertEqual(dados["fonte"], "GeneralUserGS/amostras")
+        self.assertEqual(list(dados["instrumentos"]), ["real_flauta"])
+
+    # --- validar_mapa ---
+    def test_validar_sem_mapa(self):
+        sai_com(self, a.validar_mapa, "não existe")
+
+    def test_validar_mapa_de_outro_banco_e_recusado(self):
+        self.escreve({"fonte": "GeneralUserGS/amostras", "instrumentos": {}})
+        with mock.patch.object(a, "FONTE", Path("/x/FluidR3_GM")):
+            sai_com(self, a.validar_mapa, "GeneralUserGS/amostras", "FluidR3_GM", "sem sentido")
+
+    def test_validar_gravado_que_falta_no_mapa_diz_qual(self):
+        self.escreve({"fonte": "GeneralUserGS/amostras", "instrumentos": {"real_oboe": {"de": 50, "db": [0.0]}}})
+        with mock.patch.object(a, "FONTE", Path("/x/GeneralUserGS/amostras")), mock.patch.object(a, "parse_realistas", return_value=self.um):
+            sai_com(self, a.validar_mapa, "real_flauta", "--mapa-notas --escrever")
+
+    def test_validar_com_catalogo_vazio_nao_divide_por_zero(self):
+        self.escreve({"fonte": "GeneralUserGS/amostras", "instrumentos": {}})
+        with mock.patch.object(a, "FONTE", Path("/x/GeneralUserGS/amostras")), mock.patch.object(a, "parse_realistas", return_value=[]):
+            sai_com(self, a.validar_mapa, "nenhum gravado")
+
+    # --- main: o banco certo ---
+    def test_mapa_notas_e_validar_mapa_exigem_a_fonte(self):
+        for flag in ("--mapa-notas", "--validar-mapa"):
+            with mock.patch.object(sys, "argv", ["analisar-timbres.py", flag]):
+                sai_com(self, a.main, "--fonte", "FluidR3_GM", "GeneralUserGS")
+
+    def test_mapa_notas_escrever_sem_fonte_nao_toca_no_mapa(self):
+        self.escreve({"fonte": "GeneralUserGS/amostras", "instrumentos": {"x": {"de": 1, "db": [0.0]}}})
+        antes = self.mapa.read_text(encoding="utf-8")
+        with mock.patch.object(sys, "argv", ["analisar-timbres.py", "--mapa-notas", "--escrever"]):
+            sai_com(self, a.main, "--fonte")
+        self.assertEqual(self.mapa.read_text(encoding="utf-8"), antes)
 
 
 if __name__ == "__main__":
