@@ -30,6 +30,8 @@ const hinario = {
         nome,
         notas: SILABAS.map((t, k) => nota(t, 72 - i * 5 + (k % 2) * 2)),
       })),
+      // Karaokê da partitura (I-12, fase B): 3 compassos na vez normal (de 4, 4 e 2 batidas; as batidas são as da vez, de 0 a 10).
+      compassos: { normal: [[0, 0], [4, 1], [8, 2]] },
       sincronia: {
         normal: [
           { estrofe: 1, linhas: [[[0, 0, 2], [2, 3, 5], [4, 6, 8]], [[6, 0, 2], [8, 3, 6]]] },
@@ -44,7 +46,7 @@ const hinario = {
 // Partitura FICTÍCIA (nada de hino real): cinco linhas de pauta, uma "nota" (elipse) e um texto na fonte Leipzig, com um id para
 // conferir o prefixo e o <svg> aninhado com color="black" como o do Verovio. No app de verdade, quem entrega o SVG
 // é o Rust, já limpo; aqui o `invoke` simulado devolve o que o Rust devolveria.
-const SVG_PARTITURA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" overflow="hidden"><svg class="definition-scale" color="black" viewBox="0 0 400 120"><g id="bmccb-p-folha">${[20, 35, 50, 65, 80].map((y) => `<path d="M10 ${y} L390 ${y}"></path>`).join("")}<ellipse cx="60" cy="50" rx="10" ry="7"></ellipse><rect x="90" y="30" width="6" height="40"></rect><text x="120" y="110" font-family="Leipzig" font-size="30px">&#xE1D5; = 58</text></g></svg></svg>`;
+const SVG_PARTITURA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" overflow="hidden"><svg class="definition-scale" color="black" viewBox="0 0 400 120"><g id="bmccb-p-folha">${[20, 35, 50, 65, 80].map((y) => `<path d="M10 ${y} L390 ${y}"></path>`).join("")}<ellipse cx="60" cy="50" rx="10" ry="7"></ellipse><rect x="90" y="30" width="6" height="40"></rect><text x="120" y="110" font-family="Leipzig" font-size="30px">&#xE1D5; = 58</text>${[10, 130, 250].map((x, i) => `<g class="measure" id="bmccb-p-m${i}"><path d="M${x} 20 L${x} 80"></path><path d="M${x + 120} 20 L${x + 120} 80"></path></g>`).join("")}</g></svg></svg>`;
 // A versão de paisagem é outro desenho (marcado com data-largo, para saber qual foi entregue).
 const SVG_PARTITURA_PAISAGEM = SVG_PARTITURA.replace('id="bmccb-p-folha"', 'id="bmccb-p-folha" data-largo="1"');
 // Sílabas esperadas na 1ª vez (estrofe 1) e na 2ª (estrofe 2), com o início de cada uma em batidas.
@@ -594,6 +596,80 @@ async function principal() {
   await dormir(900);
   const v2 = await estadoVersao();
   confere(v2.variante === "retrato" && !v2.largo && v2.leituras === "[false,true]", `de volta em pé: o retrato volta SEM ler de novo: ${JSON.stringify(v2)}`);
+
+  // Karaokê da partitura (I-12, fase B): o compasso que toca fica destacado (um retângulo atrás dele). O hino 999 tem 3 compassos na vez (de 0 a 10
+  // batidas: 0-4, 4-8, 8-10), a 120 bpm (2 batidas por segundo), e a vez 2 começa na batida 14 (7 s). Pausado, o slider leva a música a um ponto conhecido.
+  const destaque = () => av(`(() => {
+    const medidas = [...document.querySelectorAll('#painel-partitura g.measure')];
+    const caixa = document.querySelector('#painel-partitura rect.destaque-compasso');
+    const m = medidas.find((g) => g.querySelector('rect.destaque-compasso'));
+    const rc = caixa?.getBoundingClientRect(), mc = m?.getBoundingClientRect();
+    return { indice: medidas.findIndex((g) => g.querySelector('rect.destaque-compasso')), retangulos: document.querySelectorAll('rect.destaque-compasso').length, medidas: medidas.length,
+      cobre: !!rc && !!mc && rc.left <= mc.left + 0.5 && rc.right >= mc.right - 0.5 && rc.top <= mc.top + 0.5 && rc.bottom >= mc.bottom - 0.5,
+      atras: !!caixa && caixa === m?.firstElementChild };
+  })()`);
+  // Passos anteriores pararam a música (e um deles desligou o karaokê): começa de novo, como a pessoa faria, e vai para a aba Partitura.
+  await av("document.getElementById('aba-ouvir').click(); 1");
+  await dormir(300);
+  confere(await av(`(() => { const b = [...document.querySelectorAll('#painel-ouvir button')].find((x) => /hino todo|whole|todo/i.test(x.textContent)); if (!b) return false; b.click(); return true; })()`), 'botão "tocar o hino todo" clicado, para o karaokê da partitura');
+  await dormir(700);
+  await av("document.getElementById('aba-partitura').click(); 1");
+  await dormir(600);
+  const antesDoBotao = await av(`document.querySelector('.chave-karaoke')?.getAttribute('aria-pressed') ?? null`);
+  if (antesDoBotao === "false") {
+    await av("document.querySelector('.chave-karaoke').click(); 1"); // o passo da letra deixou o karaokê desligado: liga
+    await dormir(300);
+  }
+  if ((await lido()).tocando) {
+    await av("document.querySelector('.mini .acao').click(); 1"); // pausa pelo miniplayer
+    await dormir(500);
+  }
+  const kd = await av(`(() => { const b = document.querySelector('.chave-karaoke'); return { achou: !!b, ligado: b?.getAttribute('aria-pressed') ?? null }; })()`);
+  confere(kd.achou && kd.ligado === "true", `o botão do karaokê aparece na aba Partitura (hino com compassos) e está ligado: ${JSON.stringify(kd)}`);
+  const ponto = [[1, 0, "vez 1, batida 2"], [2.5, 1, "vez 1, batida 5"], [4.6, 2, "vez 1, batida 9,2"], [6, 2, "na pausa entre as partes o último continua aceso"], [8, 0, "vez 2, batida local 2: volta ao 1º compasso"], [9.5, 1, "vez 2, batida local 5"], [11, 2, "vez 2, batida local 8"]];
+  for (const [s, esperado, quando] of ponto) {
+    await buscar(".mini .busca-entrada", s);
+    await dormir(500);
+    const d = await destaque();
+    confere(d.indice === esperado && d.retangulos === 1 && d.medidas === 3, `aos ${s} s (${quando}) o compasso ${esperado + 1} está destacado: ${JSON.stringify(d)}`);
+  }
+  const d1 = await destaque();
+  confere(d1.cobre && d1.atras, `o destaque cobre o compasso inteiro e fica ATRÁS das notas (primeiro filho do compasso): ${JSON.stringify(d1)}`);
+  // pausado, o destaque não anda
+  await buscar(".mini .busca-entrada", 2.5);
+  await dormir(500);
+  const antes = (await destaque()).indice;
+  await dormir(1500);
+  confere((await destaque()).indice === antes && antes === 1, `na pausa o destaque congela (compasso ${antes + 1})`);
+  // tocando, o destaque anda sozinho: de 1 s (compasso 1) até passar de 4 s (compasso 2) em ~3,3 s
+  await buscar(".mini .busca-entrada", 1);
+  await dormir(400);
+  await av("document.querySelector('.mini .acao').click(); 1"); // continua
+  const vistos = [];
+  for (let i = 0; i < 9; i++) {
+    await dormir(400);
+    vistos.push((await destaque()).indice);
+  }
+  await av("document.querySelector('.mini .acao').click(); 1"); // pausa de novo
+  await dormir(400);
+  const sobe = vistos.every((v, k) => k === 0 || v >= vistos[k - 1]);
+  confere(sobe && vistos.includes(0) && vistos.includes(1) && vistos[vistos.length - 1] >= 1, `tocando, o destaque avança sozinho e só para a frente: ${JSON.stringify(vistos)}`);
+  // o liga/desliga é o do karaokê: desligado, o destaque some; ligado, volta
+  await av("document.querySelector('.chave-karaoke').click(); 1");
+  await dormir(300);
+  const off = await av(`({ ligado: document.querySelector('.chave-karaoke').getAttribute('aria-pressed'), retangulos: document.querySelectorAll('rect.destaque-compasso').length })`);
+  confere(off.ligado === "false" && off.retangulos === 0, `com o karaokê desligado não há destaque: ${JSON.stringify(off)}`);
+  await av("document.querySelector('.chave-karaoke').click(); 1");
+  await dormir(300);
+  const on = await destaque();
+  confere(on.retangulos === 1 && on.indice >= 0, `ligando de novo o destaque volta: ${JSON.stringify(on)}`);
+  // fora da aba Partitura não gasta nada e não deixa destaque
+  await av("document.getElementById('aba-letra').click(); 1");
+  await dormir(300);
+  confere((await av("document.querySelectorAll('rect.destaque-compasso').length")) === 0, "fora da aba Partitura o destaque some");
+  await av("document.getElementById('aba-partitura').click(); 1");
+  await dormir(400);
+  confere((await destaque()).retangulos === 1, "voltando à aba Partitura o destaque volta");
 
   const abrirHino = async (numero) => {
     await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/hino/${numero}` });

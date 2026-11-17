@@ -67,6 +67,8 @@
   const sincroniaOk = $derived(!!hino && temAudio && sincroniaCombina(hino.letra, hino.sincronia));
   let karaoke = $state(lerKaraoke());
   const karaokeAtivo = $derived(karaoke && sincroniaOk);
+  // Karaokê da partitura (I-12, fase B): o hino traz os compassos (o conversor os emite) e há o que tocar. O liga/desliga é o MESMO da letra.
+  const compassosOk = $derived(!!hino?.compassos && temAudio);
   type Aceso = { estrofe: number; linha: number; de: number; ate: number };
   let aceso = $state<Aceso | null>(null);
 
@@ -149,8 +151,8 @@
   }
 
   let aba = $state<Aba>("letra");
-  // O botão do karaokê só aparece na aba Letra (é onde o destaque acontece) e em hino que traz a sincronia.
-  const mostrarKaraoke = $derived(sincroniaOk && aba === "letra");
+  // O botão do karaokê só aparece onde o destaque acontece: na aba Letra, em hino que traz a sincronia, e na aba Partitura, em hino que traz os compassos.
+  const mostrarKaraoke = $derived((sincroniaOk && aba === "letra") || (compassosOk && temPartitura && aba === "partitura"));
   // Ao abrir um hino: Ouvir primeiro (se houver notas para tocar); sem notas, só existe a Letra.
   $effect(() => {
     aba = hino && hino.vozes.length > 0 ? "ouvir" : "letra";
@@ -266,7 +268,7 @@
     {#if temPartitura}
       <div role="tabpanel" id="painel-partitura" aria-labelledby="aba-partitura" hidden={aba !== "partitura"}>
         {#key hino.numero}
-          <Partitura numero={hino.numero} estado={estadoPartitura} ativa={aba === "partitura"} />
+          <Partitura numero={hino.numero} estado={estadoPartitura} ativa={aba === "partitura"} compassos={hino.compassos ?? null} karaoke={karaoke && compassosOk} />
         {/key}
       </div>
     {/if}

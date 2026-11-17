@@ -156,7 +156,7 @@ export const es: Dicionario = {
   "hino.karaoke": "Karaoke",
   "hino.karaoke_ligado": "Activado",
   "hino.karaoke_desligado": "Desactivado",
-  "hino.karaoke_ajuda": "Sigue la letra mientras suena el himno.",
+  "hino.karaoke_ajuda": "Sigue la letra y la partitura mientras suena el himno.",
   "hino.nao_encontrado": "Himno no encontrado.",
   "hino.estrofe": "Estrofa {n}",
   "ajustes.titulo": "Ajustes",

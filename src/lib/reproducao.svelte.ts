@@ -63,6 +63,12 @@ type Tocando = {
 let atual = $state<Tocando | null>(null);
 let estado = $state<Estado>("parado");
 let decorrido = $state(0);
+/**
+ * Sobe a cada vez que o som termina de ser reagendado (arrastar a barra, retomar depois de mexer em tom ou andamento). O `decorrido` muda ANTES
+ * (a barra já mostra o ponto escolhido) e depois volta ao mesmo valor, então quem lê a posição estando pausado (o destaque da partitura, I-12) não
+ * ficaria sabendo que o som já está no ponto novo; este contador avisa.
+ */
+let revisaoDoPonto = $state(0);
 let duracao = $state(0);
 /** Texto do último erro ao iniciar o áudio (vazio se não houve). */
 let erro = $state("");
@@ -223,6 +229,7 @@ async function reagendar(batida: number, pausado: boolean): Promise<boolean> {
     };
     atual.andamento = c.andamento; // os marcos das partes estão em batidas; o andamento novo os converte
     decorrido = sint.decorrido();
+    revisaoDoPonto++;
     return true;
   } catch (e) {
     sint.parar();
@@ -348,6 +355,9 @@ export const reproducao = {
   },
   get decorrido() {
     return decorrido;
+  },
+  get revisaoDoPonto() {
+    return revisaoDoPonto;
   },
   /**
    * Qual parte está tocando agora ("intro" ou o número da vez). Em "tudo" acompanha a música; na pausa entre duas

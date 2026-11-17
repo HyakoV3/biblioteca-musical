@@ -170,6 +170,12 @@ que soa (I-12, fase B). O conversor `mscx2json` gera o campo sozinho.
   O conversor usa a mesma conta que já monta cada passada, então o instante de um compasso é exatamente onde as notas dele caem.
 - **Por que não o `timemap` do Verovio:** ele expande as repetições com ids de compasso que **não existem no SVG** (no hino 457, 56 compassos únicos contra
   38 desenhados). O conversor, que lê o `.mscx` e conhece as repetições de cada passada, é quem sabe qual compasso escrito toca em cada instante.
+- **Como o app usa (I-12, fase B):** com o hino tocando e o karaokê ligado (o **mesmo** botão da letra, que aparece também na aba Partitura), o compasso que toca fica
+  **destacado** na partitura: um retângulo dourado translúcido **atrás** do compasso (o N-ésimo `g.measure` do SVG), com contorno de 2 px, que vale em qualquer tema
+  (no alto contraste, amarelo sobre preto). A posição vem do mesmo relógio do áudio que a letra usa, já na batida local da parte (introdução, vez normal ou final).
+  Na pausa entre as partes o último compasso continua aceso; pausado, o destaque congela e acompanha o slider; parado, some. A partitura **rola** até o compasso
+  só quando ele sai da vista (a rolagem é suave só se a pessoa não pediu menos movimento). **As partituras já instaladas servem** (a limpeza do SVG preserva o
+  `class="measure"`, e o retrato e a paisagem de cada hino têm o mesmo número de compassos): o que muda é só o `hinario.json`, que traz o `compassos`.
 - Cada lista tem de ter ao menos um item, com tempos finitos, não negativos e **estritamente crescentes**. Se **alguma** lista estiver malformada (inclusive
   `final` ou `introducao`, que são opcionais), o campo `compassos` **inteiro** é descartado na leitura, **sem recusar o hino**: uma lista ruim derruba também a
   `normal` válida, e as notas e a letra seguem como sempre. O conversor não gera esse caso; só um JSON editado à mão. Sem `compassos`, o hino e a partitura

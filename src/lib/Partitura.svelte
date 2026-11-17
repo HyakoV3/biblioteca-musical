@@ -1,7 +1,10 @@
 <script lang="ts">
   import "./partitura.css";
+  import { untrack } from "svelte";
   import Aviso from "./Aviso.svelte";
-  import { biblioteca } from "./biblioteca.svelte";
+  import { biblioteca, type Compassos } from "./biblioteca.svelte";
+  import { compassoDoPonto } from "./compassos";
+  import { reproducao } from "./reproducao.svelte";
   import Estado from "./Estado.svelte";
   import { traduzirErro } from "./erros";
   import { i18n } from "./i18n/index.svelte";
@@ -10,7 +13,8 @@
 
   // O painel da aba Partitura (I-08). Com a partitura do hino instalada, mostra o SVG que o Rust entrega (já conferido na
   // importação e de novo na leitura) embutido na página, para seguir o tema; sem nenhuma partitura instalada, avisa e leva a Ajustes.
-  let { numero, estado, ativa }: { numero: number; estado: EstadoPartitura; ativa: boolean } = $props();
+  // `compassos` e `karaoke` (I-12, fase B): com o karaokê ligado e o hino tocando, o compasso que toca fica destacado e a partitura rola até ele.
+  let { numero, estado, ativa, compassos = null, karaoke = false }: { numero: number; estado: EstadoPartitura; ativa: boolean; compassos?: Compassos | null; karaoke?: boolean } = $props();
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
 
@@ -60,6 +64,98 @@
     pediu[v] = true;
     void carregar(v);
   });
+
+  // --- Karaokê: destaca o compasso que toca. O destaque é um retângulo desenhado ATRÁS do compasso (primeiro filho do `g.measure`, que é o
+  // N-ésimo do SVG: a ordem escrita, a mesma dos índices que o conversor emite), então vale em qualquer tema: as notas ficam por cima. ---
+  let folha = $state<HTMLDivElement>();
+  let compassoAceso = -1; // o índice destacado agora (não reativo: só o DOM muda)
+  let retangulo: SVGRectElement | null = null;
+
+  function limparDestaque() {
+    retangulo?.remove();
+    retangulo = null;
+    compassoAceso = -1;
+  }
+
+  /** Só rola se o compasso saiu da vista (entre a barra de cima e as de baixo, e dentro da região da partitura); a rolagem é suave só se a pessoa não pediu menos movimento. */
+  function garantirVisivel(el: Element) {
+    const r = el.getBoundingClientRect();
+    const topo = (document.querySelector("header")?.getBoundingClientRect().bottom ?? 0) + 8;
+    const css = getComputedStyle(document.documentElement);
+    const reservado = (parseFloat(css.getPropertyValue("--altura-miniplayer")) || 0) + (parseFloat(css.getPropertyValue("--altura-navegacao")) || 0);
+    const regiao = folha?.parentElement?.getBoundingClientRect();
+    const foraVertical = r.top < topo || r.bottom > window.innerHeight - reservado - 8;
+    const foraHorizontal = !!regiao && (r.left < regiao.left || r.right > regiao.right);
+    if (foraVertical || foraHorizontal) el.scrollIntoView({ block: "center", inline: "center" });
+  }
+
+  function destacar(indice: number | null) {
+    const alvo = indice ?? -1;
+    if (alvo === compassoAceso) return;
+    retangulo?.remove();
+    retangulo = null;
+    compassoAceso = alvo;
+    if (indice === null || !folha) return;
+    const medida = folha.querySelectorAll<SVGGElement>("svg g.measure")[indice];
+    if (!medida) return; // índice fora do desenho: sem destaque, sem quebrar
+    let caixa: DOMRect;
+    try {
+      caixa = medida.getBBox();
+    } catch {
+      return; // sem layout (painel escondido): não destaca
+    }
+    if (caixa.width === 0 || caixa.height === 0) return;
+    const folga = Math.min(caixa.width, caixa.height) * 0.04;
+    const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    r.setAttribute("class", "destaque-compasso");
+    r.setAttribute("x", String(caixa.x - folga));
+    r.setAttribute("y", String(caixa.y - folga));
+    r.setAttribute("width", String(caixa.width + 2 * folga));
+    r.setAttribute("height", String(caixa.height + 2 * folga));
+    r.setAttribute("rx", String(folga * 2));
+    medida.insertBefore(r, medida.firstChild);
+    retangulo = r;
+    garantirVisivel(medida);
+  }
+
+  // O SVG foi trocado (outra versão, ou lido de novo): o retângulo e o índice guardados eram do DOM antigo.
+  $effect(() => {
+    void carga;
+    void folha;
+    untrack(() => {
+      retangulo = null;
+      compassoAceso = -1;
+    });
+  });
+
+  // Enquanto toca, lê o relógio do áudio a cada quadro (o `decorrido` do store só anda a cada 200 ms); parado ou pausado, lê uma vez a cada
+  // mudança. Fora da aba, com o karaokê desligado ou sem compassos, não gasta nada e o destaque some.
+  $effect(() => {
+    const ligado = karaoke && ativa && !!compassos && !!folha && !!carga && "svg" in carga;
+    void variante;
+    const tocando = reproducao.estado === "tocando";
+    void reproducao.atual;
+    // Pausado, a posição só muda quando a pessoa arrasta a barra de progresso (o store anda o `decorrido`): relê então. Tocando, o laço de quadros
+    // abaixo já lê o relógio do áudio, e depender do `decorrido` (que anda a cada 200 ms) só recriaria o laço à toa.
+    if (!tocando) {
+      void reproducao.decorrido;
+      void reproducao.revisaoDoPonto; // avisa quando o som terminou de ir ao ponto escolhido (o `decorrido` muda antes)
+    }
+    if (!ligado) {
+      untrack(limparDestaque);
+      return;
+    }
+    const atualizar = () => destacar(compassoDoPonto(compassos, reproducao.ponto(numero)));
+    untrack(atualizar);
+    if (!tocando) return;
+    let id = 0;
+    const quadro = () => {
+      atualizar();
+      id = requestAnimationFrame(quadro);
+    };
+    id = requestAnimationFrame(quadro);
+    return () => cancelAnimationFrame(id);
+  });
 </script>
 
 {#if estado !== "tem"}
@@ -90,7 +186,7 @@
     <!-- Uma região que rola para os lados precisa receber o foco do teclado (quem não usa toque não alcançaria o resto). -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div class="rolagem" role="region" aria-label={t("partitura.rolagem", { numero })} tabindex="0">
-      <div class="folha" role="img" aria-label={t("partitura.aria", { numero })} data-variante={variante} style:--zoom={escala}>
+      <div class="folha" role="img" aria-label={t("partitura.aria", { numero })} data-variante={variante} style:--zoom={escala} bind:this={folha}>
         <!-- O SVG vem do Rust já limpo (src-tauri/src/svg.rs: lista de permitidos, sem CSS nem script, ids com prefixo). -->
         {@html carga.svg}
       </div>
@@ -129,4 +225,9 @@
   .folha :global(svg g.dir), .folha :global(svg g.dynam), .folha :global(svg g.mNum) { font-style: italic; }
   .folha :global(svg g.label) { font-weight: normal; }
   .folha :global(svg g.placeholder) { visibility: hidden; }
+  /* Karaokê (I-12, fase B): o compasso que toca. Dourado do tema, translúcido e ATRÁS das notas; o contorno tem 2 px na tela em qualquer zoom. Usa só
+     cores do tema (no alto contraste, amarelo sobre preto: o contorno carrega o destaque e o preenchimento escurece o fundo, sem apagar as notas). */
+  .folha :global(svg rect.destaque-compasso) {
+    fill: var(--ouro); fill-opacity: 0.3; stroke: var(--ouro-linha); stroke-width: 2px; vector-effect: non-scaling-stroke; pointer-events: none;
+  }
 </style>
