@@ -15,6 +15,41 @@ conteúdo **nunca entra no Git**: só o caminho do arquivo é informado na hora 
 - Uma versão nova do APK com **conteúdo diferente** o substitui. Quem importou um hinário próprio **antes** de existir
   conteúdo embutido não perde o seu (só é sobrescrito por uma atualização posterior com conteúdo novo).
 
+## Depois de cada merge: a verificação dos pacotes
+
+Toda vez que código novo entra na `main` (a PR foi mergeada no GitHub, ou o responsável avançou a `main` local para testar), o
+assistente roda esta verificação **antes de dizer que terminou**. A pergunta é: **o que mudou desde o último APK entregue e,
+portanto, quais pacotes precisam ser refeitos?** Ela vale também para o merge local de um ramo de teste, porque o hinário do
+emulador pode ficar velho mesmo sem PR (foi o que aconteceu com os `compassos`).
+
+1. **Atualizar.** `git fetch`; o worktree do assistente vai para `origin/main` (`git switch --detach origin/main`); os ramos locais
+   já mergeados saem (`git branch -d`, que recusa o que não foi mergeado). A `main` **local do responsável** o assistente não
+   alcança (a sessão isolada não mexe na pasta principal): **dá o comando** para o terminal comum dele
+   (`cd <pasta do projeto> && git pull --ff-only`, ou `git merge --ff-only <ramo>` num teste local).
+2. **O que mudou desde o último APK.** `git diff --stat <commit do último APK, da tabela abaixo> origin/main -- <caminhos>`:
+
+   | Mudou | Refazer |
+   |---|---|
+   | `src/`, `static/`, `package.json` (o front) | **APK** novo |
+   | `src-tauri/` (o Rust, o manifesto do Android, os ícones) | **APK** novo |
+   | `tools/mscx2json/` ou o formato do hinário (`docs/FORMATO.md`, `src-tauri/src/hinario.rs`) | o **hinário** `.json`: o embutido no APK e o do emulador (passo 4) |
+   | `tools/gerar-partituras.py`, `tools/montar-pacote.py`, a limpeza do SVG ou o formato do pacote | **pacote de partituras** novo (`partituras-00N.zip`): subir ao servidor e atualizar `src/lib/partituras/manifesto.json` (o que muda o front, então também o **APK**) |
+   | `src/lib/sons/manifesto.json` ou o pacote de sons | o **zip dos sons** |
+   | só `docs/`, `tests/`, `.github/` | **nada**: nenhum pacote |
+
+3. **Conferir o que não mudou, em vez de supor.** O SHA-256 do `partituras-00N.zip` **no servidor** (`ssh <servidor> sha256sum …`,
+   só leitura) tem de ser o do `manifesto.json` do app; o hinário regenerado tem de ser **idêntico** ao anterior e ao do
+   Download do emulador (`sha256sum`). Se bate, o pacote **não** é refeito, e a resposta diz isso.
+4. **O hinário do emulador** (só se o conversor ou o formato mudou). Gerar com o **mesmo `id`, nome e idioma do instalado**
+   (hoje `amostra`, "Amostra local (não publicar)", `pt-BR`; com outro `id` as partituras já baixadas são apagadas pela marca
+   `.hinario`) e com `--correcoes`; `adb push` para `/sdcard/Download/` e uma cópia em `content/amostras/`. O responsável
+   **reimporta pela tela**: o assistente não toca na tela nem importa por conta própria. Conferir com `run-as` (só leitura) o
+   que o app instalado tem. Se o JSON é idêntico ao que já está lá, **não há nada a jogar**: só se diz isso.
+5. **O APK** (se o front ou o Rust mudaram). Árvore **limpa** (senão o rótulo de versão sai com "+"), compilar, assinar,
+   **conferir o conteúdo** (o hinário embutido com os `compassos`; o front com o commit certo), entregar no zip numerado e
+   **registrar a linha** na tabela abaixo, numa PR de docs.
+6. **Dizer o que foi refeito e o que não foi, com o motivo**, na linha da tabela e na resposta ao responsável.
+
 ## Gerar
 
 ```sh
@@ -75,6 +110,7 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 
 | Zip | Versão (commit) | Data | Conteúdo | SHA-256 |
 |---|---|---|---|---|
+| **027** | 0.3.0 (89280aa) | 2026-11-17 | **Afinador, abas na tela inicial e Ajustes em cartões** (PR #59, na `main`): (1) a tela inicial ganha a barra **Hinos | Afinador**, no mesmo estilo das abas do hino (a busca e a rolagem de cada aba se preservam, e a aba escolhida volta ao retornar de um hino); (2) a aba **Afinador** toca o **Lá 440 Hz** ou **outra nota** (12 notas, oitava de 2 a 6, frequência na tela), **sustentada** e com volume lembrado, sem microfone e sem permissão; o som tem contexto de áudio próprio (pausar o hino não o cala), é **um de cada vez** (dar o tom para o hino que tocava), e para ao sair da aba, ao bloquear a tela ou ao ir para outro app; (3) **Ajustes em cartões**, fechados de saída, cada um com o estado na linha de cima (Aparência, Idioma, **Conteúdo**, Sobre e Créditos); o Conteúdo reúne o **Hinário** (sem caixa, com "Importar hinário" e "Remover importação" lado a lado), as **partituras** e os **sons gravados**, e a linha de cima mostra o andamento de um download e "erro no download" com ícone; (4) o que entrou na PR #58, **depois do 026**: o **controle de tamanho** único (− ⟲ +) na letra e na partitura, o **marca-texto** no lugar do microfone do karaokê e a **duração do hino dentro do botão** "Tocar o hino todo". **Mesmo hinário embutido do 025 e do 026** (`amostra-teste`, com os `compassos` e as correções de letra) e **o mesmo pacote de partituras** (`partituras-003.zip`, 228.343 bytes, SHA-256 `f39cbe13…9087`, que bate com o manifesto do app): o Rust, o conversor e os pacotes **não mudaram** desde o 026; só o front. Conferido: APK assinado (esquemas v2 e v3), com o hinário embutido (5 `compassos`, sem o "protegêIo") e o front do commit `89280aa` (a aba e o painel do afinador). **O que o responsável deve testar:** a aba Afinador (o Lá confere com um afinador de verdade? o tom para ao sair da aba?), os cartões de Ajustes e a linha de estado do Conteúdo. **Ainda não tem:** o "Tom de um hino" (o conversor ainda não grava a tonalidade) e a escuta pelo microfone. Entregue em `<pasta de entrega dos zips>/` | `ad68eb8b…1dd0` |
 | **026** | 0.3.0 (43449fe) | 2026-11-17 | **O mesmo código do 025, recompilado**, a pedido do responsável, porque no 025 ele não via a aba Partitura nem o botão de baixar no aparelho, enquanto no emulador funcionava. Conferido: o conteúdo dos dois APKs é **idêntico, exceto o `.so`**, que leva o front com a hora da compilação. Antes de gerá-lo, o 025 foi verificado com os dados reais: o Rust do emulador (`partituras = [1, 276, 283, 398, 457]`), a jornada de atualização do celular (024, baixar o pacote 003, 025 por cima: as partituras ficam) e o front de **produção** (`build/`) com o hinário do APK, sem erro de JavaScript e com as abas e os botões nos dois estados. **A linha de versão no fim de Ajustes mostra o commit do APK instalado (`0.3.0 (43449fe)`): serve para conferir qual APK está no aparelho.** Entregue em `<pasta de entrega dos zips>/` | `9352328b…aa4a` |
 | **025** | 0.3.0 (43449fe) | 2026-11-17 | **Karaokê na partitura** (I-12, fase B; PRs #52 e #54, na `main`): na aba **Partitura**, com o hino tocando e o karaokê ligado, o **compasso que toca fica destacado** (um retângulo dourado atrás do compasso, em todos os temas), a partitura rola até ele quando ele sai da vista, e o botão do karaokê (o microfone) aparece também nessa aba. Na pausa ele congela e acompanha o slider. **Não precisa baixar as partituras de novo, e NÃO desinstale o app antes** (instale por cima do 024): o hinário embutido traz o `compassos` e mantém o mesmo `id` (`amostra-teste`), então o app o troca na primeira abertura e **mantém as partituras e os sons já instalados** (desinstalar apagaria os dois). **Sem o "Nivelar as notas"** (removido: não deu diferença audível). Vale nos 5 hinos de teste (1, 276, 283, 398 e 457; o 457 tem final e casas de volta). **A ver no celular**: o compasso aceso é o que está soando? acompanha ao arrastar o slider? a rolagem atrapalha? em pé e deitado. Entregue em `<pasta de entrega dos zips>/` | `7d19e7ae…8457` |
 | **024** | 0.3.0 (d11126a) | 2026-11-16 | **Ícone novo, logo maior, miniplayer sem linha e "Nivelar as notas"** (PRs #47 e #50, na `main`): (1) o **ícone novo** do app (o símbolo, gerado do SVG: adaptativo do Android com fundo azul liso e só o símbolo, monocromático para o ícone temático do Android 13; **desinstale o app antes de instalar**, por causa do cache do ícone); (2) a **logo da tela inicial** do tamanho do botão de Ajustes; (3) o **miniplayer sem a linha** de cima (a divisa é a trilha do slider); (4) **I-23, etapa A: "Nivelar as notas"** em Ajustes, no card dos sons gravados (padrão ligado): iguala o volume de cada nota de cada instrumento gravado (dentro de um instrumento as notas variam de 2,5 a 10 dB). **A comparar de ouvido, com ele ligado e desligado**, tocando um hino com as 4 vozes gravadas, no celular e, quando puder, no **fone**. Não mexe no balanço entre as vozes nem no compressor. **(Depois do teste, o responsável não sentiu diferença na caixinha e o "Nivelar as notas" foi removido: só o 024 o tem.)** As partituras seguem as do 023 (`partituras-003.zip`). Entregue em `<pasta de entrega dos zips>/` | `3bddd220…14e5` |
