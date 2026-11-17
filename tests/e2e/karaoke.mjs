@@ -732,6 +732,12 @@ async function principal() {
   // Ajustes: "Importar hinário" aceita SÓ .json (o hinário vai deixar de ser importado; as partituras têm o card próprio).
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes` });
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('input[type="file"]')`)); ) await dormir(250);
+  // Os blocos de Ajustes são cartões fechados de saída, com o estado na linha de cima (I-24): o Conteúdo mostra o hinário, as partituras e os sons.
+  const resumoFechado = await av(`(() => { const d = document.getElementById('conteudo'); return { aberto: d.open, resumo: d.querySelector('summary').innerText.replace(/\\s+/g, ' ') }; })()`);
+  confere(!resumoFechado.aberto && /\d+\s+(scores?|partituras?)/i.test(resumoFechado.resumo), `Ajustes: o cartão Conteúdo começa fechado e mostra o estado na linha de cima: ${JSON.stringify(resumoFechado)}`);
+  // O texto de um cartão fechado não é renderizado: abre o Conteúdo antes de ler o que há dentro (hinário, partituras, sons).
+  await av("document.getElementById('conteudo').open = true; 1");
+  await dormir(400);
   const aceita = await av(`document.querySelector('input[type="file"]').getAttribute('accept')`);
   confere(/json/.test(aceita) && !/zip/i.test(aceita), `Importar hinário aceita só .json: accept="${aceita}"`);
 

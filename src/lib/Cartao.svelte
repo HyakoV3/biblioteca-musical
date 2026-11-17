@@ -38,8 +38,8 @@
 
 <style>
   summary {
-    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 3rem;
-    padding: 0 0.9rem; font-weight: 600; cursor: pointer; list-style: none;
+    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 3rem; box-sizing: border-box;
+    padding: 0.5rem 0.9rem; font-weight: 600; cursor: pointer; list-style: none;
   }
   summary::-webkit-details-marker { display: none; }
   .direita { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }

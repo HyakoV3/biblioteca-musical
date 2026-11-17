@@ -4,7 +4,7 @@ O código deste projeto é MIT (`LICENSE`). Alguns materiais de terceiros acompa
 
 ## Ícones: Google Material Icons (conjunto `ic`) e Material Symbols (conjunto `material-symbols`)
 
-- **Onde:** `src/lib/icones.json` (21 ícones em SVG), gerado por `tools/gerar-icones.mjs` a partir do Iconify. A maioria vem do
+- **Onde:** `src/lib/icones.json` (22 ícones em SVG), gerado por `tools/gerar-icones.mjs` a partir do Iconify. A maioria vem do
   `ic`; o marca-texto do karaokê vem do `material-symbols`, a família nova do mesmo projeto (o `ic` não tem esse desenho). O gerador
   só aceita esses dois conjuntos.
 - **Autoria:** Material Design Authors (Google), nos dois conjuntos.
