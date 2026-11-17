@@ -194,7 +194,7 @@ async function principal() {
   perfil = mkdtempSync(join(tmpdir(), "bmccb-e2e-"));
   const chrome = spawn(
     acharChrome(),
-    ["--headless=new", "--no-sandbox", "--disable-gpu", "--mute-audio", "--autoplay-policy=no-user-gesture-required",
+    ["--headless=new", "--no-sandbox", "--disable-gpu", "--mute-audio", "--autoplay-policy=no-user-gesture-required", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream",
       "--window-size=412,915", `--user-data-dir=${perfil}`, `--remote-debugging-port=${PORTA_CHROME}`, "about:blank"],
     { stdio: "ignore", detached: true },
   );
@@ -780,7 +780,7 @@ async function principal() {
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-afinador')`)); ) await dormir(250);
   await dormir(500);
   const abasInicio = await av(`({ abas: [...document.querySelectorAll('[role="tab"]')].map((a) => a.id), hinos: !document.getElementById('painel-hinos').hidden, afinador: !document.getElementById('painel-afinador').hidden })`);
-  confere(abasInicio.abas.join() === "aba-hinos,aba-afinador" && abasInicio.hinos && !abasInicio.afinador, `a tela inicial tem as abas Hinos e Afinador e abre em Hinos: ${JSON.stringify(abasInicio)}`);
+  confere(abasInicio.abas.join() === "aba-hinos,aba-afinador,aba-gravador" && abasInicio.hinos && !abasInicio.afinador, `a tela inicial tem as abas Hinos, Afinador e Gravador e abre em Hinos: ${JSON.stringify(abasInicio)}`);
 
   // A busca da lista sobrevive à troca de aba (os painéis ficam montados).
   await av(`(() => { const i = document.querySelector('#painel-hinos input[type="search"]'); i.value = '998'; i.dispatchEvent(new Event('input', { bubbles: true })); })()`);
@@ -853,6 +853,73 @@ async function principal() {
   confere(aposSair.tocando === false && aposSair.pressionado === "false" && aposSair.contexto === "closed", `sair da aba Afinador para o som e devolve o áudio (contexto fechado): ${JSON.stringify(aposSair)}`);
   const buscaFicou = await av(`document.querySelector('#painel-hinos input[type="search"]').value`);
   confere(buscaFicou === "998", `a busca da lista sobrevive à troca de aba: "${buscaFicou}"`);
+
+  // Gravador (I-03): grava o microfone (o do teste é falso, do Chrome), ouve de volta e descarta; sair da aba com a gravação em curso para e devolve o microfone.
+  await av(`document.getElementById('aba-gravador').click(); 1`);
+  await dormir(400);
+  const estadoGravador = () => av(`({ pressionado: document.getElementById('gravar').getAttribute('aria-pressed'), audio: !!document.getElementById('ouvir-gravacao'), info: document.getElementById('info-gravacao')?.textContent.replace(/\\s+/g, ' ').trim() ?? null, erro: !!document.querySelector('#painel-gravador .aviso.erro'), ativos: window.__microfones.filter((t) => t.readyState === 'live').length })`);
+  await av(`window.__microfones = []; const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = async (c) => { window.__pedido = c; await new Promise((r) => setTimeout(r, window.__atrasoMic ?? 0)); const f = await pedir(c); f.getTracks().forEach((t) => window.__microfones.push(t)); return f; }; 1`);
+  const g0 = await estadoGravador();
+  confere(g0.pressionado === "false" && g0.audio === false && g0.erro === false, `Gravador: começa parado, sem gravação e sem erro: ${JSON.stringify(g0)}`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(2300);
+  const g1 = await estadoGravador();
+  const pedido = await av(`window.__pedido`);
+  confere(g1.pressionado === "true" && g1.ativos === 1 && pedido?.audio?.echoCancellation === false && pedido?.audio?.autoGainControl === false, `Gravador: ao gravar o microfone está ligado, sem os efeitos de voz: ${JSON.stringify({ g1, pedido })}`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(900);
+  const g2 = await estadoGravador();
+  confere(g2.pressionado === "false" && g2.audio === true && g2.ativos === 0 && /^0:0[1-3] · .+ · (webm|ogg|mp4)/.test(g2.info ?? ""), `Gravador: ao parar entrega a gravação (tempo, tamanho e formato) e devolve o microfone: ${JSON.stringify(g2)}`);
+  const tocavel = await av(`new Promise((ok) => { const a = document.getElementById('ouvir-gravacao'); const fim = setTimeout(() => ok(null), 4000); a.addEventListener('durationchange', () => { if (Number.isFinite(a.duration)) { clearTimeout(fim); ok({ duracao: a.duration, erro: !!a.error }); } }); a.load(); })`);
+  confere(tocavel && tocavel.erro === false && Number.isFinite(tocavel.duracao) && tocavel.duracao > 1 && tocavel.duracao < 4, `Gravador: o arquivo gravado carrega no player, com a duração certa (~2 s, e não infinita): ${JSON.stringify(tocavel)}`);
+  await av(`document.getElementById('descartar').click(); 1`);
+  await dormir(300);
+  const g3 = await estadoGravador();
+  confere(g3.audio === false, `Gravador: descartar apaga a gravação: ${JSON.stringify(g3)}`);
+  // Toque duplo em "Gravar" enquanto o microfone é pedido: o segundo toque é ignorado (dois pedidos juntos deixavam um microfone órfão aceso).
+  await av(`window.__atrasoMic = 800; window.__microfones.length = 0; 1`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(100);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(1500);
+  const gd = await av(`({ pressionado: document.getElementById('gravar').getAttribute('aria-pressed'), pedidos: window.__microfones.length, ativos: window.__microfones.filter((t) => t.readyState === 'live').length })`);
+  confere(gd.pressionado === "true" && gd.pedidos === 1 && gd.ativos === 1, `Gravador: dois toques seguidos em Gravar pedem o microfone UMA vez e não deixam um órfão: ${JSON.stringify(gd)}`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(900);
+  const gd2 = await estadoGravador();
+  confere(gd2.pressionado === "false" && gd2.ativos === 0 && gd2.audio === true, `Gravador: parar depois do toque duplo entrega a gravação e devolve o microfone: ${JSON.stringify(gd2)}`);
+  await av(`window.__atrasoMic = 0; document.getElementById('descartar').click(); 1`);
+  await dormir(300);
+  // O diálogo de permissão do Android esconde a página enquanto o microfone ainda é pedido: isso NÃO pode cancelar o pedido (o bug do emulador, em que o
+  // microfone permitido era jogado fora). Simula o pedido demorado (1 s) e a página escondida no meio dele.
+  const esconder = (v) => av(`Object.defineProperty(document, 'hidden', { configurable: true, get: () => ${v} }); document.dispatchEvent(new Event('visibilitychange')); 1`);
+  await av(`window.__atrasoMic = 1000; 1`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(300);
+  await esconder(true);
+  await dormir(200);
+  await esconder(false);
+  await dormir(1300);
+  const g5 = await estadoGravador();
+  confere(g5.pressionado === "true" && g5.ativos === 1, `Gravador: esconder a página enquanto o microfone é pedido não cancela o pedido (a gravação começa): ${JSON.stringify(g5)}`);
+  await esconder(true); // agora com a gravação em curso: o app em segundo plano a para
+  await dormir(1200);
+  await esconder(false);
+  const g6 = await estadoGravador();
+  confere(g6.pressionado === "false" && g6.ativos === 0 && g6.audio === true, `Gravador: o app em segundo plano para a gravação em curso, devolve o microfone e guarda o gravado: ${JSON.stringify(g6)}`);
+  await av(`window.__atrasoMic = 0; document.getElementById('descartar').click(); 1`);
+  await dormir(300);
+  // Sair da aba com a gravação em curso: para, devolve o microfone e a gravação feita até ali fica.
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(1500);
+  await av(`document.getElementById('aba-hinos').click(); 1`);
+  await dormir(1200);
+  await av(`document.getElementById('aba-gravador').click(); 1`);
+  await dormir(400);
+  const g4 = await estadoGravador();
+  confere(g4.pressionado === "false" && g4.ativos === 0 && g4.audio === true, `Gravador: sair da aba com a gravação em curso a para, devolve o microfone e guarda o que foi gravado: ${JSON.stringify(g4)}`);
+  await av(`document.getElementById('descartar').click(); document.getElementById('aba-hinos').click(); 1`);
+  await dormir(300);
 
   // Um som de cada vez: dar o tom PARA o hino que estava tocando. Abre o hino, toca, volta à lista (client-side) e liga o Lá.
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
