@@ -876,6 +876,20 @@ async function principal() {
   await dormir(300);
   const g3 = await estadoGravador();
   confere(g3.audio === false, `Gravador: descartar apaga a gravação: ${JSON.stringify(g3)}`);
+  // Toque duplo em "Gravar" enquanto o microfone é pedido: o segundo toque é ignorado (dois pedidos juntos deixavam um microfone órfão aceso).
+  await av(`window.__atrasoMic = 800; window.__microfones.length = 0; 1`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(100);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(1500);
+  const gd = await av(`({ pressionado: document.getElementById('gravar').getAttribute('aria-pressed'), pedidos: window.__microfones.length, ativos: window.__microfones.filter((t) => t.readyState === 'live').length })`);
+  confere(gd.pressionado === "true" && gd.pedidos === 1 && gd.ativos === 1, `Gravador: dois toques seguidos em Gravar pedem o microfone UMA vez e não deixam um órfão: ${JSON.stringify(gd)}`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(900);
+  const gd2 = await estadoGravador();
+  confere(gd2.pressionado === "false" && gd2.ativos === 0 && gd2.audio === true, `Gravador: parar depois do toque duplo entrega a gravação e devolve o microfone: ${JSON.stringify(gd2)}`);
+  await av(`window.__atrasoMic = 0; document.getElementById('descartar').click(); 1`);
+  await dormir(300);
   // O diálogo de permissão do Android esconde a página enquanto o microfone ainda é pedido: isso NÃO pode cancelar o pedido (o bug do emulador, em que o
   // microfone permitido era jogado fora). Simula o pedido demorado (1 s) e a página escondida no meio dele.
   const esconder = (v) => av(`Object.defineProperty(document, 'hidden', { configurable: true, get: () => ${v} }); document.dispatchEvent(new Event('visibilitychange')); 1`);

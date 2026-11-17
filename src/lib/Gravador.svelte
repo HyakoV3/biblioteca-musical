@@ -13,6 +13,10 @@
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const gravador = new Gravador();
+  // A gravação parou sozinha (o sistema tirou o microfone, o gravador falhou): guarda o que já foi gravado, em vez de a tela seguir "gravando".
+  gravador.aoInterromper = () => {
+    if (gravando) void parar();
+  };
 
   let gravando = $state(false);
   /** Segundos gravados até agora (a tela só mostra; o tempo certo da gravação é o medido ao parar). */
@@ -22,6 +26,10 @@
   let erro = $state<MotivoDoErro | null>(null);
   /** Numera os pedidos: uma resposta tardia do microfone não vale se a pessoa já mandou parar ou saiu da aba. */
   let tentativa = 0;
+  /** Um pedido de microfone ou uma parada está em andamento: os toques em "Gravar" e "Parar" são ignorados até acabar (dois pedidos juntos deixavam um microfone órfão). */
+  let ocupado = false;
+  /** O componente foi desmontado: o que chegar depois não pode criar nada que fique para trás. */
+  let destruido = false;
 
   const textoErro: Record<MotivoDoErro, Parameters<typeof i18n.t>[0]> = {
     negada: "gravador.erro_negada",
@@ -66,14 +74,24 @@
     decorrido = 0;
     const comeco = performance.now();
     relogio = setInterval(() => (decorrido = (performance.now() - comeco) / 1000), 250);
+    // O app já estava em segundo plano quando o microfone chegou (a permissão já estava dada e a pessoa saiu antes): o evento de esconder já passou.
+    // Espera um instante antes de parar, porque o diálogo de permissão do Android também esconde a página por um momento.
+    if (document.hidden) setTimeout(() => (gravando && document.hidden ? void parar() : undefined), 1000);
   }
 
   async function parar() {
+    if (!gravando) return; // outra parada já está em andamento
     tentativa++;
     pararRelogio();
     gravando = false;
-    gravacao = await gravador.parar();
-    if (!gravacao) erro = "falhou";
+    const nova = await gravador.parar();
+    if (destruido) {
+      if (nova) URL.revokeObjectURL(nova.url); // o componente se foi durante a parada: ninguém vai usar esta gravação
+      return;
+    }
+    descartar(); // a gravação anterior, se ainda estava na tela, não fica com a URL presa
+    gravacao = nova;
+    if (!nova) erro = "falhou";
   }
 
   /** Sai de cena (outra aba): cancela um pedido de microfone que esperava, ou para a gravação, e DEVOLVE o microfone. O que já foi gravado fica. */
@@ -87,8 +105,14 @@
   }
 
   async function alternar() {
-    if (gravando) await parar();
-    else await iniciar();
+    if (ocupado) return;
+    ocupado = true;
+    try {
+      if (gravando) await parar();
+      else await iniciar();
+    } finally {
+      ocupado = false;
+    }
   }
 
   $effect(() => {
@@ -109,6 +133,8 @@
     return () => document.removeEventListener("visibilitychange", aoEsconder);
   });
   onDestroy(() => {
+    destruido = true;
+    tentativa++; // um pedido de microfone que ainda espera é jogado fora quando chegar
     pararRelogio();
     gravador.soltar();
     descartar();

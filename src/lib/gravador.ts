@@ -22,7 +22,7 @@ export function formatarTamanho(bytes: number, idioma: string): string {
   const n = Number.isFinite(bytes) && bytes > 0 ? bytes : 0;
   const num = (v: number) => new Intl.NumberFormat(idioma, { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(v);
   if (n < 1024) return `${Math.round(n)} B`;
-  if (n < 1024 * 1024) return `${num(n / 1024)} KB`;
+  if (n < 1024 * 1023.95) return `${num(n / 1024)} KB`; // abaixo disso arredondaria para "1.024,0 KB"
   return `${num(n / (1024 * 1024))} MB`;
 }
 
@@ -72,15 +72,20 @@ export type Gravacao = { url: string; tipo: string; bytes: number; segundos: num
 /**
  * Uma sessão de gravação do microfone. `iniciar` pede o microfone (a permissão é pedida aqui, a partir de um toque), `parar` entrega o arquivo e
  * `soltar` devolve o microfone ao aparelho na hora (também ao esconder o app). Sem efeitos de voz (cancelamento de eco, supressão de ruído e
- * ganho automático desligados) para o som sair como foi tocado ou cantado.
+ * ganho automático desligados) para o som sair como foi tocado ou cantado. Quem usa deve evitar chamadas ao mesmo tempo (a tela ignora toques
+ * enquanto um pedido ou uma parada está em andamento).
  */
 export class Gravador {
   private fluxo: MediaStream | null = null;
   private gravador: MediaRecorder | null = null;
   private pedacos: Blob[] = [];
   private inicio = 0;
+  /** Quando a gravação terminou (por `parar` ou porque a trilha do microfone acabou); 0 enquanto grava. */
+  private fim = 0;
   /** Formato em uso; conhecido depois de `iniciar`. */
   tipo = "";
+  /** Avisa quem usa quando a gravação PARA SOZINHA (ligação, outro app pegou o microfone, permissão revogada, erro do gravador): ele chama `parar` para guardar o que já foi gravado. */
+  aoInterromper: (() => void) | null = null;
 
   get gravando(): boolean {
     return this.gravador?.state === "recording";
@@ -99,9 +104,17 @@ export class Gravador {
         : new MediaRecorder(this.fluxo, { audioBitsPerSecond: BITS_POR_SEGUNDO });
       this.tipo = this.gravador.mimeType || preferido || "";
       this.pedacos = [];
+      this.fim = 0;
       this.gravador.ondataavailable = (e) => {
         if (e.data.size > 0) this.pedacos.push(e.data);
       };
+      const interrompida = () => {
+        if (this.fim === 0) this.fim = performance.now();
+        this.aoInterromper?.();
+      };
+      this.gravador.onerror = interrompida;
+      // `stop()` da trilha (o nosso) não dispara "ended"; este evento só chega quando o SISTEMA tira o microfone.
+      this.fluxo.getTracks().forEach((t) => t.addEventListener("ended", interrompida));
       this.gravador.start(1000); // um pedaço por segundo: uma queda no meio ainda deixa o que já foi gravado
       this.inicio = performance.now();
     } catch (e) {
@@ -110,26 +123,31 @@ export class Gravador {
     }
   }
 
-  /** Para e entrega o arquivo (ou nulo se não chegou nada). O microfone é devolvido ao aparelho. */
+  /** Para e entrega o arquivo (ou nulo se não chegou nada). Também entrega o que foi gravado até aqui se a gravação já tinha parado sozinha. O microfone é devolvido ao aparelho. */
   parar(): Promise<Gravacao | null> {
     const g = this.gravador;
-    if (!g || g.state === "inactive") {
+    if (!g) {
       this.soltar();
       return Promise.resolve(null);
     }
-    const segundos = (performance.now() - this.inicio) / 1000;
+    if (g.state === "inactive") return Promise.resolve(this.entregar());
     return new Promise((ok) => {
-      g.onstop = () => {
-        const tipo = this.tipo || g.mimeType || "audio/webm";
-        const blob = new Blob(this.pedacos, { type: tipo });
-        this.soltar();
-        ok(blob.size > 0 ? { url: URL.createObjectURL(blob), tipo, bytes: blob.size, segundos } : null);
-      };
+      g.onstop = () => ok(this.entregar());
+      if (this.fim === 0) this.fim = performance.now();
       g.stop();
     });
   }
 
-  /** Devolve o microfone ao aparelho (apaga o ícone de gravação do Android) e esquece o gravador. */
+  /** Monta o arquivo com os pedaços desta sessão, esquece os pedaços (a gravação não fica retida na memória do gravador) e devolve o microfone. */
+  private entregar(): Gravacao | null {
+    const tipo = this.tipo || this.gravador?.mimeType || "audio/webm";
+    const segundos = ((this.fim || performance.now()) - this.inicio) / 1000;
+    const blob = new Blob(this.pedacos, { type: tipo });
+    this.soltar();
+    return blob.size > 0 ? { url: URL.createObjectURL(blob), tipo, bytes: blob.size, segundos } : null;
+  }
+
+  /** Devolve o microfone ao aparelho (apaga o ícone de gravação do Android), esquece o gravador e os pedaços. */
   soltar(): void {
     this.fluxo?.getTracks().forEach((t) => t.stop());
     this.fluxo = null;
@@ -142,5 +160,6 @@ export class Gravador {
       }
     }
     this.gravador = null;
+    this.pedacos = [];
   }
 }
