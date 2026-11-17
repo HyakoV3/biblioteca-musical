@@ -187,6 +187,7 @@ export const es: Dicionario = {
   "gravador.carregando_mais": "Cargando más grabaciones…",
   "gravador.erro_abrir": "No se pudo abrir esta grabación.",
   "gravador.erro_lista": "No se pudo leer ni cambiar las grabaciones guardadas en este dispositivo.",
+  "gravador.erro_ler": "No se pudieron leer las grabaciones guardadas en este dispositivo.",
   "gravador.erro_guardar": "No se pudo guardar esta grabación (el espacio de la app puede estar lleno). Escúchela abajo antes de descartarla.",
   "gravador.pronta": "Grabación lista, {tempo}.",
   "gravador.sua_gravacao": "Su grabación",

@@ -59,16 +59,31 @@
     aoApagar(meta.id);
   }
 
-  /** Ação do <audio>: corrige a duração de um WebM sem ela, toca ao aparecer (a pessoa acabou de tocar em "Ouvir") e avisa a lista quando começa. */
+  /** O arquivo não toca (gravação quase vazia, corrompida, formato que a WebView não decodifica): explica e devolve o botão "Ouvir" para tentar de novo. */
+  function aoFalhar() {
+    falhou = true;
+    if (url) URL.revokeObjectURL(url);
+    url = null;
+  }
+
+  /**
+   * Ação do <audio>: corrige a duração de um WebM sem ela, toca ao aparecer (a pessoa acabou de tocar em "Ouvir") e avisa a lista quando começa. Avisa a lista
+   * ANTES de tocar: o evento "play" só chega numa tarefa depois, e nesse intervalo o `$effect` abaixo (que pausa quem não é o `tocandoId`) pausaria este áudio.
+   */
   function player(el: HTMLAudioElement) {
     const desfazer = corrigirDuracao(el);
-    const aoComecar = () => aoTocar(meta.id);
+    const aoComecar = () => aoTocar(meta.id); // o usuário apertou play nos controles do player
     el.addEventListener("play", aoComecar);
-    void el.play().catch(() => {});
+    el.addEventListener("error", aoFalhar);
+    aoTocar(meta.id);
+    void el.play().catch((e) => {
+      if (e instanceof DOMException && e.name === "NotSupportedError") aoFalhar();
+    });
     return {
       destroy() {
         desfazer();
         el.removeEventListener("play", aoComecar);
+        el.removeEventListener("error", aoFalhar);
       },
     };
   }

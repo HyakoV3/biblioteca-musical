@@ -145,6 +145,38 @@ describe("gravações guardadas", () => {
   });
 });
 
+describe("conexão com o banco", () => {
+  // O banco guardado em cache pode ser fechado de fora (dados limpos, erro de disco, outra versão pedindo): a próxima chamada reabre em vez de lançar para sempre.
+  const conexao = (g: Gravacoes) => (g as unknown as { abrindo: Promise<IDBDatabase> | null }).abrindo;
+
+  // Uma fábrica só: reabrir tem de achar o MESMO banco (o `novo()` cria um banco vazio a cada abertura).
+  const compartilhado = () => {
+    const fabrica = new IDBFactory();
+    return new Gravacoes(() => fabrica);
+  };
+
+  it("se o navegador fecha a conexão (onclose), a próxima chamada reabre e funciona", async () => {
+    const g = compartilhado();
+    const m = await g.salvar(audio(100), "audio/webm", 1);
+    const banco = await conexao(g)!;
+    banco.close(); // o navegador fechou a conexão por baixo
+    banco.onclose?.(new Event("close"));
+    expect(conexao(g)).toBeNull();
+    expect((await g.listar()).itens.map((x) => x.id)).toEqual([m.id]);
+    expect((await g.blob(m.id))?.size).toBe(100);
+  });
+
+  it("se outra versão pede para fechar (onversionchange), fecha, esquece e reabre depois", async () => {
+    const g = compartilhado();
+    await g.salvar(audio(100), "audio/webm", 1);
+    const banco = await conexao(g)!;
+    banco.onversionchange?.(new Event("versionchange") as IDBVersionChangeEvent);
+    expect(conexao(g)).toBeNull();
+    await g.salvar(audio(50), "audio/webm", 1); // reabriu
+    expect(await g.resumo()).toEqual({ quantidade: 2, bytes: 150 });
+  });
+});
+
 describe("data da gravação", () => {
   it("dia e mês, hora e minuto, no formato do idioma", () => {
     const quando = new Date(2026, 10, 17, 10, 46).getTime();

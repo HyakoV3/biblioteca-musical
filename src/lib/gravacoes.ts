@@ -70,7 +70,19 @@ export class Gravacoes {
         meta.createIndex("porData", ["criadaEm", "id"]); // da mais nova para a mais antiga, com o id desempatando
         b.createObjectStore("blobs");
       };
-      r.onsuccess = () => ok(r.result);
+      r.onsuccess = () => {
+        const b = r.result;
+        // Se o navegador fechar a conexão (dados limpos, erro de disco) ou outra versão pedir para fechá-la, esquece-a: a próxima chamada reabre. Sem isso, toda
+        // transação passaria a lançar `InvalidStateError` até reiniciar o app.
+        b.onclose = () => {
+          this.abrindo = null;
+        };
+        b.onversionchange = () => {
+          b.close();
+          this.abrindo = null;
+        };
+        ok(b);
+      };
       r.onerror = () => falha(r.error ?? new Error("não abriu o armazenamento"));
       r.onblocked = () => falha(new Error("armazenamento bloqueado"));
     });

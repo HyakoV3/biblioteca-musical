@@ -41,8 +41,17 @@
   let carregandoLista = $state(false);
   let listaPronta = $state(false);
   let resumo = $state<Resumo>({ quantidade: 0, bytes: 0 });
-  let erroLista = $state(false);
+  /** A leitura da lista falhou: aparece o aviso com "Tentar de novo" (a paginação NÃO é encerrada, para uma falha passageira não esconder as outras páginas). */
+  let erroCarga = $state(false);
+  /** Apagar falhou. */
+  let erroAcao = $state(false);
   let erroGuardar = $state(false);
+  /** O resumo (quantidade e espaço) veio do armazenamento: se a primeira leitura falhou, ele é relido na próxima oportunidade em vez de seguir contando às cegas. */
+  let resumoLido = false;
+  /** Sobe a cada "Apagar todas": uma página que estava sendo lida antes dele traz dados que já não existem e é descartada. */
+  let geracao = 0;
+  /** Ids apagados enquanto uma página era lida (a transação de leitura já tinha começado e ainda os traz). */
+  const apagadasNaCarga = new Set<string>();
   /** Qual gravação da lista está tocando (só uma por vez). */
   let tocandoId = $state<string | null>(null);
   let confirmandoTudo = $state(false);
@@ -82,6 +91,7 @@
   function descartar() {
     if (gravacao) URL.revokeObjectURL(gravacao.url);
     gravacao = null;
+    erroGuardar = false; // o aviso de "não pôde guardar" era sobre esta gravação
   }
 
   async function iniciar() {
@@ -89,6 +99,7 @@
     erro = null;
     descartar();
     reproducao.parar(); // um som de cada vez: o hino que tocava calaria dentro da gravação
+    tocandoId = null; // e uma gravação da lista que tocava também: o alto-falante entraria na nova
     try {
       await gravador.iniciar();
     } catch (e) {
@@ -144,7 +155,7 @@
       URL.revokeObjectURL(nova.url); // o arquivo já está no armazenamento; a lista o lê de lá quando a pessoa tocar em Ouvir
       if (destruido) return;
       itens = [meta, ...itens];
-      resumo = { quantidade: resumo.quantidade + 1, bytes: resumo.bytes + meta.bytes };
+      void atualizarResumo(); // relê do armazenamento (não conta às cegas: o número que a confirmação de "Apagar todas" mostra tem de ser o verdadeiro)
     } catch (e) {
       console.warn("gravador: não foi possível guardar a gravação", e);
       if (destruido) {
@@ -159,43 +170,54 @@
   async function carregarLista() {
     if (carregandoLista) return;
     carregandoLista = true;
+    const minhaGeracao = geracao;
     try {
       const ultima = itens[itens.length - 1];
       const p = await gravacoes.listar(TAMANHO_DA_PAGINA, ultima ? { criadaEm: ultima.criadaEm, id: ultima.id } : undefined);
-      if (destruido) return;
+      if (destruido || minhaGeracao !== geracao) return; // "Apagar todas" aconteceu no meio: esta página é do passado
       const jaTem = new Set(itens.map((m) => m.id));
-      itens = [...itens, ...p.itens.filter((m) => !jaTem.has(m.id))];
+      itens = [...itens, ...p.itens.filter((m) => !jaTem.has(m.id) && !apagadasNaCarga.has(m.id))];
       temMais = p.temMais;
-      erroLista = false;
+      erroCarga = false;
+      if (!resumoLido) void atualizarResumo();
     } catch (e) {
+      // Não encerra a paginação (`temMais` fica como estava): o aviso traz "Tentar de novo".
       console.warn("gravador: não foi possível ler as gravações", e);
-      erroLista = true;
-      temMais = false;
+      erroCarga = true;
     } finally {
       carregandoLista = false;
       listaPronta = true;
+      apagadasNaCarga.clear();
     }
   }
 
   async function atualizarResumo() {
     try {
       resumo = await gravacoes.resumo();
-    } catch {
-      /* sem armazenamento: a lista já mostra o aviso */
+      resumoLido = true;
+    } catch (e) {
+      console.warn("gravador: não foi possível ler o resumo das gravações", e);
     }
+  }
+
+  /** Uma gravação da lista começou a tocar: só ela toca, o hino cala e uma gravação em andamento PARA (o alto-falante entraria nela). */
+  function aoTocarItem(id: string) {
+    tocandoId = id;
+    reproducao.parar();
+    if (gravando) void parar();
   }
 
   async function apagarUma(id: string) {
     try {
+      if (carregandoLista) apagadasNaCarga.add(id);
       await gravacoes.apagar(id);
-      const tirada = itens.find((m) => m.id === id);
       itens = itens.filter((m) => m.id !== id);
       if (tocandoId === id) tocandoId = null;
-      if (tirada) resumo = { quantidade: Math.max(0, resumo.quantidade - 1), bytes: Math.max(0, resumo.bytes - tirada.bytes) };
-      // Apagar abre espaço na tela: se ainda há mais para carregar e a lista encolheu, o observador do fim pede a próxima página.
+      erroAcao = false;
+      void atualizarResumo();
     } catch (e) {
       console.warn("gravador: não foi possível apagar", e);
-      erroLista = true;
+      erroAcao = true;
     }
   }
 
@@ -209,14 +231,17 @@
     relogioTudo = null;
     confirmandoTudo = false;
     try {
+      geracao++; // uma página em leitura agora é descartada (traria gravações que vão deixar de existir)
       await gravacoes.apagarTodas();
       itens = [];
       temMais = false;
       tocandoId = null;
-      resumo = { quantidade: 0, bytes: 0 };
+      erroAcao = false;
+      erroCarga = false;
+      void atualizarResumo();
     } catch (e) {
       console.warn("gravador: não foi possível apagar tudo", e);
-      erroLista = true;
+      erroAcao = true;
     }
   }
 
@@ -330,11 +355,15 @@
         <span class="meta" id="resumo-gravacoes">{i18n.tn("plural.gravacoes", resumo.quantidade)} · {formatarTamanho(resumo.bytes, i18n.idioma)}</span>
       {/if}
     </div>
-    {#if erroLista}<Aviso tipo="erro">{t("gravador.erro_lista")}</Aviso>{/if}
+    {#if erroAcao}<Aviso tipo="erro">{t("gravador.erro_lista")}</Aviso>{/if}
+    {#if erroCarga}
+      <Aviso tipo="erro">{t("gravador.erro_ler")}</Aviso>
+      <button id="tentar-lista" class="botao" onclick={carregarLista}>{t("erro.tentar")}</button>
+    {/if}
     {#if itens.length > 0}
       <ul class="lista" id="lista-gravacoes">
         {#each itens as m (m.id)}
-          <ItemGravacao meta={m} {tocandoId} aoTocar={(id) => (tocandoId = id)} aoApagar={apagarUma} />
+          <ItemGravacao meta={m} {tocandoId} aoTocar={aoTocarItem} aoApagar={apagarUma} />
         {/each}
       </ul>
       {#if temMais}
@@ -343,7 +372,7 @@
       <button id="apagar-todas" class="botao" class:perigo={confirmandoTudo} onclick={apagarTodas}>
         {confirmandoTudo ? t("gravador.apagar_todas_mesmo", { n: resumo.quantidade }) : t("gravador.apagar_todas")}
       </button>
-    {:else if listaPronta && !erroLista}
+    {:else if listaPronta && !erroCarga && !erroAcao}
       <p class="meta" id="lista-vazia">{t("gravador.nenhuma")}</p>
     {/if}
   </section>

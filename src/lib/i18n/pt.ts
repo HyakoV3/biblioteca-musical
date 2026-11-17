@@ -187,6 +187,7 @@ export const pt = {
   "gravador.carregando_mais": "Carregando mais gravações…",
   "gravador.erro_abrir": "Não foi possível abrir esta gravação.",
   "gravador.erro_lista": "Não foi possível ler ou alterar as gravações guardadas neste aparelho.",
+  "gravador.erro_ler": "Não foi possível ler as gravações guardadas neste aparelho.",
   "gravador.erro_guardar": "Não foi possível guardar esta gravação (o espaço do app pode estar cheio). Ouça abaixo antes de descartar.",
   "gravador.pronta": "Gravação pronta, {tempo}.",
   "gravador.sua_gravacao": "Sua gravação",

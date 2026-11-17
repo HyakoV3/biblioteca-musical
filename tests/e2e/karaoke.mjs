@@ -872,7 +872,9 @@ async function principal() {
     await dormir(500);
   };
   await limparLista(); // começa sem gravações de execuções anteriores (o armazenamento do Chrome do teste é novo, mas assim vale também em outra ordem)
-  await av(`window.__microfones = []; const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = async (c) => { window.__pedido = c; await new Promise((r) => setTimeout(r, window.__atrasoMic ?? 0)); let f = await pedir(c); if (window.__micMudo) { f.getTracks().forEach((t) => t.stop()); const ctx = new AudioContext(); f = ctx.createMediaStreamDestination().stream; } f.getTracks().forEach((t) => window.__microfones.push(t)); return f; }; 1`);
+  // O gancho que conta os microfones abertos e permite atrasar ou mudar o microfone do teste; recarregar a página o perde, então é reinstalado a cada recarga.
+  const instalarGanchoDoMicrofone = () => av(`window.__microfones = []; const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = async (c) => { window.__pedido = c; await new Promise((r) => setTimeout(r, window.__atrasoMic ?? 0)); let f = await pedir(c); if (window.__micMudo) { f.getTracks().forEach((t) => t.stop()); const ctx = new AudioContext(); f = ctx.createMediaStreamDestination().stream; } f.getTracks().forEach((t) => window.__microfones.push(t)); return f; }; 1`);
+  await instalarGanchoDoMicrofone();
   const g0 = await estadoGravador();
   confere(g0.pressionado === "false" && g0.audio === false && g0.erro === false, `Gravador: começa parado, sem gravação e sem erro: ${JSON.stringify(g0)}`);
   await av(`document.getElementById('gravar').click(); 1`);
@@ -987,6 +989,7 @@ async function principal() {
     await dormir(500);
     await av(`document.getElementById('aba-gravador').click(); 1`);
     await dormir(700);
+    await instalarGanchoDoMicrofone();
   };
   await av(`document.getElementById('aba-gravador').click(); 1`);
   await dormir(400);
@@ -1009,6 +1012,26 @@ async function principal() {
   await apagarPrimeira();
   const apagou = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, resumo: !!document.getElementById('resumo-gravacoes'), vazio: !!document.getElementById('lista-vazia') })`);
   confere(apagou.itens === 0 && apagou.resumo === false && apagou.vazio === true, `Gravador: confirmando, a gravação é apagada e a lista volta ao estado vazio: ${JSON.stringify(apagou)}`);
+
+  // Ouvir uma gravação de verdade: o primeiro "Ouvir" toca e NÃO se pausa sozinho (o aviso à lista vem antes do play); tocar um item com uma gravação em andamento a
+  // PARA (o alto-falante entraria nela); gravar para o item que tocava.
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(1800);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(900);
+  await av(`document.querySelector('.gravacao-item .ouvir').click(); 1`);
+  await dormir(900);
+  const tocaDeVerdade = await av(`(() => { const a = document.querySelector('.gravacao-item audio'); return a ? { pausado: a.paused, tempo: a.currentTime, erro: !!a.error } : null; })()`);
+  confere(tocaDeVerdade && tocaDeVerdade.pausado === false && tocaDeVerdade.tempo > 0 && tocaDeVerdade.erro === false, `Gravador: o primeiro "Ouvir" toca e não se pausa sozinho: ${JSON.stringify(tocaDeVerdade)}`);
+  await av(`document.getElementById('gravar').click(); 1`); // grava de novo: a gravação que tocava para
+  await dormir(500);
+  const gravaParaOItem = await av(`({ gravando: document.getElementById('gravar').getAttribute('aria-pressed'), pausado: document.querySelector('.gravacao-item audio')?.paused ?? null })`);
+  confere(gravaParaOItem.gravando === "true" && gravaParaOItem.pausado === true, `Gravador: gravar para a gravação da lista que estava tocando: ${JSON.stringify(gravaParaOItem)}`);
+  await av(`document.querySelectorAll('.gravacao-item audio')[0]?.play(); 1`); // tocar um item com a gravação em andamento
+  await dormir(1500);
+  const itemParaAGravacao = await estadoGravador();
+  confere(itemParaAGravacao.pressionado === "false" && itemParaAGravacao.itens === 2 && itemParaAGravacao.ativos === 0, `Gravador: tocar uma gravação da lista com outra em andamento a para, guarda o gravado e devolve o microfone: ${JSON.stringify(itemParaAGravacao)}`);
+  await limparLista();
 
   // Paginação: 25 gravações semeadas direto no armazenamento (o mesmo formato do app); a lista mostra 10, e mais 10 a cada vez que o fim chega perto da tela.
   await av(`new Promise((ok, falha) => {
@@ -1038,11 +1061,11 @@ async function principal() {
   confere(pag3.itens === 25 && pag3.fim === false, `Gravador: a última página traz as 5 que faltam (25) e o fim da lista some: ${JSON.stringify(pag3)}`);
   const unicas = await av(`new Set([...document.querySelectorAll('.gravacao-item')].map((e) => e.dataset.id)).size`);
   confere(unicas === 25, `Gravador: nenhuma gravação repetida nem pulada (25 únicas): ${unicas}`);
-  // Ouvir lê o arquivo do armazenamento só nesse momento; tocar uma para a que tocava.
+  // Um arquivo que não toca (os zeros semeados não decodificam): a tela explica e devolve o botão "Ouvir" para tentar de novo, em vez de deixar um player cinza.
   await av(`document.querySelectorAll('.gravacao-item .ouvir')[0].click(); 1`);
-  await dormir(700);
-  const ouvindo = await av(`({ players: document.querySelectorAll('.gravacao-item audio').length, semBotao: document.querySelectorAll('.gravacao-item')[0].querySelector('.ouvir') === null })`);
-  confere(ouvindo.players === 1 && ouvindo.semBotao === true, `Gravador: Ouvir abre o player só daquela gravação: ${JSON.stringify(ouvindo)}`);
+  await dormir(1200);
+  const naoToca = await av(`(() => { const i = document.querySelectorAll('.gravacao-item')[0]; return { audio: !!i.querySelector('audio'), erro: i.querySelector('.erro-item')?.textContent.trim() ?? null, ouvir: !!i.querySelector('.ouvir') }; })()`);
+  confere(naoToca.audio === false && naoToca.ouvir === true && /Could not open|Não foi possível abrir|No se pudo abrir/.test(naoToca.erro ?? ""), `Gravador: um arquivo que não toca mostra o erro e devolve o botão Ouvir: ${JSON.stringify(naoToca)}`);
   // Apagar todas: o primeiro toque só pede confirmação; o segundo esvazia a lista e o resumo.
   await av(`document.getElementById('apagar-todas').click(); 1`);
   await dormir(200);

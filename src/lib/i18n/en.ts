@@ -187,6 +187,7 @@ export const en: Dicionario = {
   "gravador.carregando_mais": "Loading more recordings…",
   "gravador.erro_abrir": "Could not open this recording.",
   "gravador.erro_lista": "Could not read or change the recordings saved on this device.",
+  "gravador.erro_ler": "Could not read the recordings saved on this device.",
   "gravador.erro_guardar": "Could not save this recording (the app's storage may be full). Listen below before discarding it.",
   "gravador.pronta": "Recording ready, {tempo}.",
   "gravador.sua_gravacao": "Your recording",
