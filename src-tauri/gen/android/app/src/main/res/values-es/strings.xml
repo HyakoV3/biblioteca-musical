@@ -1,0 +1,5 @@
+<resources>
+    <string name="canal_reproducao">Reproducción del himno</string>
+    <string name="notificacao_tocando">Reproduciendo</string>
+    <string name="notificacao_parar">Detener</string>
+</resources>
