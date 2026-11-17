@@ -171,8 +171,8 @@
 <!-- O título do documento é o que leitores de tela anunciam a cada troca de tela. -->
 <svelte:head><title>{tituloPagina} · Biblioteca Musical CCB</title></svelte:head>
 
-<!-- Karaokê: botão só de ícone no cabeçalho (microfone vazado = desligado, cheio = ligado, então o estado não depende só
-     da cor). O nome e a explicação vão no rótulo de acessibilidade e na dica; `aria-pressed` diz o estado ao leitor de tela. -->
+<!-- Karaokê: botão só de ícone no cabeçalho (marca-texto vazado = desligado, cheio = ligado, e o ligado leva borda dourada,
+     então o estado não depende só da cor; o microfone fica para o gravador e o afinador). O nome e a explicação vão no rótulo de acessibilidade e na dica; `aria-pressed` diz o estado ao leitor de tela. -->
 {#snippet botaoKaraoke()}
   <button
     class="botao botao-icone chave-karaoke"
