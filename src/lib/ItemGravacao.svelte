@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import { compartilharGravacao, nomeDoArquivo, podeCompartilhar } from "./compartilhar";
   import { corrigirDuracao, formatarTamanho, formatarTempo, nomeDoFormato } from "./gravador";
   import { formatarData, gravacoes, type MetaGravacao } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
 
-  // Uma gravação da lista: nome (data e hora), duração, tamanho e formato, "Ouvir" e "Apagar". O arquivo de áudio só é lido do armazenamento quando a pessoa toca
+  // Uma gravação da lista: nome (data e hora), duração, tamanho e formato, "Ouvir", "Enviar" (folha de compartilhamento do sistema) e "Apagar". O arquivo de áudio só é lido do armazenamento quando a pessoa toca
   // em "Ouvir" (a lista carrega só os metadados). Apagar pede confirmação: o primeiro toque muda o botão para "Apagar mesmo?" e o segundo apaga; sem o segundo toque em
   // 4 s o botão volta. Só uma gravação toca de cada vez (`tocandoId`); `aoTocar` avisa a lista e `aoApagar` pede para tirá-la.
   let {
@@ -44,6 +45,28 @@
       falhou = true;
     } finally {
       carregando = false;
+    }
+  }
+
+  let enviando = $state(false);
+  let falhouEnvio = $state(false);
+  const sePodeEnviar = podeCompartilhar();
+
+  /** Abre a folha de compartilhamento do sistema com o arquivo desta gravação (lido do armazenamento só agora). */
+  async function enviar() {
+    if (enviando) return;
+    enviando = true;
+    falhouEnvio = false;
+    try {
+      const blob = await gravacoes.blob(meta.id);
+      if (!blob) throw new Error("sem arquivo");
+      const r = await compartilharGravacao(blob, nomeDoArquivo(meta.criadaEm, meta.tipo), t("gravador.enviar_titulo"));
+      if (!destruido) falhouEnvio = r === "erro";
+    } catch (e) {
+      console.warn("gravador: não foi possível enviar a gravação", e);
+      if (!destruido) falhouEnvio = true;
+    } finally {
+      enviando = false;
     }
   }
 
@@ -109,9 +132,13 @@
     <audio bind:this={audio} controls src={url} use:player aria-label={nome}></audio>
   {/if}
   {#if falhou}<p class="meta erro-item" role="alert">{t("gravador.erro_abrir")}</p>{/if}
+  {#if falhouEnvio}<p class="meta erro-item" role="alert">{t("gravador.erro_enviar")}</p>{/if}
   <div class="acoes">
     {#if !url}
       <button class="botao ouvir" onclick={ouvir} disabled={carregando} aria-label={`${t("gravador.ouvir")}: ${nome}`}>{t("gravador.ouvir")}</button>
+    {/if}
+    {#if sePodeEnviar}
+      <button class="botao enviar" onclick={enviar} disabled={enviando} aria-label={`${t("gravador.enviar")}: ${nome}`}>{t("gravador.enviar")}</button>
     {/if}
     <button class="botao apagar" class:perigo={confirmando} onclick={apagar} aria-label={`${confirmando ? t("gravador.apagar_mesmo") : t("gravador.apagar")}: ${nome}`}>
       {confirmando ? t("gravador.apagar_mesmo") : t("gravador.apagar")}
@@ -126,7 +153,7 @@
   .info, .erro-item { margin: 0; font-variant-numeric: tabular-nums; }
   audio { width: 100%; }
   .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .acoes .botao { flex: 1 1 8rem; min-height: 2.75rem; }
+  .acoes .botao { flex: 1 1 5.5rem; min-height: 2.75rem; }
   /* Confirmando: borda e texto em destaque (não só a cor: o texto do botão muda para "Apagar mesmo?"). */
   .perigo { border-width: 0.125rem; border-color: var(--perigo); font-weight: 700; }
 </style>

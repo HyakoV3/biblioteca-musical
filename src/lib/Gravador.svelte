@@ -3,7 +3,7 @@
   import Aviso from "./Aviso.svelte";
   import Icone from "./Icone.svelte";
   import ItemGravacao from "./ItemGravacao.svelte";
-  import { DetectorDeSom, Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nomeDoFormato, type Gravacao, type MotivoDoErro } from "./gravador";
+  import { DetectorDeSom, Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nivelParaBarra, nomeDoFormato, suavizarBarra, type Gravacao, type MotivoDoErro } from "./gravador";
   import { TAMANHO_DA_PAGINA, gravacoes, type MetaGravacao, type Resumo } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
@@ -118,7 +118,7 @@
     detector.reiniciar(performance.now());
     medidor = setInterval(() => {
       const atual = gravador.nivel();
-      nivel = Math.max(atual, nivel * 0.8);
+      nivel = suavizarBarra(nivel, nivelParaBarra(atual));
       const r = detector.atualizar(atual, performance.now());
       if (r.comSom) ouviu = true;
       // Sem medidor (sem AudioContext, ou o navegador o deixou suspenso), o nível é sempre 0: isso não prova que não há som, então não avisa.
@@ -384,7 +384,7 @@
   .gravador > p { margin: 0; }
   .grande { position: relative; overflow: hidden; min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
   /* A barra do medidor, atrás do texto: a cor do texto do botão, bem clara, para o texto seguir legível. */
-  .nivel { position: absolute; left: 0; top: 0; bottom: 0; background: var(--acento-texto); opacity: 0.22; pointer-events: none; }
+  .nivel { position: absolute; left: 50%; transform: translateX(-50%); top: 0; bottom: 0; transition: width 80ms linear; background: var(--acento-texto); opacity: 0.22; pointer-events: none; }
   .grande > :not(.nivel) { position: relative; }
   /* O círculo de "gravar": desenhado em CSS (o conjunto de ícones do app não tem um); a cor não é o único sinal, o botão diz "Gravar". */
   .bolinha { width: 1.1rem; height: 1.1rem; border-radius: 50%; background: currentColor; flex: none; }

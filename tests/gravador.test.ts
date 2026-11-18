@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DetectorDeSom, FORMATOS_PREFERIDOS, Gravador, LIMIAR_SOM, PISO_DB, SILENCIO_MS, corrigirDuracao, escolherFormato, formatarTamanho, formatarTempo, motivoDoErro, nivelDeRms, nomeDoFormato, rmsDeAmostras } from "../src/lib/gravador";
+import { DetectorDeSom, FORMATOS_PREFERIDOS, Gravador, LIMIAR_SOM, PISO_DB, QUEDA_DA_BARRA, SILENCIO_MS, corrigirDuracao, escolherFormato, formatarTamanho, formatarTempo, motivoDoErro, nivelDeRms, nivelParaBarra, nomeDoFormato, rmsDeAmostras, suavizarBarra } from "../src/lib/gravador";
 
 describe("formato da gravação", () => {
   it("escolhe o primeiro formato preferido que o navegador grava", () => {
@@ -361,5 +361,29 @@ describe("medidor do Gravador (com um AudioContext falso)", () => {
     await g.iniciar();
     expect(g.medidorAtivo).toBe(true);
     g.soltar();
+  });
+});
+
+describe("barra do medidor", () => {
+  const daDb = (db: number) => nivelDeRms(10 ** (db / 20));
+  it("usa só a faixa de −50 a −8 dBFS", () => {
+    expect(nivelParaBarra(daDb(-55))).toBe(0);
+    expect(nivelParaBarra(daDb(-50))).toBeCloseTo(0, 5);
+    expect(nivelParaBarra(daDb(-29))).toBeCloseTo(0.5, 5);
+    expect(nivelParaBarra(daDb(-8))).toBeCloseTo(1, 5);
+    expect(nivelParaBarra(1)).toBe(1);
+    expect(nivelParaBarra(NaN)).toBe(0);
+    expect(nivelParaBarra(daDb(-50 + 42 * 0.25))).toBeCloseTo(0.1464, 3); // cosseno: o quarto da faixa mostra menos de um quarto
+    expect(nivelParaBarra(daDb(-50 + 42 * 0.75))).toBeCloseTo(0.8536, 3);
+  });
+  it("sobe rápido e cai devagar", () => {
+    expect(suavizarBarra(0, 1)).toBeCloseTo(0.6, 5);
+    expect(suavizarBarra(0.5, 0.5)).toBe(0.5);
+    expect(suavizarBarra(1, 0)).toBeCloseTo(QUEDA_DA_BARRA, 5);
+    let v = 1;
+    for (let i = 0; i < 5; i++) v = suavizarBarra(v, 0); // 0,4 s de silêncio
+    expect(v).toBeGreaterThan(0.45);
+    expect(v).toBeLessThan(0.6);
+    expect(suavizarBarra(0.1, 0.09)).toBeGreaterThanOrEqual(0.09); // nunca abaixo do nível atual
   });
 });

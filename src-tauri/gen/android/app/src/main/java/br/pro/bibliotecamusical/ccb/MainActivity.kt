@@ -17,6 +17,8 @@ class MainActivity : TauriActivity() {
     val nova = PonteServico(this, webView)
     ponte = nova
     webView.addJavascriptInterface(nova, "BmccbServico")
+    // A ponte de compartilhar uma gravação (Gravador): `window.BmccbCompartilhar`, abre a folha de compartilhamento do sistema.
+    webView.addJavascriptInterface(PonteCompartilhar(this), "BmccbCompartilhar")
   }
 
   override fun onDestroy() {
