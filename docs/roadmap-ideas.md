@@ -1189,6 +1189,11 @@ A amostra tem hinos de 42 a 178 KB de `.mscx`, então o total real pode variar u
 - **Dúvidas para o responsável:** cerca de 300 nos relatórios (grafia, texto que falta na fonte, hífen de pronome "Faz-me"/"Dá-nos", que entrou por regra de ortografia e não por evidência do `.mscx`).
 - **Limites do formato de correções / conversor** (pedidos repetidos pelos subagentes): sem verbo para **mover sílaba entre estrofes** (ex.: refrão do 475), **juntar linhas**, **recuperar sílaba que está fora das notas** (finais de estrofe dos hinos 61 e 62), nem casar `_` literal; falta um `--mostrar-silabas`, tratar sílaba terminada em ` -` e dizer o compasso nos avisos de "notas do meio omitidas"; `varrer_letra.py` e `verifica_svg.py` têm o caminho do lote 01 fixo.
 
+### Estado do `hinario.json` (2026-11-19, `hinario-480-final.json`, fora do Git)
+Os 480 hinos do Dó, com as 1.121 correções dos lotes, as letras trocadas pelo OCR e correções manuais do responsável por cima (hinos 2, 61, 62, 83, 96, 110, 143, 178, 185, 189, 198, 238 e 475). **Validado** (480 números, 1 a 480; marcas do karaokê dentro de cada linha; mesmo número de linhas que a letra). **Não validado:** o app (o leitor em Rust e o `svg::limpar`) ainda não leu este arquivo, e **o JSON ainda não é reproduzível**, porque os ajustes manuais vivem em scripts fora do repositório (`correcoes.json` não os cobre: faltam verbos para mover sílaba, juntar linhas e recuperar sílaba fora das notas).
+- **Causa de vários defeitos (responsável):** a **ligadura por baixo das notas confunde o OCR** do autor, e o final da estrofe vem escrito uma vez, sob a estrofe 1 (hinos 61, 62, 189, 198).
+- **Pendente (o responsável decidiu deixar como está por enquanto):** 61 (frase "Contigo na luz, ó meu Redentor…"), 62 ("implo-re Ti" e a quebra da estrofe 4), 189 (fim da estrofe 1), 185 (trecho partido da estrofe 1), 238 ("nhor," solto e fim da estrofe 3), 475 (fim da estrofe 3 e "O sano Evangelho"), os hinos 1 a 30 (sem passada de correções) e as dúvidas de grafia dos relatórios de lote.
+
 ### Perguntas em aberto
 1. O que o Enéias respondeu, e **o que ele autoriza** (uso, redistribuição, crédito)? Define o que pode entrar no repositório.
 2. URLs, ramos e estrutura dos repositórios dele; os nomes dos arquivos seguem a numeração do hinário?
