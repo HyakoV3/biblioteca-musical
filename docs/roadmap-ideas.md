@@ -1126,7 +1126,7 @@ Esses filtros foram feitos para **fala** e tratam som contínuo e estável como 
 - **Status:** anotada, **rascunho** (2026-11-19)
 - **Origem:** o responsável, 2026-11-19: o **Enéias respondeu** e é o **dono dos repositórios de onde tiramos os arquivos do MuseScore (`.mscx`)**. Falta registrar aqui o que ele respondeu.
 - **Prioridade:** a definir
-- **Projetos do Enéias (fonte dos `.mscx`), um repositório por tonalidade** (todos do Hinário 5; lista dada pelo responsável em 2026-11-19):
+- **Projetos do Enéias (fonte dos `.mscx`), um repositório por tonalidade** (lista dada pelo responsável em 2026-11-19). **Clonados em 2026-11-19** (clone raso) em `~/Development/auxiliar/` (fora do Git do app). **Cada um tem o hinário nº 5 inteiro** (486 `.mscx`: `hino-1` a `hino-480` e `coro-1` a `coro-6`, ~120 MB), **transposto** para os instrumentos da tonalidade: não é uma divisão por hinos. Os 5 hinos de amostra do app são **idênticos, byte a byte, aos do repositório Dó** (`do/musescore/xml/hino-N.mscx`, commit `0f6ab3d` na clonagem); os outros 6 diferem (transposição). Há também PDFs prontos (`<tom>/pdf/final.pdf`) e capa (`misc/capa.png`):
   - [`ccb-hinario-5-do`](https://github.com/eneiasramos/ccb-hinario-5-do) (Dó; o único que os docs já citavam, "todos os direitos reservados", sem licença; ver `docs/pacote-de-partituras.md`)
   - [`ccb-hinario-5-re`](https://github.com/eneiasramos/ccb-hinario-5-re) (Ré)
   - [`ccb-hinario-5-mib-2s`](https://github.com/eneiasramos/ccb-hinario-5-mib-2s) (Mi bemol, 2 s)
@@ -1148,7 +1148,8 @@ Hoje só há 5 hinos de amostra (`content/amostras/`). O app precisa do hinário
 Converter **todos** os `.mscx` dos repositórios do Eneas (`tools/mscx2json`, depois `tools/gerar-partituras.py`) e montar o hinário e os pacotes, com um relatório do que converteu e do que foi recusado.
 
 ### Plano proposto (subagentes)
-- **Lotes de 30 hinos, no máximo, por subagente, sem misturar repositórios:** cada repositório (tonalidade) é dividido em lotes de até 30 (para ~480 hinos, no mínimo 16 lotes; o número real sai da contagem de hinos de cada um dos 7).
+- **Fonte única: o repositório Dó** (som real, sem transposição de instrumento; é de onde saíram as amostras). Os outros 6 são o mesmo livro transposto para instrumentos; o app já transpõe (Andamento e Tom), então **não precisam ser convertidos** (servem, no máximo, para conferir um hino). *Hipótese a confirmar com o responsável.*
+- **Lotes de 30 hinos, no máximo, por subagente:** os 480 hinos do Dó em 16 lotes (1–30 … 451–480) e um 17º lote com os 6 coros (ainda sem decisão, ver acima).
 - Cada subagente **só roda o pipeline do seu lote e devolve um relatório**: não edita código nem arquivos compartilhados; escreve numa pasta própria (`lote-NN/`).
 - O relatório lista: hinos convertidos; hinos recusados e o motivo; anomalias (final expandido, repetições, pausas, ligaduras, letra sem sílabas, defeitos de letra para o `correcoes.json`).
 - **Lote-piloto primeiro** (hinos 1–30) para validar o formato do relatório; depois os outros em paralelo.
