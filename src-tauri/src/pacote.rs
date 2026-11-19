@@ -542,7 +542,8 @@ mod testes {
         let mut falhas = 0;
         for n in &numeros {
             for paisagem in [false, true] {
-                if ler_partitura(&d, *n, paisagem).is_err() {
+                if let Err(e) = ler_partitura(&d, *n, paisagem) {
+                    println!("  leitura falhou: hino {n}, paisagem={paisagem}: {e}");
                     falhas += 1;
                 }
             }
@@ -550,6 +551,12 @@ mod testes {
         println!(
             "hinos com partitura: {}; leituras com falha: {falhas}",
             numeros.len()
+        );
+        // a pasta de teste guarda o hinário e as partituras limpas (dezenas de MB): sai antes do assert, para valer também na falha
+        std::fs::remove_dir_all(&d).ok();
+        assert!(
+            r.partituras > 0 && !numeros.is_empty(),
+            "nenhuma partitura importada"
         );
         assert!(r.recusadas.is_empty() && falhas == 0);
     }
