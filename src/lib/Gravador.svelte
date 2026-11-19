@@ -384,7 +384,7 @@
   .gravador > p { margin: 0; }
   .grande { position: relative; overflow: hidden; min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
   /* A barra do medidor, atrás do texto: a cor do texto do botão, bem clara, para o texto seguir legível. */
-  .nivel { position: absolute; left: 50%; transform: translateX(-50%); top: 0; bottom: 0; transition: width 80ms linear; background: var(--acento-texto); opacity: 0.22; pointer-events: none; }
+  .nivel { position: absolute; left: 0; right: 0; margin-inline: auto; top: 0; bottom: 0; background: var(--acento-texto); opacity: 0.22; pointer-events: none; }
   .grande > :not(.nivel) { position: relative; }
   /* O círculo de "gravar": desenhado em CSS (o conjunto de ícones do app não tem um); a cor não é o único sinal, o botão diz "Gravar". */
   .bolinha { width: 1.1rem; height: 1.1rem; border-radius: 50%; background: currentColor; flex: none; }

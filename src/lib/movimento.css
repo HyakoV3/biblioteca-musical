@@ -28,6 +28,11 @@ li > a,
     color var(--duracao) ease;
 }
 
+/* A barra de nível do botão Gravar (cresce do centro) acompanha o medidor sem tremer. */
+.nivel {
+  transition: width var(--duracao) linear;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   @keyframes entrar {
     from {
