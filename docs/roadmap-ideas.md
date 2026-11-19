@@ -1071,12 +1071,13 @@ Uma opção **"Reduzir ruído"** no Gravador, **desligada por padrão**, que gra
 ### Alternativas gratuitas (a escolher)
 1. **Supressão de ruído do próprio navegador/Android.** Hoje o app a **desliga de propósito** (`getUserMedia` com `noiseSuppression: false`, `echoCancellation: false`, `autoGainControl: false`, em `src/lib/gravador.ts`) para o áudio sair fiel. Ligar `noiseSuppression: true` é **uma linha**, sem biblioteca, sem peso no APK. Qualidade varia por aparelho (usa o filtro do sistema ou do WebRTC) e **não dá para ajustar**.
 2. **RNNoise em WebAssembly** (rede neural pequena, **licença BSD**, feita para voz; há pacotes prontos para o navegador, como `@sapphi-red/web-noise-suppressor`, MIT, e o `@shiguredo/noise-suppression`, Apache-2.0, cujo `.wasm` do RNNoise tem aviso de licença próprio). Roda num `AudioWorklet` entre o microfone e o `MediaRecorder`, **local e offline**, com custo pequeno de CPU e de tamanho. Qualidade boa para fala. Conferir a manutenção do pacote (uma fonte diz que há projetos parados desde 2024) e **guardar o aviso de licença** no app.
-3. **Filtrar depois, sobre a gravação guardada** (em vez de ao vivo): a gravação original **fica intacta** e a pessoa gera uma cópia limpa e compara. Mais seguro para a qualidade; mais trabalho (decodificar, processar, recodificar em Opus) e ocupa o dobro de espaço.
-4. **DeepFilterNet3** (rede neural aberta, **licença Apache-2.0 ou MIT**, a **mais próxima do Krisp em qualidade para fala** entre as gratuitas; o RNNoise é mais leve e mais simples, mas de qualidade menor). Há pacotes prontos para o navegador que rodam em `AudioWorklet` + WebAssembly (por exemplo `deepfilternet3-noise-filter`, feito para o LiveKit; pede Chrome 91+ e suporte a SIMD no WASM). Custo: modelo maior e mais CPU que o RNNoise, o que pesa em celular fraco e na bateria. **Não achei comparação direta de qualidade e de latência entre DeepFilterNet3, RNNoise e Krisp**: só um teste no aparelho do responsável decide. Verificar a licença no repositório oficial (a informação veio de pacotes de terceiros).
+3. **DeepFilterNet3** (rede neural aberta, **licença Apache-2.0 ou MIT**, a **mais próxima do Krisp em qualidade para fala** entre as gratuitas; o RNNoise é mais leve e mais simples, mas de qualidade menor). Há pacotes prontos para o navegador que rodam em `AudioWorklet` + WebAssembly (por exemplo `deepfilternet3-noise-filter`, feito para o LiveKit; pede Chrome 91+ e suporte a SIMD no WASM). Custo: modelo maior e mais CPU que o RNNoise, o que pesa em celular fraco e na bateria. **Não achei comparação direta de qualidade e de latência entre DeepFilterNet3, RNNoise e Krisp**: só um teste no aparelho do responsável decide. Verificar a licença no repositório oficial (a informação veio de pacotes de terceiros).
+
+**Variação de momento (vale para qualquer das três):** **filtrar depois**, sobre a gravação guardada, em vez de ao vivo. A gravação original **fica intacta** e a pessoa gera uma cópia limpa e compara. É mais seguro para a qualidade e mais trabalho (decodificar, processar, recodificar em Opus), e ocupa o dobro de espaço. Não é uma quarta tecnologia: é *quando* o filtro roda.
 
 ### Comparação das três opções (qualitativa, 2026-11-19)
 
-Notas tiradas da pesquisa e do que se sabe dessas tecnologias; **não achei teste lado a lado** entre elas. Só um teste no aparelho do responsável decide.
+Notas tiradas da pesquisa e do que se sabe dessas tecnologias; **não achei teste lado a lado** entre elas. Só um teste no aparelho do responsável decide. A numeração é a da lista de alternativas acima; "filtrar depois" não entra na tabela porque é uma variação de momento, que vale para qualquer das três.
 
 | | **1. Filtro do Android/navegador** | **2. RNNoise (WASM)** | **3. DeepFilterNet3 (WASM)** |
 |---|---|---|---|
@@ -1096,11 +1097,11 @@ Notas tiradas da pesquisa e do que se sabe dessas tecnologias; **não achei test
 **Para decidir:** voz em casa, a 1 pode bastar e a 3 é o teto de qualidade. Instrumento ou coro: nenhuma é segura; vale manter o **original** e gerar uma **cópia limpa** para comparar. Celular fraco ou bateria: ficar na 1 ou na 2. **Não se sabe** o quanto a 3 é melhor que a 2 no celular do responsável nem quanto pesa na bateria.
 
 ### Risco principal: é um app de **música**, não de reunião
-Esses filtros foram feitos para **fala** e tratam som contínuo e estável como ruído. **Notas longas de instrumento** (órgão, violino, flauta) e vozes em coro podem sair **apagadas ou "aguadas"**. Por isso: desligado por padrão, rótulo claro, e, se possível, **ouvir antes e depois** (a opção 3 faz isso naturalmente). O **medidor** deve continuar lendo o sinal **original**, para o aviso de "sem som" não depender do filtro.
+Esses filtros foram feitos para **fala** e tratam som contínuo e estável como ruído. **Notas longas de instrumento** (órgão, violino, flauta) e vozes em coro podem sair **apagadas ou "aguadas"**. Por isso: desligado por padrão, rótulo claro, e, se possível, **ouvir antes e depois** (filtrar depois faz isso naturalmente). O **medidor** deve continuar lendo o sinal **original**, para o aviso de "sem som" não depender do filtro.
 
 ### Perguntas em aberto
-1. O uso é para **voz** (cantar, falar) ou também **instrumento**? Se for instrumento, vale mais a opção 3 (ouvir os dois) do que o filtro ao vivo.
-2. Começar pela opção **1** (uma linha, ver se já basta no celular do responsável) depois o **RNNoise** (2) e, se ainda ficar fraco, o **DeepFilterNet3** (4)?
+1. O uso é para **voz** (cantar, falar) ou também **instrumento**? Se for instrumento, vale mais **filtrar depois** (ouvir os dois) do que o filtro ao vivo.
+2. Começar pela opção **1** (uma linha, ver se já basta no celular do responsável), depois o **RNNoise** (2) e, se ainda ficar fraco, o **DeepFilterNet3** (3)?
 3. Filtrar **ao vivo** (o que se grava já sai limpo) ou **depois** (cópia limpa ao lado da original)?
 4. O **Afinador** nunca usa o filtro (precisa do som cru)? (Hipótese: sim.)
 5. A escolha fica lembrada nos Ajustes ou por gravação?
