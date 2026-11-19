@@ -1182,6 +1182,13 @@ A amostra tem hinos de 42 a 178 KB de `.mscx`, então o total real pode variar u
 - **Mudança no app:** hoje a instalação **troca a pasta `partituras/` inteira**; com várias faixas ela precisa **acrescentar** (e o card mostrar "faixas instaladas"). O manifesto passa a listar as faixas, cada uma com tamanho e SHA-256.
 - Se o servidor ficar caro de manter, a alternativa é **retrato só** no pacote base e a paisagem como faixa à parte.
 
+### Resultado dos 16 lotes (2026-11-19, fora do Git em `~/Development/auxiliar/saida/`)
+- **480 de 480 hinos do Dó convertidos, 0 recusados** (coros fora). Cada `lote-NN/relatorio.md` traz o detalhe. Os SVG passaram só no `verifica_svg.py` dos subagentes: **o `svg::limpar` do app ainda não rodou**.
+- **Correções da letra:** os subagentes propuseram **1.121 correções em 354 hinos** (627 trocar, 250 quebrar_antes, 195 juntar, 49 separar), unidas em `correcoes-unificado.json`; o conversor as aplicou todas (0 "NÃO aplicada"), mas **"aplicada" só prova que casou com o texto, não que a letra ficou certa** (no hino 130 uma quebra aplicada não surtiu efeito). **Os hinos 1 a 30 (piloto) não têm correções.**
+- **Letras trocadas pelo OCR** (`I` por `l`, `c`/`ç`/`q` por `o`: "Iuz", "peIo", "mãc"...): 24 trocas de mesmo tamanho aplicadas em `hinario-480-v2.json`. Sobram `Escu`, `Visia`, `Quanê`, `Ede`, `Ee` (dúvida).
+- **Dúvidas para o responsável:** cerca de 300 nos relatórios (grafia, texto que falta na fonte, hífen de pronome "Faz-me"/"Dá-nos", que entrou por regra de ortografia e não por evidência do `.mscx`).
+- **Limites do formato de correções / conversor** (pedidos repetidos pelos subagentes): sem verbo para **mover sílaba entre estrofes** (ex.: refrão do 475), **juntar linhas**, **recuperar sílaba que está fora das notas** (finais de estrofe dos hinos 61 e 62), nem casar `_` literal; falta um `--mostrar-silabas`, tratar sílaba terminada em ` -` e dizer o compasso nos avisos de "notas do meio omitidas"; `varrer_letra.py` e `verifica_svg.py` têm o caminho do lote 01 fixo.
+
 ### Perguntas em aberto
 1. O que o Enéias respondeu, e **o que ele autoriza** (uso, redistribuição, crédito)? Define o que pode entrar no repositório.
 2. URLs, ramos e estrutura dos repositórios dele; os nomes dos arquivos seguem a numeração do hinário?
