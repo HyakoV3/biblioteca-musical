@@ -1121,6 +1121,74 @@ Esses filtros foram feitos para **fala** e tratam som contínuo e estável como 
 
 ---
 
+## I-30 — Gerar o hinário completo a partir dos projetos do Enéias
+
+- **Status:** anotada, **rascunho** (2026-11-19)
+- **Origem:** o responsável, 2026-11-19: o **Enéias respondeu** e é o **dono dos repositórios de onde tiramos os arquivos do MuseScore (`.mscx`)**. Falta registrar aqui o que ele respondeu.
+- **Prioridade:** a definir
+- **Projetos do Enéias (fonte dos `.mscx`), um repositório por tonalidade** (lista dada pelo responsável em 2026-11-19). **Clonados em 2026-11-19** (clone raso) em `~/Development/auxiliar/` (fora do Git do app). **Cada um tem o hinário nº 5 inteiro** (486 `.mscx`: `hino-1` a `hino-480` e `coro-1` a `coro-6`, ~120 MB), **transposto** para os instrumentos da tonalidade: não é uma divisão por hinos. Os 5 hinos de amostra do app são **idênticos, byte a byte, aos do repositório Dó** (`do/musescore/xml/hino-N.mscx`, commit `0f6ab3d` na clonagem); os outros 6 diferem (transposição). Há também PDFs prontos (`<tom>/pdf/final.pdf`) e capa (`misc/capa.png`):
+  - [`ccb-hinario-5-do`](https://github.com/eneiasramos/ccb-hinario-5-do) (Dó; o único que os docs já citavam, "todos os direitos reservados", sem licença; ver `docs/pacote-de-partituras.md`)
+  - [`ccb-hinario-5-re`](https://github.com/eneiasramos/ccb-hinario-5-re) (Ré)
+  - [`ccb-hinario-5-mib-2s`](https://github.com/eneiasramos/ccb-hinario-5-mib-2s) (Mi bemol, 2 s)
+  - [`ccb-hinario-5-fa`](https://github.com/eneiasramos/ccb-hinario-5-fa) (Fá)
+  - [`ccb-hinario-5-sol`](https://github.com/eneiasramos/ccb-hinario-5-sol) (Sol)
+  - [`ccb-hinario-5-la`](https://github.com/eneiasramos/ccb-hinario-5-la) (Lá)
+  - [`ccb-hinario-5-sib`](https://github.com/eneiasramos/ccb-hinario-5-sib) (Si bemol)
+  - *A preencher (depois da autorização, sem baixar antes):* quais hinos estão em cada repositório, a pasta dos `.mscx`, o ramo e o commit usados, e o que significa o `2s` em `mib-2s`. **Este card existe para apontar para eles.** Já foi extraído antes: os **5 hinos de amostra** (`content/amostras/`, fora do Git) e o conversor `tools/mscx2json`. Hinários 1 a 4: nenhuma fonte encontrada.
+
+### Já está no plano (não duplicar)
+Este card **executa a "Etapa 5 — Conteúdo completo"** de [`roadmap-fase-2.md`](roadmap-fase-2.md) (e a seção 3 de [`roadmap-uxui-inicial.md`](roadmap-uxui-inicial.md)), que já prevê: converter os 480 hinos; **decidir sobre os coros 1 a 6** (hoje ignorados pelo conversor); revisar o que só foi testado com partituras fictícias (ligaduras, repetições, quiálteras, finais diferentes do 457); escrever o `correcoes.json` dos defeitos de letra (I-05); confirmar direitos de letras e partituras com a CCB.
+
+**Trava vigente:** *"Sem a autorização, não baixar mais nada"* e *"não baixar mais arquivos dele enquanto isso"*. Então **nenhum subagente clona ou baixa os `.mscx` antes de a resposta do Enéias estar registrada** (o que ele autoriza e como quer o crédito) e de o responsável liberar.
+
+### O problema
+Hoje só há 5 hinos de amostra (`content/amostras/`). O app precisa do hinário todo, e o conteúdo vem de terceiros.
+
+### O que se deseja
+Converter **todos** os `.mscx` dos repositórios do Eneas (`tools/mscx2json`, depois `tools/gerar-partituras.py`) e montar o hinário e os pacotes, com um relatório do que converteu e do que foi recusado.
+
+### Plano proposto (subagentes)
+- **Fonte única: o repositório Dó** (som real, sem transposição de instrumento; é de onde saíram as amostras). Os outros 6 são o mesmo livro transposto para instrumentos; o app já transpõe (Andamento e Tom), então **não precisam ser convertidos** (servem, no máximo, para conferir um hino). *Hipótese a confirmar com o responsável.*
+- **Lotes de 30 hinos, no máximo, por subagente:** os 480 hinos do Dó em 16 lotes (1–30 … 451–480) e um 17º lote com os 6 coros (ainda sem decisão, ver acima).
+- Cada subagente **só roda o pipeline do seu lote e devolve um relatório**: não edita código nem arquivos compartilhados; escreve numa pasta própria (`lote-NN/`).
+- O relatório lista: hinos convertidos; hinos recusados e o motivo; anomalias (final expandido, repetições, pausas, ligaduras, letra sem sílabas, defeitos de letra para o `correcoes.json`).
+- **Lote-piloto primeiro** (hinos 1–30) para validar o formato do relatório; depois os outros em paralelo.
+- A consolidação (manifesto, pacote, PR) fica numa só sessão, no fim.
+
+### Tamanho e divisão (estimativa a partir dos 5 hinos de amostra; ~480 hinos, a confirmar)
+| Peça | Amostra (5 hinos) | Por hino | ~480 hinos |
+|---|---|---|---|
+| `.mscx` (fonte, **não** vai ao app) | 524 KB | ~105 KB | ~50 MB |
+| Hinário `.json` (letra, compassos) | 35 KB (49,9 KB com sincronia e karaokê) | 7 a 10 KB | **3,4 a 4,8 MB** |
+| Partituras `.zip` (retrato + paisagem) | 228 KB | ~46 KB | **~22 MB** (só retrato: ~11 MB, a medir) |
+| Sons gravados (já existe) | | | 38 MB |
+
+A amostra tem hinos de 42 a 178 KB de `.mscx`, então o total real pode variar uns ±30%.
+
+**Proposta de divisão (a decidir):**
+- **Nada de hino embutido no APK** (regra de direitos já vigente: o APK público sai sem conteúdo). O APK segue pequeno.
+- **Hinário em um pacote só** (~5 MB): é texto, cabe em um download, e a lista de hinos precisa estar completa para a busca.
+- **Partituras em pacotes por faixa de 100 hinos** (5 zips de ~4,5 MB cada), baixados **sob demanda** (por faixa ou "todas"), com Remover por faixa. Motivos: 22 MB num zip só vira ~29 MB de texto base64 na ponte do Tauri (o `FORMATO.md` já avisa do peso), pesa para quem só quer alguns hinos, e um erro no meio obriga a baixar tudo de novo.
+- **Mudança no app:** hoje a instalação **troca a pasta `partituras/` inteira**; com várias faixas ela precisa **acrescentar** (e o card mostrar "faixas instaladas"). O manifesto passa a listar as faixas, cada uma com tamanho e SHA-256.
+- Se o servidor ficar caro de manter, a alternativa é **retrato só** no pacote base e a paisagem como faixa à parte.
+
+### Perguntas em aberto
+1. O que o Enéias respondeu, e **o que ele autoriza** (uso, redistribuição, crédito)? Define o que pode entrar no repositório.
+2. URLs, ramos e estrutura dos repositórios dele; os nomes dos arquivos seguem a numeração do hinário?
+3. Total de hinos e se há hinos com mais de uma versão ou sem partitura.
+4. Como acompanhar atualizações dele (clonar numa pasta de trabalho, ou submódulo)?
+
+### Impacto técnico (hipóteses, a verificar)
+- **Direitos:** conteúdo de terceiros **nunca** entra no CI nem em *release* público (`BMCCB_PACOTE`, ver `docs/release-e-apk-no-github.md`); os `.mscx` ficam fora do repositório, numa pasta local, e só os zips/JSON gerados seguem o fluxo atual.
+- O pipeline já existe; o risco está nas **anomalias** dos hinos reais (a I-26 já listou pausas, enfeites e ligaduras).
+- Tamanho do pacote de partituras e do hinário completo (hoje 155 KB para 5 hinos).
+
+### Critérios de aceitação (propostos)
+- Todos os hinos convertidos ou com **motivo de recusa registrado**.
+- Relatório consolidado por lote e um total.
+- Nenhum conteúdo de terceiros no repositório nem no CI.
+- Crédito ao Eneas e a origem registrados (`docs/licencas-de-terceiros.md` e tela "Sobre").
+
 ---
 
 ## Modelo para novas ideias
