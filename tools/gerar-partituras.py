@@ -164,6 +164,93 @@ def versoes(largura: int, largura_paisagem: int | None):
     return saida
 
 
+# Cada nota e cada pausa do SVG leva o instante em que soa, DENTRO do compasso, em semínimas (as mesmas "batidas" do hinário): `data-t` é o
+# começo e `data-f` o fim (I-26, karaokê por nota). O app lê estes dois atributos direto do elemento e os soma ao início do compasso que
+# toca (a lista `compassos` do hinário), então não precisa de mapa de ids nem de arquivo à parte. Fim maior que o do compasso é normal:
+# é a nota ligada, que fica acesa pela duração somada.
+ELEMENTO_COM_TEMPO = re.compile(r'<g id="([^"]+)" class="(?:note|rest)">')
+CASAS_DO_TEMPO = 4
+
+
+def numero_curto(valor: float) -> str:
+    """Um tempo em batidas, com no máximo 4 casas e sem zeros à direita: 1.5, 0.3333, 4."""
+    texto = f"{round(valor, CASAS_DO_TEMPO):.{CASAS_DO_TEMPO}f}".rstrip("0").rstrip(".")
+    return "0" if texto in ("", "-0") else texto
+
+
+def tempos_no_compasso(timemap: list, real) -> dict:
+    """Do `timemap` do Verovio (com `includeMeasures` e `includeRests`), o `(início, fim)` de cada nota e pausa DENTRO do compasso em que
+    soa, em semínimas, pelo id do desenho. `real` traduz o id do `timemap` (nas repetições, o de uma cópia que não existe no SVG) para o id
+    do desenho. Vale a primeira vez que o elemento soa: nas repetições o instante dentro do compasso é o mesmo. O fim pode passar do
+    compasso (nota que atravessa a barra)."""
+    medida = 0.0
+    abertas: dict = {}
+    saida: dict = {}
+    for e in timemap:
+        q = e["qstamp"]
+        for chave in ("off", "restsOff"):
+            for id_ in e.get(chave, []):
+                r = real(id_)
+                if r in abertas:
+                    m0, inicio = abertas.pop(r)
+                    saida.setdefault(r, (inicio, q - m0))
+        if "measureOn" in e:
+            medida = q
+        for chave in ("on", "restsOn"):
+            for id_ in e.get(chave, []):
+                abertas[real(id_)] = (medida, q - medida)
+    return saida
+
+
+def marcar_notas(svg: str, tempos: dict, ligaduras: dict) -> tuple:
+    """O SVG com `data-t` e `data-f` em cada nota e pausa que tem tempo. Devolve (svg, quantos elementos foram marcados).
+    `ligaduras` vai da nota que começa a ligadura à que termina: a segunda NÃO leva tempo (não acende de novo) e a primeira fica acesa pela
+    duração somada. Sem tempo (nota sem evento) ou com duração zero (nota de enfeite): sem atributos, não acende."""
+    segundas = set(ligaduras.values())
+    marcados = 0
+
+    def total(id_):
+        inicio, fim = tempos[id_]
+        visto = {id_}
+        while id_ in ligaduras and ligaduras[id_] in tempos and ligaduras[id_] not in visto:
+            id_ = ligaduras[id_]
+            visto.add(id_)
+            fim += tempos[id_][1] - tempos[id_][0]
+        return inicio, fim
+
+    def troca(m):
+        nonlocal marcados
+        id_ = m.group(1)
+        if id_ not in tempos or id_ in segundas:
+            return m.group(0)
+        inicio, fim = total(id_)
+        if fim - inicio <= 1e-6:
+            return m.group(0)
+        marcados += 1
+        return f'{m.group(0)[:-1]} data-t="{numero_curto(inicio)}" data-f="{numero_curto(fim)}">'
+
+    return ELEMENTO_COM_TEMPO.sub(troca, svg), marcados
+
+
+def tempos_do_desenho(tk, svg: str, timemap: list) -> tuple:
+    """Pergunta ao Verovio o que o `timemap` e o SVG não dizem sozinhos: as cópias que cada elemento tem nas repetições
+    (`getExpansionIdsForElement`) e as ligaduras (`startid` e `endid` de cada `<g class="tie">`)."""
+    desenhados = [m.group(1) for m in ELEMENTO_COM_TEMPO.finditer(svg)]
+    copia_para_real = {}
+    for r in desenhados:
+        for c in tk.getExpansionIdsForElement(r) or []:
+            if c:
+                copia_para_real[c] = r
+    real = lambda i: copia_para_real.get(i, i)  # sem repetição o Verovio não devolve cópias: o id do timemap já é o do desenho
+    ligaduras = {}
+    for m in re.finditer(r'<g id="([^"]+)" class="tie">', svg):
+        a = tk.getElementAttr(m.group(1))
+        inicio, fim = (a.get("startid") or "").lstrip("#"), (a.get("endid") or "").lstrip("#")
+        if inicio and fim:
+            ligaduras[real(inicio)] = real(fim)
+    return tempos_no_compasso(timemap, real), ligaduras
+
+
 def gerar_hino(tk, musescore: list, n: int, mscx: Path, trabalho: Path, saida: Path, escala: int, versoes_: list, tempo: int = TEMPO_LIMITE):
     """Gera os arquivos de um hino (todas as versões). Devolve, por versão, (bytes do SVG, bytes comprimidos, bytes do timemap), ou levanta
     ErroHino. Nada é gravado se alguma versão falhar em ser DESENHADA (o MuseScore ou o Verovio falhando): o hino sai inteiro ou não sai. As
@@ -183,8 +270,12 @@ def gerar_hino(tk, musescore: list, n: int, mscx: Path, trabalho: Path, saida: P
                 raise ErroHino(f"o Verovio não leu o MusicXML{(' (' + sufixo.strip('-') + ')') if sufixo else ''}")
             if tk.getPageCount() != 1:
                 raise ErroHino(f"saiu em {tk.getPageCount()} páginas (esperava 1){(' (' + sufixo.strip('-') + ')') if sufixo else ''}")
-            svg = tk.renderToSVG(1).encode("utf-8")
-            tempo_json = json.dumps(tk.renderToTimemap({"includeMeasures": True}), separators=(",", ":")).encode("utf-8")
+            svg_texto = tk.renderToSVG(1)
+            mapa = tk.renderToTimemap({"includeMeasures": True, "includeRests": True})
+            tempos, ligaduras = tempos_do_desenho(tk, svg_texto, mapa)
+            svg_texto, _ = marcar_notas(svg_texto, tempos, ligaduras)
+            svg = svg_texto.encode("utf-8")
+            tempo_json = json.dumps(mapa, separators=(",", ":")).encode("utf-8")
             arquivos[f"hino-{n}{sufixo}.svg"] = svg
             arquivos[f"hino-{n}{sufixo}.timemap.json"] = tempo_json
             medidas.append((len(svg), len(gzip.compress(svg, 9)), len(tempo_json)))

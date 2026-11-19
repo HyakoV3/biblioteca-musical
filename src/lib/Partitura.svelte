@@ -4,6 +4,7 @@
   import Aviso from "./Aviso.svelte";
   import { biblioteca, type Compassos } from "./biblioteca.svelte";
   import { compassoDoPonto } from "./compassos";
+  import { indexarNotas, mesmasNotas, notasDoPonto, temNotas, type NotaDoDesenho } from "./notas";
   import { reproducao } from "./reproducao.svelte";
   import Estado from "./Estado.svelte";
   import { traduzirErro } from "./erros";
@@ -71,11 +72,50 @@
   let folha = $state<HTMLDivElement>();
   let compassoAceso = -1; // o índice destacado agora (não reativo: só o DOM muda)
   let retangulo: SVGRectElement | null = null;
+  // I-26, por nota: cada nota e pausa do SVG traz o instante em que soa dentro do compasso (`data-t` e `data-f`, ver `notas.ts`). As
+  // soando agora ganham um halo dourado ATRÁS (a nota fica na cor do tema), e o retângulo do compasso vira só um fundo mais fraco.
+  let indiceNotas: NotaDoDesenho<Element>[][] | null = null; // lido do SVG na primeira vez que se precisa
+  let notasAcesas: NotaDoDesenho<Element>[] = [];
+  let aureolas: SVGEllipseElement[] = [];
+  let porNota = $state(false); // o SVG traz o tempo das notas (uma partitura de um pacote antigo não traz: fica só o compasso)
+
+  function limparNotas() {
+    for (const a of aureolas) a.remove();
+    aureolas = [];
+    notasAcesas = [];
+  }
 
   function limparDestaque() {
     retangulo?.remove();
     retangulo = null;
     compassoAceso = -1;
+    limparNotas();
+  }
+
+  /** Põe o halo nas notas que soam agora e tira o das que pararam. Só mexe no desenho quando o conjunto muda. */
+  function destacarNotas(novas: NotaDoDesenho<Element>[]) {
+    if (mesmasNotas(novas, notasAcesas)) return;
+    limparNotas();
+    notasAcesas = novas;
+    for (const { el } of novas) {
+      // A cabeça da nota (ou a pausa inteira): a haste e a bandeirola ficam de fora do tamanho do halo.
+      const base = (el.querySelector("g.notehead") ?? el) as SVGGraphicsElement;
+      let caixa: DOMRect;
+      try {
+        caixa = base.getBBox();
+      } catch {
+        continue; // sem layout (painel escondido): não destaca
+      }
+      if (caixa.width === 0 || caixa.height === 0) continue;
+      const a = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+      a.setAttribute("class", "destaque-nota");
+      a.setAttribute("cx", String(caixa.x + caixa.width / 2));
+      a.setAttribute("cy", String(caixa.y + caixa.height / 2));
+      a.setAttribute("rx", String(caixa.width * 0.9));
+      a.setAttribute("ry", String(Math.max(caixa.height, caixa.width) * 0.75));
+      el.insertBefore(a, el.firstChild); // primeiro filho: desenhado antes (atrás) da cabeça, da haste e do acidente
+      aureolas.push(a);
+    }
   }
 
   /** Só rola se o compasso saiu da vista (entre a barra de cima e as de baixo, e dentro da região da partitura); a rolagem é suave só se a pessoa não pediu menos movimento. */
@@ -126,6 +166,11 @@
     untrack(() => {
       retangulo = null;
       compassoAceso = -1;
+      // Os halos e as notas lidas eram do DOM antigo.
+      aureolas = [];
+      notasAcesas = [];
+      indiceNotas = null;
+      porNota = false;
     });
   });
 
@@ -146,7 +191,15 @@
       untrack(limparDestaque);
       return;
     }
-    const atualizar = () => destacar(compassoDoPonto(compassos, reproducao.ponto(numero)));
+    const atualizar = () => {
+      const ponto = reproducao.ponto(numero);
+      destacar(compassoDoPonto(compassos, ponto));
+      if (!folha) return;
+      indiceNotas ??= indexarNotas(folha.querySelectorAll("svg g.measure"));
+      const tem = temNotas(indiceNotas);
+      if (tem !== porNota) porNota = tem;
+      destacarNotas(tem ? notasDoPonto(compassos, ponto, indiceNotas) : []);
+    };
     untrack(atualizar);
     if (!tocando) return;
     let id = 0;
@@ -194,7 +247,7 @@
     <!-- Uma região que rola para os lados precisa receber o foco do teclado (quem não usa toque não alcançaria o resto). -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div class="rolagem" role="region" aria-label={t("partitura.rolagem", { numero })} tabindex="0">
-      <div class="folha" role="img" aria-label={t("partitura.aria", { numero })} data-variante={variante} style:--zoom={escala} bind:this={folha}>
+      <div class="folha" class:por-nota={porNota} role="img" aria-label={t("partitura.aria", { numero })} data-variante={variante} style:--zoom={escala} bind:this={folha}>
         <!-- O SVG vem do Rust já limpo (src-tauri/src/svg.rs: lista de permitidos, sem CSS nem script, ids com prefixo). -->
         {@html carga.svg}
       </div>
@@ -232,4 +285,11 @@
   .folha :global(svg rect.destaque-compasso) {
     fill: var(--ouro); fill-opacity: 0.3; stroke: var(--ouro-linha); stroke-width: 0.125rem; vector-effect: non-scaling-stroke; pointer-events: none;
   }
+  /* Karaokê por nota (I-26): o halo atrás de cada nota e pausa que soa. A nota fica na cor do tema, por cima. Com o tempo das notas, o compasso passa a ser só um
+     fundo leve (contexto). No alto contraste (amarelo sobre preto) o preenchimento quase some e o contorno carrega o destaque, para não apagar a nota. */
+  .folha :global(svg ellipse.destaque-nota) {
+    fill: var(--ouro); fill-opacity: 0.55; stroke: var(--ouro-linha); stroke-width: 0.125rem; vector-effect: non-scaling-stroke; pointer-events: none;
+  }
+  :global(:root[data-tema="alto-contraste"]) .folha :global(svg ellipse.destaque-nota) { fill-opacity: 0.18; stroke-width: 0.1875rem; }
+  .folha.por-nota :global(svg rect.destaque-compasso) { fill-opacity: 0.12; stroke-opacity: 0.45; stroke-width: 0.0625rem; }
 </style>
