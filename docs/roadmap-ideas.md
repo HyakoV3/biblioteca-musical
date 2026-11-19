@@ -1196,7 +1196,7 @@ Os 480 hinos do Dó, com as 1.121 correções dos lotes, as letras trocadas pelo
 - **Pendente (o responsável decidiu deixar como está por enquanto):** 61 (frase "Contigo na luz, ó meu Redentor…"), 62 ("implo-re Ti" e a quebra da estrofe 4), 189 (fim da estrofe 1), 185 (trecho partido da estrofe 1), 238 ("nhor," solto e fim da estrofe 3), 475 (fim da estrofe 3 e "O sano Evangelho"), os hinos 1 a 30 (sem passada de correções) e as dúvidas de grafia dos relatórios de lote.
 
 ### Perguntas em aberto
-1. O que o Enéias respondeu, e **o que ele autoriza** (uso, redistribuição, crédito)? Define o que pode entrar no repositório.
+1. O que o Enéias respondeu, e **o que ele autoriza** (uso, redistribuição, crédito)? Define o que pode entrar no repositório **e se os pacotes podem ficar num repositório público do GitHub (Releases) ou só no servidor próprio** (ver I-31).
 2. URLs, ramos e estrutura dos repositórios dele; os nomes dos arquivos seguem a numeração do hinário?
 3. Total de hinos e se há hinos com mais de uma versão ou sem partitura.
 4. Como acompanhar atualizações dele (clonar numa pasta de trabalho, ou submódulo)?
@@ -1224,7 +1224,17 @@ Hoje os pacotes (partituras e sons) saem de um link público do File Browser (`f
 ### O que se deseja
 Um **nginx num `docker-compose`, no Vidar**, servindo só arquivos estáticos: o hinário, os pacotes de partituras (por faixa de 100 hinos, ver I-30) e os sons, com os manifestos. Endereço **`bm.driit.co`** (curto) ou **`bibliotecamusical.driit.co`** (claro).
 
+### Alternativa gratuita: servir de dentro do GitHub (ideia do responsável, 2026-11-19)
+Dá para hospedar os pacotes **sem servidor**, em um **repositório público só dos pacotes** (separado do código, para o CI e o histórico do código ficarem sem conteúdo de terceiros):
+- **GitHub Releases (a melhor):** até **2 GiB por arquivo**, sem cota de banda declarada, URL estável por arquivo (`github.com/<dono>/<repo>/releases/download/<tag>/partituras-001.zip`, ou `releases/latest/download/…`), sem zip de pasta. Cabem folgados o hinário (~4 MB), as partituras (~19 MB) e os sons (38 MB).
+- **GitHub Pages:** site de até 1 GB e ~100 GB/mês de banda (limite flexível), com **domínio personalizado** (`bm.driit.co` poderia apontar para ele).
+- **Não servem:** `raw.githubusercontent.com` (limita requisições, é para texto pequeno), **Git LFS** (1 GB/mês de banda) e **repositório privado** (o app não sabe se autenticar).
+- **No app:** `capabilities/default.json` passa a liberar `github.com` e o domínio para onde ele redireciona os downloads (`objects.githubusercontent.com`; a verificar), o que pede **APK novo**; o SHA-256 do manifesto continua valendo.
+- **O que decide é a autorização do Enéias (I-30):** publicar num repositório público é **distribuir** o trabalho dele (hoje "todos os direitos reservados") e o GitHub pode derrubar o conteúdo se houver reclamação. A regra vigente (nada de terceiros em *release* público) vale até ele autorizar.
+- **Proposta:** **nginx no Vidar como principal** (o responsável controla e pode tirar do ar); **GitHub Releases como espelho gratuito**, só depois da autorização. O app poderia tentar um e cair no outro (a verificar; hoje o manifesto tem um endereço só).
+
 ### Perguntas em aberto
+0. **Principal e espelho:** nginx no Vidar com Releases de espelho (proposta acima), só um dos dois, ou só Releases?
 1. **Nome do domínio:** `bm.driit.co` ou `bibliotecamusical.driit.co`?
 2. **Acesso:** público, ou atrás de alguma proteção? O app não sabe pedir senha; o conteúdo é de terceiros (I-30), então a **autorização do Enéias** decide se pode ser público.
 3. **Onde vive o proxy reverso e o TLS** no Vidar (já há um, ou o compose traz o seu)?
