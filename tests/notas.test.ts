@@ -55,6 +55,13 @@ describe("notasEm", () => {
     expect(nomes(notasEm(lista, 4.99, porCompasso))).toEqual(["mi-ligada", "fa"]);
     expect(nomes(notasEm(lista, 5, porCompasso))).toEqual(["fa"]);
   });
+  it("depois de um salto de repetição a nota ligada do compasso de antes não fica acesa (os compassos escritos não são consecutivos)", () => {
+    // o compasso 1 (índice 0) termina com a ligada "mi-ligada" (fim 5 > 4); a execução vai 1 (índice 0) → 2 (índice 1) → volta ao índice 0
+    const salto: [number, number][] = [[0, 1], [4, 0]];
+    expect(nomes(notasEm(salto, 4.5, porCompasso))).toEqual(["do"]);
+    // sem salto (índices consecutivos), a ligada continua, como antes
+    expect(nomes(notasEm([[0, 0], [4, 1]], 4.5, porCompasso))).toEqual(["mi-ligada", "fa"]);
+  });
   it("na repetição o mesmo compasso acende de novo, com o início do item da vez", () => {
     expect(nomes(notasEm(lista, 9, porCompasso))).toEqual(["re"]);
   });

@@ -46,14 +46,18 @@ export function temNotas(porCompasso: readonly (readonly unknown[])[]): boolean 
 
 /**
  * As notas e pausas que soam em `batida`, dado o compasso em cada item de `lista` e as notas de cada compasso escrito. Olha o compasso que
- * toca e alguns antes dele (a nota ligada que atravessa a barra). A ordem é a do tempo (do compasso mais antigo ao que toca). Vazio antes do primeiro compasso, com a batida
+ * toca e alguns antes dele, se forem os anteriores no papel (a nota ligada que atravessa a barra). A ordem é a do tempo (do compasso mais antigo ao que toca). Vazio antes do primeiro compasso, com a batida
  * inválida ou depois da última nota.
  */
 export function notasEm<E>(lista: readonly InicioDeCompasso[], batida: number, porCompasso: readonly (readonly NotaDoDesenho<E>[])[]): NotaDoDesenho<E>[] {
   const atual = posicaoEm(lista, batida);
   if (atual === null) return [];
   const acesas: NotaDoDesenho<E>[] = [];
-  for (let j = Math.max(0, atual - COMPASSOS_PARA_TRAS); j <= atual; j++) {
+  // Só olha para trás enquanto os compassos ESCRITOS forem consecutivos: a ligadura une um compasso ao que vem logo depois no papel, e depois de um salto
+  // de repetição (7, 8 e volta ao 1) a nota ligada do 8 não continua no 1.
+  let inicio = atual;
+  while (inicio > 0 && atual - inicio < COMPASSOS_PARA_TRAS && lista[inicio - 1][1] === lista[inicio][1] - 1) inicio--;
+  for (let j = inicio; j <= atual; j++) {
     const local = batida - lista[j][0];
     for (const n of porCompasso[lista[j][1]] ?? []) {
       if (n.t - EPS <= local && local < n.f - EPS && !acesas.includes(n)) acesas.push(n);
