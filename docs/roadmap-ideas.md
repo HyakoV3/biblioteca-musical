@@ -18,7 +18,7 @@ Status possíveis: **anotada** · **em análise** · **planejada** · **feita** 
 
 ## I-03 — Gravador de áudio para estudo e envio aos instrutores
 
-- **Status:** **em implementação (2026-11-17).** Feito: a aba **Gravador** (só microfone; formato Opus/webm a 64 kbps; permissão pedida só ao gravar; microfone devolvido ao parar, ao sair da aba e ao esconder o app; **medidor de som no botão** e aviso de "sem som"; **gravações guardadas** no armazenamento do app, **sem limite**, em lista paginada (10 por vez, carrega mais quando o fim chega perto da tela), com nome de data e hora, resumo de quantidade e espaço usado, "Ouvir" e "Apagar" com confirmação e "Apagar todas"). **Testado no aparelho do responsável:** a gravação e o medidor (a gravação funcionou). **Falta:** **enviar o áudio** (WhatsApp, pela folha de compartilhamento do Android: precisa de código nativo), **gravar junto com o hino no fone** (depende da detecção de fone e da decisão da pergunta 1 abaixo), renomear a gravação e ligá-la a um hino, e o fone Bluetooth (atraso).
+- **Status:** **em implementação (2026-11-17).** Feito: a aba **Gravador** (só microfone; formato Opus/webm a 64 kbps; permissão pedida só ao gravar; microfone devolvido ao parar, ao sair da aba e ao esconder o app; **medidor de som no botão** e aviso de "sem som"; **gravações guardadas** no armazenamento do app, **sem limite**, em lista paginada (10 por vez, carrega mais quando o fim chega perto da tela), com nome de data e hora, resumo de quantidade e espaço usado, "Ouvir" e "Apagar" com confirmação e "Apagar todas"). **Testado no aparelho do responsável:** a gravação e o medidor (a gravação funcionou). **Enviar o áudio** já funciona (botão **Enviar**, folha de compartilhamento do Android, PR #77; testado no WhatsApp do responsável em 2026-11-18). **Falta:** **gravar junto com o hino no fone** (depende da detecção de fone e da decisão da pergunta 1 abaixo), renomear a gravação e ligá-la a um hino, e o fone Bluetooth (atraso).
 - **Origem:** pedido do responsável, 2026-11-14.
 - **Prioridade:** a definir
 - **Nota (2026-11-17):** o responsável quer o Gravador como uma **aba da tela inicial** (`Hinos | Afinador | Gravador | …`): ver a **I-28**. A permissão de microfone e a detecção de fone se decidem **junto com o afinador** (I-13, etapas 2 e 3): a pesquisa de 2026-11-17 está lá.
@@ -1050,6 +1050,75 @@ A tela inicial ganha uma **barra de abas** igual à do hino: **`Hinos | Afinador
 - A aba Afinador abre **sem hinário carregado**.
 - Sair da aba de uma ferramenta a solta (sem som, sem microfone aberto).
 - O miniplayer não cobre a barra nem o conteúdo.
+
+## I-29 — Filtro de ruído no Gravador (tipo Krisp)
+
+- **Status:** anotada, rascunho (2026-11-19). Nada implementado.
+- **Origem:** pedido do responsável, 2026-11-19: "um filtro de som tipo Krisp; ele é de graça? dá uma verificada".
+- **Prioridade:** a definir (depois de o Gravador estar estável no aparelho: ver a **I-03**).
+
+### O problema
+Quem grava em casa ou no ensaio capta ventilador, trânsito, conversa ao fundo e chiado de microfone. Para mandar o áudio ao instrutor (botão **Enviar**), um fundo mais limpo ajuda a ouvir a voz ou o instrumento.
+
+### O Krisp é de graça? (verificado 2026-11-19, só por pesquisa; **confirmar na fonte oficial antes de decidir**)
+- **O aplicativo** do Krisp tem um plano gratuito limitado (as fontes citam cerca de **60 min por dia** de cancelamento de ruído; uma fonte fala só em teste de 7 dias). Isso é um app **para o computador e o celular**, não algo que dê para **embutir** no nosso app.
+- **Para embutir** existe o **Krisp SDK** (C, JavaScript/WASM, Python, Node, Go, Rust). Ele é **comercial**, com preço e licença **à parte** (planos para desenvolvedores e empresas, sob contato); **não achei preço nem um plano gratuito para desenvolvedores**. É código fechado, e o app é de teste fechado, sem receita e sem servidor: **não serve** sem acordo comercial.
+- Conclusão: **o Krisp em si não é uma opção gratuita para este app.** As opções abaixo fazem o mesmo trabalho sem custo.
+
+### O que se deseja
+Uma opção **"Reduzir ruído"** no Gravador, **desligada por padrão**, que grave com o ruído de fundo atenuado, **sem enviar áudio para fora do aparelho** (tudo local, como o resto do app).
+
+### Alternativas gratuitas (a escolher)
+1. **Supressão de ruído do próprio navegador/Android.** Hoje o app a **desliga de propósito** (`getUserMedia` com `noiseSuppression: false`, `echoCancellation: false`, `autoGainControl: false`, em `src/lib/gravador.ts`) para o áudio sair fiel. Ligar `noiseSuppression: true` é **uma linha**, sem biblioteca, sem peso no APK. Qualidade varia por aparelho (usa o filtro do sistema ou do WebRTC) e **não dá para ajustar**.
+2. **RNNoise em WebAssembly** (rede neural pequena, **licença BSD**, feita para voz; há pacotes prontos para o navegador, como `@sapphi-red/web-noise-suppressor`, MIT, e o `@shiguredo/noise-suppression`, Apache-2.0, cujo `.wasm` do RNNoise tem aviso de licença próprio). Roda num `AudioWorklet` entre o microfone e o `MediaRecorder`, **local e offline**, com custo pequeno de CPU e de tamanho. Qualidade boa para fala. Conferir a manutenção do pacote (uma fonte diz que há projetos parados desde 2024) e **guardar o aviso de licença** no app.
+3. **Filtrar depois, sobre a gravação guardada** (em vez de ao vivo): a gravação original **fica intacta** e a pessoa gera uma cópia limpa e compara. Mais seguro para a qualidade; mais trabalho (decodificar, processar, recodificar em Opus) e ocupa o dobro de espaço.
+4. **DeepFilterNet3** (rede neural aberta, **licença Apache-2.0 ou MIT**, a **mais próxima do Krisp em qualidade para fala** entre as gratuitas; o RNNoise é mais leve e mais simples, mas de qualidade menor). Há pacotes prontos para o navegador que rodam em `AudioWorklet` + WebAssembly (por exemplo `deepfilternet3-noise-filter`, feito para o LiveKit; pede Chrome 91+ e suporte a SIMD no WASM). Custo: modelo maior e mais CPU que o RNNoise, o que pesa em celular fraco e na bateria. **Não achei comparação direta de qualidade e de latência entre DeepFilterNet3, RNNoise e Krisp**: só um teste no aparelho do responsável decide. Verificar a licença no repositório oficial (a informação veio de pacotes de terceiros).
+
+### Comparação das três opções (qualitativa, 2026-11-19)
+
+Notas tiradas da pesquisa e do que se sabe dessas tecnologias; **não achei teste lado a lado** entre elas. Só um teste no aparelho do responsável decide.
+
+| | **1. Filtro do Android/navegador** | **2. RNNoise (WASM)** | **3. DeepFilterNet3 (WASM)** |
+|---|---|---|---|
+| **Custo** | Grátis | Grátis | Grátis |
+| **Licença** | Já faz parte do sistema | BSD (pacotes de navegador em MIT ou Apache-2.0) | Apache-2.0 ou MIT (conferir no repositório oficial) |
+| **Qualidade para fala** | Média, varia por aparelho | Boa | A melhor das três, perto do Krisp |
+| **Ruído constante** (ventilador, chiado) | Bom | Bom | Muito bom |
+| **Ruído variável** (conversa, trânsito) | Fraco a médio | Médio | Melhor |
+| **Peso no APK** | Nenhum | Pequeno | Maior (modelo maior) |
+| **CPU e bateria** | Baixo (feito pelo sistema) | Baixo (cerca de 10 ms de atraso) | Mais alto: pesa em celular fraco |
+| **Esforço para implementar** | Uma linha (`noiseSuppression: true`) | Médio: `AudioWorklet` entre o microfone e o gravador | Médio a alto: igual ao RNNoise, mais teste de desempenho |
+| **Dá para ajustar** | Não | Pouco | Pouco |
+| **Funciona offline** | Sim | Sim | Sim |
+| **Risco para música** (notas longas de instrumento) | Médio | Médio a alto (feito para fala) | Médio a alto (feito para fala) |
+| **Quando escolher** | Primeiro teste, sem custo nenhum | Se a opção 1 não bastar | Se o RNNoise ainda ficar fraco e o celular aguentar |
+
+**Para decidir:** voz em casa, a 1 pode bastar e a 3 é o teto de qualidade. Instrumento ou coro: nenhuma é segura; vale manter o **original** e gerar uma **cópia limpa** para comparar. Celular fraco ou bateria: ficar na 1 ou na 2. **Não se sabe** o quanto a 3 é melhor que a 2 no celular do responsável nem quanto pesa na bateria.
+
+### Risco principal: é um app de **música**, não de reunião
+Esses filtros foram feitos para **fala** e tratam som contínuo e estável como ruído. **Notas longas de instrumento** (órgão, violino, flauta) e vozes em coro podem sair **apagadas ou "aguadas"**. Por isso: desligado por padrão, rótulo claro, e, se possível, **ouvir antes e depois** (a opção 3 faz isso naturalmente). O **medidor** deve continuar lendo o sinal **original**, para o aviso de "sem som" não depender do filtro.
+
+### Perguntas em aberto
+1. O uso é para **voz** (cantar, falar) ou também **instrumento**? Se for instrumento, vale mais a opção 3 (ouvir os dois) do que o filtro ao vivo.
+2. Começar pela opção **1** (uma linha, ver se já basta no celular do responsável) depois o **RNNoise** (2) e, se ainda ficar fraco, o **DeepFilterNet3** (4)?
+3. Filtrar **ao vivo** (o que se grava já sai limpo) ou **depois** (cópia limpa ao lado da original)?
+4. O **Afinador** nunca usa o filtro (precisa do som cru)? (Hipótese: sim.)
+5. A escolha fica lembrada nos Ajustes ou por gravação?
+
+### Impacto técnico (hipóteses, a verificar)
+- `src/lib/gravador.ts`: o fluxo do microfone passaria por um nó de filtro (`AudioWorkletNode`) até um `MediaStreamAudioDestinationNode`, que alimenta o `MediaRecorder`; o `AnalyserNode` do medidor liga no microfone **cru**.
+- Pacote do filtro e do `.wasm` no front (sem CDN, o app funciona offline), carregados **só ao ligar a opção**; teste de peso do APK.
+- Teste: o filtro com um sinal de ruído branco sintético (a energia cai) e com um tom puro (a energia se mantém), no Vitest; no Chrome de teste, `--use-fake-device-for-media-stream`.
+- i18n nos 3 idiomas; licença do filtro em `docs/` e na tela "Sobre".
+
+### Critérios de aceitação (propostos)
+- Há uma opção **Reduzir ruído**, desligada por padrão; ligada, uma gravação com ventilador ao fundo sai nitidamente mais limpa **no aparelho do responsável**.
+- Uma nota longa de instrumento ou o canto continuam audíveis e sem distorção evidente (teste de ouvido, ligado e desligado).
+- Nada sai do aparelho; funciona offline.
+- O medidor e o aviso de "sem som" continuam como hoje.
+- O Afinador não muda.
+
+---
 
 ---
 
