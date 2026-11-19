@@ -55,8 +55,9 @@ mesmo conjunto de fluxos que o responsável já usa em outros projetos.
       `claude-resolve-threads.yml`, a cada *push* no PR, confere se os pedidos do vandame-bot foram atendidos e resolve
       essas conversas. Nenhum deles tem nada específico de outro projeto.
 - [ ] **Para funcionar neste repositório, só o responsável pode fazer:**
-      1. cadastrar os segredos `VANDAME_APP_ID`, `VANDAME_APP_PRIVATE_KEY` e `CLAUDE_CODE_OAUTH_TOKEN_ENTERPRISE`
-         (Settings, Secrets and variables, Actions);
+      1. cadastrar os segredos `VANDAME_APP_ID`, `VANDAME_APP_PRIVATE_KEY`, `CLAUDE_CODE_OAUTH_TOKEN_ENTERPRISE` e
+         `CLAUDE_CODE_OAUTH_TOKEN_PESSOAL` (Settings, Secrets and variables, Actions). Os fluxos tentam primeiro o token
+         *enterprise* e, se esse passo falhar, repetem com o *pessoal*;
       2. instalar o aplicativo vandame neste repositório (Settings, Applications, vandame, Configure, Repository access).
       Fazer as duas coisas **antes do primeiro pull request**: sem os segredos o job de revisão falha.
 - [ ] A revisão só roda em **pull requests**. Para ter revisão, o fluxo passa a ser ramo, PR em rascunho e *merge*, em
