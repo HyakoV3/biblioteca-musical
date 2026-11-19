@@ -26,6 +26,7 @@ describe("ponte do Android", () => {
       comecar: vi.fn(() => true),
       parte: vi.fn((b: string) => (partes.push(b), true)),
       enviar: vi.fn(() => true),
+      cancelar: vi.fn(),
       ...sobrescrever,
     };
     (globalThis as Record<string, unknown>).BmccbCompartilhar = p;
@@ -59,6 +60,30 @@ describe("ponte do Android", () => {
     expect(p.enviar).not.toHaveBeenCalled();
     ponteFalsa({ enviar: () => false });
     expect(await compartilharGravacao(new Blob(["x"]), "a", "t")).toBe("erro");
+  });
+
+  it("cancela na ponte quando falha depois de começar", async () => {
+    const { p } = ponteFalsa({ parte: () => false });
+    expect(await compartilharGravacao(new Blob(["x"]), "a", "t")).toBe("erro");
+    expect(p.cancelar).toHaveBeenCalledTimes(1);
+    const b = ponteFalsa();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const quebrado = { size: 5, type: "audio/webm", slice: () => ({ arrayBuffer: () => Promise.reject(new Error("leitura")) }) } as unknown as Blob;
+    expect(await compartilharGravacao(quebrado, "a", "t")).toBe("erro");
+    expect(b.p.cancelar).toHaveBeenCalledTimes(1);
+    expect(b.p.enviar).not.toHaveBeenCalled();
+  });
+
+  it("envia um de cada vez, sem misturar os arquivos", async () => {
+    const eventos: string[] = [];
+    ponteFalsa({
+      comecar: (n: string) => (eventos.push(`começa ${n}`), true),
+      parte: () => (eventos.push("parte"), true),
+      enviar: () => (eventos.push("envia"), true),
+    });
+    const a = new Blob([new Uint8Array(BYTES_POR_PEDACO * 2)]);
+    await Promise.all([compartilharGravacao(a, "um", "t"), compartilharGravacao(new Blob(["x"]), "dois", "t")]);
+    expect(eventos).toEqual(["começa um", "parte", "parte", "envia", "começa dois", "parte", "envia"]);
   });
 
   it("uma exceção da ponte vira erro, não derruba", async () => {

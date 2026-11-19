@@ -6,6 +6,7 @@ type Ponte = {
   comecar(nome: string, tipo: string): boolean;
   parte(base64: string): boolean;
   enviar(titulo: string): boolean;
+  cancelar(): void;
 };
 
 /** Múltiplo de 3 bytes (o base64 de cada pedaço não leva preenchimento no meio); 192 KiB por chamada à ponte. */
@@ -42,17 +43,39 @@ export function podeCompartilhar(): boolean {
  * Abre a folha de compartilhamento com o áudio. Devolve "ok" quando a folha abriu (ou o navegador compartilhou), "cancelado" se a pessoa fechou a folha do
  * navegador sem enviar e "erro" se não foi possível preparar o envio.
  */
-export async function compartilharGravacao(blob: Blob, nome: string, titulo: string): Promise<"ok" | "cancelado" | "erro"> {
+export function compartilharGravacao(blob: Blob, nome: string, titulo: string): Promise<"ok" | "cancelado" | "erro"> {
+  // Um envio de cada vez: a ponte tem um arquivo em andamento só, e dois envios juntos se misturariam.
+  const vez = fila.then(() => enviarAgora(blob, nome, titulo));
+  fila = vez.then(() => undefined, () => undefined);
+  return vez;
+}
+
+let fila: Promise<void> = Promise.resolve();
+
+async function enviarAgora(blob: Blob, nome: string, titulo: string): Promise<"ok" | "cancelado" | "erro"> {
   const tipo = tipoSemCodec(blob.type);
   try {
     const p = ponte();
     if (p) {
       if (!p.comecar(nome, tipo)) return "erro";
-      for (let i = 0; i < blob.size; i += BYTES_POR_PEDACO) {
-        const bytes = new Uint8Array(await blob.slice(i, i + BYTES_POR_PEDACO).arrayBuffer());
-        if (!p.parte(paraBase64(bytes))) return "erro";
+      try {
+        for (let i = 0; i < blob.size; i += BYTES_POR_PEDACO) {
+          const bytes = new Uint8Array(await blob.slice(i, i + BYTES_POR_PEDACO).arrayBuffer());
+          if (!p.parte(paraBase64(bytes))) {
+            p.cancelar();
+            return "erro";
+          }
+        }
+        return p.enviar(titulo) ? "ok" : "erro";
+      } catch (e) {
+        // Falhou no meio (ler o pedaço, codificar): a ponte fecha o arquivo e apaga o que já tinha escrito.
+        try {
+          p.cancelar();
+        } catch {
+          /* a ponte já falhou: nada mais a fazer */
+        }
+        throw e;
       }
-      return p.enviar(titulo) ? "ok" : "erro";
     }
     const arquivo = new File([blob], nome, { type: tipo });
     if (!navigator.canShare?.({ files: [arquivo] })) return "erro";

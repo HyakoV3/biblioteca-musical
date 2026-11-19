@@ -6,6 +6,7 @@ import androidx.activity.enableEdgeToEdge
 
 class MainActivity : TauriActivity() {
   private var ponte: PonteServico? = null
+  private var compartilhar: PonteCompartilhar? = null
 
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
@@ -18,12 +19,16 @@ class MainActivity : TauriActivity() {
     ponte = nova
     webView.addJavascriptInterface(nova, "BmccbServico")
     // A ponte de compartilhar uma gravação (Gravador): `window.BmccbCompartilhar`, abre a folha de compartilhamento do sistema.
-    webView.addJavascriptInterface(PonteCompartilhar(this), "BmccbCompartilhar")
+    val outra = PonteCompartilhar(this)
+    compartilhar = outra
+    webView.addJavascriptInterface(outra, "BmccbCompartilhar")
   }
 
   override fun onDestroy() {
     ponte?.soltar()
     ponte = null
+    compartilhar?.soltar()
+    compartilhar = null
     // Fechar o app de vez (não uma recriação por rotação) leva a WebView, e com ela o som: o serviço e a notificação não ficam sobrando.
     if (isFinishing) stopService(android.content.Intent(this, ServicoAudio::class.java))
     super.onDestroy()
