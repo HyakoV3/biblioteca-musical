@@ -1121,6 +1121,60 @@ Esses filtros foram feitos para **fala** e tratam som contínuo e estável como 
 
 ---
 
+## I-30 — Gerar o hinário completo a partir dos projetos do Enéias
+
+- **Status:** anotada, **rascunho** (2026-11-19)
+- **Origem:** o responsável, 2026-11-19: o **Enéias respondeu** e é o **dono dos repositórios de onde tiramos os arquivos do MuseScore (`.mscx`)**. Falta registrar aqui o que ele respondeu.
+- **Prioridade:** a definir
+- **Projetos do Enéias (fonte dos `.mscx`):** o que já consta nos docs é `eneiasramos/ccb-hinario-5-do` ("todos os direitos reservados", sem licença; ver `docs/pacote-de-partituras.md`). Como são **vários repositórios**, *a preencher*: URL de cada um, pasta dos `.mscx`, ramo e commit usados. **Este card existe para apontar para eles.**
+
+### O problema
+Hoje só há 5 hinos de amostra (`content/amostras/`). O app precisa do hinário todo, e o conteúdo vem de terceiros.
+
+### O que se deseja
+Converter **todos** os `.mscx` dos repositórios do Eneas (`tools/mscx2json`, depois `tools/gerar-partituras.py`) e montar o hinário e os pacotes, com um relatório do que converteu e do que foi recusado.
+
+### Plano proposto (subagentes)
+- **Lotes de 30 hinos, no máximo, por subagente** (com o total do hinário em mãos, N lotes; para ~480 hinos, 16).
+- Cada subagente **só roda o pipeline do seu lote e devolve um relatório**: não edita código nem arquivos compartilhados; escreve numa pasta própria (`lote-NN/`).
+- O relatório lista: hinos convertidos; hinos recusados e o motivo; anomalias (final expandido, repetições, pausas, ligaduras, letra sem sílabas, defeitos de letra para o `correcoes.json`).
+- **Lote-piloto primeiro** (hinos 1–30) para validar o formato do relatório; depois os outros em paralelo.
+- A consolidação (manifesto, pacote, PR) fica numa só sessão, no fim.
+
+### Tamanho e divisão (estimativa a partir dos 5 hinos de amostra; ~480 hinos, a confirmar)
+| Peça | Amostra (5 hinos) | Por hino | ~480 hinos |
+|---|---|---|---|
+| `.mscx` (fonte, **não** vai ao app) | 524 KB | ~105 KB | ~50 MB |
+| Hinário `.json` (letra, compassos) | 35 KB (49,9 KB com sincronia e karaokê) | 7 a 10 KB | **3,4 a 4,8 MB** |
+| Partituras `.zip` (retrato + paisagem) | 228 KB | ~46 KB | **~22 MB** (só retrato: ~11 MB, a medir) |
+| Sons gravados (já existe) | | | 38 MB |
+
+A amostra tem hinos de 42 a 178 KB de `.mscx`, então o total real pode variar uns ±30%.
+
+**Proposta de divisão (a decidir):**
+- **Nada de hino embutido no APK** (regra de direitos já vigente: o APK público sai sem conteúdo). O APK segue pequeno.
+- **Hinário em um pacote só** (~5 MB): é texto, cabe em um download, e a lista de hinos precisa estar completa para a busca.
+- **Partituras em pacotes por faixa de 100 hinos** (5 zips de ~4,5 MB cada), baixados **sob demanda** (por faixa ou "todas"), com Remover por faixa. Motivos: 22 MB num zip só vira ~29 MB de texto base64 na ponte do Tauri (o `FORMATO.md` já avisa do peso), pesa para quem só quer alguns hinos, e um erro no meio obriga a baixar tudo de novo.
+- **Mudança no app:** hoje a instalação **troca a pasta `partituras/` inteira**; com várias faixas ela precisa **acrescentar** (e o card mostrar "faixas instaladas"). O manifesto passa a listar as faixas, cada uma com tamanho e SHA-256.
+- Se o servidor ficar caro de manter, a alternativa é **retrato só** no pacote base e a paisagem como faixa à parte.
+
+### Perguntas em aberto
+1. O que o Enéias respondeu, e **o que ele autoriza** (uso, redistribuição, crédito)? Define o que pode entrar no repositório.
+2. URLs, ramos e estrutura dos repositórios dele; os nomes dos arquivos seguem a numeração do hinário?
+3. Total de hinos e se há hinos com mais de uma versão ou sem partitura.
+4. Como acompanhar atualizações dele (clonar numa pasta de trabalho, ou submódulo)?
+
+### Impacto técnico (hipóteses, a verificar)
+- **Direitos:** conteúdo de terceiros **nunca** entra no CI nem em *release* público (`BMCCB_PACOTE`, ver `docs/release-e-apk-no-github.md`); os `.mscx` ficam fora do repositório, numa pasta local, e só os zips/JSON gerados seguem o fluxo atual.
+- O pipeline já existe; o risco está nas **anomalias** dos hinos reais (a I-26 já listou pausas, enfeites e ligaduras).
+- Tamanho do pacote de partituras e do hinário completo (hoje 155 KB para 5 hinos).
+
+### Critérios de aceitação (propostos)
+- Todos os hinos convertidos ou com **motivo de recusa registrado**.
+- Relatório consolidado por lote e um total.
+- Nenhum conteúdo de terceiros no repositório nem no CI.
+- Crédito ao Eneas e a origem registrados (`docs/licencas-de-terceiros.md` e tela "Sobre").
+
 ---
 
 ## Modelo para novas ideias
