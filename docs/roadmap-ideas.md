@@ -1126,7 +1126,12 @@ Esses filtros foram feitos para **fala** e tratam som contínuo e estável como 
 - **Status:** anotada, **rascunho** (2026-11-19)
 - **Origem:** o responsável, 2026-11-19: o **Enéias respondeu** e é o **dono dos repositórios de onde tiramos os arquivos do MuseScore (`.mscx`)**. Falta registrar aqui o que ele respondeu.
 - **Prioridade:** a definir
-- **Projetos do Enéias (fonte dos `.mscx`):** o que já consta nos docs é `eneiasramos/ccb-hinario-5-do` ("todos os direitos reservados", sem licença; ver `docs/pacote-de-partituras.md`). Como são **vários repositórios**, *a preencher*: URL de cada um, pasta dos `.mscx`, ramo e commit usados. **Este card existe para apontar para eles.**
+- **Projetos do Enéias (fonte dos `.mscx`):** o que já consta nos docs é `eneiasramos/ccb-hinario-5-do` ("todos os direitos reservados", sem licença; ver `docs/pacote-de-partituras.md`). Os docs citam **um só** (Hinário 5, 480 hinos); se houver outros, *a preencher*: URL, pasta dos `.mscx`, ramo e commit usados. **Este card existe para apontar para eles.** Já foi extraído antes: os **5 hinos de amostra** (`content/amostras/`, fora do Git) e o conversor `tools/mscx2json`. Hinários 1 a 4: nenhuma fonte encontrada.
+
+### Já está no plano (não duplicar)
+Este card **executa a "Etapa 5 — Conteúdo completo"** de [`roadmap-fase-2.md`](roadmap-fase-2.md) (e a seção 3 de [`roadmap-uxui-inicial.md`](roadmap-uxui-inicial.md)), que já prevê: converter os 480 hinos; **decidir sobre os coros 1 a 6** (hoje ignorados pelo conversor); revisar o que só foi testado com partituras fictícias (ligaduras, repetições, quiálteras, finais diferentes do 457); escrever o `correcoes.json` dos defeitos de letra (I-05); confirmar direitos de letras e partituras com a CCB.
+
+**Trava vigente:** *"Sem a autorização, não baixar mais nada"* e *"não baixar mais arquivos dele enquanto isso"*. Então **nenhum subagente clona ou baixa os `.mscx` antes de a resposta do Enéias estar registrada** (o que ele autoriza e como quer o crédito) e de o responsável liberar.
 
 ### O problema
 Hoje só há 5 hinos de amostra (`content/amostras/`). O app precisa do hinário todo, e o conteúdo vem de terceiros.
