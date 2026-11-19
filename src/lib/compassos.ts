@@ -10,11 +10,11 @@ const EPS = 1e-6;
 export type PontoDeCompasso = { parte: "intro" | number; batida: number; final: boolean };
 
 /**
- * O índice do compasso que começa por último em ou antes de `batida` (o que está tocando), ou `null` antes do primeiro compasso, com a lista
- * vazia ou com a batida inválida. Depois do último compasso continua o último (a pausa entre as partes mantém o destaque). A lista vem em
- * ordem crescente de tempo (o app descarta na leitura a que não vem).
+ * A posição (na lista) do item que começa por último em ou antes de `batida`: o compasso que está tocando. `null` antes do primeiro, com a lista
+ * vazia ou com a batida inválida. Depois do último item continua o último (a pausa entre as partes mantém o destaque). A lista vem em ordem
+ * crescente de tempo (o app descarta na leitura a que não vem).
  */
-export function compassoEm(lista: readonly InicioDeCompasso[], batida: number): number | null {
+export function posicaoEm(lista: readonly InicioDeCompasso[], batida: number): number | null {
   if (!Number.isFinite(batida) || lista.length === 0 || batida < lista[0][0] - EPS) return null;
   let lo = 0;
   let hi = lista.length - 1;
@@ -23,7 +23,13 @@ export function compassoEm(lista: readonly InicioDeCompasso[], batida: number): 
     if (lista[meio][0] <= batida + EPS) lo = meio;
     else hi = meio - 1;
   }
-  return lista[lo][1];
+  return lo;
+}
+
+/** O índice (do compasso escrito) do que toca em `batida`, ou `null` (ver `posicaoEm`). */
+export function compassoEm(lista: readonly InicioDeCompasso[], batida: number): number | null {
+  const posicao = posicaoEm(lista, batida);
+  return posicao === null ? null : lista[posicao][1];
 }
 
 /**

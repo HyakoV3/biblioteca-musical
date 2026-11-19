@@ -447,5 +447,90 @@ class Processar(unittest.TestCase):
         self.assertNotIn("paisagem", saida.getvalue())
 
 
+class NumeroCurto(unittest.TestCase):
+    def test_sem_zeros_a_direita_e_ate_4_casas(self):
+        self.assertEqual(g.numero_curto(4.0), "4")
+        self.assertEqual(g.numero_curto(1.5), "1.5")
+        self.assertEqual(g.numero_curto(1 / 3), "0.3333")
+        self.assertEqual(g.numero_curto(0.0), "0")
+        self.assertEqual(g.numero_curto(-0.00001), "0")
+
+
+class TemposNoCompasso(unittest.TestCase):
+    """O `timemap` do Verovio: `on`/`off` com ids, `measureOn` no começo de cada compasso, `restsOn`/`restsOff` para as pausas."""
+
+    def test_o_instante_e_relativo_ao_compasso_em_que_a_nota_soa(self):
+        tm = [
+            {"qstamp": 0, "measureOn": "m1", "on": ["a"]},
+            {"qstamp": 1, "off": ["a"], "on": ["b"]},
+            {"qstamp": 4, "measureOn": "m2", "off": ["b"], "on": ["c"]},
+            {"qstamp": 5.5, "off": ["c"]},
+        ]
+        self.assertEqual(g.tempos_no_compasso(tm, lambda i: i), {"a": (0, 1), "b": (1, 4), "c": (0, 1.5)})
+
+    def test_a_pausa_tambem_tem_tempo(self):
+        tm = [{"qstamp": 0, "measureOn": "m1", "on": ["a"]}, {"qstamp": 1, "off": ["a"], "restsOn": ["p"]}, {"qstamp": 2, "restsOff": ["p"]}]
+        self.assertEqual(g.tempos_no_compasso(tm, lambda i: i)["p"], (1, 2))
+
+    def test_na_repeticao_vale_a_primeira_vez_e_a_copia_vira_o_id_do_desenho(self):
+        # a copia "a-rend2" so existe no timemap; no desenho a nota e "a". O compasso repetido recomeca em 8.
+        tm = [
+            {"qstamp": 0, "measureOn": "m1", "on": ["a"]},
+            {"qstamp": 2, "off": ["a"]},
+            {"qstamp": 8, "measureOn": "m1-rend2", "on": ["a-rend2"]},
+            {"qstamp": 9, "off": ["a-rend2"]},
+        ]
+        real = {"a-rend2": "a"}.get
+        self.assertEqual(g.tempos_no_compasso(tm, lambda i: real(i, i)), {"a": (0, 2)})
+
+    def test_nota_que_atravessa_a_barra_tem_fim_maior_que_o_compasso(self):
+        tm = [{"qstamp": 0, "measureOn": "m1", "on": ["a"]}, {"qstamp": 4, "measureOn": "m2", "off": ["a"]}]
+        self.assertEqual(g.tempos_no_compasso(tm, lambda i: i), {"a": (0, 4)})
+
+    def test_nota_que_nunca_fecha_fica_de_fora(self):
+        self.assertEqual(g.tempos_no_compasso([{"qstamp": 0, "measureOn": "m1", "on": ["a"]}], lambda i: i), {})
+
+
+class MarcarNotas(unittest.TestCase):
+    SVG = (
+        '<g id="m1" class="measure"><g id="a" class="note"><g class="notehead"></g></g><g id="b" class="note"></g>'
+        '<g id="c" class="note"></g><g id="p" class="rest"></g><g id="e" class="note"></g><g id="x" class="notehead"></g></g>'
+    )
+
+    def test_poe_data_t_e_data_f_em_notas_e_pausas(self):
+        tempos = {"a": (0, 1), "p": (1, 2)}
+        svg, n = g.marcar_notas(self.SVG, tempos, {})
+        self.assertEqual(n, 2)
+        self.assertIn('<g id="a" class="note" data-t="0" data-f="1">', svg)
+        self.assertIn('<g id="p" class="rest" data-t="1" data-f="2">', svg)
+        # sem tempo: intocado
+        self.assertIn('<g id="b" class="note">', svg)
+
+    def test_a_segunda_nota_da_ligadura_nao_acende_e_a_primeira_soma_a_duracao(self):
+        tempos = {"a": (2, 4), "b": (0, 2)}  # a no fim do compasso 1, b (ligada) no começo do compasso 2
+        svg, n = g.marcar_notas(self.SVG, tempos, {"a": "b"})
+        self.assertEqual(n, 1)
+        self.assertIn('<g id="a" class="note" data-t="2" data-f="6">', svg)
+        self.assertIn('<g id="b" class="note">', svg)
+
+    def test_ligadura_em_cadeia_soma_tudo(self):
+        tempos = {"a": (3, 4), "b": (0, 4), "c": (0, 1)}
+        svg, _ = g.marcar_notas(self.SVG, tempos, {"a": "b", "b": "c"})
+        self.assertIn('<g id="a" class="note" data-t="3" data-f="9">', svg)
+
+    def test_ligadura_em_ciclo_nao_trava(self):
+        svg, n = g.marcar_notas(self.SVG, {"a": (0, 1), "b": (1, 2)}, {"a": "b", "b": "a"})
+        self.assertEqual(n, 0)  # as duas são "segundas" uma da outra: nenhuma acende, e o laço termina
+
+    def test_nota_de_enfeite_sem_duracao_nao_acende(self):
+        svg, n = g.marcar_notas(self.SVG, {"e": (1, 1)}, {})
+        self.assertEqual(n, 0)
+        self.assertNotIn("data-t", svg)
+
+    def test_so_marca_g_de_nota_e_pausa(self):
+        svg, n = g.marcar_notas(self.SVG, {"x": (0, 1), "m1": (0, 4)}, {})
+        self.assertEqual((n, svg), (0, self.SVG))
+
+
 if __name__ == "__main__":
     sys.exit(0 if unittest.main(exit=False).result.wasSuccessful() else 1)

@@ -533,7 +533,7 @@ acentuado, que se liga e desliga.
 
 ## I-22 — Continuar tocando com a tela bloqueada
 
-- **Status:** **teste no emulador feito e implementação do caminho 1 em andamento (2026-11-17).** **Teste (emulador Android 17, APK 029 em diante, sem nada de segundo plano):** o hino 1 tocou com a tela **bloqueada** por mais de 1 minuto e o som **não cortou**: o stream de áudio do app seguiu `started` (`dumpsys audio`) e, ao desbloquear, o hino estava em 1:14, na 2ª estrofe (o relógio do JavaScript seguiu). **Não vale como prova para o celular do responsável:** o emulador não imita as economias de bateria dos fabricantes nem o Doze depois de vários minutos no bolso, e não deu para testar o "hino todo" com as pausas de 2 s. O teste de trocar de aplicativo (Home) foi **inconclusivo** (a tela apagou por tempo). **Implementado (falta o teste no aparelho):** serviço em primeiro plano de mídia (`ServicoAudio.kt`) com notificação (título do hino e botão "Parar"), `WAKE_LOCK` parcial e a ponte `window.BmccbServico` (`PonteServico.kt`), ligada e desligada pelo `reproducao.estado` no layout (`servico.ts`). Ainda **não há** MediaSession (controles na tela de bloqueio além do "Parar" e botões do fone).
+- **Status:** **implementada (APK 030) e confirmada no celular do responsável (2026-11-19): com o hino tocando no miniplayer, o som segue com a tela bloqueada.** Histórico: teste no emulador e implementação do caminho 1 em 2026-11-17. **Teste (emulador Android 17, APK 029 em diante, sem nada de segundo plano):** o hino 1 tocou com a tela **bloqueada** por mais de 1 minuto e o som **não cortou**: o stream de áudio do app seguiu `started` (`dumpsys audio`) e, ao desbloquear, o hino estava em 1:14, na 2ª estrofe (o relógio do JavaScript seguiu). **(Na época não valia como prova para o celular do responsável; hoje vale, pela confirmação acima.)** Detalhes do que o emulador não cobria: o emulador não imita as economias de bateria dos fabricantes nem o Doze depois de vários minutos no bolso, e não deu para testar o "hino todo" com as pausas de 2 s. O teste de trocar de aplicativo (Home) foi **inconclusivo** (a tela apagou por tempo). **Implementado (e já confirmado no aparelho, ver acima; a duração do teste e o "hino todo" com as pausas de 2 s não foram registrados):** serviço em primeiro plano de mídia (`ServicoAudio.kt`) com notificação (título do hino e botão "Parar"), `WAKE_LOCK` parcial e a ponte `window.BmccbServico` (`PonteServico.kt`), ligada e desligada pelo `reproducao.estado` no layout (`servico.ts`). Ainda **não há** MediaSession (controles na tela de bloqueio além do "Parar" e botões do fone).
 - **Origem:** pedido do responsável, 2026-11-16: "o miniplayer, mesmo com a tela do celular bloqueada, se ele estiver ativo, deve continuar tocando o som... com a tela bloqueada etc."
 - **Prioridade:** a definir (para quem estuda ouvindo o hino com o celular no bolso, é quase requisito)
 
@@ -948,7 +948,7 @@ Como o plugin de HTTP do Tauri trata cabeçalhos condicionais (ETag) no Android;
 
 ## I-26 — Karaokê na partitura por NOTA (cursor por nota)
 
-- **Status:** anotada, **rascunho** (a revisar com o subagente Opus antes de implementar); amplia a I-12 (fase B), que hoje destaca o **compasso**
+- **Status:** **revisada com o responsável (2026-11-19) e implementada na branch `karaoke-por-nota`** (gerador, limpeza do SVG no Rust, interface, testes unitários e de ponta a ponta; **falta**: pacote de partituras novo, APK e o teste no celular); amplia a I-12 (fase B), que hoje destaca o **compasso**
 - **Origem:** pedido do responsável, 2026-11-17, ao testar o APK 025/026: "tu tá marcando no karaokê apenas o compasso né? Achei que tu marcaria a nota."
 - **Prioridade:** a definir (o destaque do compasso funciona; a nota é o que ele esperava)
 
@@ -965,22 +965,32 @@ A(s) nota(s) que soa(m) **agora** ficam destacadas na partitura, **no instante e
   Isso torna o destaque por nota **viável e robusto**.
 - **Os ids mudam a cada desenho:** o retrato e a paisagem **não têm nenhum id em comum** (medido na I-12), então o mapa de notas é **por versão** (2 por hino).
 
-### Perguntas em aberto
-1. **Todas as vozes ou só a melodia (soprano)?** Destacar as 4 vozes acende ~8 cabeças de nota juntas (2 pautas); só a melodia é mais limpa; talvez uma cor por voz.
-2. **Como destacar a nota:** trocar a cor da cabeça e da haste, um halo atrás, ou os dois? **Mantém o destaque do compasso** (mais fraco, como contexto) ou o troca por completo?
-3. **Notas ligadas** (ligadura de prolongamento): a segunda nota acende? E as pausas, e as notas de enfeite?
-4. Basta o botão do karaokê, ou **uma opção em Ajustes** (compasso, nota, desligado)?
+### Decisões (responsável, 2026-11-19)
+1. **Quais vozes:** **todas as que estão soando agora.** Se soam soprano e tenor, os dois acendem; não há filtro de voz.
+2. **Como destacar:** a nota **continua preta** (cor do tema) e ganha um **halo dourado atrás**, com contorno e preenchimento translúcido, a mesma ideia do retângulo do compasso (que hoje já é desenhado atrás das notas). Um mecanismo só, sem recolorir cabeça, haste, bandeirola e acidente (peças separadas no desenho). **O destaque do compasso fica, mais fraco, como contexto.** No **alto contraste** (amarelo sobre preto) vale só o contorno do halo, para não apagar a nota (como o compasso já faz).
+3. **Casos especiais:** **pausa acende** (o mesmo halo no lugar do símbolo); **enfeite (nota de adorno) não acende**; **ligadura não precisa de tratamento**: a segunda nota de uma ligadura **não acende de novo**, e a primeira fica acesa pela duração somada (interpretação do assistente; **o responsável pode corrigir**).
+4. **Ajustes:** **sem opção nova**. Continua só o botão do karaokê, e o padrão passa a ser nota + compasso fraco. Uma opção (compasso, nota, desligado) só entra se alguém achar a nota demais.
 
-### Impacto técnico (hipóteses, a verificar)
-- **Dados:** o gerador (`tools/gerar-partituras.py`) emitiria, por versão, um `hino-N[-paisagem].notas.json`: para cada nota do desenho, `[índice do compasso escrito, início e fim dentro do compasso, em batidas]`, com o id do SVG. A posição dentro do compasso vem do `timemap`
-  (relativa ao início do compasso daquela passada), e o instante no fluxo vem da lista `compassos` que o hinário **já traz** (início do compasso + posição), então **não depende do deslocamento de cada fluxo** (o final do 457 começa em 48).
-- **Pacote e Rust:** o zip passa a aceitar o arquivo novo (nomes exatos, limites, validação) e `ler_partitura` devolve o mapa junto do SVG; o prefixo `bmccb-p-` que a limpeza põe nos ids do SVG tem de valer também no mapa.
-- **Interface:** como o destaque do compasso: lê `reproducao.ponto()` e marca os elementos pelo id, só quando muda.
-- **Pacote novo (004) e APK novo.** O pacote 003 não tem o mapa: as partituras instaladas precisam ser **baixadas de novo**.
-- **Tamanho:** os `timemap` brutos têm de 7 a 26 KB por hino e versão; o mapa compacto, bem menos.
+### Como ficou (implementação, 2026-11-19)
+Mudou em relação ao rascunho: **o tempo de cada nota vai dentro do próprio SVG**, e não num arquivo `.notas.json` à parte. Cada `<g class="note">` e `<g class="rest">`
+ganha `data-t` e `data-f` (começo e fim, em batidas, dentro do compasso). Vantagens: **nenhum arquivo novo no zip nem comando novo no Rust** (só os dois atributos entram
+na lista de permitidos, com valor numérico conferido), **nenhum mapa de ids** (o tempo está no elemento, então retrato e paisagem se resolvem sozinhos e o prefixo
+`bmccb-p-` não importa) e o pacote antigo continua funcionando (sem os atributos, só o compasso). Formato em `docs/FORMATO.md` ("Notas na partitura").
+- **Gerador** (`tools/gerar-partituras.py`): lê o `timemap` do Verovio com `includeRests`, traduz os ids das cópias das repetições para os do desenho
+  (`getExpansionIdsForElement`), calcula o instante dentro do compasso (`qstamp` da nota menos o `qstamp` do `measureOn`), junta as **ligaduras** (`startid` e `endid`
+  de cada `<g class="tie">`: a segunda nota não leva tempo, a primeira soma a duração) e ignora duração zero (enfeite). Conferido nos 5 hinos de amostra: todas as notas
+  desenhadas têm tempo, menos as 43 segundas de ligadura do 457; o instante de cada nota somado ao início do compasso bate com as notas do hinário (as diferenças são só
+  ligaduras e uníssonos). O SVG cresce uns 5% (uns 1,5% comprimido).
+- **Rust** (`src-tauri/src/svg.rs`): `data-t` e `data-f` permitidos, só com número como o gerador escreve; qualquer outro `data-*` continua recusado.
+- **App**: `src/lib/notas.ts` (lê os atributos, acha as notas que soam em cada batida, incluindo a ligada que atravessa a barra) e `Partitura.svelte` (halo dourado
+  atrás da nota, só quando o conjunto muda; o retângulo do compasso fica mais fraco quando a partitura traz as notas; no alto contraste só o contorno).
+- **Testes**: unitários (`tests/notas.test.ts`, `tools/test_gerar_partituras.py`, `svg.rs`) e o e2e do karaokê (notas em sequência, duas vozes, pausa, pausa entre as partes,
+  pausado, desligado e fora da aba).
+- **Falta:** montar o **pacote de partituras novo** (`partituras-004.zip`: subir ao servidor e atualizar `src/lib/partituras/manifesto.json`), gerar o **APK**, e o **teste no
+  celular** (o halo ao tocar um hino de verdade, no retrato e na paisagem, e nos temas).
 
 ### Critérios de aceitação (propostos)
-- A nota destacada é a que soa, em cada instante, nos 5 hinos de amostra, **inclusive nas repetições e no final do 457**.
+- A nota destacada é a que soa, em cada instante, nos 5 hinos de amostra, **inclusive nas repetições e no final do 457**; **todas as vozes que soam acendem**, a **pausa acende**, o **enfeite não**.
 - Pausado, congela; ao arrastar o slider, acompanha; fora da aba, some.
 - Sem o mapa de notas (pacote antigo), o app **cai no destaque por compasso**.
 - Legível em todos os temas (contraste).

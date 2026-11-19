@@ -183,6 +183,24 @@ que soa (I-12, fase B). O conversor `mscx2json` gera o campo sozinho.
   `normal` válida, e as notas e a letra seguem como sempre. O conversor não gera esse caso; só um JSON editado à mão. Sem `compassos`, o hino e a partitura
   funcionam como sempre, só sem o destaque.
 
+### Notas na partitura (karaokê por nota)
+
+Cada nota e cada pausa do SVG da partitura (`<g class="note">` e `<g class="rest">`) pode trazer o instante em que soa **dentro do compasso**, em
+batidas (semínimas, as mesmas do hinário), em dois atributos: `data-t` (começo) e `data-f` (fim). O gerador (`tools/gerar-partituras.py`) os escreve a
+partir do `timemap` do Verovio; o app os soma ao início do compasso que toca (a lista `compassos` acima) e acende a nota que soa (I-26).
+
+```xml
+<g id="k1sawo0h" class="note" data-t="1.5" data-f="2">...</g>
+```
+
+- **Números simples:** dígitos com no máximo um ponto decimal, até 12 caracteres, até 4 casas (`0`, `1.5`, `0.3333`). O Rust **recusa** o SVG com outro valor
+  nesses dois atributos, e com qualquer outro `data-*`.
+- **Todas as vozes** que soam ao mesmo tempo levam o seu tempo; a **pausa** também. A **nota de enfeite** (sem duração) **não** leva.
+- **Ligadura:** a **segunda** nota não leva tempo (não acende de novo) e a **primeira** tem o fim somado: `data-f` pode passar do fim do compasso, e o app
+  mantém a nota acesa no compasso seguinte.
+- **Repetições:** o instante dentro do compasso é o mesmo em todas as passadas, então vale um só por elemento; quem decide a passada é a lista `compassos`.
+- **Sem os atributos** (um pacote de partituras antigo), o app destaca só o compasso, como antes. As partituras novas precisam de um **pacote novo**.
+
 `partitura` é opcional e vale `"partituras/hino-N.svg"` quando o pacote traz a partitura do hino. Ele só **informa**: o app lê a
 partitura pelo **número do hino**, nunca pelo caminho que o JSON traz (assim um JSON malicioso não aponta para um arquivo
 qualquer). Todos os campos além de `numero` e `titulo` são opcionais.

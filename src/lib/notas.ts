@@ -1,0 +1,75 @@
+// I-26: quais notas da partitura estão soando. O gerador (`tools/gerar-partituras.py`) grava em cada nota e pausa do SVG o instante em que
+// soa DENTRO do compasso, em batidas (semínimas): `data-t` é o começo e `data-f` o fim. Somado ao início do compasso que toca (a lista
+// `compassos` do hinário, a mesma do destaque do compasso), dá o instante na régua de `reproducao.ponto()`.
+//
+// Quem não tem esses atributos (uma partitura do pacote antigo) simplesmente não tem notas indexadas, e o app fica só com o compasso.
+import type { Compassos, InicioDeCompasso } from "./biblioteca.svelte";
+import { listaDoPonto, posicaoEm, type PontoDeCompasso } from "./compassos";
+
+const EPS = 1e-6;
+/** Quantos compassos para trás se olha: uma nota ligada pode atravessar a barra (o fim passa do compasso) e continuar acesa no seguinte. */
+const COMPASSOS_PARA_TRAS = 4;
+
+export type TempoDaNota = { t: number; f: number };
+export type NotaDoDesenho<E> = TempoDaNota & { el: E };
+
+/** Os dois atributos de uma nota, ou `null` se faltam ou não valem (não número, negativo, fim que não vem depois do começo). */
+export function lerTempo(t: string | null, f: string | null): TempoDaNota | null {
+  if (t === null || f === null) return null;
+  const inicio = Number.parseFloat(t);
+  const fim = Number.parseFloat(f);
+  if (!Number.isFinite(inicio) || !Number.isFinite(fim) || inicio < 0 || fim <= inicio) return null;
+  return { t: inicio, f: fim };
+}
+
+type ComAtributos = { getAttribute(nome: string): string | null };
+type Medida<E extends ComAtributos> = { querySelectorAll(seletor: string): ArrayLike<E> };
+
+/** Para cada compasso escrito (a ordem dos `g.measure` do SVG), as notas e pausas com tempo. Um compasso sem nada fica com lista vazia. */
+export function indexarNotas<E extends ComAtributos>(medidas: ArrayLike<Medida<E>>): NotaDoDesenho<E>[][] {
+  const saida: NotaDoDesenho<E>[][] = [];
+  for (let i = 0; i < medidas.length; i++) {
+    const lista: NotaDoDesenho<E>[] = [];
+    for (const el of Array.from(medidas[i].querySelectorAll("g.note[data-t], g.rest[data-t]"))) {
+      const tempo = lerTempo(el.getAttribute("data-t"), el.getAttribute("data-f"));
+      if (tempo) lista.push({ ...tempo, el });
+    }
+    saida.push(lista);
+  }
+  return saida;
+}
+
+/** Se alguma nota foi indexada (senão a partitura não traz o tempo das notas). */
+export function temNotas(porCompasso: readonly (readonly unknown[])[]): boolean {
+  return porCompasso.some((c) => c.length > 0);
+}
+
+/**
+ * As notas e pausas que soam em `batida`, dado o compasso em cada item de `lista` e as notas de cada compasso escrito. Olha o compasso que
+ * toca e alguns antes dele (a nota ligada que atravessa a barra). A ordem é a do tempo (do compasso mais antigo ao que toca). Vazio antes do primeiro compasso, com a batida
+ * inválida ou depois da última nota.
+ */
+export function notasEm<E>(lista: readonly InicioDeCompasso[], batida: number, porCompasso: readonly (readonly NotaDoDesenho<E>[])[]): NotaDoDesenho<E>[] {
+  const atual = posicaoEm(lista, batida);
+  if (atual === null) return [];
+  const acesas: NotaDoDesenho<E>[] = [];
+  for (let j = Math.max(0, atual - COMPASSOS_PARA_TRAS); j <= atual; j++) {
+    const local = batida - lista[j][0];
+    for (const n of porCompasso[lista[j][1]] ?? []) {
+      if (n.t - EPS <= local && local < n.f - EPS && !acesas.includes(n)) acesas.push(n);
+    }
+  }
+  return acesas;
+}
+
+/** As notas que soam neste ponto da música (a lista certa: introdução, vez normal ou final), ou vazio se não há. */
+export function notasDoPonto<E>(c: Compassos | null | undefined, p: PontoDeCompasso | null, porCompasso: readonly (readonly NotaDoDesenho<E>[])[]): NotaDoDesenho<E>[] {
+  if (!c || !p) return [];
+  const lista = listaDoPonto(c, p);
+  return lista ? notasEm(lista, p.batida, porCompasso) : [];
+}
+
+/** Duas listas de notas são a mesma (os mesmos elementos, na mesma ordem)? Para só mexer no desenho quando o conjunto muda. */
+export function mesmasNotas<E>(a: readonly NotaDoDesenho<E>[], b: readonly NotaDoDesenho<E>[]): boolean {
+  return a.length === b.length && a.every((n, i) => n === b[i]);
+}

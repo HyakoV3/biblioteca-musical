@@ -91,6 +91,9 @@ const ATRIBUTOS: &[&str] = &[
     "word-spacing",
     "xml:lang",
     "xml:space",
+    // I-26: o instante em que a nota (ou pausa) soa dentro do compasso, em batidas. Só números (ver `tempo_valido`).
+    "data-t",
+    "data-f",
 ];
 
 /// Pedaços que não podem aparecer em nenhum valor (em minúsculas, já com as entidades XML resolvidas). A barra
@@ -220,6 +223,17 @@ fn is_style(no: Node) -> bool {
     no.tag_name().name() == "style" && no.tag_name().namespace() == Some(NS_SVG)
 }
 
+/// Um tempo em batidas como o gerador escreve: dígitos com no máximo um ponto decimal no meio, até 12 caracteres (`0`, `1.5`, `12.3333`).
+/// Sem sinal, sem expoente, sem espaço: o app lê o valor com `parseFloat`, e nada mais que número passa.
+fn tempo_valido(valor: &str) -> bool {
+    let partes: Vec<&str> = valor.split('.').collect();
+    valor.len() <= 12
+        && partes.len() <= 2
+        && partes
+            .iter()
+            .all(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()))
+}
+
 fn id_simples(id: &str) -> bool {
     !id.is_empty()
         && id
@@ -241,6 +255,10 @@ fn valor_final(atributo: &str, valor: &str) -> Result<String, String> {
     match atributo {
         "id" if id_simples(valor) => Ok(com_prefixo(valor)),
         "id" => Err("só letras, números e _ - . :".into()),
+        "data-t" | "data-f" if tempo_valido(valor) => Ok(valor.to_string()),
+        "data-t" | "data-f" => {
+            Err("só um número de batidas (como 1.5), de até 12 caracteres".into())
+        }
         "href" => {
             let id = valor.strip_prefix('#').unwrap_or("");
             if id_simples(id) {
@@ -717,5 +735,34 @@ mod testes {
             recusados.len(),
             recusados.join("\n")
         );
+    }
+
+    #[test]
+    fn deixa_passar_o_tempo_da_nota_e_recusa_o_que_nao_e_numero() {
+        let boa = limpar(&svg(r#"<g class="note" data-t="1.5" data-f="12.3333"/>"#)).unwrap();
+        assert!(
+            boa.contains(r#"data-t="1.5""#) && boa.contains(r#"data-f="12.3333""#),
+            "{boa}"
+        );
+        for ruim in [
+            "",
+            "-1",
+            "1e3",
+            "1.",
+            ".5",
+            "1.2.3",
+            " 1",
+            "1 ",
+            "NaN",
+            "1234567890123",
+            "0x10",
+            "1,5",
+            "&lt;",
+        ] {
+            let r = limpar(&svg(&format!(r#"<g class="note" data-t="{ruim}"/>"#)));
+            assert!(r.is_err(), "devia recusar data-t={ruim:?}: {r:?}");
+        }
+        // outro data-* continua não permitido
+        assert!(limpar(&svg(r#"<g data-x="1"/>"#)).is_err());
     }
 }
