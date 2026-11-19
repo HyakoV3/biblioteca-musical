@@ -57,6 +57,27 @@ export function nivelDeRms(rms: number): number {
   return Math.min(1, Math.max(0, (20 * Math.log10(rms) - PISO_DB) / -PISO_DB));
 }
 
+/** A barra do botão mostra só a faixa útil da voz: de −50 dBFS (quase silêncio) a −8 dBFS (alto); fora dela, vazia ou cheia. */
+export const BARRA_PISO_DB = -50;
+export const BARRA_TETO_DB = -8;
+
+/** Converte o nível do medidor (0 a 1, escala de −60 a 0 dBFS) para a escala da barra, mais estreita, e com uma curva de cosseno (0 → 0, 0,25 → 0,15, 0,5 → 0,5, 1 → 1), para ela balançar menos. */
+export function nivelParaBarra(nivel: number): number {
+  if (!Number.isFinite(nivel)) return 0;
+  const db = Math.min(1, Math.max(0, nivel)) * -PISO_DB + PISO_DB;
+  const x = Math.min(1, Math.max(0, (db - BARRA_PISO_DB) / (BARRA_TETO_DB - BARRA_PISO_DB)));
+  return (1 - Math.cos(Math.PI * x)) / 2; // curva de cosseno: achata as pontas (sussurro e grito mexem menos), o meio fica igual
+}
+
+/** Cada quadro (80 ms) a barra cai a esta fração do que estava: meia-vida de uns 0,4 s. Sobe rápido, cai devagar, como medidor de estúdio. */
+export const QUEDA_DA_BARRA = 0.88;
+const SUBIDA_DA_BARRA = 0.6;
+
+/** Próximo valor da barra: sobe 60% do caminho até o nível novo, e cai devagar quando ele é menor. */
+export function suavizarBarra(anterior: number, atual: number): number {
+  return atual >= anterior ? anterior + (atual - anterior) * SUBIDA_DA_BARRA : Math.max(atual, anterior * QUEDA_DA_BARRA);
+}
+
 /** Raiz da média dos quadrados das amostras (a "força" do som). Sem amostras, 0. */
 export function rmsDeAmostras(amostras: ArrayLike<number>): number {
   const n = amostras.length;
