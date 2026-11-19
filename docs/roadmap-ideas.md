@@ -1211,6 +1211,36 @@ Os 480 hinos do Dó, com as 1.121 correções dos lotes, as letras trocadas pelo
 - Nenhum conteúdo de terceiros no repositório nem no CI.
 - Crédito ao Eneas e a origem registrados (`docs/licencas-de-terceiros.md` e tela "Sobre").
 
+## I-31 — Servir hinário e partituras em produção (nginx com compose no Vidar)
+
+- **Status:** anotada, **rascunho** (2026-11-19)
+- **Origem:** o responsável, 2026-11-19: "quando for para produção de fato, subir nginx com compose para servir esses dados do Vidar"; endereço provável **`bm.driit.co`** ou **`bibliotecamusical.driit.co`**.
+- **Prioridade:** a definir (depende da autorização do Enéias, I-30)
+
+### O problema
+Hoje os pacotes (partituras e sons) saem de um link público do File Browser (`fb.hm.hv2.xyz`), que baixa a **pasta inteira em zip** e não é feito para servir arquivo. Com o hinário completo (hinário ~4 MB, partituras ~20 MB em zip, sons 38 MB) e publicação de verdade, o servidor precisa de endereço próprio e estável.
+
+### O que se deseja
+Um **nginx num `docker-compose`, no Vidar**, servindo só arquivos estáticos: o hinário, os pacotes de partituras (por faixa de 100 hinos, ver I-30) e os sons, com os manifestos. Endereço **`bm.driit.co`** (curto) ou **`bibliotecamusical.driit.co`** (claro).
+
+### Perguntas em aberto
+1. **Nome do domínio:** `bm.driit.co` ou `bibliotecamusical.driit.co`?
+2. **Acesso:** público, ou atrás de alguma proteção? O app não sabe pedir senha; o conteúdo é de terceiros (I-30), então a **autorização do Enéias** decide se pode ser público.
+3. **Onde vive o proxy reverso e o TLS** no Vidar (já há um, ou o compose traz o seu)?
+4. **Cache e ETag:** o nginx entrega `ETag`/`Last-Modified`, o que ajuda a atualização automática de pacotes (I-25).
+5. **Estrutura de pastas e nomes** estáveis (`/partituras/partituras-NNN.zip`, `/sons/`, `/hinario/`), em vez do zip de pasta do File Browser; o app hoje acha o zip de dentro pelo nome.
+
+### Impacto técnico (hipóteses, a verificar)
+- `src-tauri/capabilities/default.json` hoje só libera `https://fb.hm.hv2.xyz/*`: o endereço novo entra ali e nos manifestos (`src/lib/partituras/manifesto.json`, `src/lib/sons/manifesto.json`), o que pede **APK novo**.
+- Com arquivo servido direto (não zip de pasta), o app pode baixar o arquivo certo sem abrir o zip de fora.
+- Compose enxuto: `nginx:alpine`, um volume só-leitura com os pacotes, cabeçalhos de cache, `Content-Type` correto, sem listagem de diretório.
+- Nada de conteúdo de terceiros no Git nem no CI (regra vigente).
+
+### Critérios de aceitação (propostos)
+- O app baixa hinário, partituras e sons do endereço novo, conferindo tamanho e SHA-256 do manifesto.
+- Trocar um pacote no servidor não exige mexer no compose.
+- O endereço não lista diretórios nem expõe nada além dos pacotes.
+
 ---
 
 ## Modelo para novas ideias
