@@ -1212,7 +1212,7 @@ Os 480 hinos do Dó, com as 1.121 correções dos lotes, as letras trocadas pelo
 - Nenhum conteúdo de terceiros no repositório nem no CI.
 - Crédito ao Eneas e a origem registrados (`docs/licencas-de-terceiros.md` e tela "Sobre").
 
-## I-31 — Servir hinário e partituras em produção (nginx com compose no Vidar)
+## I-31 — Servir hinário e partituras em produção (GitHub, com nginx no Vidar como reserva)
 
 - **Status:** anotada, **rascunho** (2026-11-19)
 - **Origem:** o responsável, 2026-11-19: "quando for para produção de fato, subir nginx com compose para servir esses dados do Vidar"; endereço provável **`bm.driit.co`** ou **`bibliotecamusical.driit.co`**.
@@ -1222,7 +1222,7 @@ Os 480 hinos do Dó, com as 1.121 correções dos lotes, as letras trocadas pelo
 Hoje os pacotes (partituras e sons) saem de um link público do File Browser (`fb.hm.hv2.xyz`), que baixa a **pasta inteira em zip** e não é feito para servir arquivo. Com o hinário completo (hinário ~4 MB, partituras ~20 MB em zip, sons 38 MB) e publicação de verdade, o servidor precisa de endereço próprio e estável.
 
 ### O que se deseja
-Um **nginx num `docker-compose`, no Vidar**, servindo só arquivos estáticos: o hinário, os pacotes de partituras (por faixa de 100 hinos, ver I-30) e os sons, com os manifestos. Endereço **`bm.driit.co`** (curto) ou **`bibliotecamusical.driit.co`** (claro).
+**Principal: GitHub Releases** (ver a seção abaixo). **Reserva opcional:** um **nginx num `docker-compose`, no Vidar**, servindo só arquivos estáticos: o hinário, os pacotes de partituras (por faixa de 100 hinos, ver I-30) e os sons, com os manifestos. Endereço **`bm.driit.co`** (curto) ou **`bibliotecamusical.driit.co`** (claro).
 
 ### Alternativa gratuita: servir de dentro do GitHub (ideia do responsável, 2026-11-19)
 Dá para hospedar os pacotes **sem servidor**, em um **repositório público só dos pacotes** (separado do código, para o CI e o histórico do código ficarem sem conteúdo de terceiros):
@@ -1231,10 +1231,10 @@ Dá para hospedar os pacotes **sem servidor**, em um **repositório público só
 - **Não servem:** `raw.githubusercontent.com` (limita requisições, é para texto pequeno), **Git LFS** (1 GB/mês de banda) e **repositório privado** (o app não sabe se autenticar).
 - **No app:** `capabilities/default.json` passa a liberar `github.com` e o domínio para onde ele redireciona os downloads (`objects.githubusercontent.com`; a verificar), o que pede **APK novo**; o SHA-256 do manifesto continua valendo.
 - **O que decide é a autorização do Enéias (I-30):** publicar num repositório público é **distribuir** o trabalho dele (hoje "todos os direitos reservados") e o GitHub pode derrubar o conteúdo se houver reclamação. A regra vigente (nada de terceiros em *release* público) vale até ele autorizar.
-- **Proposta:** **nginx no Vidar como principal** (o responsável controla e pode tirar do ar); **GitHub Releases como espelho gratuito**, só depois da autorização. O app poderia tentar um e cair no outro (a verificar; hoje o manifesto tem um endereço só).
+- **Decisão do responsável (2026-11-19): servir pelo GitHub, que fica melhor que o servidor próprio** (sem custo nem manutenção, mais banda e disponibilidade). **GitHub Releases é o principal**; o **nginx no Vidar vira reserva opcional** (bm.driit.co), caso o conteúdo seja derrubado ou o GitHub mude as regras. **Riscos:** ponto único (uma reclamação de direitos derruba o repositório inteiro, então **guardar uma cópia local dos pacotes**) e a **autorização do Enéias antes de publicar**. O app poderia tentar um endereço e cair no outro (a verificar; hoje o manifesto tem um endereço só).
 
 ### Perguntas em aberto
-0. **Principal e espelho:** nginx no Vidar com Releases de espelho (proposta acima), só um dos dois, ou só Releases?
+0. **Reserva:** vale subir o nginx no Vidar como segunda fonte (e o app cair nele), ou só o GitHub e uma cópia guardada?
 1. **Nome do domínio:** `bm.driit.co` ou `bibliotecamusical.driit.co`?
 2. **Acesso:** público, ou atrás de alguma proteção? O app não sabe pedir senha; o conteúdo é de terceiros (I-30), então a **autorização do Enéias** decide se pode ser público.
 3. **Onde vive o proxy reverso e o TLS** no Vidar (já há um, ou o compose traz o seu)?
