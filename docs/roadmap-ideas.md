@@ -1126,7 +1126,15 @@ Esses filtros foram feitos para **fala** e tratam som contínuo e estável como 
 - **Status:** anotada, **rascunho** (2026-11-19)
 - **Origem:** o responsável, 2026-11-19: o **Enéias respondeu** e é o **dono dos repositórios de onde tiramos os arquivos do MuseScore (`.mscx`)**. Falta registrar aqui o que ele respondeu.
 - **Prioridade:** a definir
-- **Projetos do Enéias (fonte dos `.mscx`):** o que já consta nos docs é `eneiasramos/ccb-hinario-5-do` ("todos os direitos reservados", sem licença; ver `docs/pacote-de-partituras.md`). Os docs citam **um só** (Hinário 5, 480 hinos); se houver outros, *a preencher*: URL, pasta dos `.mscx`, ramo e commit usados. **Este card existe para apontar para eles.** Já foi extraído antes: os **5 hinos de amostra** (`content/amostras/`, fora do Git) e o conversor `tools/mscx2json`. Hinários 1 a 4: nenhuma fonte encontrada.
+- **Projetos do Enéias (fonte dos `.mscx`), um repositório por tonalidade** (todos do Hinário 5; lista dada pelo responsável em 2026-11-19):
+  - [`ccb-hinario-5-do`](https://github.com/eneiasramos/ccb-hinario-5-do) (Dó; o único que os docs já citavam, "todos os direitos reservados", sem licença; ver `docs/pacote-de-partituras.md`)
+  - [`ccb-hinario-5-re`](https://github.com/eneiasramos/ccb-hinario-5-re) (Ré)
+  - [`ccb-hinario-5-mib-2s`](https://github.com/eneiasramos/ccb-hinario-5-mib-2s) (Mi bemol, 2 s)
+  - [`ccb-hinario-5-fa`](https://github.com/eneiasramos/ccb-hinario-5-fa) (Fá)
+  - [`ccb-hinario-5-sol`](https://github.com/eneiasramos/ccb-hinario-5-sol) (Sol)
+  - [`ccb-hinario-5-la`](https://github.com/eneiasramos/ccb-hinario-5-la) (Lá)
+  - [`ccb-hinario-5-sib`](https://github.com/eneiasramos/ccb-hinario-5-sib) (Si bemol)
+  - *A preencher (depois da autorização, sem baixar antes):* quais hinos estão em cada repositório, a pasta dos `.mscx`, o ramo e o commit usados, e o que significa o `2s` em `mib-2s`. **Este card existe para apontar para eles.** Já foi extraído antes: os **5 hinos de amostra** (`content/amostras/`, fora do Git) e o conversor `tools/mscx2json`. Hinários 1 a 4: nenhuma fonte encontrada.
 
 ### Já está no plano (não duplicar)
 Este card **executa a "Etapa 5 — Conteúdo completo"** de [`roadmap-fase-2.md`](roadmap-fase-2.md) (e a seção 3 de [`roadmap-uxui-inicial.md`](roadmap-uxui-inicial.md)), que já prevê: converter os 480 hinos; **decidir sobre os coros 1 a 6** (hoje ignorados pelo conversor); revisar o que só foi testado com partituras fictícias (ligaduras, repetições, quiálteras, finais diferentes do 457); escrever o `correcoes.json` dos defeitos de letra (I-05); confirmar direitos de letras e partituras com a CCB.
@@ -1140,7 +1148,7 @@ Hoje só há 5 hinos de amostra (`content/amostras/`). O app precisa do hinário
 Converter **todos** os `.mscx` dos repositórios do Eneas (`tools/mscx2json`, depois `tools/gerar-partituras.py`) e montar o hinário e os pacotes, com um relatório do que converteu e do que foi recusado.
 
 ### Plano proposto (subagentes)
-- **Lotes de 30 hinos, no máximo, por subagente** (com o total do hinário em mãos, N lotes; para ~480 hinos, 16).
+- **Lotes de 30 hinos, no máximo, por subagente, sem misturar repositórios:** cada repositório (tonalidade) é dividido em lotes de até 30 (para ~480 hinos, no mínimo 16 lotes; o número real sai da contagem de hinos de cada um dos 7).
 - Cada subagente **só roda o pipeline do seu lote e devolve um relatório**: não edita código nem arquivos compartilhados; escreve numa pasta própria (`lote-NN/`).
 - O relatório lista: hinos convertidos; hinos recusados e o motivo; anomalias (final expandido, repetições, pausas, ligaduras, letra sem sílabas, defeitos de letra para o `correcoes.json`).
 - **Lote-piloto primeiro** (hinos 1–30) para validar o formato do relatório; depois os outros em paralelo.
