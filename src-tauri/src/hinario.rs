@@ -44,7 +44,7 @@ pub struct Hino {
     /// A interface toca (N-1) passadas normais e esta por último.
     #[serde(rename = "final", default, skip_serializing_if = "Option::is_none")]
     pub passada_final: Option<PassadaFinal>,
-    /// Introdução (do começo da partitura até o marcador `*`): as mesmas vozes, na mesma ordem, com o tempo
+    /// Introdução (do começo da partitura até o fim da nota marcada com `*`): as mesmas vozes, na mesma ordem, com o tempo
     /// começando em 0. A interface a toca sozinha ("Introdução") e antes da 1ª vez em "Tocar o hino todo".
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub introducao: Option<Introducao>,

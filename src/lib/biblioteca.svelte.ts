@@ -17,7 +17,7 @@ export type Hino = {
   vozes: Voz[];
   /** Última passada, quando o hino tem final (mesmas vozes, na mesma ordem). */
   final?: { vozes: Voz[] } | null;
-  /** Do começo até o marcador "*" (mesmas vozes, na mesma ordem). */
+  /** Do começo até o fim da nota marcada com "*" (mesmas vozes, na mesma ordem). */
   introducao?: { vozes: Voz[] } | null;
   /** Tempo de cada sílaba da letra, para o karaokê (opcional). */
   sincronia?: Sincronia | null;
