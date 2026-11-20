@@ -335,7 +335,7 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                         est.silabas.push(Silaba {
                             t: *t,
                             voz,
-                            verso: numero(l, "no").unwrap_or(0),
+                            verso: numero(l, "no").filter(|&v| v < CORO - 1).unwrap_or(0),
                             continua: matches!(texto(l, "syllabic"), Some("begin" | "middle")),
                             quebra_antes: false,
                             texto: sil,
@@ -651,14 +651,55 @@ fn separar_o_coro(silabas: &mut [Silaba]) -> usize {
         return 0;
     };
     let com_letra = |s: &Silaba| s.texto.chars().any(char::is_alphabetic);
-    let n = silabas
+    // A mesma sílaba escrita em duas vozes (mesmo instante e texto) conta uma vez só, como na letra pronta.
+    let cauda: BTreeSet<(u64, &str)> = silabas
         .iter()
         .filter(|s| s.t > corte + EPS && com_letra(s))
+        .map(|s| (s.t.to_bits(), s.texto.as_str()))
+        .collect();
+    if cauda.len() < SILABAS_MINIMAS_DO_CORO {
+        return 0;
+    }
+    // O resto tem de estar numa estrofe só, e não na de maior número: aí seria só a última estrofe, mais longa que as outras.
+    let donos: BTreeSet<u32> = silabas
+        .iter()
+        .filter(|s| s.t > corte + EPS && com_letra(s))
+        .map(|s| s.verso)
+        .collect();
+    let maior = silabas
+        .iter()
+        .filter(|s| com_letra(s))
+        .map(|s| s.verso)
+        .max();
+    if donos.len() != 1 || donos.first().copied() == maior {
+        return 0;
+    }
+    let dono = *donos.first().unwrap();
+    // Se o corte cai no meio de uma palavra da estrofe (a sílaba anterior "continua"), o pedaço que falta fica nela.
+    let mut daestrofe: Vec<usize> = (0..silabas.len())
+        .filter(|&i| silabas[i].verso == dono && com_letra(&silabas[i]))
+        .collect();
+    daestrofe.sort_by(|&a, &b| silabas[a].t.total_cmp(&silabas[b].t));
+    let mut inicio = daestrofe.iter().position(|&i| silabas[i].t > corte + EPS);
+    while let Some(k) = inicio {
+        if k > 0 && silabas[daestrofe[k - 1]].continua {
+            inicio = (k + 1 < daestrofe.len()).then_some(k + 1);
+        } else {
+            break;
+        }
+    }
+    let Some(inicio) = inicio else {
+        return 0;
+    };
+    let t_inicio = silabas[daestrofe[inicio]].t;
+    let n = silabas
+        .iter()
+        .filter(|s| s.t >= t_inicio - EPS && s.verso == dono && com_letra(s))
         .count();
     if n < SILABAS_MINIMAS_DO_CORO {
         return 0;
     }
-    for s in silabas.iter_mut().filter(|s| s.t > corte + EPS) {
+    for s in silabas.iter_mut().filter(|s| s.t >= t_inicio - EPS) {
         s.verso = CORO;
     }
     n
@@ -675,7 +716,10 @@ fn refrao_com_estrofe_trocada(silabas: &mut [Silaba]) -> usize {
         return 0;
     };
     let mut contagem: BTreeMap<u32, usize> = BTreeMap::new();
-    for s in silabas.iter().filter(|s| s.t > corte + EPS) {
+    for s in silabas
+        .iter()
+        .filter(|s| s.t > corte + EPS && s.texto.chars().any(char::is_alphabetic))
+    {
         *contagem.entry(s.verso).or_insert(0) += 1;
     }
     if contagem.len() < 2 {
@@ -1224,7 +1268,7 @@ pub fn converter_com(
                         "coro separado: {coro} sílabas depois das estrofes viraram o bloco \"Coro\""
                     ));
                 }
-                if n > 0 {
+                if n > 0 && coro == 0 {
                     avisos.push(format!(
                         "refrão com estrofe trocada: {n} sílabas do refrão (depois das estrofes) passaram para a estrofe do restante do refrão"
                     ));
@@ -2319,6 +2363,67 @@ mod testes {
             vec!["1. a c", "", "Coro. A Ro cha ce les tial", "", "2. b d"]
         );
         assert!(marcas.iter().any(|m| m.verso == CORO));
+    }
+
+    fn base_de_duas_estrofes() -> Vec<Silaba> {
+        vec![
+            silaba_em(0.0, 0, "a"),
+            silaba_em(0.0, 1, "b"),
+            silaba_em(1.0, 0, "c"),
+            silaba_em(1.0, 1, "d"),
+        ]
+    }
+
+    #[test]
+    fn final_mais_longo_da_ultima_estrofe_nao_e_coro() {
+        // o resto está na estrofe de maior número (a 1): é só a última estrofe, mais comprida
+        let mut s = base_de_duas_estrofes();
+        for i in 0..8 {
+            s.push(silaba_em(3.0 + i as f64, 1, "xis"));
+        }
+        assert_eq!(separar_o_coro(&mut s), 0);
+        assert!(s.iter().all(|x| x.verso != CORO));
+    }
+
+    #[test]
+    fn silaba_repetida_em_duas_vozes_conta_uma_vez() {
+        // 3 sílabas escritas nas duas vozes = 3, abaixo do mínimo
+        let mut s = base_de_duas_estrofes();
+        for i in 0..3 {
+            let mut a = silaba_em(3.0 + i as f64, 0, "fim");
+            a.voz = 0;
+            let mut b = silaba_em(3.0 + i as f64, 0, "fim");
+            b.voz = 1;
+            s.push(a);
+            s.push(b);
+        }
+        assert_eq!(separar_o_coro(&mut s), 0);
+    }
+
+    #[test]
+    fn corte_no_meio_de_uma_palavra_deixa_o_pedaco_na_estrofe() {
+        // "gló-ri-a": "gló" canta junto com a estrofe 1 (é o último instante com estrofes juntas); "ri" e "a" vêm depois
+        let mut glo = silaba_em(1.0, 0, "gló");
+        glo.continua = true;
+        let mut ri = silaba_em(2.0, 0, "ri");
+        ri.continua = true;
+        let mut s = vec![
+            silaba_em(0.0, 0, "a"),
+            silaba_em(0.0, 1, "b"),
+            glo,
+            silaba_em(1.0, 1, "d"),
+            ri,
+        ];
+        s.push(silaba_em(3.0, 0, "a"));
+        for (i, x) in ["Aleluia", "ao", "Senhor", "dos", "céus", "amém"]
+            .iter()
+            .enumerate()
+        {
+            s.push(silaba_em(5.0 + i as f64, 0, x));
+        }
+        assert_eq!(separar_o_coro(&mut s), 6);
+        assert!(s.iter().filter(|x| x.t <= 3.0).all(|x| x.verso != CORO));
+        assert!(s.iter().filter(|x| x.t >= 5.0).all(|x| x.verso == CORO));
     }
 
     #[test]

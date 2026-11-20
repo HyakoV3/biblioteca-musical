@@ -559,6 +559,19 @@ mod testes {
     }
 
     #[test]
+    fn sincronia_com_o_coro_na_estrofe_0_e_aceita() {
+        let h = ler(&json_com_sincronia(
+            r#"{"normal":[{"estrofe":1,"linhas":[[[0,0,2]]]},{"estrofe":0,"linhas":[[[4,0,2]]]}]}"#,
+        ))
+        .unwrap();
+        let s = h.hinos[0]
+            .sincronia
+            .as_ref()
+            .expect("devia manter a sincronia");
+        assert_eq!(s.normal[1].estrofe, 0);
+    }
+
+    #[test]
     fn sincronia_malformada_e_descartada_sem_recusar_o_hino() {
         // trecho com de >= ate, tempo negativo e (no final) trecho invertido: cada um derruba só a sincronia
         for ruim in [
