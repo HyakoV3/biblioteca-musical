@@ -4,7 +4,7 @@
   import Aviso from "./Aviso.svelte";
   import { biblioteca, type Compassos } from "./biblioteca.svelte";
   import { compassoDoPonto } from "./compassos";
-  import { acesasDoPonto, indexarNotas, mesmasNotas, progressoDaCurva, temNotas, type Acesa, type NotaDoDesenho } from "./notas";
+  import { acesasDoPonto, alturaEm, indexarNotas, mesmasNotas, progressoDaCurva, temNotas, type Acesa, type NotaDoDesenho } from "./notas";
   import { reproducao } from "./reproducao.svelte";
   import Estado from "./Estado.svelte";
   import { traduzirErro } from "./erros";
@@ -82,7 +82,35 @@
 
   // A ligadura: a curva ganha uma cópia dourada, recortada da esquerda para a direita conforme a primeira nota soa (a luz corre do halo dela até
   // a segunda nota, que acende quando a curva termina).
-  type CurvaAcesa = { n: NotaDoDesenho<Element>; recorte: SVGRectElement; clip: SVGClipPathElement; copia: SVGPathElement; largura: number };
+  type CurvaAcesa = {
+    n: NotaDoDesenho<Element>;
+    recorte: SVGRectElement;
+    clip: SVGClipPathElement;
+    faixa: SVGPathElement; // a faixa larga e translúcida ATRÁS da curva (o halo da ligadura)
+    copia: SVGPathElement; // o traço dourado fino POR CIMA da curva
+    ponto: SVGCircleElement; // o ponto brilhante na ponta que avança
+    largura: number; // largura total do recorte (com a folga), em unidades do desenho
+    meio: { x: number; y: number }[]; // o meio da curva, de ponta a ponta, por onde o ponto anda
+    original: SVGPathElement; // a curva do Verovio (para medir a escala da tela)
+    caixa: DOMRect;
+    escala: number; // pixels da tela por unidade do desenho, quando a folga e o ponto foram medidos (muda com o zoom e com a janela)
+  };
+
+  /**
+   * A faixa tem 0,6 rem na tela em qualquer zoom (traço sem escala), então a folga do recorte e o raio do ponto, que estão em unidades do desenho, dependem da escala
+   * que a tela aplica ao desenho agora. Mede de novo (e refaz o recorte e o ponto) sempre que essa escala muda.
+   */
+  function ajustarEscala(c: CurvaAcesa) {
+    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const escala = Math.abs(c.original.getScreenCTM()?.a ?? 1) || 1;
+    const folga = (rem * 0.3 + 2) / escala;
+    c.escala = escala;
+    c.largura = c.caixa.width + folga * 2;
+    c.recorte.setAttribute("x", String(c.caixa.x - folga));
+    c.recorte.setAttribute("y", String(c.caixa.y - folga * 2));
+    c.recorte.setAttribute("height", String(c.caixa.height + folga * 4));
+    c.ponto.setAttribute("r", String((rem * 0.35) / escala));
+  }
   let curvasAcesas: CurvaAcesa[] = [];
   let curvasPedidas: NotaDoDesenho<Element>[] = []; // as curvas da última chamada, mesmo as que não puderam ser desenhadas (senão uma ignorada refaria tudo a cada quadro)
   let contadorDeRecortes = 0;
@@ -90,7 +118,9 @@
 
   function limparCurvas() {
     for (const c of curvasAcesas) {
+      c.faixa.remove();
       c.copia.remove();
+      c.ponto.remove();
       c.clip.remove();
     }
     curvasAcesas = [];
@@ -161,27 +191,66 @@
         }
         if (caixa.width === 0) continue;
         const ns = "http://www.w3.org/2000/svg";
+        const d = original.getAttribute("d") ?? "";
         const clip = document.createElementNS(ns, "clipPath");
         clip.setAttribute("id", `recorte-ligadura-${++contadorDeRecortes}`);
         const recorte = document.createElementNS(ns, "rect");
-        recorte.setAttribute("x", String(caixa.x));
-        recorte.setAttribute("y", String(caixa.y - caixa.height));
-        recorte.setAttribute("height", String(caixa.height * 3));
-        recorte.setAttribute("width", "0");
+        recorte.setAttribute("width", "0"); // o x, o y e a altura vêm de `ajustarEscala`
         clip.appendChild(recorte);
+        const recortada = `url(#${clip.getAttribute("id")})`;
+        const faixa = document.createElementNS(ns, "path");
+        faixa.setAttribute("class", "faixa-ligadura");
+        faixa.setAttribute("d", d);
+        faixa.setAttribute("clip-path", recortada);
         const copia = document.createElementNS(ns, "path");
         copia.setAttribute("class", "destaque-ligadura");
-        copia.setAttribute("d", original.getAttribute("d") ?? "");
-        copia.setAttribute("clip-path", `url(#${clip.getAttribute("id")})`);
-        n.el.append(clip, copia); // depois da curva: desenhada por cima dela
-        curvasAcesas.push({ n, recorte, clip, copia, largura: caixa.width });
+        copia.setAttribute("d", d);
+        copia.setAttribute("clip-path", recortada);
+        const ponto = document.createElementNS(ns, "circle");
+        ponto.setAttribute("class", "ponto-ligadura");
+        ponto.setAttribute("cx", String(caixa.x));
+        ponto.setAttribute("cy", String(caixa.y + caixa.height / 2));
+        // O meio da curva: a curva é uma lua (uma borda de ida e outra de volta); a metade do comprimento separa as duas bordas.
+        const meio: { x: number; y: number }[] = [];
+        try {
+          const total = original.getTotalLength();
+          const ida: { x: number; y: number }[] = [];
+          const volta: { x: number; y: number }[] = [];
+          for (let i = 0; i <= 40; i++) {
+            const q = original.getPointAtLength((total * i) / 40);
+            (i <= 20 ? ida : volta).push({ x: q.x, y: q.y });
+          }
+          const crescente = (l: { x: number; y: number }[]) => [...l].sort((a, b) => a.x - b.x);
+          const a = crescente(ida);
+          const b = crescente(volta);
+          for (let i = 0; i <= 24; i++) {
+            const x = caixa.x + (caixa.width * i) / 24;
+            meio.push({ x, y: (alturaEm(a, x) + alturaEm(b, x)) / 2 });
+          }
+        } catch (e) {
+          console.warn("Partitura: não foi possível calcular o meio da ligadura; usando o centro da caixa", e);
+          meio.push({ x: caixa.x, y: caixa.y + caixa.height / 2 }, { x: caixa.x + caixa.width, y: caixa.y + caixa.height / 2 });
+        }
+        // A faixa vai ATRÁS da curva (antes dela); o traço fino e o ponto, por cima.
+        original.before(faixa);
+        n.el.append(clip, copia, ponto);
+        const nova: CurvaAcesa = { n, recorte, clip, faixa, copia, ponto, largura: caixa.width, meio, original, caixa, escala: 0 };
+        ajustarEscala(nova);
+        curvasAcesas.push(nova);
       }
     }
     for (const c of curvasAcesas) {
+      // O zoom ou a janela mudaram a escala do desenho: refaz a folga do recorte e o raio do ponto.
+      const escalaAgora = Math.abs(c.original.getScreenCTM()?.a ?? 1) || 1;
+      if (Math.abs(escalaAgora - c.escala) / c.escala > 0.01) ajustarEscala(c);
       const local = curvas.find((x) => x.n === c.n)?.local ?? c.n.f;
       // Pedindo menos movimento, a curva aparece inteira de uma vez (sem a luz correndo).
       const p = reduzirMovimento ? 1 : progressoDaCurva(c.n, local);
       c.recorte.setAttribute("width", String(c.largura * p));
+      // O ponto brilhante vai na ponta do avanço, pelo meio da curva (do começo ao fim dela, sem a folga).
+      const xPonto = c.meio[0].x + (c.meio[c.meio.length - 1].x - c.meio[0].x) * p;
+      c.ponto.setAttribute("cx", String(xPonto));
+      c.ponto.setAttribute("cy", String(alturaEm(c.meio, xPonto)));
     }
   }
 
@@ -382,7 +451,14 @@
     fill: var(--ouro); fill-opacity: 0.55; stroke: var(--ouro-linha); stroke-width: 0.125rem; vector-effect: non-scaling-stroke; pointer-events: none;
   }
   :global(:root[data-tema="alto-contraste"]) .folha :global(svg ellipse.destaque-nota) { fill-opacity: 0.18; stroke-width: 0.1875rem; }
-  /* A ligadura: a cópia dourada da curva, recortada da esquerda para a direita conforme a primeira nota soa. */
+  /* A ligadura: a faixa larga e translúcida ATRÁS da curva (a folga de luz, como o halo da nota), o traço dourado fino por cima e o ponto brilhante na
+     ponta, tudo recortado da esquerda para a direita conforme a primeira nota soa. Largura de 0,6 rem na tela em qualquer zoom. */
+  .folha :global(svg path.faixa-ligadura) {
+    fill: var(--ouro); stroke: var(--ouro); stroke-width: 0.6rem; stroke-linejoin: round; stroke-linecap: round; opacity: 0.5;
+    vector-effect: non-scaling-stroke; pointer-events: none;
+  }
+  :global(:root[data-tema="alto-contraste"]) .folha :global(svg path.faixa-ligadura) { opacity: 0.3; }
+  .folha :global(svg circle.ponto-ligadura) { fill: var(--ouro); stroke: var(--ouro-linha); stroke-width: 0.125rem; vector-effect: non-scaling-stroke; pointer-events: none; }
   .folha :global(svg path.destaque-ligadura) {
     fill: var(--ouro); fill-opacity: 0.9; stroke: var(--ouro-linha); stroke-width: 0.125rem; vector-effect: non-scaling-stroke; pointer-events: none;
   }
