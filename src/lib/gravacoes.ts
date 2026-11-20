@@ -2,6 +2,8 @@
 // quando a pessoa as apaga ou limpa os dados do app. Dois depósitos: `meta` (nome, data, duração, tamanho: leve, é o que a lista lê, página por página)
 // e `blobs` (o arquivo de áudio, lido só quando a pessoa toca em "Ouvir"). Sem limite de quantidade: a lista pagina e a tela mostra o espaço usado.
 
+import { rastro } from "./gravador";
+
 export type MetaGravacao = { id: string; criadaEm: number; segundos: number; tipo: string; bytes: number };
 /** Onde a página anterior terminou: a próxima começa logo depois (da mais nova para a mais antiga). */
 export type Posicao = { criadaEm: number; id: string };
@@ -52,6 +54,21 @@ function transacao<T>(banco: IDBDatabase, lojas: string[], modo: IDBTransactionM
   });
 }
 
+/** Quanto se espera o armazenamento guardar uma gravação antes de desistir e deixá-la na tela (ms). */
+export const LIMITE_PARA_GUARDAR_MS = 10000;
+
+/**
+ * Espera `promessa`, mas rejeita com `motivo` se ela não terminar em `ms`. Uma escrita no IndexedDB que nunca confirma (visto só no CI) deixaria a tela esperando para
+ * sempre, sem erro e sem a gravação; assim a tela mostra o erro e deixa a gravação ao alcance (ouvir e enviar). O temporizador é desfeito quando a promessa termina.
+ */
+export function comLimite<T>(promessa: Promise<T>, ms: number, motivo: string): Promise<T> {
+  let relogio: ReturnType<typeof setTimeout> | undefined;
+  const estouro = new Promise<never>((_, falha) => {
+    relogio = setTimeout(() => falha(new Error(motivo)), ms);
+  });
+  return Promise.race([promessa, estouro]).finally(() => clearTimeout(relogio));
+}
+
 export class Gravacoes {
   private abrindo: Promise<IDBDatabase> | null = null;
 
@@ -94,9 +111,16 @@ export class Gravacoes {
     return this.abrindo;
   }
 
-  /** Guarda uma gravação (metadados e arquivo, numa transação só: ou entram os dois ou nenhum). */
+  /**
+   * Guarda uma gravação (metadados e arquivo, numa transação só: ou entram os dois ou nenhum). O arquivo entra como **bytes** (`ArrayBuffer`) e não como `Blob`:
+   * no CI, o `put` de um Blob feito pelo MediaRecorder nunca confirmava (o gravador entregava o arquivo e o armazenamento ficava mudo). A leitura entende os
+   * dois formatos, então o que já estava guardado como Blob continua tocando.
+   */
   async salvar(blob: Blob, tipo: string, segundos: number): Promise<MetaGravacao> {
+    const comeco = performance.now();
+    const dados = await blob.arrayBuffer();
     const banco = await this.banco();
+    rastro(`armazenamento pronto em ${Math.round(performance.now() - comeco)} ms`);
     const meta: MetaGravacao = {
       id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
       criadaEm: Date.now(),
@@ -106,8 +130,9 @@ export class Gravacoes {
     };
     await transacao(banco, ["meta", "blobs"], "readwrite", (t) => {
       t.objectStore("meta").put(meta);
-      t.objectStore("blobs").put(blob, meta.id);
+      t.objectStore("blobs").put({ dados, tipo }, meta.id);
     });
+    rastro(`transação confirmada em ${Math.round(performance.now() - comeco)} ms`);
     return meta;
   }
 
@@ -133,7 +158,11 @@ export class Gravacoes {
   /** O arquivo de áudio de uma gravação, ou nulo se não existe mais. */
   async blob(id: string): Promise<Blob | null> {
     const banco = await this.banco();
-    return transacao(banco, ["blobs"], "readonly", async (t) => ((await pedido(t.objectStore("blobs").get(id))) as Blob | undefined) ?? null);
+    return transacao(banco, ["blobs"], "readonly", async (t) => {
+      const v = (await pedido(t.objectStore("blobs").get(id))) as Blob | { dados: ArrayBuffer; tipo: string } | undefined;
+      if (!v) return null;
+      return v instanceof Blob ? v : new Blob([v.dados], { type: v.tipo }); // o formato antigo era o Blob inteiro
+    });
   }
 
   async apagar(id: string): Promise<void> {

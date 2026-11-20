@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DetectorDeSom, FORMATOS_PREFERIDOS, Gravador, LIMIAR_SOM, PISO_DB, QUEDA_DA_BARRA, SILENCIO_MS, corrigirDuracao, escolherFormato, formatarTamanho, formatarTempo, motivoDoErro, nivelDeRms, nivelParaBarra, nomeDoFormato, rmsDeAmostras, suavizarBarra } from "../src/lib/gravador";
+import { DetectorDeSom, FORMATOS_PREFERIDOS, Gravador, LIMIAR_SOM, LIMITE_PARA_PARAR_MS, PISO_DB, QUEDA_DA_BARRA, SILENCIO_MS, corrigirDuracao, escolherFormato, formatarTamanho, formatarTempo, motivoDoErro, nivelDeRms, nivelParaBarra, nomeDoFormato, rmsDeAmostras, suavizarBarra } from "../src/lib/gravador";
 
 describe("formato da gravação", () => {
   it("escolhe o primeiro formato preferido que o navegador grava", () => {
@@ -127,9 +127,10 @@ describe("Gravador (com um MediaRecorder falso)", () => {
     start() {
       this.state = "recording";
     }
+    travado = false; // o "stop" nunca chega (o que se viu no CI)
     stop() {
       this.state = "inactive";
-      queueMicrotask(() => this.onstop?.());
+      if (!this.travado) queueMicrotask(() => this.onstop?.());
     }
     entregar(bytes: number) {
       this.ondataavailable?.({ data: new Blob([new Uint8Array(bytes)]) });
@@ -159,6 +160,63 @@ describe("Gravador (com um MediaRecorder falso)", () => {
     expect(trilha.parou).toBe(true);
     expect(g.gravando).toBe(false);
     if (r) URL.revokeObjectURL(r.url);
+  });
+
+  it("se o MediaRecorder nunca avisa que parou, `parar` entrega o que já foi gravado depois do limite, devolvendo o microfone", async () => {
+    vi.useFakeTimers();
+    try {
+      preparar();
+      const g = new Gravador();
+      await g.iniciar();
+      RecorderFalso.ultimo!.travado = true;
+      RecorderFalso.ultimo!.entregar(700);
+      let r: Awaited<ReturnType<Gravador["parar"]>> | undefined;
+      const espera = g.parar().then((x) => (r = x));
+      await vi.advanceTimersByTimeAsync(LIMITE_PARA_PARAR_MS - 100);
+      expect(r).toBeUndefined(); // ainda esperando o aviso
+      await vi.advanceTimersByTimeAsync(200);
+      await espera;
+      expect(r?.bytes).toBe(700);
+      expect(trilha.parou).toBe(true);
+      // os ouvintes do gravador antigo saem: um pedaço que chegasse tarde não pode entrar numa gravação nova
+      expect(RecorderFalso.ultimo!.ondataavailable).toBeNull();
+      expect(RecorderFalso.ultimo!.onerror).toBeNull();
+      if (r) URL.revokeObjectURL(r.url);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("no limite, sem nada gravado, `parar` devolve nulo (a tela mostra o erro) em vez de esperar para sempre", async () => {
+    vi.useFakeTimers();
+    try {
+      preparar();
+      const g = new Gravador();
+      await g.iniciar();
+      RecorderFalso.ultimo!.travado = true;
+      const espera = g.parar();
+      await vi.advanceTimersByTimeAsync(LIMITE_PARA_PARAR_MS + 10);
+      expect(await espera).toBeNull();
+      expect(trilha.parou).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("quando o aviso chega, não sobra o temporizador do limite", async () => {
+    vi.useFakeTimers();
+    try {
+      preparar();
+      const g = new Gravador();
+      await g.iniciar();
+      RecorderFalso.ultimo!.entregar(300);
+      const r = await g.parar();
+      expect(r?.bytes).toBe(300);
+      expect(vi.getTimerCount()).toBe(0);
+      if (r) URL.revokeObjectURL(r.url);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("depois de entregar, o gravador não guarda os pedaços na memória", async () => {

@@ -3,8 +3,8 @@
   import Aviso from "./Aviso.svelte";
   import Icone from "./Icone.svelte";
   import ItemGravacao from "./ItemGravacao.svelte";
-  import { DetectorDeSom, Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nivelParaBarra, nomeDoFormato, suavizarBarra, type Gravacao, type MotivoDoErro } from "./gravador";
-  import { TAMANHO_DA_PAGINA, gravacoes, type MetaGravacao, type Resumo } from "./gravacoes";
+  import { DetectorDeSom, Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nivelParaBarra, nomeDoFormato, rastro, suavizarBarra, type Gravacao, type MotivoDoErro } from "./gravador";
+  import { LIMITE_PARA_GUARDAR_MS, TAMANHO_DA_PAGINA, comLimite, gravacoes, type MetaGravacao, type Resumo } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
 
@@ -150,8 +150,12 @@
   /** Guarda a gravação na lista (no topo). Se não der (cota cheia, armazenamento indisponível), ela fica na tela para a pessoa ouvir e a tela explica. */
   async function guardar(nova: Gravacao) {
     erroGuardar = false;
+    rastro(`guardando ${nova.bytes} bytes`);
+    const comeco = performance.now();
+    const salvando = gravacoes.salvar(nova.blob, nova.tipo, nova.segundos);
     try {
-      const meta = await gravacoes.salvar(nova.blob, nova.tipo, nova.segundos);
+      const meta = await comLimite(salvando, LIMITE_PARA_GUARDAR_MS, "o armazenamento demorou demais para guardar a gravação");
+      rastro(`guardada em ${Math.round(performance.now() - comeco)} ms`);
       URL.revokeObjectURL(nova.url); // o arquivo já está no armazenamento; a lista o lê de lá quando a pessoa tocar em Ouvir
       if (destruido) return;
       itens = [meta, ...itens];
@@ -164,6 +168,22 @@
       }
       erroGuardar = true;
       gravacao = nova;
+      // Se a escrita terminar depois do limite, a gravação JÁ está guardada: a lista e a contagem precisam saber (ou, se a pessoa já a descartou, ela é apagada de volta).
+      void salvando.then(
+        (meta) => {
+          console.warn("gravador: a gravação foi guardada depois do limite de espera");
+          if (destruido) return;
+          if (gravacao === nova) {
+            itens = [meta, ...itens];
+            erroGuardar = false;
+            descartar();
+            void atualizarResumo();
+          } else {
+            void gravacoes.apagar(meta.id).catch(() => {});
+          }
+        },
+        () => {},
+      );
     }
   }
 
