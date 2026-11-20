@@ -210,6 +210,8 @@ export const pt = {
   "hino.nao_encontrado": "Hino não encontrado.",
   "hino.estrofe": "Estrofe {n}",
   "hino.coro": "Coro",
+  "hino.andamento_botao": "Andamento: {n} bpm. Toque para mudar",
+  "hino.andamento_pausar": "Pause para alterar o andamento.",
   "hino.final": "Final",
   "ajustes.titulo": "Ajustes",
   "ajustes.idioma": "Idioma da interface",

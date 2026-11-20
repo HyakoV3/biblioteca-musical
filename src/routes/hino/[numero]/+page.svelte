@@ -8,6 +8,7 @@
   import Icone from "$lib/Icone.svelte";
   import { traduzirErro } from "$lib/erros";
   import { i18n } from "$lib/i18n/index.svelte";
+  import AndamentoDoTopo from "$lib/AndamentoDoTopo.svelte";
   import { estrofes } from "$lib/letra";
   import { marcaEm, marcasDaVez, sincroniaCombina, type Marca } from "$lib/karaoke";
   import { usarVoltar } from "$lib/navegacao";
@@ -153,6 +154,8 @@
 
   let aba = $state<Aba>("letra");
   // O botão do karaokê só aparece onde o destaque acontece: na aba Letra, em hino que traz a sincronia, e na aba Partitura, em hino que traz os compassos.
+  // O andamento só tem o que mexer num hino com som, nas abas que mostram a música andando (Letra e Partitura; na Ouvir ele já está na tela).
+  const mostrarAndamento = $derived(temAudio && (aba === "letra" || (aba === "partitura" && temPartitura)));
   const mostrarKaraoke = $derived((sincroniaOk && aba === "letra") || (compassosOk && temPartitura && aba === "partitura"));
   // Ao abrir um hino: Ouvir primeiro (se houver notas para tocar); sem notas, só existe a Letra.
   $effect(() => {
@@ -186,6 +189,14 @@
   </button>
 {/snippet}
 
+<!-- O topo das abas Letra e Partitura: o andamento (o mesmo controle da aba Ouvir) e o karaokê. -->
+{#snippet acoesDoTopo()}
+  <span class="acoes-do-topo">
+    {#if mostrarAndamento && hino}<AndamentoDoTopo {hino} />{/if}
+    {#if mostrarKaraoke}{@render botaoKaraoke()}{/if}
+  </span>
+{/snippet}
+
 {#if biblioteca.erro}
   <Barra titulo={t("biblioteca.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />
   <main class="coluna conteudo"><Aviso tipo="erro">{t("erro.carregar", { erro: traduzirErro(biblioteca.erro, t) })}</Aviso></main>
@@ -206,7 +217,7 @@
     lang={idiomaConteudo}
     {voltar}
     rotuloVoltar={t("nav.voltar")}
-    acao={mostrarKaraoke ? botaoKaraoke : undefined}
+    acao={mostrarAndamento || mostrarKaraoke ? acoesDoTopo : undefined}
   />
 
   <!-- Na aba Partitura a coluna perde o limite de 40rem (até 64rem): numa tela larga (celular deitado, tablet) a partitura de paisagem usa a
@@ -294,6 +305,7 @@
 <style>
   main.partitura-larga { max-width: 64rem; }
   .botao-icone { min-width: 3rem; padding: 0; }
+  .acoes-do-topo { display: inline-flex; align-items: center; gap: 0.25rem; }
   .chave-karaoke[aria-pressed="true"] { border: 0.125rem solid var(--ouro-linha); }
   /* A estrofe que soa leva uma barra dourada na borda (o recuo negativo mantém o texto no mesmo lugar). */
   .estrofe { margin-bottom: 1.4rem; margin-left: -1rem; padding-left: calc(1rem - 0.25rem); border-left: 0.25rem solid transparent; }

@@ -9,14 +9,22 @@ O pacote é um `.zip` só com `partituras/hino-<número>.svg` e, opcional, `part
 > mas quem decide quando (e se) publicar é o responsável, depois da resposta dele. Enquanto não houver pacote publicado, o manifesto
 > do app fica `"pacote": null` e o botão Baixar **não aparece**.
 
-## Estado publicado (2026-11-19)
+## Estado publicado (2026-11-20)
 
-- **Pasta no servidor:** `/mnt/downloads/BibliotecaMusicalPartituras/` (compartilhamento próprio, fora da dos sons). Tem **dois** zips:
-  - `partituras-004.zip` (19.594.338 bytes, **18,7 MiB**, SHA-256 `f717a7ed…b916`): **os 480 hinos** do hinário 5 (Dó), retrato e paisagem (960 SVG), gerados com o
-    gerador da PR #82, então **cada nota e pausa leva o tempo** (`data-t` e `data-f`) para o karaokê por nota (I-26). Conferido: 960 arquivos, 0 sem tempo, 960 SVG
-    aceitos pela limpeza do app, baixado pelo link público com o mesmo SHA-256. É o que o manifesto do app aponta (APK 036 em diante).
+- **Pasta no servidor:** `/mnt/downloads/BibliotecaMusicalPartituras/` (compartilhamento próprio, fora da dos sons). Tem **três** zips:
+  - `partituras-005.zip` (19.591.413 bytes, **18,7 MiB**, SHA-256 `74d58792…714d`): **os 480 hinos**, retrato e paisagem (960 SVG), gerados pelo gerador da `main` depois da PR #94, então
+    **cada nota leva o seu tempo, inclusive a segunda de uma ligadura**, e a curva da ligadura (`<g class="tie">`) leva o `data-t`/`data-f` da nota que a abre: é por ela que a luz corre
+    (`docs/FORMATO.md`). Conferido: 960 arquivos, 0 sem tempo, 960 SVG aceitos pela limpeza do app, 3.302 das 3.306 curvas com tempo (as 4 sem tempo são de nota sem duração), baixado
+    pelo link público com o mesmo SHA-256. É o que o manifesto do app aponta (**APK 041 em diante**; o final separado e o botão de andamento do 043 em diante não mudam o pacote).
+  - `partituras-004.zip` (19.594.338 bytes, SHA-256 `f717a7ed…b916`): os 480 hinos do pacote anterior, em que a **segunda nota da ligadura não leva tempo** e a primeira tem o fim somado.
+    **Fica**, para os APKs 036 a 040.
   - `partituras-003.zip` (228.343 bytes, SHA-256 `f39cbe13…9087`): as **5 partituras de teste**, sem tempo por nota; o dos APKs 023 a 035. **Fica**, para esses APKs.
 - **Instalar as 480 no celular pede o hinário de 480** (o app só aceita partituras de hinos que o hinário instalado tem); com o hinário de 5 hinos, entram só as 5 e as outras são recusadas.
+
+## Estado de 2026-11-19 (pacote 004)
+
+- O manifesto apontava para o `partituras-004.zip` (19.594.338 bytes, SHA-256 `f717a7ed…b916`): os 480 hinos, gerados com o gerador da PR #82 (cada nota e pausa com `data-t` e `data-f`).
+  Ele continua no servidor.
 
 ## Estado anterior (2026-11-16)
 

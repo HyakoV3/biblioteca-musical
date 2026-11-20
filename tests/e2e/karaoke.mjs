@@ -250,6 +250,28 @@ async function principal() {
   await av("document.getElementById('aba-letra').click(); 1");
   await dormir(300);
   confere(await av("!!document.querySelector('.chave-karaoke')"), "botão Karaokê aparece (hino com sincronia)");
+  // O andamento no topo da Letra: o botão mostra o valor, abre o painel com o controle da aba Ouvir, mexer nele muda o valor, e a aba Ouvir mostra o mesmo.
+  const andamentoDoTopo = () => av(`(() => { const v = document.querySelector('.andamento .valor'); const o = document.querySelector('#painel-ouvir .passo output'); return { valor: v ? Number(v.textContent) : null, ouvir: o ? o.textContent : null }; })()`);
+  const a0 = await andamentoDoTopo();
+  confere(a0.valor !== null && a0.valor > 0, `o botão do andamento aparece no topo da Letra: ${JSON.stringify(a0)}`);
+  await av("document.querySelector('.andamento').click(); 1"); // abre o painel
+  await dormir(300);
+  const aberto = await av(`document.getElementById('painel-andamento-topo')?.matches(':popover-open') ?? false`);
+  confere(aberto, "tocar no botão abre o painel do andamento");
+  await av(`[...document.querySelectorAll('#painel-andamento-topo .passo button')].find((b) => b.textContent.trim() === '+5')?.click(); 1`);
+  await dormir(300);
+  const a1 = await andamentoDoTopo();
+  confere(a1.valor === a0.valor + 5, `+5 no painel muda o andamento do botão: ${a0.valor} -> ${a1.valor}`);
+  await av(`document.getElementById('painel-andamento-topo')?.hidePopover(); 1`);
+  await av("document.getElementById('aba-ouvir').click(); 1");
+  await dormir(300);
+  const a2 = await andamentoDoTopo();
+  confere(a2.ouvir !== null && a2.ouvir.includes(String(a1.valor)), `a aba Ouvir mostra o mesmo andamento: ${JSON.stringify(a2)}`);
+  await av(`[...document.querySelectorAll('#painel-ouvir .passo button')].find((b) => b.textContent.trim() === '−5')?.click(); 1`); // volta ao que era
+  await dormir(300);
+  await av("document.getElementById('aba-letra').click(); 1");
+  await dormir(300);
+  confere((await andamentoDoTopo()).valor === a0.valor, "voltando −5 na aba Ouvir, o botão do topo (na Letra) volta ao valor original");
   await av("document.getElementById('aba-ouvir').click(); 1");
   await dormir(300);
 

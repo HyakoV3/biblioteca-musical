@@ -440,6 +440,8 @@
   .folha :global(svg g.dir), .folha :global(svg g.dynam), .folha :global(svg g.mNum) { font-style: italic; }
   .folha :global(svg g.label) { font-weight: normal; }
   .folha :global(svg g.placeholder) { visibility: hidden; }
+  /* A marca de andamento que o autor escreveu na partitura ("♩ = 112 - 144") é sujeira no desenho: o andamento de verdade está no botão do topo (e na aba Ouvir). */
+  .folha :global(svg g.tempo) { display: none; }
   /* Karaokê (I-12, fase B): o compasso que toca. Dourado do tema, translúcido e ATRÁS das notas; o contorno tem 0,125 rem na tela em qualquer zoom (em rem, como o resto: acompanha o tamanho da fonte do sistema). Usa só
      cores do tema (no alto contraste, amarelo sobre preto: o contorno carrega o destaque e o preenchimento escurece o fundo, sem apagar as notas). */
   .folha :global(svg rect.destaque-compasso) {
