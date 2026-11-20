@@ -178,6 +178,9 @@ describe("Gravador (com um MediaRecorder falso)", () => {
       await espera;
       expect(r?.bytes).toBe(700);
       expect(trilha.parou).toBe(true);
+      // os ouvintes do gravador antigo saem: um pedaço que chegasse tarde não pode entrar numa gravação nova
+      expect(RecorderFalso.ultimo!.ondataavailable).toBeNull();
+      expect(RecorderFalso.ultimo!.onerror).toBeNull();
       if (r) URL.revokeObjectURL(r.url);
     } finally {
       vi.useRealTimers();

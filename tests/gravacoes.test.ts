@@ -188,6 +188,31 @@ describe("data da gravação", () => {
   });
 });
 
+describe("formato guardado (bytes no lugar do Blob)", () => {
+  it("guarda os bytes e devolve um Blob do mesmo tamanho e tipo", async () => {
+    const g = novo();
+    const m = await g.salvar(audio(321), "audio/webm;codecs=opus", 2);
+    const b = await g.blob(m.id);
+    expect(b).toBeInstanceOf(Blob);
+    expect(b!.size).toBe(321);
+    expect(b!.type).toBe("audio/webm;codecs=opus");
+  });
+
+  it("uma gravação guardada antes, como Blob inteiro, continua tocando", async () => {
+    const g = novo();
+    const banco = await (g as unknown as { banco(): Promise<IDBDatabase> }).banco();
+    await new Promise<void>((ok, falha) => {
+      const t = banco.transaction(["blobs"], "readwrite");
+      t.objectStore("blobs").put(audio(77), "antigo");
+      t.oncomplete = () => ok();
+      t.onerror = () => falha(t.error);
+    });
+    const b = await g.blob("antigo");
+    expect(b).toBeInstanceOf(Blob);
+    expect(b!.size).toBe(77);
+  });
+});
+
 describe("comLimite (a escrita que nunca confirma não prende a tela)", () => {
   it("devolve o resultado se a promessa termina antes do limite, sem deixar o temporizador", async () => {
     vi.useFakeTimers();

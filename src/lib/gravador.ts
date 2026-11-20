@@ -268,21 +268,26 @@ export class Gravador {
       // Se o "stop" do gravador nunca chega (visto no CI: a gravação para, o microfone volta e nada entra na lista, sem erro na tela), a espera não pode ser
       // eterna: passado o limite, entrega o que já foi gravado (os pedaços de cada segundo), ou nulo, e a tela mostra o erro.
       let entregue = false;
-      const entregar = (porLimite: boolean) => {
+      const entregar = (motivo: "avisou" | "limite" | "erro", erro?: unknown) => {
         if (entregue) return;
         entregue = true;
         clearTimeout(limite);
-        if (porLimite) console.warn("gravador: o MediaRecorder não avisou que parou; entregando o que já estava gravado");
+        if (motivo === "limite") console.warn("gravador: o MediaRecorder não avisou que parou; entregando o que já estava gravado");
+        else if (motivo === "erro") console.warn("gravador: MediaRecorder.stop() falhou; entregando o que já estava gravado", erro);
         else rastro("o gravador avisou que parou");
+        // Solta os ouvintes do gravador antigo: um pedaço ou um erro que chegasse tarde, já com outra gravação na mesma instância, não pode entrar nela.
+        g.ondataavailable = null;
+        g.onerror = null;
+        g.onstop = null;
         ok(this.entregar());
       };
-      const limite = setTimeout(() => entregar(true), LIMITE_PARA_PARAR_MS);
-      g.onstop = () => entregar(false);
+      const limite = setTimeout(() => entregar("limite"), LIMITE_PARA_PARAR_MS);
+      g.onstop = () => entregar("avisou");
       if (this.fim === 0) this.fim = performance.now();
       try {
         g.stop();
-      } catch {
-        entregar(false); // já estava parado
+      } catch (e) {
+        entregar("erro", e);
       }
     });
   }

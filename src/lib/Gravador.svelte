@@ -150,10 +150,11 @@
   /** Guarda a gravação na lista (no topo). Se não der (cota cheia, armazenamento indisponível), ela fica na tela para a pessoa ouvir e a tela explica. */
   async function guardar(nova: Gravacao) {
     erroGuardar = false;
+    rastro(`guardando ${nova.bytes} bytes`);
+    const comeco = performance.now();
+    const salvando = gravacoes.salvar(nova.blob, nova.tipo, nova.segundos);
     try {
-      rastro(`guardando ${nova.bytes} bytes`);
-      const comeco = performance.now();
-      const meta = await comLimite(gravacoes.salvar(nova.blob, nova.tipo, nova.segundos), LIMITE_PARA_GUARDAR_MS, "o armazenamento demorou demais para guardar a gravação");
+      const meta = await comLimite(salvando, LIMITE_PARA_GUARDAR_MS, "o armazenamento demorou demais para guardar a gravação");
       rastro(`guardada em ${Math.round(performance.now() - comeco)} ms`);
       URL.revokeObjectURL(nova.url); // o arquivo já está no armazenamento; a lista o lê de lá quando a pessoa tocar em Ouvir
       if (destruido) return;
@@ -167,6 +168,22 @@
       }
       erroGuardar = true;
       gravacao = nova;
+      // Se a escrita terminar depois do limite, a gravação JÁ está guardada: a lista e a contagem precisam saber (ou, se a pessoa já a descartou, ela é apagada de volta).
+      void salvando.then(
+        (meta) => {
+          console.warn("gravador: a gravação foi guardada depois do limite de espera");
+          if (destruido) return;
+          if (gravacao === nova) {
+            itens = [meta, ...itens];
+            erroGuardar = false;
+            descartar();
+            void atualizarResumo();
+          } else {
+            void gravacoes.apagar(meta.id).catch(() => {});
+          }
+        },
+        () => {},
+      );
     }
   }
 
