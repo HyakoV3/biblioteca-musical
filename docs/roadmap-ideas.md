@@ -427,6 +427,7 @@ Como o plugin de HTTP do Tauri trata cabeçalhos condicionais (ETag) no Android;
 - **Status:** anotada
 - **Origem:** ideia do assistente, 2026-11-17, depois do incidente do APK 025 (a aba Partitura e o botão de baixar sumiram no aparelho; voltou ao limpar os dados; a causa não foi achada)
 - **Prioridade:** a definir (pequena)
+- **Nota (2026-11-20):** o responsável prefere nomear os zips de teste pelo **final do commit** (ver a I-34), e não por número; como Ajustes já mostra `Versão (commit)`, isso resolve boa parte desta ideia: falta só a linha de diagnóstico (qual hinário, quantas partituras).
 
 ### O problema
 O número da versão (`0.3.0`) é o mesmo em todos os zips; só o **commit** os distingue, e o **número do zip** (025, 026) não aparece em lugar nenhum. Quando algo some, não há como saber **qual APK** está instalado nem **em que estado** (qual hinário, quantas partituras) o app está.
@@ -698,6 +699,15 @@ Hoje cada coisa sai de um lugar: o APK de teste vai para o Nextcloud, na mão, c
 - **iOS (futuro):** o GitHub tem máquinas macOS (de graça em repositório público), então o CI consegue **compilar**; **instalar** exige a conta do **Apple Developer Program** (~US$ 99 por ano), com certificado e perfil nos segredos.
   Sem a conta só sai build de simulador. A alternativa é uma **PWA** instalável. Fica fora desta ideia até haver conta.
 
+### Nome dos arquivos: o fim do commit, e não um número (pedido do responsável, 2026-11-20)
+O responsável **não gosta da numeração sequencial** dos zips de teste (`...-teste-045.zip`) e prefere **terminar o nome com o final do commit que os gerou**. Proposta:
+- **APK:** `BibliotecaMusical-CCB-<versão>-<commit curto>.zip` (por exemplo `BibliotecaMusical-CCB-0.4.0-038df34.zip`), e o mesmo no release do GitHub. O nome diz de que commit o APK saiu, sem tabela de números.
+- **Só com a árvore limpa:** um APK compilado com mudanças sem commit (hoje o commit sai com `+`, por exemplo `038df34+`) **não teria nome válido**; é uma vantagem: o que se entrega é sempre reproduzível a partir de um commit.
+- **Pacotes de conteúdo:** o conteúdo também depende das **fontes** (`.mscx`), que não estão no Git; então o nome leva o commit do **gerador** e, para ficar inequívoco, o início do SHA-256 do zip
+  (por exemplo `partituras-<commit>-<sha8>.zip`). O manifesto continua guardando o SHA-256 inteiro.
+- **Combina com a I-27:** Ajustes já mostra `Versão (commit)`; com o commit no nome do arquivo, quem testa confere o APK instalado com o nome do zip, e a I-27 (mostrar qual APK está instalado) fica quase resolvida.
+- **O que muda:** `docs/apk-de-teste.md` (a tabela deixa de ser por número e passa a ser por commit, mais recente primeiro), a pasta do Nextcloud (manter só os 10 mais recentes continua valendo) e, nos pacotes, `tools/montar-pacote.py` e `tools/montar-manifesto-partituras.py` (hoje o nome vem do argumento). Os zips antigos (003 a 006) ficam como estão no servidor.
+
 ### Passos propostos (nesta ordem)
 0. **Autorização do Enéias** registrada (só para os releases de conteúdo). Sem ela, **só o release do app**, sem hinos.
 1. **Release do app sem conteúdo:** subir a versão (`0.4.0`) nos três arquivos, notas da versão, tag como **pré-lançamento**, sem APK (já combinado com o responsável: "ainda não", 2026-11-20).
@@ -720,6 +730,7 @@ Hoje cada coisa sai de um lugar: o APK de teste vai para o Nextcloud, na mão, c
 4. **Só arm64** (o que os zips de teste já usam) ou também x86_64 (emulador) no APK do release?
 5. **O que o Enéias autoriza** (uso, redistribuição, crédito)? Define se os pacotes podem ser públicos.
 6. **Hinário no release:** vai como pacote próprio (`hinario-001`) ou embutido no APK? Hoje o hinário embutido é só de teste fechado.
+7. **Nome dos pacotes:** o commit do gerador mais o início do SHA-256 (proposta acima) ou só o commit? O pacote muda também quando mudam as fontes, que não estão no Git.
 
 ### Critérios de aceitação (propostos)
 - Uma pessoa de fora instala o app só com o link do release, e o app baixa o que precisar, conferindo o **SHA-256** do manifesto.
