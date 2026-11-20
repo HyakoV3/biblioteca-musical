@@ -6,9 +6,10 @@
   import { ORGAOS, PADRAO, instrumentosDaVoz, tipoDaVoz, type TipoVoz } from "./instrumentos";
   import { lerCartoes, padrao, salvarCartoes, salvarVozes } from "./preferencias";
   import Cartao from "./Cartao.svelte";
+  import ControleAndamento from "./ControleAndamento.svelte";
   import { ehRealista, gravadoEquivalente, realistasDaVoz, sinteticoEquivalente } from "./realista";
   import { sons } from "./sons/pacotes.svelte";
-  import { ANDAMENTO_MAX, ANDAMENTO_MIN, TRANSPOSICAO_MAX, reproducao, vezesDoHino } from "./reproducao.svelte";
+  import { TRANSPOSICAO_MAX, reproducao, vezesDoHino } from "./reproducao.svelte";
   import Icone from "./Icone.svelte";
   import type { IconeNome } from "./icones";
   import { rotuloCurtoDaVez, rotuloDaParte } from "./rotulo-vez";
@@ -132,11 +133,6 @@
     cfg.transposicao = 0;
   }
 
-  // Andamento em dois passos: 1 bpm (ajuste fino) e 5 bpm (ajuste grosso).
-  const PASSO_FINO = 1;
-  const PASSO_GROSSO = 5;
-  const mudarAndamento = (bpm: number) =>
-    (cfg.andamento = Math.min(ANDAMENTO_MAX, Math.max(ANDAMENTO_MIN, cfg.andamento + bpm)));
   const mudarTom = (d: number) =>
     (cfg.transposicao = Math.min(TRANSPOSICAO_MAX, Math.max(-TRANSPOSICAO_MAX, cfg.transposicao + d)));
   const sinal = (n: number) => (n > 0 ? `+${n}` : String(n));
@@ -259,25 +255,7 @@
       <!-- Andamento e transposição têm o mesmo desenho: o rótulo em cima e os controles numa linha inteira embaixo. No andamento são dois passos de cada lado (−5 −1 [valor] +1 +5), e quatro botões não cabem ao lado do rótulo; na transposição, − [n semitons] +. -->
       <div class="passo-linha empilhado">
         <span class="rotulo" id="rot-andamento">{t("player.andamento_rotulo")}</span>
-        <div class="passo" role="group" aria-labelledby="rot-andamento">
-          {#each [-PASSO_GROSSO, -PASSO_FINO] as bpm (bpm)}
-            <button
-              aria-label={t("player.diminuir_n", { item: t("player.andamento_rotulo").toLowerCase(), n: -bpm })}
-              disabled={!editavel || cfg.andamento <= ANDAMENTO_MIN}
-              onclick={() => mudarAndamento(bpm)}
-              >{#if -bpm === PASSO_FINO}<Icone nome="menos" tamanho={24} />{:else}−{-bpm}{/if}</button
-            >
-          {/each}
-          <output aria-live="polite">{t("player.bpm", { n: cfg.andamento })}</output>
-          {#each [PASSO_FINO, PASSO_GROSSO] as bpm (bpm)}
-            <button
-              aria-label={t("player.aumentar_n", { item: t("player.andamento_rotulo").toLowerCase(), n: bpm })}
-              disabled={!editavel || cfg.andamento >= ANDAMENTO_MAX}
-              onclick={() => mudarAndamento(bpm)}
-              >{#if bpm === PASSO_FINO}<Icone nome="mais" tamanho={24} />{:else}+{bpm}{/if}</button
-            >
-          {/each}
-        </div>
+        <ControleAndamento {cfg} {editavel} />
       </div>
 
       <div class="passo-linha empilhado">
