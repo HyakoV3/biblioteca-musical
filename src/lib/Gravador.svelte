@@ -3,8 +3,8 @@
   import Aviso from "./Aviso.svelte";
   import Icone from "./Icone.svelte";
   import ItemGravacao from "./ItemGravacao.svelte";
-  import { DetectorDeSom, Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nivelParaBarra, nomeDoFormato, suavizarBarra, type Gravacao, type MotivoDoErro } from "./gravador";
-  import { TAMANHO_DA_PAGINA, gravacoes, type MetaGravacao, type Resumo } from "./gravacoes";
+  import { DetectorDeSom, Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nivelParaBarra, nomeDoFormato, rastro, suavizarBarra, type Gravacao, type MotivoDoErro } from "./gravador";
+  import { LIMITE_PARA_GUARDAR_MS, TAMANHO_DA_PAGINA, comLimite, gravacoes, type MetaGravacao, type Resumo } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
 
@@ -151,7 +151,10 @@
   async function guardar(nova: Gravacao) {
     erroGuardar = false;
     try {
-      const meta = await gravacoes.salvar(nova.blob, nova.tipo, nova.segundos);
+      rastro(`guardando ${nova.bytes} bytes`);
+      const comeco = performance.now();
+      const meta = await comLimite(gravacoes.salvar(nova.blob, nova.tipo, nova.segundos), LIMITE_PARA_GUARDAR_MS, "o armazenamento demorou demais para guardar a gravação");
+      rastro(`guardada em ${Math.round(performance.now() - comeco)} ms`);
       URL.revokeObjectURL(nova.url); // o arquivo já está no armazenamento; a lista o lê de lá quando a pessoa tocar em Ouvir
       if (destruido) return;
       itens = [meta, ...itens];

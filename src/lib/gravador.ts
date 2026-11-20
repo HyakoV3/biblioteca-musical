@@ -143,6 +143,12 @@ export type Gravacao = { url: string; blob: Blob; tipo: string; bytes: number; s
  * ganho automático desligados) para o som sair como foi tocado ou cantado. Quem usa deve evitar chamadas ao mesmo tempo (a tela ignora toques
  * enquanto um pedido ou uma parada está em andamento).
  */
+/** Um rastro leve do que o gravador faz (console.debug): quando algo trava só no CI, é isto que mostra em que passo. */
+export const rastro = (mensagem: string) => console.debug(`gravador: ${mensagem}`);
+
+/** Quanto se espera o aviso de que o MediaRecorder parou antes de entregar o que já foi gravado (ms). */
+export const LIMITE_PARA_PARAR_MS = 4000;
+
 export class Gravador {
   private fluxo: MediaStream | null = null;
   private gravador: MediaRecorder | null = null;
@@ -197,6 +203,7 @@ export class Gravador {
       this.fluxo.getTracks().forEach((t) => t.addEventListener("ended", interrompida));
       this.gravador.start(1000); // um pedaço por segundo: uma queda no meio ainda deixa o que já foi gravado
       this.inicio = performance.now();
+      rastro(`gravando (${this.tipo || "formato do navegador"})`);
     } catch (e) {
       this.soltar();
       throw e;
@@ -256,10 +263,27 @@ export class Gravador {
       return Promise.resolve(null);
     }
     if (g.state === "inactive") return Promise.resolve(this.entregar());
+    rastro(`parando (estado ${g.state}, ${this.pedacos.length} pedaços)`);
     return new Promise((ok) => {
-      g.onstop = () => ok(this.entregar());
+      // Se o "stop" do gravador nunca chega (visto no CI: a gravação para, o microfone volta e nada entra na lista, sem erro na tela), a espera não pode ser
+      // eterna: passado o limite, entrega o que já foi gravado (os pedaços de cada segundo), ou nulo, e a tela mostra o erro.
+      let entregue = false;
+      const entregar = (porLimite: boolean) => {
+        if (entregue) return;
+        entregue = true;
+        clearTimeout(limite);
+        if (porLimite) console.warn("gravador: o MediaRecorder não avisou que parou; entregando o que já estava gravado");
+        else rastro("o gravador avisou que parou");
+        ok(this.entregar());
+      };
+      const limite = setTimeout(() => entregar(true), LIMITE_PARA_PARAR_MS);
+      g.onstop = () => entregar(false);
       if (this.fim === 0) this.fim = performance.now();
-      g.stop();
+      try {
+        g.stop();
+      } catch {
+        entregar(false); // já estava parado
+      }
     });
   }
 
@@ -269,6 +293,7 @@ export class Gravador {
     const segundos = ((this.fim || performance.now()) - this.inicio) / 1000;
     const blob = new Blob(this.pedacos, { type: tipo });
     this.soltar();
+    rastro(`entregando ${blob.size} bytes, ${segundos.toFixed(1)} s`);
     return blob.size > 0 ? { url: URL.createObjectURL(blob), blob, tipo, bytes: blob.size, segundos } : null;
   }
 

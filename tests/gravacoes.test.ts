@@ -1,6 +1,6 @@
 import { IDBFactory, IDBKeyRange } from "fake-indexeddb";
 import { describe, expect, it, vi } from "vitest";
-import { Gravacoes, TAMANHO_DA_PAGINA, formatarData } from "../src/lib/gravacoes";
+import { Gravacoes, TAMANHO_DA_PAGINA, comLimite, formatarData } from "../src/lib/gravacoes";
 
 // O Node não tem IDBKeyRange; no WebView ele é global.
 vi.stubGlobal("IDBKeyRange", IDBKeyRange);
@@ -185,5 +185,40 @@ describe("data da gravação", () => {
   });
   it("valor inválido vira texto vazio", () => {
     expect(formatarData(NaN, "pt")).toBe("");
+  });
+});
+
+describe("comLimite (a escrita que nunca confirma não prende a tela)", () => {
+  it("devolve o resultado se a promessa termina antes do limite, sem deixar o temporizador", async () => {
+    vi.useFakeTimers();
+    try {
+      const p = comLimite(Promise.resolve(42), 1000, "demorou");
+      await expect(p).resolves.toBe(42);
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("rejeita com o motivo se a promessa nunca termina", async () => {
+    vi.useFakeTimers();
+    try {
+      const p = comLimite(new Promise<number>(() => {}), 1000, "o armazenamento demorou");
+      const resultado = expect(p).rejects.toThrow("o armazenamento demorou");
+      await vi.advanceTimersByTimeAsync(1001);
+      await resultado;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("mantém o erro da própria promessa, antes do limite", async () => {
+    vi.useFakeTimers();
+    try {
+      await expect(comLimite(Promise.reject(new Error("cota cheia")), 1000, "demorou")).rejects.toThrow("cota cheia");
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

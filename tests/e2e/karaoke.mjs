@@ -989,7 +989,7 @@ async function principal() {
       await dormir(200);
     }
     // O estouro da espera aparece como falha própria, para não ficar escondido atrás do "audio: false, itens: 0" da conferência seguinte.
-    const motivo = apareceu ? null : await av(`({ texto: (document.getElementById('painel-gravador')?.innerText ?? '').replace(/\\s+/g, ' ').slice(0, 300), alertas: [...document.querySelectorAll('#painel-gravador [role="alert"], #painel-gravador .aviso')].map((e) => e.textContent.trim().slice(0, 120)), audios: document.querySelectorAll('#painel-gravador audio').length })`);
+    const motivo = apareceu ? null : await av(`({ avisos: window.__avisos ?? [], texto: (document.getElementById('painel-gravador')?.innerText ?? '').replace(/\\s+/g, ' ').slice(0, 300), alertas: [...document.querySelectorAll('#painel-gravador [role="alert"], #painel-gravador .aviso')].map((e) => e.textContent.trim().slice(0, 120)), audios: document.querySelectorAll('#painel-gravador audio').length })`);
     confere(apareceu, `Gravador: a gravação apareceu na lista em até 10 s (esperava ${quantas})${motivo ? ` — a tela mostrava: ${JSON.stringify(motivo)}` : ""}`);
     await dormir(150); // deixa o resto da linha (tempo, tamanho, formato) terminar de ser desenhado
   };
@@ -1008,7 +1008,7 @@ async function principal() {
   };
   await limparLista(); // começa sem gravações de execuções anteriores (o armazenamento do Chrome do teste é novo, mas assim vale também em outra ordem)
   // O gancho que conta os microfones abertos e permite atrasar ou mudar o microfone do teste; recarregar a página o perde, então é reinstalado a cada recarga.
-  const instalarGanchoDoMicrofone = () => av(`window.__microfones = []; const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = async (c) => { window.__pedido = c; await new Promise((r) => setTimeout(r, window.__atrasoMic ?? 0)); let f = await pedir(c); if (window.__micMudo) { f.getTracks().forEach((t) => t.stop()); const ctx = new AudioContext(); f = ctx.createMediaStreamDestination().stream; } f.getTracks().forEach((t) => window.__microfones.push(t)); return f; }; 1`);
+  const instalarGanchoDoMicrofone = () => av(`window.__avisos = []; for (const nivel of ['warn', 'debug']) { const w = console[nivel].bind(console); console[nivel] = (...a) => { window.__avisos.push(nivel + ': ' + a.map(String).join(' ').slice(0, 200)); w(...a); }; } window.__microfones = []; const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = async (c) => { window.__pedido = c; await new Promise((r) => setTimeout(r, window.__atrasoMic ?? 0)); let f = await pedir(c); if (window.__micMudo) { f.getTracks().forEach((t) => t.stop()); const ctx = new AudioContext(); f = ctx.createMediaStreamDestination().stream; } f.getTracks().forEach((t) => window.__microfones.push(t)); return f; }; 1`);
   await instalarGanchoDoMicrofone();
   const g0 = await estadoGravador();
   confere(g0.pressionado === "false" && g0.audio === false && g0.erro === false, `Gravador: começa parado, sem gravação e sem erro: ${JSON.stringify(g0)}`);
