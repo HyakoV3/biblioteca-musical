@@ -61,3 +61,11 @@ describe("final na letra", () => {
     expect(marcasDaVez(s.final!, 2).map((m) => m.estrofe)).toEqual([2, 2, 0, 0]);
   });
 });
+
+describe("coro e final juntos", () => {
+  it("a sincronia não combina quando a letra tem os dois (a estrofe 0 ficaria ambígua)", () => {
+    const letra = ["1. um", "", "Coro. alfa", "", "Final. beta"];
+    const s: Sincronia = { normal: [{ estrofe: 1, linhas: [[[0, 0, 2]]] }, { estrofe: 0, linhas: [[[2, 0, 4]]] }] };
+    expect(sincroniaCombina(letra, s)).toBe(false);
+  });
+});

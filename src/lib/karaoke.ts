@@ -37,6 +37,7 @@ function confere(letra: ReturnType<typeof estrofes>, lista: EstrofeSinc[]): bool
 export function sincroniaCombina(letra: string[], s: Sincronia | null | undefined): boolean {
   if (!s || s.normal.length === 0) return false;
   const ests = estrofes(letra);
+  if (ests.filter((e) => e.numero === 0).length > 1) return false; // Coro e Final juntos (ou dois de um): a estrofe 0 ficaria ambígua
   return confere(ests, s.normal) && (!s.final || confere(ests, s.final));
 }
 

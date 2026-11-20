@@ -35,7 +35,7 @@ cargo run --release -- --correcoes correcoes.json --id meu-hinario --nome "Meu h
   leitura possível o conversor **não adivinha**: fica para o arquivo de correções. Detalhes em `docs/FORMATO.md`.
 - **Letra: coro separado.** O que é cantado depois do último instante com estrofes juntas (pelo menos 6 sílabas com letra) vira um parágrafo
   próprio, `Coro. ...`, logo depois da estrofe 1, e na sincronia é a estrofe 0 (`separar_o_coro`). Hino com final não passa por aqui. Aviso: "coro separado".
-- **Letra: final separado.** Num hino com final, o texto cantado só na última vez vira o parágrafo `Final. ...` depois da última estrofe e, na sincronia, a estrofe 0 (`coro_para_a_ultima_estrofe`, que antes o colava à última estrofe).
+- **Letra: final separado.** Num hino com final, o texto cantado só na última vez vira o parágrafo `Final. ...` depois da última estrofe e, na sincronia, a estrofe 0 (`separar_o_final`, que antes o colava à última estrofe; o fecho da última estrofe que a 2ª casa traz fica nela, e o aviso é "final separado").
 - **Letra: refrão com a estrofe trocada.** Muitos hinos escrevem o refrão (coro) depois das estrofes, na camada da estrofe 1, mas com as
   primeiras sílabas marcadas como estrofe 2 ("A Ro cha" no hino 5), o que deixava o refrão partido e pedaços órfãos no fim da estrofe 2.
   Depois do **último instante em que mais de uma estrofe canta junto** (sílaba sem letra, como um `'` solto, não conta), o que sobra é
