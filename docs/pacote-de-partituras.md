@@ -11,11 +11,14 @@ O pacote é um `.zip` só com `partituras/hino-<número>.svg` e, opcional, `part
 
 ## Estado publicado (2026-11-20)
 
-- **Pasta no servidor:** `/mnt/downloads/BibliotecaMusicalPartituras/` (compartilhamento próprio, fora da dos sons). Tem **três** zips:
-  - `partituras-005.zip` (19.591.413 bytes, **18,7 MiB**, SHA-256 `74d58792…714d`): **os 480 hinos**, retrato e paisagem (960 SVG), gerados pelo gerador da `main` depois da PR #94, então
+- **Pasta no servidor:** `/mnt/downloads/BibliotecaMusicalPartituras/` (compartilhamento próprio, fora da dos sons). Tem **quatro** zips:
+  - `partituras-006.zip` (19.432.692 bytes, **18,5 MiB**, SHA-256 `72deea5a…609c`): igual ao 005 (cada nota no seu tempo, curvas com tempo; tempo das notas e das curvas **idêntico** nos 480 hinos), mas **sem a marca de
+    andamento do autor** ("♪ = 112 - 144"), que o gerador tira do MusicXML. Conferido: 960 arquivos, 0 sem tempo, 960 SVG aceitos pela limpeza do app, nenhum `g.tempo` com texto, baixado pelo link público com o mesmo
+    SHA-256. É o que o manifesto do app aponta (a partir do APK 046).
+  - `partituras-005.zip` (19.591.413 bytes, **18,7 MiB**, SHA-256 `74d58792…714d`): **os 480 hinos**, retrato e paisagem (960 SVG), com a marca de andamento do autor (escondida pelo app), gerados pelo gerador da `main` depois da PR #94, então
     **cada nota leva o seu tempo, inclusive a segunda de uma ligadura**, e a curva da ligadura (`<g class="tie">`) leva o `data-t`/`data-f` da nota que a abre: é por ela que a luz corre
     (`docs/FORMATO.md`). Conferido: 960 arquivos, 0 sem tempo, 960 SVG aceitos pela limpeza do app, 3.302 das 3.306 curvas com tempo (as 4 sem tempo são de nota sem duração), baixado
-    pelo link público com o mesmo SHA-256. É o que o manifesto do app aponta (**APK 041 em diante**; o final separado e o botão de andamento do 043 em diante não mudam o pacote).
+    pelo link público com o mesmo SHA-256. Foi o que o manifesto apontou do **APK 041** ao 045; o final separado e o botão de andamento não mudam o pacote. **Fica**, para esses APKs.
   - `partituras-004.zip` (19.594.338 bytes, SHA-256 `f717a7ed…b916`): os 480 hinos do pacote anterior, em que a **segunda nota da ligadura não leva tempo** e a primeira tem o fim somado.
     **Fica**, para os APKs 036 a 040.
   - `partituras-003.zip` (228.343 bytes, SHA-256 `f39cbe13…9087`): as **5 partituras de teste**, sem tempo por nota; o dos APKs 023 a 035. **Fica**, para esses APKs.

@@ -20,6 +20,31 @@ spec = importlib.util.spec_from_file_location("gerar_partituras", AQUI / "gerar-
 g = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(g)
 
+class RemoverAndamento(unittest.TestCase):
+    TEMPO = ('<direction placement="above"><direction-type><words>(</words></direction-type><direction-type><metronome><beat-unit>eighth</beat-unit>'
+             '<per-minute>112</per-minute></metronome></direction-type><sound tempo="56"/></direction>')
+
+    def test_tira_o_texto_e_deixa_o_sound_tempo(self):
+        self.assertEqual(g.remover_andamento(self.TEMPO), '<direction placement="above"><sound tempo="56"/></direction>')
+
+    def test_nao_toca_nas_outras_direcoes(self):
+        outras = ('<direction placement="above"><direction-type><words>*</words></direction-type></direction>'
+                  '<direction><direction-type><dynamics><p/></dynamics></direction-type></direction>')
+        self.assertEqual(g.remover_andamento(outras), outras)
+
+    def test_so_a_direcao_do_andamento_perde_o_texto(self):
+        xml = '<m>' + self.TEMPO + '<direction><direction-type><words>Coro</words></direction-type></direction></m>'
+        self.assertEqual(g.remover_andamento(xml), '<m><direction placement="above"><sound tempo="56"/></direction><direction><direction-type><words>Coro</words></direction-type></direction></m>')
+
+    def test_metronome_sem_sound_tambem_sai(self):
+        xml = '<direction><direction-type><metronome><per-minute>60</per-minute></metronome></direction-type></direction>'
+        self.assertEqual(g.remover_andamento(xml), '<direction></direction>')
+
+    def test_sem_andamento_nada_muda(self):
+        xml = '<score><part><measure><note><pitch/></note></measure></part></score>'
+        self.assertEqual(g.remover_andamento(xml), xml)
+
+
 class RemoverLetra(unittest.TestCase):
     def test_tira_o_lyric_e_o_que_ha_dentro(self):
         xml = '<note><pitch/><lyric number="1" default-y="-67"><syllabic>end</syllabic><text>nho,</text></lyric></note>'

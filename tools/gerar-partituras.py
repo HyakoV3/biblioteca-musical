@@ -65,6 +65,22 @@ def remover_letra(xml: str) -> str:
     return LETRA_MUSICXML.sub("", xml)
 
 
+DIRECAO_MUSICXML = re.compile(r"<direction(?:\s[^>]*)?>.*?</direction>", re.S)  # `(?:\s[^>]*)?` para não pegar <direction-type>
+TIPO_DE_DIRECAO = re.compile(r"<direction-type>.*?</direction-type>\s*", re.S)
+
+
+def remover_andamento(xml: str) -> str:
+    """O MusicXML sem o TEXTO de andamento que o autor escreveu na partitura (como "( ♪ = 112 - 144 )"): de cada <direction> que traz o andamento (<sound tempo>
+    ou <metronome>) saem os <direction-type> (o que o Verovio desenha), e o <sound tempo> fica, para o resto do MusicXML não mudar. Tirar daqui, e não do SVG, faz o
+    Verovio diagramar sem o espaço do texto. O andamento que vale é o do hinário (botão no topo do app)."""
+
+    def direcao(m):
+        bloco = m.group(0)
+        return TIPO_DE_DIRECAO.sub("", bloco) if "<sound tempo=" in bloco or "<metronome" in bloco else bloco
+
+    return DIRECAO_MUSICXML.sub(direcao, xml)
+
+
 def numero_do_hino(nome: str):
     """'hino-283.mscx' -> 283; qualquer outro nome -> None."""
     m = NOME.match(nome)
@@ -279,7 +295,7 @@ def gerar_hino(tk, musescore: list, n: int, mscx: Path, trabalho: Path, saida: P
     arquivos = {}
     medidas = []
     try:
-        texto = remover_letra(xml.read_text(encoding="utf-8"))
+        texto = remover_andamento(remover_letra(xml.read_text(encoding="utf-8")))
         for sufixo, largura in versoes_:
             tk.setOptions(opcoes_verovio(largura, escala))
             if not tk.loadData(texto):

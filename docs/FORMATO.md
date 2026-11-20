@@ -209,7 +209,7 @@ partir do `timemap` do Verovio; o app os soma ao início do compasso que toca (a
 
 - **Números simples:** dígitos com no máximo um ponto decimal, até 12 caracteres, até 4 casas (`0`, `1.5`, `0.3333`). O Rust **recusa** o SVG com outro valor
   nesses dois atributos, e com qualquer outro `data-*`.
-- **Marca de andamento do autor:** o `.mscx` traz um texto de andamento (`♩ = 112 - 144`) que o Verovio desenha como `g.tempo`. O app o **esconde** (CSS): o andamento que vale é o do hinário, mostrado no botão do topo das abas Letra e Partitura e na aba Ouvir.
+- **Marca de andamento do autor:** o `.mscx` traz um texto de andamento (`♩ = 112 - 144`) que o Verovio desenha como `g.tempo`. A partir do **pacote 006** o gerador a **tira do MusicXML** (a partitura sai sem o texto, e o Verovio diagrama sem o espaço dele; sobra só um grupo vazio e invisível); nos pacotes até o 005 o app a **esconde** (CSS). O andamento que vale é o do hinário, mostrado no botão do topo das abas Letra e Partitura e na aba Ouvir.
 - **Todas as vozes** que soam ao mesmo tempo levam o seu tempo; a **pausa** também. A **nota de enfeite** (sem duração) **não** leva.
 - **Ligadura (pacote 005 em diante):** cada nota leva o **seu** tempo, inclusive a segunda; a curva (`<g class="tie">`) leva `data-t`/`data-f` iguais aos da
   nota que a abre (se o fim da linha parte a curva em duas, o tempo se divide em partes iguais, na ordem). O app mostra o halo na 1ª nota, uma cópia dourada da curva que
