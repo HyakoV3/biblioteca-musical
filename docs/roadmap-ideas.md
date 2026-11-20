@@ -607,7 +607,7 @@ da linha 4 e "A Rocha" no fim da estrofe 2.
 
 ## I-31 — Servir hinário e partituras em produção (GitHub, com nginx no Vidar como reserva)
 
-- **Status:** anotada, **rascunho** (2026-11-19)
+- **Status:** anotada, **rascunho** (2026-11-19). **Consolidada na [I-34](#i-34--distribuição-pelo-github-apk-ios-futuro-sons-gravados-partituras-e-hinário)** (2026-11-20), que junta esta ideia, o APK por tag e o iOS.
 - **Origem:** o responsável, 2026-11-19: "quando for para produção de fato, subir nginx com compose para servir esses dados do Vidar"; endereço provável **`bm.driit.co`** ou **`bibliotecamusical.driit.co`**.
 - **Prioridade:** a definir (depende da autorização do Enéias, I-30)
 
@@ -665,6 +665,67 @@ Dá para hospedar os pacotes **sem servidor**, em um **repositório público só
 - **Prioridade:** a definir (pequena)
 - **O que se deseja:** que o bloco "Coro" e o bloco "Final" apareçam em negrito na aba Letra, como no impresso. Só o app (`+page.svelte`, CSS do `.estrofe`), sem mexer no hinário nem nos pacotes. Ver o contraste
   nos temas (alto contraste) e se o negrito atrapalha o destaque da sílaba que soa.
+
+---
+
+## I-34 — Distribuição pelo GitHub: APK, iOS (futuro), sons gravados, partituras e hinário
+
+- **Status:** anotada, **rascunho** (2026-11-20). Junta o que estava espalhado: a **I-31** (servir hinário e partituras pelo GitHub Releases, com o nginx no Vidar como reserva),
+  [`release-e-apk-no-github.md`](release-e-apk-no-github.md) (o APK por tag), a nota "Depois: GitHub Releases" de [`pacote-de-sons.md`](pacote-de-sons.md) e o iOS de
+  [`roadmap-pendencias.md`](roadmap-pendencias.md) (seção 2). Nada disto roda ainda.
+- **Origem:** o responsável, 2026-11-19 (servir pelo GitHub, "melhor que o servidor próprio") e 2026-11-20 ("fazer release também, vários dias sem release"; "disponibilizar os pacotes no GitHub:
+  APK, iOS no futuro, sons gravados, partituras").
+- **Prioridade:** a definir. **Trava de tudo o que é conteúdo:** a **autorização do Enéias** (I-30). O que é só código (o APK sem hinos) não depende dela.
+
+### O problema
+Hoje cada coisa sai de um lugar: o APK de teste vai para o Nextcloud, na mão, com o hinário embutido (teste fechado); as partituras e os sons saem de um **link público do File Browser** que baixa a **pasta inteira em zip**
+(`fb.hm.hv2.xyz`, ~500 KB/s); e **não há tag nem release** (a versão é `0.3.0` em todos os zips). Não há endereço estável por arquivo, nem jeito de uma pessoa de fora instalar o app sem pedir o zip ao responsável.
+
+### O que se deseja
+**Um só lugar, o GitHub, para tudo o que o app e as pessoas baixam**, em dois tipos de release:
+
+| Tipo | Onde | Tag (exemplo) | O que leva |
+|---|---|---|---|
+| **Release do app** | repositório do código | `v0.4.0` (pré-lançamento enquanto for `0.x`) | **APK assinado, sem hinos embutidos**, com o SHA-256; no futuro o **iOS** (build do CI para TestFlight) |
+| **Release de conteúdo** | **repositório público só dos pacotes** (nome a definir, por exemplo `biblioteca-musical-ccb-pacotes`), separado do código para o CI e o histórico do código ficarem sem conteúdo de terceiros | `partituras-006`, `sons-orgao-001`, `hinario-001` | o `.zip` do pacote, o manifesto e o SHA-256 |
+
+- **URL estável por arquivo:** `github.com/<dono>/<repo>/releases/download/<tag>/<arquivo>`, sem zip de pasta (o app deixa de abrir o zip de fora). Até **2 GiB por arquivo**, sem cota de banda declarada: o hinário (~4 MB),
+  as partituras (~19 MB) e os sons (~38 MB) cabem folgados.
+- **Atualização automática (I-25):** um release fixo `indice` guarda os manifestos (`partituras.json`, `sons.json`, `hinario.json`), trocados a cada publicação; o app lê esse índice ao abrir e oferece o pacote novo.
+  Sem isso, trocar de pacote exige **APK novo** (o manifesto vai dentro do app, como hoje).
+- **Quem publica o conteúdo é a máquina do responsável, não o CI:** o conteúdo é de terceiros e **nunca entra no CI**. Um script local (`tools/publicar-pacote.sh`: gera o manifesto, `gh release create`, baixa de volta e confere o SHA-256)
+  faz o envio; o GitHub só hospeda. O CI fica só com o **APK sem hinos** (`apk.yml`, de [`release-e-apk-no-github.md`](release-e-apk-no-github.md)).
+- **iOS (futuro):** o GitHub tem máquinas macOS (de graça em repositório público), então o CI consegue **compilar**; **instalar** exige a conta do **Apple Developer Program** (~US$ 99 por ano), com certificado e perfil nos segredos.
+  Sem a conta só sai build de simulador. A alternativa é uma **PWA** instalável. Fica fora desta ideia até haver conta.
+
+### Passos propostos (nesta ordem)
+0. **Autorização do Enéias** registrada (só para os releases de conteúdo). Sem ela, **só o release do app**, sem hinos.
+1. **Release do app sem conteúdo:** subir a versão (`0.4.0`) nos três arquivos, notas da versão, tag como **pré-lançamento**, sem APK (já combinado com o responsável: "ainda não", 2026-11-20).
+2. **Chave de assinatura própria** (criada e guardada pelo responsável; segredos no GitHub) e o `apk.yml`: primeiro só sob demanda (`workflow_dispatch`), depois por tag, anexando o APK e o SHA-256; testar com `v0.4.0-rc1`.
+3. **Repositório de pacotes** + `tools/publicar-pacote.sh`: publicar `partituras-006`, `hinario-001` e os sons; manifestos do app apontando para as URLs novas; `capabilities/default.json` libera `github.com` e o domínio de onde ele redireciona os downloads
+   (`objects.githubusercontent.com`, a verificar). Pede **APK novo**. Manter o servidor atual como **espelho** durante a troca.
+4. **Índice e atualização (I-25):** o release `indice` e o app lendo-o ao abrir.
+5. **iOS:** só depois de a conta da Apple existir.
+
+### Riscos
+- **Ponto único:** uma reclamação de direitos derruba o repositório de pacotes inteiro. **Guardar cópia** de todos os zips (o servidor atual e/ou o nginx no Vidar, `bm.driit.co`, como reserva opcional da I-31).
+- **Direitos:** publicar num repositório público é **distribuir** o trabalho do Enéias (hoje "todos os direitos reservados"); a regra vigente ("nada de terceiros em release público") vale até ele autorizar.
+- **APK com a chave de depuração** não atualiza por cima de outro APK do responsável: só o release com a chave própria serve a quem não é o responsável.
+- **Perder a chave própria** impede atualizar o app para sempre: guardar em dois lugares.
+
+### Perguntas em aberto
+1. **Nome e dono** do repositório de pacotes (a conta pessoal ou uma organização).
+2. **Repositório separado ou o mesmo?** Separado é o recomendado (CI e histórico do código sem conteúdo de terceiros); o mesmo seria mais simples, com tags por prefixo.
+3. **Domínio** próprio na frente (`bm.driit.co` apontando para o GitHub Pages) ou a URL do GitHub direto.
+4. **Só arm64** (o que os zips de teste já usam) ou também x86_64 (emulador) no APK do release?
+5. **O que o Enéias autoriza** (uso, redistribuição, crédito)? Define se os pacotes podem ser públicos.
+6. **Hinário no release:** vai como pacote próprio (`hinario-001`) ou embutido no APK? Hoje o hinário embutido é só de teste fechado.
+
+### Critérios de aceitação (propostos)
+- Uma pessoa de fora instala o app só com o link do release, e o app baixa o que precisar, conferindo o **SHA-256** do manifesto.
+- Trocar um pacote não exige APK novo (com o índice) nem mexer em servidor.
+- O release do app **não leva nenhum hino** e o CI nunca vê conteúdo de terceiros.
+- Há cópia de todos os pacotes fora do GitHub.
 
 ---
 
