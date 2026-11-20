@@ -230,6 +230,7 @@ export const en: Dicionario = {
   "creditos.por": "by {autor}",
   "creditos.licenca": "License: {licenca}",
   "creditos.ver": "View the license text",
+  "creditos.uso.eneias": "The hymn transcriptions (MuseScore files) that the notes, lyrics and scores come from, in his GitHub repositories.",
   "creditos.uso.generaluser": "Sound bank the instrument recordings come from (recorded sounds).",
   "creditos.uso.smplr": "Library that plays the recorded-sound samples.",
   "creditos.uso.icones": "Interface icons.",

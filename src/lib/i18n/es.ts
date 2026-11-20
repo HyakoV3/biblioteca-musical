@@ -230,6 +230,7 @@ export const es: Dicionario = {
   "creditos.por": "por {autor}",
   "creditos.licenca": "Licencia: {licenca}",
   "creditos.ver": "Ver el texto de la licencia",
+  "creditos.uso.eneias": "Las transcripciones de los himnos (archivos de MuseScore) de donde salen las notas, las letras y las partituras, en sus repositorios de GitHub.",
   "creditos.uso.generaluser": "Banco de sonidos de donde vienen las grabaciones de los instrumentos (sonidos grabados).",
   "creditos.uso.smplr": "Biblioteca que reproduce las muestras de los sonidos grabados.",
   "creditos.uso.icones": "Íconos de la interfaz.",

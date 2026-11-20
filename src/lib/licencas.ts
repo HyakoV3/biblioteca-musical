@@ -3,7 +3,7 @@
 // (chave `licencas.uso.<id>`).
 import { TEXTO_APACHE_2, TEXTO_GENERALUSER, TEXTO_MIT, TEXTO_OFL } from "./licencas-textos";
 
-export type TipoTexto = "mit" | "apache2" | "generaluser" | "ofl";
+export type TipoTexto = "mit" | "apache2" | "generaluser" | "ofl" | "reservado";
 
 export type Credito = {
   id: string;
@@ -17,6 +17,20 @@ export type Credito = {
 };
 
 export const CREDITOS: readonly Credito[] = [
+  {
+    // As transcrições do Enéias, de onde saem as notas, as letras e as partituras dos hinos. O repositório não traz licença: o crédito reconhece a autoria e não diz que há autorização.
+    id: "eneias",
+    nome: "Hinário 5: transcrições em MuseScore",
+    autoria: "Enéias Ramos",
+    licenca: "Todos os direitos reservados",
+    url: "https://github.com/eneiasramos",
+    textos: [
+      {
+        tipo: "reservado",
+        direitos: "Transcrições dos hinos do Hinário 5 em MuseScore, de Enéias Ramos, em github.com/eneiasramos (um repositório por tonalidade).\nTodos os direitos reservados ao autor; os repositórios não trazem licença.",
+      },
+    ],
+  },
   {
     id: "generaluser",
     nome: "GeneralUser GS",
@@ -91,5 +105,7 @@ export function textoDaLicenca(t: Credito["textos"][number]): string {
       return TEXTO_GENERALUSER;
     case "ofl":
       return `${t.direitos ?? ""}\n\n${TEXTO_OFL}`;
+    case "reservado":
+      return t.direitos ?? "";
   }
 }

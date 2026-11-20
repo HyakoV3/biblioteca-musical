@@ -2,6 +2,14 @@
 
 O código deste projeto é MIT (`LICENSE`). Alguns materiais de terceiros acompanham o app; cada um mantém a sua licença.
 
+## Transcrições dos hinos: Enéias Ramos (Hinário 5, em MuseScore)
+
+- **O que é:** os arquivos `.mscx` de onde o conversor tira as notas e as letras e o gerador tira as partituras (SVG). Estão nos repositórios do autor no GitHub, um por tonalidade
+  (`eneiasramos/ccb-hinario-5-do` é o usado hoje). **Não entram no Git deste projeto.**
+- **Autoria:** Enéias Ramos (dono dos repositórios; as letras e músicas dos hinos têm autores próprios, que aparecem em cada hino).
+- **Licença:** **nenhuma**: os repositórios dizem "todos os direitos reservados". **A autorização do autor para distribuir o hinário e os pacotes ainda não está registrada** (ver `docs/pacote-de-partituras.md`).
+- **No app:** Ajustes, "Créditos e licenças", com o nome, o link do perfil e o aviso de que os repositórios não trazem licença. O crédito reconhece a autoria e **não afirma** que há autorização.
+
 ## Ícones: Google Material Icons (conjunto `ic`) e Material Symbols (conjunto `material-symbols`)
 
 - **Onde:** `src/lib/icones.json` (22 ícones em SVG), gerado por `tools/gerar-icones.mjs` a partir do Iconify. A maioria vem do

@@ -230,6 +230,7 @@ export const pt = {
   "creditos.por": "por {autor}",
   "creditos.licenca": "Licença: {licenca}",
   "creditos.ver": "Ver o texto da licença",
+  "creditos.uso.eneias": "As transcrições dos hinos (arquivos do MuseScore) de onde vêm as notas, as letras e as partituras, nos repositórios dele no GitHub.",
   "creditos.uso.generaluser": "Banco de sons de onde vêm as gravações dos instrumentos (sons gravados).",
   "creditos.uso.smplr": "Biblioteca que toca as amostras dos sons gravados.",
   "creditos.uso.icones": "Ícones da interface.",
