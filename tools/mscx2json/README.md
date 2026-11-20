@@ -71,9 +71,9 @@ Qualquer outra estrutura de repetição ou salto é lida **uma vez, em ordem**, 
 
 - **Repetições e saltos (ritornelo, D.C., coda) não são expandidos**: o conversor avisa e
   lê a partitura uma vez, em ordem.
-- A leitura de ligaduras foi escrita para a marcação do MuseScore 3; a amostra real testada
-  (MuseScore 2) não tinha ligaduras de nota, então esse caso ainda não foi validado com
-  arquivo real.
+- **Ligaduras:** o conversor entende as duas marcações. No MuseScore 2 (os `.mscx` do hinário, `version="2.06"`) o início é `<Tie id="N">` dentro
+  da nota e o fim é `<endSpanner id="N"/>` dentro da nota seguinte, casando pelo `id` (outros spanners ancorados em nota fecham do mesmo jeito);
+  do MuseScore 3 em diante é `<Spanner type="Tie">` com `next`/`prev`.
 - A separação em vozes é uma aproximação por altura: se as vozes se cruzam, uma nota longa pode
   trocar de voz.
 - Arquivos compactados `.mscz` precisam ser exportados como `.mscx` (Arquivo → Salvar como…).

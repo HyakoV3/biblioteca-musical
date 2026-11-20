@@ -161,12 +161,27 @@ fn liga_inicio(nota: Node) -> bool {
     })
 }
 
+/// Alguma nota do arquivo abre uma ligadura (`<Tie id="...">` dentro de `<Note>`) com este `id`?
+fn abre_ligadura_com_id(nota: Node, id: &str) -> bool {
+    nota.document().descendants().any(|d| {
+        d.has_tag_name("Tie")
+            && d.attribute("id") == Some(id)
+            && d.parent().is_some_and(|p| p.has_tag_name("Note"))
+    })
+}
+
 fn liga_fim(nota: Node) -> bool {
     nota.children().any(|c| {
         c.is_element()
             && match c.tag_name().name() {
                 "Spanner" => c.attribute("type") == Some("Tie") && filho(c, "prev").is_some(),
                 "endTie" => true,
+                // MuseScore 2: o fim da ligadura é um `<endSpanner id="N"/>` dentro da nota, e o `N` é o `<Tie id="N">` de uma nota
+                // anterior. Outros spanners ancorados em nota (glissando, linha de nota) também fecham assim, por isso só vale o
+                // `id` que abriu uma ligadura.
+                "endSpanner" => c
+                    .attribute("id")
+                    .is_some_and(|id| abre_ligadura_com_id(nota, id)),
                 _ => false,
             }
     })
@@ -1922,6 +1937,26 @@ mod testes {
                 "a nota depois da tercina começa em 1: {n:?}"
             );
         }
+    }
+
+    #[test]
+    fn endspanner_de_outro_spanner_nao_encerra_a_ligadura() {
+        // um glissando (id 9) fecha com <endSpanner id="9"/> numa nota de mesma altura de uma ligadura aberta (id 2): não une
+        let inicio = r#"<Chord><durationType>quarter</durationType><Note><Tie id="2"></Tie><pitch>60</pitch></Note></Chord>"#;
+        let outro = r#"<Chord><durationType>quarter</durationType><Note><endSpanner id="9"/><pitch>60</pitch></Note></Chord>"#;
+        let c = format!("{C44}{inicio}{outro}");
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso(&c))), 1).unwrap();
+        assert_eq!(notas(&h, 0), vec![(0.0, 1.0, 60), (1.0, 1.0, 60)]);
+    }
+
+    #[test]
+    fn ligadura_do_musescore_2_une_as_notas() {
+        // início: <Tie id> dentro da nota; fim: <endSpanner id> dentro da nota seguinte (formato do MuseScore 2, o dos .mscx do hinário)
+        let inicio = r#"<Chord><durationType>half</durationType><Note><Tie id="2"></Tie><pitch>60</pitch></Note></Chord>"#;
+        let fim = r#"<Chord><durationType>quarter</durationType><Note><endSpanner id="2"/><pitch>60</pitch></Note></Chord>"#;
+        let c = format!("{C44}{inicio}{fim}{}", acorde("quarter", 62));
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso(&c))), 1).unwrap();
+        assert_eq!(notas(&h, 0), vec![(0.0, 3.0, 60), (3.0, 1.0, 62)]);
     }
 
     #[test]
