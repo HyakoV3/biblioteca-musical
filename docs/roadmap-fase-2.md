@@ -79,7 +79,7 @@ sem estalos; a licença de cada som está registrada; e o app base não cresceu.
 
 - [x] Primeiro teste: `tools/gerar-partituras.py` gera o SVG (MuseScore 4 → MusicXML → Verovio) e o timemap de cada hino; medido
       nos 5 hinos de amostra (~400 KB cada, ~36 MB num zip de 480). Decisões do responsável em
-      [`roadmap-ideas.md`](roadmap-ideas.md), I-08. **A aba está na PR 3.**
+      [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md), I-08. **A aba está na PR 3.**
 - [x] Pacote de **vários arquivos** (`.zip`) na importação, no lugar do JSON único (limite atual de 20 MB). **Feito (PR 2):
       `hinario.json` + `partituras/hino-N.svg`, com limpeza do SVG, nomes exatos e limites. Depois (2026-11-16) o zip passou a ser só de
       partituras e a importação manual saiu: o card Partituras em Ajustes baixa o pacote (ver `pacote-de-partituras.md`).**
@@ -87,7 +87,7 @@ sem estalos; a licença de cada som está registrada; e o app base não cresceu.
       pacote importado, com um aviso e um botão para Ajustes. **Feito (PR 3), falta ver no celular (APK, PR 4).**
 - [x] **Karaokê (I-12), fase A:** a **letra** acompanhando a música, com botão ligar/desligar na aba Letra (campo
       `sincronia` no formato, conversor e leitor). **Feito, falta ver no celular.**
-- [ ] **Karaokê (I-12), fase B:** cursor ou compasso na partitura, junto da I-08.
+- [x] **Karaokê (I-12), fase B:** o compasso que toca e, depois, o cursor **por nota** (I-26) e a luz da ligadura. **Feito e testado no celular** (APKs 025 a 045).
 
 **Pronto quando:** a partitura de um hino de amostra aparece nítida no emulador e no celular, e o pacote importa
 sem ir para o Git.
@@ -123,7 +123,7 @@ sem ir para o Git.
 Entram conforme o retorno dos testes: gravador de áudio (I-03, com fone toca o hino no ouvido e grava; sem fone só
 grava), afinador (I-13, dá o tom e mostra num medidor se a nota está baixa ou alta),
 e as ideias novas I-16 (repetir um trecho em laço), I-17 (lembrar o último hino), I-18 (pular uma parte
-inteira), I-19 (organizar como a letra aparece, a partir das fotos do hinário), I-20 (metrônomo embutido) e I-22 (continuar tocando com a tela bloqueada). Todas em [`roadmap-ideas.md`](roadmap-ideas.md).
+inteira) e I-20 (metrônomo embutido); a I-19 (letra) e a I-22 (tela bloqueada) já estão feitas. As abertas estão em [`roadmap-ideas.md`](roadmap-ideas.md).
 Gravador e afinador dividem a detecção de fone e a permissão de microfone: convém decidir os dois juntos. As ideias **já
 implementadas** (estilos de cor, botão da parte que enche de dourado e outras) estão em
 [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md).

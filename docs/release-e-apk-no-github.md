@@ -1,6 +1,6 @@
 # Rascunho: APK no GitHub (sob demanda e em release)
 
-> **Status: rascunho.** Nada disto roda ainda. Descreve o que vai ser construído, para o responsável revisar antes.
+> **Status: rascunho.** Consolidado, junto com os pacotes de conteúdo e o iOS, na **I-34** de [`roadmap-ideas.md`](roadmap-ideas.md). Nada disto roda ainda. Descreve o que vai ser construído, para o responsável revisar antes.
 > Itens marcados "(a confirmar)" não foram verificados.
 
 ## O que se quer

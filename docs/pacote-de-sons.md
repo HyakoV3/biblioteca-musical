@@ -88,7 +88,7 @@ compartilhada própria, com o seu link** (Órgão, Madeiras, Metais, Cordas), e 
 do app lista, por grupo, o endereço do link e o SHA-256 de cada arquivo. O app baixa o zip pelo lado nativo, extrai
 **com limite de tamanho** (contra zip malicioso), ignora o prefixo das pastas e confere cada arquivo contra o manifesto
 antes de guardar.
-- **Depois:** GitHub Releases quando o código for público; o servidor do responsável vira espelho.
+- **Depois:** GitHub Releases quando o código for público; o servidor do responsável vira espelho (plano na **I-34** de [`roadmap-ideas.md`](roadmap-ideas.md)).
 - O app **baixa pelo lado nativo** (Rust), porque servidores de link público costumam não liberar o acesso do navegador
   interno (CORS); **confere o SHA-256** contra o manifesto que vem dentro do app, então um arquivo trocado no servidor é
   recusado; e aceita **uma lista de endereços** (espelhos).
