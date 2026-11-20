@@ -134,3 +134,20 @@ describe("detecção de fone", () => {
   });
 });
 
+describe("falha do serviço de gravação", () => {
+  afterEach(() => {
+    delete (globalThis as { __bmccbServicoDeGravacaoFalhou?: () => void }).__bmccbServicoDeGravacaoFalhou;
+  });
+
+  it("o aviso do Android chama o que o Gravador registrou, e soltar remove", async () => {
+    const { aoFalharServicoDeGravacao } = await carregar();
+    const g2 = globalThis as { __bmccbServicoDeGravacaoFalhou?: () => void };
+    const falhou = vi.fn();
+    const soltar = aoFalharServicoDeGravacao(falhou);
+    g2.__bmccbServicoDeGravacaoFalhou?.();
+    expect(falhou).toHaveBeenCalledTimes(1);
+    soltar();
+    expect(g2.__bmccbServicoDeGravacaoFalhou).toBeUndefined();
+  });
+});
+

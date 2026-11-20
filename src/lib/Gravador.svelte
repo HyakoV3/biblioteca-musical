@@ -7,7 +7,7 @@
   import { LIMITE_PARA_GUARDAR_MS, TAMANHO_DA_PAGINA, comLimite, gravacoes, type MetaGravacao, type Resumo } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
-  import { aoPararGravacaoPelaNotificacao, desligarServicoDeGravacao, foneConectado, ligarServicoDeGravacao } from "./servico";
+  import { aoFalharServicoDeGravacao, aoPararGravacaoPelaNotificacao, desligarServicoDeGravacao, foneConectado, ligarServicoDeGravacao } from "./servico";
 
   // A aba Gravador (I-03, primeira versão): grava o microfone, ouve de volta e descarta. Nada sai do aparelho. A permissão de microfone é pedida só
   // ao tocar em "Gravar". Gravar para o hino que estiver tocando (o alto-falante entraria no microfone). O microfone é devolvido ao aparelho ao parar,
@@ -332,9 +332,18 @@
     const soltarAviso = aoPararGravacaoPelaNotificacao(() => {
       if (gravando) void parar();
     });
+    // O serviço do Android não subiu (a ponte avisa depois de já ter dito que sim): sem ele a gravação não está protegida. Com a página escondida o
+    // microfone já se foi, então para e guarda o que houver, em vez de seguir "gravando" em silêncio.
+    const soltarFalha = aoFalharServicoDeGravacao(() => {
+      protegida = false;
+      if (gravando && document.hidden) void parar();
+    });
     void carregarLista();
     void atualizarResumo();
-    return soltarAviso;
+    return () => {
+      soltarAviso();
+      soltarFalha();
+    };
   });
   onDestroy(() => {
     destruido = true;

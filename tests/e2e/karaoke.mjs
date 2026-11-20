@@ -1124,6 +1124,19 @@ async function principal() {
   const ponte8 = await av(`window.__ponte.join(',')`);
   confere(g8.pressionado === "false" && g8.ativos === 0 && g8.audio === true && ponte8 === "ligar,desligar", `Gravador: o botão Parar da notificação para, guarda e solta o serviço: ${JSON.stringify(g8)} / ${ponte8}`);
   await av(`delete window.BmccbServico; 1`);
+  // O serviço do Android recusa DEPOIS de a ponte ter dito que assumiu: a proteção cai e, com a página escondida, a gravação para e é guardada.
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(600);
+  await esconder(true);
+  await dormir(500);
+  await av(`window.__bmccbServicoDeGravacaoFalhou && window.__bmccbServicoDeGravacaoFalhou(); 1`);
+  await dormir(1200);
+  await esconder(false);
+  const g9 = await estadoGravador();
+  confere(g9.pressionado === "false" && g9.ativos === 0 && g9.audio === true, `Gravador: se o serviço do Android falha com a página escondida, a gravação para e é guardada: ${JSON.stringify(g9)}`);
+  await av(`window.__atrasoMic = 0; 1`);
+  await apagarPrimeira();
+  await dormir(300);
   await av(`window.__atrasoMic = 0; 1`);
   await apagarPrimeira();
   await dormir(300);

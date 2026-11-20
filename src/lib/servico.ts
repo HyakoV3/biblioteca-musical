@@ -78,3 +78,15 @@ export function foneConectado(): boolean {
     return false;
   }
 }
+
+/**
+ * O Android recusou ou derrubou o serviço de gravação depois de a ponte já ter dito que o assumira: `quando` deve tirar a proteção da gravação
+ * (e, se o app está em segundo plano, pará-la, porque o microfone se foi). Devolve a função que remove o aviso.
+ */
+export function aoFalharServicoDeGravacao(quando: () => void): () => void {
+  const g = globalThis as { __bmccbServicoDeGravacaoFalhou?: () => void };
+  g.__bmccbServicoDeGravacaoFalhou = quando;
+  return () => {
+    if (g.__bmccbServicoDeGravacaoFalhou === quando) delete g.__bmccbServicoDeGravacaoFalhou;
+  };
+}

@@ -24,7 +24,6 @@ class ServicoAudio : Service() {
         const val CANAL = "reproducao"
         const val ID_NOTIFICACAO = 1
         const val ACAO_PARAR = "br.pro.bibliotecamusical.ccb.PARAR"
-        const val EXTRA_TITULO = "titulo"
 
         /** O hino mais longo cabe folgado em uma hora; o limite evita um wake lock esquecido se o JavaScript nunca avisar que parou. */
         private const val LIMITE_WAKE_LOCK_MS = 60L * 60L * 1000L
@@ -50,6 +49,16 @@ class ServicoAudio : Service() {
         var tocando = false
         var gravando = false
 
+        /** Título do hino que toca (a notificação o mostra enquanto `tocando`); o da gravação é o nome do app. */
+        var tituloAtual = ""
+
+        /** O serviço existe (criado e ainda não destruído): aí um pedido de atualização usa `startService`, que também vale com o app em segundo plano. */
+        var ativo = false
+
+        /** O Android recusou subir o serviço de gravação: avisa o JavaScript, que deixa de contar com a proteção (definido pela ponte). */
+        @Volatile
+        var aoFalhar: (() -> Unit)? = null
+
         /** Avisa o JavaScript que a pessoa tocou em "Parar" na notificação durante uma gravação (definido pela ponte; nulo com o app fechado). */
         @Volatile
         var aoPararGravacao: (() -> Unit)? = null
@@ -65,10 +74,12 @@ class ServicoAudio : Service() {
             aoPararGravacao?.invoke()
             tocando = false
             gravando = false
+            tituloAtual = ""
             encerrar()
             return START_NOT_STICKY
         }
-        val titulo = intent?.getStringExtra(EXTRA_TITULO)?.takeIf { it.isNotBlank() } ?: getString(R.string.app_name)
+        ativo = true
+        val titulo = if (tocando && tituloAtual.isNotBlank()) tituloAtual else getString(R.string.app_name)
         try {
             criarCanal()
             val notificacao = montarNotificacao(titulo)
@@ -85,6 +96,10 @@ class ServicoAudio : Service() {
             android.util.Log.w("bmccb", "startForeground recusado; o hino segue sem o serviço", e)
             aguardandoPrimeiroPlano = false
             paradaPendente = false
+            val eraGravacao = gravando
+            tocando = false
+            gravando = false
+            if (eraGravacao) aoFalhar?.invoke()
             stopSelf()
             return START_NOT_STICKY
         }
@@ -101,6 +116,7 @@ class ServicoAudio : Service() {
     }
 
     override fun onDestroy() {
+        ativo = false
         tocando = false
         gravando = false
         soltarCpu()
@@ -113,12 +129,17 @@ class ServicoAudio : Service() {
         stopSelf()
     }
 
+    /**
+     * Refeito a cada `onStartCommand`, para o estado atual valer: um hino tem o limite de uma hora (contado de novo a cada mudança); uma
+     * gravação NÃO tem limite (ela segue até a pessoa parar, e o wake lock é solto ao parar o serviço). Sem isso, a CPU dormiria com a tela
+     * bloqueada passada uma hora de gravação.
+     */
     private fun segurarCpu() {
-        if (wakeLock?.isHeld == true) return
+        soltarCpu()
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "bmccb:reproducao").apply {
             setReferenceCounted(false)
-            acquire(LIMITE_WAKE_LOCK_MS)
+            if (gravando) acquire() else acquire(LIMITE_WAKE_LOCK_MS)
         }
     }
 

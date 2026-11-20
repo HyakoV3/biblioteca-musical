@@ -28,6 +28,11 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
                 wv.post { wv.evaluateJavascript("window.__bmccbGravacaoParadaPelaNotificacao && window.__bmccbGravacaoParadaPelaNotificacao()", null) }
             }
         }
+        ServicoAudio.aoFalhar = {
+            fraca.get()?.let { wv ->
+                wv.post { wv.evaluateJavascript("window.__bmccbServicoDeGravacaoFalhou && window.__bmccbServicoDeGravacaoFalhou()", null) }
+            }
+        }
         ServicoAudio.aoParar = {
             fraca.get()?.let { wv ->
                 wv.post { wv.evaluateJavascript("window.__bmccbParadoPelaNotificacao && window.__bmccbParadoPelaNotificacao()", null) }
@@ -39,6 +44,7 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
     fun soltar() {
         ServicoAudio.aoParar = null
         ServicoAudio.aoPararGravacao = null
+        ServicoAudio.aoFalhar = null
     }
 
     @JavascriptInterface
@@ -93,8 +99,19 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
     }
 
     private fun ligar(titulo: String) {
+        if (titulo.isNotBlank()) ServicoAudio.tituloAtual = titulo.take(120)
+        val intent = Intent(atividade, ServicoAudio::class.java)
+        if (ServicoAudio.ativo) {
+            // Já está no ar: só refaz o tipo, o título e o texto da notificação (`startService` vale também com o app em segundo plano).
+            ServicoAudio.paradaPendente = false
+            try {
+                atividade.startService(intent)
+            } catch (e: Exception) {
+                android.util.Log.w("bmccb", "não deu para atualizar o serviço", e)
+            }
+            return
+        }
         pedirPermissaoDeNotificacao()
-        val intent = Intent(atividade, ServicoAudio::class.java).putExtra(ServicoAudio.EXTRA_TITULO, titulo.take(120))
         ServicoAudio.paradaPendente = false
         ServicoAudio.aguardandoPrimeiroPlano = true
         try {
@@ -103,11 +120,20 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
             ServicoAudio.aguardandoPrimeiroPlano = false
             // O Android pode recusar (app fora da tela, restrição do fabricante): o hino segue tocando como antes, só sem a proteção.
             android.util.Log.w("bmccb", "serviço de reprodução não iniciou", e)
+            val eraGravacao = ServicoAudio.gravando
+            ServicoAudio.tocando = false
+            ServicoAudio.gravando = false
+            if (eraGravacao) ServicoAudio.aoFalhar?.invoke()
         }
     }
 
     private fun desligarSeOcioso() {
-        if (ServicoAudio.tocando || ServicoAudio.gravando) return
+        if (ServicoAudio.tocando || ServicoAudio.gravando) {
+            // Só uma das duas atividades terminou: o serviço fica, com o tipo, o título e o texto do que sobrou.
+            if (ServicoAudio.ativo) ligar("")
+            return
+        }
+        ServicoAudio.tituloAtual = ""
         if (ServicoAudio.aguardandoPrimeiroPlano) {
             // O serviço ainda está subindo: parar agora o destruiria sem ele ter chamado `startForeground` (o Android derrubaria o app).
             // Ele se encerra sozinho assim que chamar.
