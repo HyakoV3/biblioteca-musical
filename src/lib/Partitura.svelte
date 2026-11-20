@@ -84,6 +84,7 @@
   // a segunda nota, que acende quando a curva termina).
   type CurvaAcesa = { n: NotaDoDesenho<Element>; recorte: SVGRectElement; clip: SVGClipPathElement; copia: SVGPathElement; largura: number };
   let curvasAcesas: CurvaAcesa[] = [];
+  let curvasPedidas: NotaDoDesenho<Element>[] = []; // as curvas da última chamada, mesmo as que não puderam ser desenhadas (senão uma ignorada refaria tudo a cada quadro)
   let contadorDeRecortes = 0;
   const reduzirMovimento = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -93,6 +94,7 @@
       c.clip.remove();
     }
     curvasAcesas = [];
+    curvasPedidas = [];
   }
 
   function limparNotas() {
@@ -144,9 +146,10 @@
   }
 
   function destacarCurvas(curvas: Acesa<Element>[]) {
-    const mesmas = curvas.length === curvasAcesas.length && curvas.every((c, i) => c.n === curvasAcesas[i].n);
+    const mesmas = curvas.length === curvasPedidas.length && curvas.every((c, i) => c.n === curvasPedidas[i]);
     if (!mesmas) {
       limparCurvas();
+      curvasPedidas = curvas.map((c) => c.n);
       for (const { n } of curvas) {
         const original = n.el.querySelector("path") as SVGPathElement | null;
         if (!original) continue;
@@ -251,6 +254,7 @@
       // Os halos, as curvas e as notas lidas eram do DOM antigo.
       aureolas = [];
       curvasAcesas = [];
+      curvasPedidas = [];
       notasAcesas = [];
       indiceNotas = null;
       porNota = false;
