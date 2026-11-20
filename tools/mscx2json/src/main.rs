@@ -350,7 +350,7 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                         est.silabas.push(Silaba {
                             t: *t,
                             voz,
-                            verso: numero(l, "no").filter(|&v| v < CORO - 1).unwrap_or(0),
+                            verso: numero(l, "no").filter(|&v| v < FINAL).unwrap_or(0),
                             continua: matches!(texto(l, "syllabic"), Some("begin" | "middle")),
                             quebra_antes: false,
                             texto: sil,
@@ -611,28 +611,44 @@ fn corrigir_silabas(silabas: &mut [Silaba]) {
     }
 }
 
-/// Num hino com final, o texto do trecho final (o coro cantado só na última vez, depois da última estrofe) costuma vir escrito pelo
-/// autor sob a estrofe 1, que é a camada que ele já tinha aberta. No hinário impresso ele vem DEPOIS da última estrofe. Então o
-/// texto que começa em `t_final` (o início da 2ª casa) e está sob uma estrofe que não é a última passa para a última estrofe.
-/// Só se mexe quando esse texto está todo sob UMA estrofe: com mais de uma, não há como saber a qual cada trecho pertence.
-fn coro_para_a_ultima_estrofe(silabas: &mut [Silaba], t_final: f64) {
+/// Num hino com final, o texto do trecho final (cantado só na última vez, depois da última estrofe) costuma vir escrito pelo
+/// autor sob a estrofe 1, que é a camada que ele já tinha aberta. No hinário impresso ele vem DEPOIS da última estrofe, em bloco à parte.
+/// `t_final` é o início da 2ª casa, e a 2ª casa também traz o FIM da última estrofe (a última palavra, por exemplo), que o autor também pode ter escrito
+/// sob a estrofe 1. Então, do que está sob uma estrofe que não é a última a partir de `t_final`: o que cai até a última sílaba da própria última estrofe
+/// passa para ela (é o fecho dela); o que vem depois vira o bloco FINAL, logo depois da última estrofe.
+/// Só se mexe quando esse texto está todo sob UMA estrofe: com mais de uma, não há como saber a qual cada trecho pertence. Devolve quantas sílabas viraram o final.
+fn separar_o_final(silabas: &mut [Silaba], t_final: f64) -> usize {
     const EPS: f64 = 1e-6;
     let Some(ultima) = silabas.iter().map(|s| s.verso).max() else {
-        return;
+        return 0;
     };
     let origem: BTreeSet<u32> = silabas
         .iter()
         .filter(|s| s.t >= t_final - EPS && s.verso != ultima)
         .map(|s| s.verso)
         .collect();
-    if origem.len() == 1 {
-        for sil in silabas
-            .iter_mut()
-            .filter(|s| s.t >= t_final - EPS && s.verso != ultima)
-        {
+    if origem.len() != 1 {
+        return 0;
+    }
+    // a última sílaba da própria última estrofe: até ela o texto da 2ª casa é o fecho dessa estrofe
+    let fim_da_ultima = silabas
+        .iter()
+        .filter(|s| s.verso == ultima)
+        .map(|s| s.t)
+        .fold(f64::NEG_INFINITY, f64::max);
+    let mut no_final = 0;
+    for sil in silabas
+        .iter_mut()
+        .filter(|s| s.t >= t_final - EPS && s.verso != ultima)
+    {
+        if sil.t <= fim_da_ultima + EPS {
             sil.verso = ultima;
+        } else {
+            sil.verso = FINAL;
+            no_final += 1;
         }
     }
+    no_final
 }
 
 /// O último instante em que mais de uma estrofe canta ao mesmo tempo (`None` se nunca). Depois dele não há mais estrofes: o que
@@ -655,6 +671,9 @@ fn ultimo_instante_com_estrofes_juntas(silabas: &[Silaba]) -> Option<f64> {
 
 /// Marcador interno do coro (refrão): não é número de estrofe. Na letra vira o parágrafo "Coro. ..." e na sincronia, a estrofe 0.
 const CORO: u32 = u32::MAX - 1;
+/// Marcador interno do final (o texto cantado só na última vez, num hino com final): na letra vira o parágrafo "Final. ..." depois da última
+/// estrofe e, na sincronia, a estrofe 0 (um hino não tem coro e final juntos: o coro do hino com final é o próprio final).
+const FINAL: u32 = u32::MAX - 2;
 /// Com menos sílabas que isto depois das estrofes, o resto não é refrão: é o fim de uma estrofe escrito só uma vez (hinos 61, 62, 189...).
 const SILABAS_MINIMAS_DO_CORO: usize = 6;
 
@@ -877,6 +896,8 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<Str
         for (i, l) in e.linhas.into_iter().filter(|l| !l.is_empty()).enumerate() {
             saida.push(if i == 0 && verso == CORO {
                 format!("Coro. {l}")
+            } else if i == 0 && verso == FINAL {
+                format!("Final. {l}")
             } else if i == 0 {
                 format!("{}. {l}", verso + 1)
             } else {
@@ -925,7 +946,11 @@ fn estrofes_da_passada(
         }
         if algum {
             saida.push(EstrofeSinc {
-                estrofe: if verso == CORO { 0 } else { verso + 1 },
+                estrofe: if verso == CORO || verso == FINAL {
+                    0
+                } else {
+                    verso + 1
+                },
                 linhas,
             });
         }
@@ -1274,7 +1299,12 @@ pub fn converter_com(
             correcoes_tentadas = true;
             avisos.extend(correcoes::aplicar(&mut silabas, numero_hino, ajustes));
             if let Some(&(a2, _)) = plano.as_ref().and_then(|p| p.final_.last()) {
-                coro_para_a_ultima_estrofe(&mut silabas, estrutura.inicios[a2]);
+                let no_final = separar_o_final(&mut silabas, estrutura.inicios[a2]);
+                if no_final > 0 {
+                    avisos.push(format!(
+                        "final separado: {no_final} sílabas cantadas só na última vez viraram o bloco \"Final\""
+                    ));
+                }
             } else {
                 let n = refrao_com_estrofe_trocada(&mut silabas);
                 let coro = separar_o_coro(&mut silabas);
@@ -2264,9 +2294,37 @@ mod testes {
     }
 
     #[test]
-    fn coro_escrito_sob_a_estrofe_1_vai_para_a_ultima() {
+    fn o_fecho_da_ultima_estrofe_escrito_sob_a_estrofe_1_fica_na_ultima_e_so_o_resto_vira_final() {
+        // a 2ª casa começa em 10: "g" (sob a estrofe 1) fecha a última estrofe, que termina em 10,5; o coro vem depois
+        let mut s = vec![
+            silaba_em(0.0, 0, "alfa"),
+            silaba_em(2.0, 1, "gama"),
+            silaba_em(4.0, 2, "eta"),
+            silaba_em(10.0, 0, "g"),
+            silaba_em(10.5, 2, "fim"),
+            silaba_em(11.0, 0, "coro"),
+            silaba_em(12.0, 0, "final"),
+        ];
+        assert_eq!(separar_o_final(&mut s, 10.0), 2);
+        let (letra, _) = montar_letra(s, vec![]);
+        assert_eq!(
+            letra,
+            vec![
+                "1. alfa",
+                "",
+                "2. gama",
+                "",
+                "3. eta g fim",
+                "",
+                "Final. coro final"
+            ]
+        );
+    }
+
+    #[test]
+    fn texto_do_final_escrito_sob_a_estrofe_1_vira_o_bloco_final_depois_da_ultima() {
         let mut s = estrofes_com_coro(0);
-        coro_para_a_ultima_estrofe(&mut s, 10.0);
+        separar_o_final(&mut s, 10.0);
         let (letra, _) = montar_letra(s, vec![9.5]);
         assert_eq!(
             letra,
@@ -2276,7 +2334,8 @@ mod testes {
                 "2. gama delta",
                 "",
                 "3. eta teta",
-                "coro final"
+                "",
+                "Final. coro final"
             ]
         );
     }
@@ -2284,7 +2343,7 @@ mod testes {
     #[test]
     fn coro_que_ja_esta_na_ultima_estrofe_fica_como_esta() {
         let mut s = estrofes_com_coro(2);
-        coro_para_a_ultima_estrofe(&mut s, 10.0);
+        separar_o_final(&mut s, 10.0);
         assert!(s.iter().filter(|x| x.t >= 10.0).all(|x| x.verso == 2));
         assert!(
             s.iter()
@@ -2299,7 +2358,7 @@ mod testes {
         // Texto do final sob as estrofes 1 e 2: não há como saber a qual pertence cada trecho.
         let mut s = estrofes_com_coro(0);
         s[7].verso = 1;
-        coro_para_a_ultima_estrofe(&mut s, 10.0);
+        separar_o_final(&mut s, 10.0);
         assert_eq!((s[6].verso, s[7].verso), (0, 1));
     }
 
@@ -2477,12 +2536,12 @@ mod testes {
     #[test]
     fn hino_de_uma_estrofe_so_nao_muda() {
         let mut s = vec![silaba_em(0.0, 0, "alfa"), silaba_em(10.0, 0, "coro")];
-        coro_para_a_ultima_estrofe(&mut s, 10.0);
+        separar_o_final(&mut s, 10.0);
         assert!(s.iter().all(|x| x.verso == 0));
     }
 
     #[test]
-    fn no_hino_com_final_o_coro_escrito_sob_a_estrofe_1_sai_na_ultima() {
+    fn no_hino_com_final_o_texto_escrito_sob_a_estrofe_1_vira_o_bloco_final() {
         // Mesma estrutura do hino com final: o texto do trecho final (compassos 5 e 6) está sob a estrofe 1 (<no>0),
         // e a 2ª casa traz só a última sílaba da estrofe 2.
         let comp = |extra: &str, pitch: u8, letras: &[(u32, &str)]| {
@@ -2512,7 +2571,10 @@ mod testes {
         ]
         .concat();
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap();
-        assert_eq!(h.letra, vec!["1. a c e", "", "2. b d f g coro final"]);
+        assert_eq!(
+            h.letra,
+            vec!["1. a c e", "", "2. b d f g", "", "Final. coro final"]
+        );
     }
 
     #[test]

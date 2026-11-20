@@ -210,6 +210,7 @@ export const pt = {
   "hino.nao_encontrado": "Hino não encontrado.",
   "hino.estrofe": "Estrofe {n}",
   "hino.coro": "Coro",
+  "hino.final": "Final",
   "ajustes.titulo": "Ajustes",
   "ajustes.idioma": "Idioma da interface",
   "ajustes.conteudo": "Conteúdo",

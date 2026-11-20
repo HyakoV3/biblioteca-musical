@@ -142,16 +142,20 @@ estrofe, a linha e a sílaba que está soando. O conversor `mscx2json` gera o ca
 - `normal` vale para as vezes normais e `final` (opcional, só em hino com final) para a última vez. O **tempo de cada
   trecho está na régua das notas daquela passada** (batidas, começando em 0, como `vozes` e `final.vozes`): o conversor
   já tira da passada do final o que ela não toca (a 1ª casa) e cola o resto sem buracos.
-- `estrofe` é o número como aparece na letra ("1." é 1). A vez N acende a estrofe N. Num hino com final, o texto do
-  trecho final (o coro, cantado só na última vez) costuma estar escrito pelo autor sob a estrofe 1. O conversor o **passa
-  para a última estrofe**, como no hinário impresso, onde o coro vem depois dela (só quando esse texto está todo sob uma
-  única estrofe; com mais de uma, ele fica como o autor escreveu). Se o texto do final continuar sob outra estrofe, depois da
-  última sílaba da estrofe da vez o destaque passa a ele, onde ele está na letra.
+- `estrofe` é o número como aparece na letra ("1." é 1; 0 é o coro ou o final, abaixo). A vez N acende a estrofe N. Num hino com final, o texto do
+  trecho final (cantado só na última vez) costuma estar escrito pelo autor sob a estrofe 1. O conversor o separa no bloco **Final** (abaixo), depois da
+  última estrofe, como no hinário impresso (só quando esse texto está todo sob uma única estrofe; com mais de uma, ele fica como o autor escreveu). O que a
+  2ª casa traz do fim da própria última estrofe (a última palavra, por exemplo) fica nela. Depois da última sílaba da estrofe da vez, o destaque passa para
+  o texto que continua em outro lugar da letra.
 - **Coro (refrão).** Um parágrafo da `letra` que começa com `Coro. ` (no lugar do "N. ") é o coro: o app o mostra como um bloco à parte, com o
   subtítulo "Coro", e ele **não conta como uma vez a mais** (as vezes continuam uma por estrofe). Na sincronia ele é a **estrofe 0**. Como o
   coro vem depois da música das estrofes, ele acende **depois de cada estrofe**, em toda vez (a regra de "outras estrofes só depois da última da vez").
   O conversor o separa sozinho: o que é cantado depois do último instante em que mais de uma estrofe canta junto (com pelo menos 6 sílabas) é o coro, e
-  a letra o põe logo depois da estrofe 1, como no hinário impresso. Num hino com final vale a regra do coro do final, acima.
+  a letra o põe logo depois da estrofe 1, como no hinário impresso.
+- **Final.** Num hino com final, o texto cantado só na última vez é o parágrafo `Final. ...`, logo depois da última estrofe (o app mostra o subtítulo "Final"). Na
+  sincronia é também a **estrofe 0** (um hino não tem coro e final juntos: o app **desliga o karaokê** se a letra tiver os dois), e só a passada `final` tem trechos nele:
+  nas vezes normais ele não acende. Não conta como uma vez a mais. O conversor faz isso com o texto escrito sob uma estrofe que não é a última (`separar_o_final`,
+  com o aviso "final separado"); o que o autor escreveu colado ao fim da última estrofe fica como está.
 - `linhas[i]` é a i-ésima linha da estrofe na `letra` (sem o "N. " nem o "Coro. " do começo). Cada trecho é
   `[inicio_em_batidas, de, ate]`: o pedaço `de..ate` da linha começa a ser cantado em `inicio`. As posições contam
   **unidades UTF-16**, como o JavaScript indexa o texto. Uma linha sem trecho naquela passada é uma lista vazia, para o

@@ -31,3 +31,41 @@ describe("coro na letra", () => {
     expect(marcasDaVez(s.normal, 2).map((m) => m.estrofe)).toEqual([2, 2, 0, 0]);
   });
 });
+
+describe("final na letra", () => {
+  const LETRA_FINAL = ["1. um", "", "2. dois", "tres", "", "Final. alfa", "beta"];
+  it("o parágrafo 'Final. ' vira o final, sem o prefixo, com número 0", () => {
+    const e = estrofes(LETRA_FINAL);
+    expect(e.map((x) => x.numero)).toEqual([1, 2, 0]);
+    expect(e[2]).toEqual({ numero: 0, linhas: ["alfa", "beta"], final: true });
+  });
+  it("o final não conta como uma vez a mais", () => {
+    expect(totalDeEstrofes(LETRA_FINAL)).toBe(2);
+  });
+  it("a sincronia da estrofe 0 combina com o final, e só a passada do final acende o texto dele", () => {
+    const vazio = [[], []] as never[][];
+    const s: Sincronia = {
+      normal: [
+        { estrofe: 1, linhas: [[[0, 0, 2]]] },
+        { estrofe: 2, linhas: [[[0, 0, 4]], [[1, 0, 4]]] },
+        { estrofe: 0, linhas: vazio },
+      ],
+      final: [
+        { estrofe: 1, linhas: [[[0, 0, 2]]] },
+        { estrofe: 2, linhas: [[[0, 0, 4]], [[1, 0, 4]]] },
+        { estrofe: 0, linhas: [[[2, 0, 4]], [[3, 0, 4]]] },
+      ],
+    };
+    expect(sincroniaCombina(LETRA_FINAL, s)).toBe(true);
+    expect(marcasDaVez(s.normal, 2).map((m) => m.estrofe)).toEqual([2, 2]);
+    expect(marcasDaVez(s.final!, 2).map((m) => m.estrofe)).toEqual([2, 2, 0, 0]);
+  });
+});
+
+describe("coro e final juntos", () => {
+  it("a sincronia não combina quando a letra tem os dois (a estrofe 0 ficaria ambígua)", () => {
+    const letra = ["1. um", "", "Coro. alfa", "", "Final. beta"];
+    const s: Sincronia = { normal: [{ estrofe: 1, linhas: [[[0, 0, 2]]] }, { estrofe: 0, linhas: [[[2, 0, 4]]] }] };
+    expect(sincroniaCombina(letra, s)).toBe(false);
+  });
+});

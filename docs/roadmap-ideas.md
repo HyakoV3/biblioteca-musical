@@ -292,7 +292,7 @@ verso, títulos). O desenho exato depende das fotos.
   de hífen e de digitação, abaixo), e as quebras acertaram 57 de 57. Descrita em `docs/FORMATO.md`. A regra foi ajustada olhando esses 4 hinos, então vale **validar com mais fotos**.
 - **Coro (refrão):** nos hinos 398 e 457 o hinário imprime o coro **em negrito e separado** da estrofe, sem número. **Posição:**
   no 457 (hino com final) o coro vem **depois da última estrofe**, e o autor o escreveu sob a estrofe 1; o conversor agora o
-  passa para a última (2026-11-16, `coro_para_a_ultima_estrofe`). No 398 o coro vem logo **depois da estrofe 1**, e já saía
+  passa para a última (2026-11-16; desde 2026-11-20, `separar_o_final`, como bloco "Final" depois dela). No 398 o coro vem logo **depois da estrofe 1**, e já saía
   ali. **Feito (2026-11-20, pedido do responsável ao testar o hino 5):** o coro virou um parágrafo `Coro. ...` (estrofe 0 na sincronia), mostrado à parte, com o subtítulo "Coro" e aceso depois de cada estrofe; 309 dos 480 hinos têm coro (ver `docs/FORMATO.md`). **Falta:** negrito, como no impresso.
 - **Versos colados:** no hino 283 a partitura não tem respiração entre dois versos, e eles saem na mesma linha. A regra de
   maiúscula não resolve (a letra tem frases com maiúscula no meio de um verso); o **arquivo de correções** (I-05, feita) tem o verbo
