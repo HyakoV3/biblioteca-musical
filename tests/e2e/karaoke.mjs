@@ -898,6 +898,15 @@ async function principal() {
   await av(`document.getElementById('aba-gravador').click(); 1`);
   await dormir(400);
   const estadoGravador = () => av(`({ pressionado: document.getElementById('gravar').getAttribute('aria-pressed'), audio: document.querySelectorAll('.gravacao-item').length > 0, itens: document.querySelectorAll('.gravacao-item').length, info: document.querySelector('.gravacao-item .info')?.textContent.replace(/\\s+/g, ' ').trim() ?? null, erro: !!document.querySelector('#painel-gravador .aviso.erro'), ativos: window.__microfones.filter((t) => t.readyState === 'live').length })`);
+  // Depois de parar, a gravação leva um tempo para chegar à lista (o áudio é fechado, guardado no IndexedDB e a lista relida). Esperar um tempo fixo (900 ms)
+  // falhava no runner lento do GitHub; aqui se espera ela APARECER (até 10 s), conferindo a cada 200 ms.
+  const esperarGravacao = async (quantas = 1) => {
+    for (let fim = Date.now() + 10000; Date.now() < fim; ) {
+      if ((await av(`document.querySelectorAll('.gravacao-item').length`)) >= quantas) break;
+      await dormir(200);
+    }
+    await dormir(150); // deixa o resto da linha (tempo, tamanho, formato) terminar de ser desenhado
+  };
   // Apagar pede confirmação (dois toques): `apagarPrimeira` apaga a gravação do topo da lista; `limparLista` apaga todas.
   const apagarPrimeira = async () => {
     await av(`document.querySelector('.gravacao-item .apagar')?.click(); 1`);
@@ -923,7 +932,7 @@ async function principal() {
   const pedido = await av(`window.__pedido`);
   confere(g1.pressionado === "true" && g1.ativos === 1 && pedido?.audio?.echoCancellation === false && pedido?.audio?.autoGainControl === false, `Gravador: ao gravar o microfone está ligado, sem os efeitos de voz: ${JSON.stringify({ g1, pedido })}`);
   await av(`document.getElementById('gravar').click(); 1`);
-  await dormir(900);
+  await esperarGravacao();
   const g2 = await estadoGravador();
   confere(g2.pressionado === "false" && g2.audio === true && g2.ativos === 0 && /^0:0[1-3] · .+ · (webm|ogg|mp4)/.test(g2.info ?? ""), `Gravador: ao parar entrega a gravação (tempo, tamanho e formato) e devolve o microfone: ${JSON.stringify(g2)}`);
   await av(`document.querySelector('.gravacao-item .ouvir').click(); 1`);
@@ -1036,7 +1045,7 @@ async function principal() {
   await av(`document.getElementById('gravar').click(); 1`);
   await dormir(1800);
   await av(`document.getElementById('gravar').click(); 1`);
-  await dormir(900);
+  await esperarGravacao();
   const guardada = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, nome: document.querySelector('.gravacao-item .nome')?.textContent.trim(), resumo: document.getElementById('resumo-gravacoes')?.textContent.replace(/\\s+/g, ' ').trim() ?? null, vazio: !!document.getElementById('lista-vazia') })`);
   confere(guardada.itens === 1 && /^(Recording|Gravação|Grabación) \d\d\/\d\d.*\d\d:\d\d$/.test(guardada.nome ?? "") && /^1 (recording|gravação|grabación) · .*KB/.test(guardada.resumo ?? "") && guardada.vazio === false, `Gravador: ao parar a gravação é guardada no topo da lista, com nome de data e hora e o resumo (quantidade e espaço): ${JSON.stringify(guardada)}`);
   await abrirGravador(); // recarrega o app
@@ -1057,8 +1066,9 @@ async function principal() {
   // PARA (o alto-falante entraria nela); gravar para o item que tocava.
   await av(`document.getElementById('gravar').click(); 1`);
   await dormir(1800);
+  const antesDeParar = await av(`document.querySelectorAll('.gravacao-item').length`);
   await av(`document.getElementById('gravar').click(); 1`);
-  await dormir(900);
+  await esperarGravacao(antesDeParar + 1);
   await av(`document.querySelector('.gravacao-item .ouvir').click(); 1`);
   await dormir(900);
   const tocaDeVerdade = await av(`(() => { const a = document.querySelector('.gravacao-item audio'); return a ? { pausado: a.paused, tempo: a.currentTime, erro: !!a.error } : null; })()`);
