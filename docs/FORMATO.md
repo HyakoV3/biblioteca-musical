@@ -147,7 +147,12 @@ estrofe, a linha e a sílaba que está soando. O conversor `mscx2json` gera o ca
   para a última estrofe**, como no hinário impresso, onde o coro vem depois dela (só quando esse texto está todo sob uma
   única estrofe; com mais de uma, ele fica como o autor escreveu). Se o texto do final continuar sob outra estrofe, depois da
   última sílaba da estrofe da vez o destaque passa a ele, onde ele está na letra.
-- `linhas[i]` é a i-ésima linha da estrofe na `letra` (sem o "N. " do começo). Cada trecho é
+- **Coro (refrão).** Um parágrafo da `letra` que começa com `Coro. ` (no lugar do "N. ") é o coro: o app o mostra como um bloco à parte, com o
+  subtítulo "Coro", e ele **não conta como uma vez a mais** (as vezes continuam uma por estrofe). Na sincronia ele é a **estrofe 0**. Como o
+  coro vem depois da música das estrofes, ele acende **depois de cada estrofe**, em toda vez (a regra de "outras estrofes só depois da última da vez").
+  O conversor o separa sozinho: o que é cantado depois do último instante em que mais de uma estrofe canta junto (com pelo menos 6 sílabas) é o coro, e
+  a letra o põe logo depois da estrofe 1, como no hinário impresso. Num hino com final vale a regra do coro do final, acima.
+- `linhas[i]` é a i-ésima linha da estrofe na `letra` (sem o "N. " nem o "Coro. " do começo). Cada trecho é
   `[inicio_em_batidas, de, ate]`: o pedaço `de..ate` da linha começa a ser cantado em `inicio`. As posições contam
   **unidades UTF-16**, como o JavaScript indexa o texto. Uma linha sem trecho naquela passada é uma lista vazia, para o
   índice continuar o da letra.

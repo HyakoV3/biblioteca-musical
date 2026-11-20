@@ -33,6 +33,13 @@ cargo run --release -- --correcoes correcoes.json --id meu-hinario --nome "Meu h
 - **Letra: o que o conversor conserta sozinho** (só onde há regra segura): pronome colado ao verbo acentuado sem hífen (-lo, -la,
   -los, -las, -lhe, -lhes, com o "I" maiúsculo no lugar do "l" que ele traz às vezes) e "~" literal (vira espaço). O que tem mais de uma
   leitura possível o conversor **não adivinha**: fica para o arquivo de correções. Detalhes em `docs/FORMATO.md`.
+- **Letra: coro separado.** O que é cantado depois do último instante com estrofes juntas (pelo menos 6 sílabas com letra) vira um parágrafo
+  próprio, `Coro. ...`, logo depois da estrofe 1, e na sincronia é a estrofe 0 (`separar_o_coro`). Hino com final não passa por aqui. Aviso: "coro separado".
+- **Letra: refrão com a estrofe trocada.** Muitos hinos escrevem o refrão (coro) depois das estrofes, na camada da estrofe 1, mas com as
+  primeiras sílabas marcadas como estrofe 2 ("A Ro cha" no hino 5), o que deixava o refrão partido e pedaços órfãos no fim da estrofe 2.
+  Depois do **último instante em que mais de uma estrofe canta junto** (sílaba sem letra, como um `'` solto, não conta), o que sobra é
+  refrão: se aparece com mais de um número de estrofe, passa tudo para o que tem mais sílabas (empate: o menor). Cada hino afetado ganha o
+  aviso "refrão com estrofe trocada". Hino com final reconhecido usa a regra do coro do final, não esta.
 - **Letra: o que só se conserta com o arquivo de correções.** O conversor une as sílabas só onde o arquivo marca início, meio e
   fim da palavra. Partitura que não marca ("Pa" e "ra," saem separados), letra trocada, ou dois versos colados sem respiração
   produzem isso na letra. Para esses casos, `--correcoes arquivo.json` aplica trocas **explícitas** do responsável (juntar,

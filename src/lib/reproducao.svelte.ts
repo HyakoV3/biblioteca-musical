@@ -2,7 +2,7 @@
 // aba, voltar à lista ou abrir Ajustes, e o miniplayer sempre mostra o estado real.
 import type { Hino } from "./biblioteca.svelte";
 import type { InstrumentoId } from "./instrumentos";
-import { estrofes } from "./letra";
+import { totalDeEstrofes } from "./letra";
 import {
   PAUSA_ENTRE_PARTES_S,
   ehFinal,
@@ -35,7 +35,7 @@ export type Parte = "tudo" | "intro" | number;
 
 /** Quantas vezes o hino tem (1 se não tem final; senão uma por estrofe, a última é o final). */
 export function vezesDoHino(hino: Hino): number {
-  return totalDeVezes(hino, estrofes(hino.letra).length);
+  return totalDeVezes(hino, totalDeEstrofes(hino.letra));
 }
 
 export const ANDAMENTO_MIN = 40;

@@ -293,7 +293,7 @@ verso, títulos). O desenho exato depende das fotos.
 - **Coro (refrão):** nos hinos 398 e 457 o hinário imprime o coro **em negrito e separado** da estrofe, sem número. **Posição:**
   no 457 (hino com final) o coro vem **depois da última estrofe**, e o autor o escreveu sob a estrofe 1; o conversor agora o
   passa para a última (2026-11-16, `coro_para_a_ultima_estrofe`). No 398 o coro vem logo **depois da estrofe 1**, e já saía
-  ali. **Falta:** o JSON não marca onde o coro começa, então o app ainda o mostra colado à estrofe, sem negrito nem separação.
+  ali. **Feito (2026-11-20, pedido do responsável ao testar o hino 5):** o coro virou um parágrafo `Coro. ...` (estrofe 0 na sincronia), mostrado à parte, com o subtítulo "Coro" e aceso depois de cada estrofe; 309 dos 480 hinos têm coro (ver `docs/FORMATO.md`). **Falta:** negrito, como no impresso.
 - **Versos colados:** no hino 283 a partitura não tem respiração entre dois versos, e eles saem na mesma linha. A regra de
   maiúscula não resolve (a letra tem frases com maiúscula no meio de um verso); o **arquivo de correções** (I-05, feita) tem o verbo
   `quebrar_antes`, mas falta a foto do hino 283 para saber onde ficam os versos.
@@ -1197,6 +1197,12 @@ Os 480 hinos do Dó, com as 1.121 correções dos lotes, as letras trocadas pelo
 - **Partituras dos 480 hinos conferidas no app (2026-11-19):** zip único `partituras-480.zip` (480 partituras, todas com paisagem, 18,7 MiB, SHA-256 `7e761027…`, fora do Git) montado com `tools/montar-pacote.py` das 16 pastas de lote. Pelo teste `conteudo_real` (leitor e `svg::limpar` do app, ver `docs/pacote-de-partituras.md`): **o hinário de 480 hinos foi lido, 480 partituras importadas, 0 recusadas, todas lidas de volta (retrato e paisagem)**. **Não testado:** num celular (22 MB de zip viram ~29 MB de texto na ponte do Tauri) nem a divisão em faixas de 100; **não publicado** (sem acesso ao servidor e sem a autorização do Enéias).
 - **Causa de vários defeitos (responsável):** a **ligadura por baixo das notas confunde o OCR** do autor, e o final da estrofe vem escrito uma vez, sob a estrofe 1 (hinos 61, 62, 189, 198).
 - **Pendente (o responsável decidiu deixar como está por enquanto):** 61 (frase "Contigo na luz, ó meu Redentor…"), 62 ("implo-re Ti" e a quebra da estrofe 4), 189 (fim da estrofe 1), 185 (trecho partido da estrofe 1), 238 ("nhor," solto e fim da estrofe 3), 475 (fim da estrofe 3 e "O sano Evangelho"), as dúvidas de grafia dos relatórios de lote.
+
+### Regra do refrão no conversor (2026-11-19)
+O refrão vem escrito depois das estrofes, na camada da estrofe 1, mas com as primeiras sílabas marcadas como estrofe 2 (hino 5: "A Ro cha" como estrofe 2). O conversor ganhou a regra
+`refrao_com_estrofe_trocada` (`tools/mscx2json/src/main.rs`, com 5 testes e descrita no README do conversor): depois do último instante com mais de uma estrofe cantando, o que sobra é refrão
+e vai para uma estrofe só. Medido nos 480 hinos do Dó: **131 recebem a correção** (aviso "refrão com estrofe trocada"), e só a letra muda. Sem essa regra o hino 5 sai com "celestial" colado no fim
+da linha 4 e "A Rocha" no fim da estrofe 2.
 
 ### Perguntas em aberto
 1. O que o Enéias respondeu, e **o que ele autoriza** (uso, redistribuição, crédito)? Define o que pode entrar no repositório **e se os pacotes podem ficar num repositório público do GitHub (Releases) ou só no servidor próprio** (ver I-31).

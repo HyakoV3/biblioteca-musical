@@ -620,6 +620,82 @@ fn coro_para_a_ultima_estrofe(silabas: &mut [Silaba], t_final: f64) {
     }
 }
 
+/// O último instante em que mais de uma estrofe canta ao mesmo tempo (`None` se nunca). Depois dele não há mais estrofes: o que
+/// sobra é refrão. Sílaba sem nenhuma letra (um "'" solto, por exemplo) não conta como estrofe cantando.
+fn ultimo_instante_com_estrofes_juntas(silabas: &[Silaba]) -> Option<f64> {
+    const EPS: f64 = 1e-6;
+    let com_letra = |s: &&Silaba| s.texto.chars().any(char::is_alphabetic);
+    silabas
+        .iter()
+        .filter(com_letra)
+        .filter(|a| {
+            silabas
+                .iter()
+                .filter(com_letra)
+                .any(|b| b.verso != a.verso && (a.t - b.t).abs() < EPS)
+        })
+        .map(|s| s.t)
+        .fold(None, |m: Option<f64>, t| Some(m.map_or(t, |x| x.max(t))))
+}
+
+/// Marcador interno do coro (refrão): não é número de estrofe. Na letra vira o parágrafo "Coro. ..." e na sincronia, a estrofe 0.
+const CORO: u32 = u32::MAX - 1;
+/// Com menos sílabas que isto depois das estrofes, o resto não é refrão: é o fim de uma estrofe escrito só uma vez (hinos 61, 62, 189...).
+const SILABAS_MINIMAS_DO_CORO: usize = 6;
+
+/// Separa o refrão: tudo o que é cantado depois do último instante com estrofes juntas vira o **coro**, um bloco à parte da
+/// estrofe 1, como no hinário impresso. Só vale com pelo menos `SILABAS_MINIMAS_DO_CORO` sílabas com letra. Devolve quantas.
+fn separar_o_coro(silabas: &mut [Silaba]) -> usize {
+    const EPS: f64 = 1e-6;
+    let Some(corte) = ultimo_instante_com_estrofes_juntas(silabas) else {
+        return 0;
+    };
+    let com_letra = |s: &Silaba| s.texto.chars().any(char::is_alphabetic);
+    let n = silabas
+        .iter()
+        .filter(|s| s.t > corte + EPS && com_letra(s))
+        .count();
+    if n < SILABAS_MINIMAS_DO_CORO {
+        return 0;
+    }
+    for s in silabas.iter_mut().filter(|s| s.t > corte + EPS) {
+        s.verso = CORO;
+    }
+    n
+}
+
+/// Refrão (coro) escrito depois das estrofes, numa camada só, mas com o número de estrofe errado nas primeiras sílabas (visto nos hinos
+/// 5, 7, 10, 16 e 28 do hinário 5: "A Ro cha" marcado como estrofe 2 e o resto do refrão como estrofe 1). Depois do ÚLTIMO instante em
+/// que mais de uma estrofe canta ao mesmo tempo, não há mais estrofes: o que sobra é refrão e é de uma estrofe só. Se esse resto
+/// aparece com mais de um número de estrofe, todo ele passa para o que tem mais sílabas (empate: o menor número). Se o resto já está
+/// sob uma estrofe só, ou se não há instante com estrofes juntas, nada muda. Devolve quantas sílabas mudaram de estrofe.
+fn refrao_com_estrofe_trocada(silabas: &mut [Silaba]) -> usize {
+    const EPS: f64 = 1e-6;
+    let Some(corte) = ultimo_instante_com_estrofes_juntas(silabas) else {
+        return 0;
+    };
+    let mut contagem: BTreeMap<u32, usize> = BTreeMap::new();
+    for s in silabas.iter().filter(|s| s.t > corte + EPS) {
+        *contagem.entry(s.verso).or_insert(0) += 1;
+    }
+    if contagem.len() < 2 {
+        return 0;
+    }
+    let (alvo, _) = contagem.iter().fold(
+        (0, 0),
+        |(av, ac), (&v, &c)| if c > ac { (v, c) } else { (av, ac) },
+    );
+    let mut mudaram = 0;
+    for s in silabas
+        .iter_mut()
+        .filter(|s| s.t > corte + EPS && s.verso != alvo)
+    {
+        s.verso = alvo;
+        mudaram += 1;
+    }
+    mudaram
+}
+
 /// Monta a letra a partir das sílabas, **ordenadas pelo tempo da nota** (e não pela ordem no
 /// arquivo, onde as camadas de uma pauta vêm uma depois da outra). Cada estrofe (`<no>`,
 /// 0 = primeira) vira uma sequência de linhas, com quebra nas respirações que terminam um VERSO
@@ -728,13 +804,21 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<Str
         e.espaco = !sil.continua;
     }
 
+    // O coro vem logo depois da primeira estrofe, como no hinário impresso.
+    let mut ordem: Vec<(u32, Estrofe)> = estrofes.into_iter().collect();
+    if let Some(p) = ordem.iter().position(|(v, _)| *v == CORO) {
+        let coro = ordem.remove(p);
+        ordem.insert(1.min(ordem.len()), coro);
+    }
     let mut saida = vec![];
-    for (verso, e) in estrofes {
+    for (verso, e) in ordem {
         if !saida.is_empty() {
             saida.push(String::new());
         }
         for (i, l) in e.linhas.into_iter().filter(|l| !l.is_empty()).enumerate() {
-            saida.push(if i == 0 {
+            saida.push(if i == 0 && verso == CORO {
+                format!("Coro. {l}")
+            } else if i == 0 {
                 format!("{}. {l}", verso + 1)
             } else {
                 l
@@ -782,7 +866,7 @@ fn estrofes_da_passada(
         }
         if algum {
             saida.push(EstrofeSinc {
-                estrofe: verso + 1,
+                estrofe: if verso == CORO { 0 } else { verso + 1 },
                 linhas,
             });
         }
@@ -1132,6 +1216,19 @@ pub fn converter_com(
             avisos.extend(correcoes::aplicar(&mut silabas, numero_hino, ajustes));
             if let Some(&(a2, _)) = plano.as_ref().and_then(|p| p.final_.last()) {
                 coro_para_a_ultima_estrofe(&mut silabas, estrutura.inicios[a2]);
+            } else {
+                let n = refrao_com_estrofe_trocada(&mut silabas);
+                let coro = separar_o_coro(&mut silabas);
+                if coro > 0 {
+                    avisos.push(format!(
+                        "coro separado: {coro} sílabas depois das estrofes viraram o bloco \"Coro\""
+                    ));
+                }
+                if n > 0 {
+                    avisos.push(format!(
+                        "refrão com estrofe trocada: {n} sílabas do refrão (depois das estrofes) passaram para a estrofe do restante do refrão"
+                    ));
+                }
             }
             (letra, marcas) = montar_letra(silabas, respiracoes);
         }
@@ -2125,6 +2222,116 @@ mod testes {
         s[7].verso = 1;
         coro_para_a_ultima_estrofe(&mut s, 10.0);
         assert_eq!((s[6].verso, s[7].verso), (0, 1));
+    }
+
+    #[test]
+    fn refrao_com_as_primeiras_silabas_na_estrofe_errada_volta_para_a_estrofe_do_resto() {
+        // estrofes 0, 1 e 2 juntas nos tempos 0 a 2; depois o refrão (3 a 6): as duas primeiras sílabas marcadas como estrofe 1.
+        let mut s = vec![
+            silaba_em(0.0, 0, "a"),
+            silaba_em(0.0, 1, "b"),
+            silaba_em(0.0, 2, "c"),
+            silaba_em(2.0, 0, "d"),
+            silaba_em(2.0, 1, "e"),
+            silaba_em(2.0, 2, "f"),
+            silaba_em(3.0, 1, "A"),
+            silaba_em(4.0, 1, "Ro"),
+            silaba_em(5.0, 0, "cha"),
+            silaba_em(6.0, 0, "eternal"),
+        ];
+        assert_eq!(refrao_com_estrofe_trocada(&mut s), 2);
+        let versos: Vec<u32> = s.iter().filter(|x| x.t >= 3.0).map(|x| x.verso).collect();
+        assert_eq!(versos, vec![0, 0, 0, 0]);
+        // as estrofes em si não mudam
+        assert_eq!(s.iter().filter(|x| x.t < 3.0 && x.verso == 1).count(), 2);
+    }
+
+    #[test]
+    fn silaba_sem_letra_solta_no_refrao_nao_conta_como_estrofe_junta() {
+        // o "'" da estrofe 0 cai junto com "deira," da estrofe 1 depois das estrofes (hino 399): não prende o corte
+        let mut s = vec![
+            silaba_em(0.0, 0, "a"),
+            silaba_em(0.0, 1, "b"),
+            silaba_em(3.0, 1, "És"),
+            silaba_em(4.0, 1, "deira,"),
+            silaba_em(4.0, 0, "'"),
+            silaba_em(5.0, 0, "ó"),
+            silaba_em(6.0, 0, "Rei"),
+        ];
+        assert_eq!(refrao_com_estrofe_trocada(&mut s), 2);
+        assert!(s.iter().filter(|x| x.t >= 3.0).all(|x| x.verso == 0));
+    }
+
+    #[test]
+    fn sem_resto_depois_das_estrofes_nada_muda() {
+        let mut s = vec![
+            silaba_em(0.0, 0, "a"),
+            silaba_em(0.0, 1, "b"),
+            silaba_em(1.0, 0, "c"),
+            silaba_em(1.0, 1, "d"),
+        ];
+        assert_eq!(refrao_com_estrofe_trocada(&mut s), 0);
+    }
+
+    #[test]
+    fn resto_ja_numa_estrofe_so_nao_muda() {
+        // a última estrofe é mais comprida: depois das juntas só existe a estrofe 1, então não há o que corrigir
+        let mut s = vec![
+            silaba_em(0.0, 0, "a"),
+            silaba_em(0.0, 1, "b"),
+            silaba_em(2.0, 1, "c"),
+            silaba_em(3.0, 1, "d"),
+        ];
+        assert_eq!(refrao_com_estrofe_trocada(&mut s), 0);
+        assert!(s.iter().filter(|x| x.t >= 2.0).all(|x| x.verso == 1));
+    }
+
+    #[test]
+    fn empate_no_resto_fica_com_a_menor_estrofe() {
+        let mut s = vec![
+            silaba_em(0.0, 0, "a"),
+            silaba_em(0.0, 1, "b"),
+            silaba_em(3.0, 1, "x"),
+            silaba_em(4.0, 0, "y"),
+        ];
+        assert_eq!(refrao_com_estrofe_trocada(&mut s), 1);
+        assert!(s.iter().filter(|x| x.t >= 3.0).all(|x| x.verso == 0));
+    }
+
+    #[test]
+    fn o_que_sobra_depois_das_estrofes_vira_o_coro() {
+        // estrofes 0 e 1 juntas nos tempos 0 e 1; depois, 6 sílabas só da estrofe 0: o coro
+        let mut s = vec![
+            silaba_em(0.0, 0, "a"),
+            silaba_em(0.0, 1, "b"),
+            silaba_em(1.0, 0, "c"),
+            silaba_em(1.0, 1, "d"),
+        ];
+        for (i, x) in ["A", "Ro", "cha", "ce", "les", "tial"].iter().enumerate() {
+            s.push(silaba_em(3.0 + i as f64, 0, x));
+        }
+        assert_eq!(separar_o_coro(&mut s), 6);
+        assert!(s.iter().filter(|x| x.t >= 3.0).all(|x| x.verso == CORO));
+        assert!(s.iter().filter(|x| x.t < 3.0).all(|x| x.verso != CORO));
+        let (letra, marcas) = montar_letra(s, vec![]);
+        assert_eq!(
+            letra,
+            vec!["1. a c", "", "Coro. A Ro cha ce les tial", "", "2. b d"]
+        );
+        assert!(marcas.iter().any(|m| m.verso == CORO));
+    }
+
+    #[test]
+    fn resto_curto_depois_das_estrofes_nao_e_coro() {
+        // fim de estrofe escrito uma vez só (menos de 6 sílabas): fica na estrofe
+        let mut s = vec![
+            silaba_em(0.0, 0, "a"),
+            silaba_em(0.0, 1, "b"),
+            silaba_em(3.0, 0, "fim"),
+            silaba_em(4.0, 0, "da"),
+        ];
+        assert_eq!(separar_o_coro(&mut s), 0);
+        assert!(s.iter().all(|x| x.verso != CORO));
     }
 
     #[test]

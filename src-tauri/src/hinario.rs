@@ -99,7 +99,7 @@ pub struct Trecho(pub f32, pub u32, pub u32);
 /// trecho naquela passada fica vazia.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct EstrofeSinc {
-    /// Número da estrofe como aparece na letra ("1." é 1).
+    /// Número da estrofe como aparece na letra ("1." é 1); 0 é o coro ("Coro. ...").
     pub estrofe: u32,
     pub linhas: Vec<Vec<Trecho>>,
 }
@@ -114,11 +114,10 @@ pub struct Sincronia {
 
 fn estrofes_validas(estrofes: &[EstrofeSinc]) -> bool {
     estrofes.iter().all(|e| {
-        e.estrofe >= 1
-            && e.linhas
-                .iter()
-                .flatten()
-                .all(|Trecho(t, de, ate)| t.is_finite() && *t >= 0.0 && de < ate)
+        e.linhas
+            .iter()
+            .flatten()
+            .all(|Trecho(t, de, ate)| t.is_finite() && *t >= 0.0 && de < ate)
     })
 }
 
@@ -561,11 +560,10 @@ mod testes {
 
     #[test]
     fn sincronia_malformada_e_descartada_sem_recusar_o_hino() {
-        // trecho com de >= ate, tempo negativo, estrofe 0 e (no final) trecho invertido: cada um derruba só a sincronia
+        // trecho com de >= ate, tempo negativo e (no final) trecho invertido: cada um derruba só a sincronia
         for ruim in [
             r#"{"normal":[{"estrofe":1,"linhas":[[[0,3,3]]]}]}"#,
             r#"{"normal":[{"estrofe":1,"linhas":[[[-1,0,2]]]}]}"#,
-            r#"{"normal":[{"estrofe":0,"linhas":[[[0,0,2]]]}]}"#,
             r#"{"normal":[{"estrofe":1,"linhas":[[[0,0,2]]]}],"final":[{"estrofe":1,"linhas":[[[0,5,2]]]}]}"#,
         ] {
             let h =

@@ -249,7 +249,7 @@
       <div lang={idiomaConteudo} class={`letra alinha-${alinhamento}`} style:--escala-letra={escalaLetra}>
         {#each partes as e}
           <div class="estrofe" class:da-vez={aceso !== null && aceso.estrofe === e.numero}>
-            {#if e.numero !== null}<h2 lang={i18n.idioma}>{t("hino.estrofe", { n: e.numero })}</h2>{/if}
+            {#if e.coro}<h2 lang={i18n.idioma}>{t("hino.coro")}</h2>{:else if e.numero !== null}<h2 lang={i18n.idioma}>{t("hino.estrofe", { n: e.numero })}</h2>{/if}
             {#each e.linhas as linha, i}
               {@const acesa = aceso !== null && aceso.estrofe === e.numero && aceso.linha === i}
               <p id={`linha-${e.numero}-${i}`} class:acesa>
