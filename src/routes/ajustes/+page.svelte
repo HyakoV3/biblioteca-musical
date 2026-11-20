@@ -15,7 +15,7 @@
   import { usarVoltar } from "$lib/navegacao";
   import { reproducao } from "$lib/reproducao.svelte";
   import { ESTILOS, TEMAS, estilo, tema } from "$lib/tema.svelte";
-  import { CREDITOS, textoDaLicenca } from "$lib/licencas";
+  import { CREDITOS, semLicenca, textoDaLicenca } from "$lib/licencas";
   import { traduzirErro } from "$lib/erros";
   import { LIMITE_JSON_BYTES, listaCurta } from "$lib/pacote";
   import { partituras } from "$lib/partituras/partituras.svelte";
@@ -314,10 +314,10 @@
               <strong>{c.nome}</strong>
               <span class="meta">{t("creditos.por", { autor: c.autoria })}</span>
               <span>{t(`creditos.uso.${c.id}` as Chave)}</span>
-              <span class="meta">{t("creditos.licenca", { licenca: c.licenca })}</span>
+              <span class="meta">{t("creditos.licenca", { licenca: semLicenca(c) ? t("creditos.reservado") : c.licenca })}</span>
               {#if c.url}<span class="meta url">{c.url}</span>{/if}
               <details class="licenca">
-                <summary>{t("creditos.ver")}</summary>
+                <summary>{t(semLicenca(c) ? "creditos.ver_direitos" : "creditos.ver")}</summary>
                 {#each c.textos as tx}
                   <pre>{textoDaLicenca(tx)}</pre>
                 {/each}

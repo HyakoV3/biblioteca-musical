@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { pt } from "../src/lib/i18n/pt";
-import { CREDITOS, textoDaLicenca } from "../src/lib/licencas";
+import { CREDITOS, semLicenca, textoDaLicenca } from "../src/lib/licencas";
 import { TEXTO_APACHE_2, TEXTO_GENERALUSER, TEXTO_MIT, TEXTO_OFL } from "../src/lib/licencas-textos";
 
 describe("créditos e licenças", () => {
@@ -22,7 +22,7 @@ describe("créditos e licenças", () => {
 
   it("cobre o que o app usa: banco dos sons gravados, biblioteca de áudio e ícones", () => {
     const ids = CREDITOS.map((c) => c.id);
-    for (const esperado of ["generaluser", "smplr", "icones", "leipzig"]) expect(ids).toContain(esperado);
+    for (const esperado of ["eneias", "generaluser", "smplr", "icones", "leipzig"]) expect(ids).toContain(esperado);
   });
 
   it("o MIT leva a linha de direitos e o texto padrão; a Apache 2.0 vem inteira", () => {
@@ -66,5 +66,22 @@ describe("créditos e licenças", () => {
     expect(todos).not.toContain("gleitzman");
     expect(todos).not.toContain("midi-js-soundfonts");
     expect(todos).not.toContain("cc by");
+  });
+
+  it("o crédito do Enéias reconhece a autoria sem afirmar que há licença ou autorização", () => {
+    const e = CREDITOS.find((c) => c.id === "eneias")!;
+    expect(e.autoria).toBe("Enéias Ramos");
+    expect(e.url).toBe("https://github.com/eneiasramos");
+    expect(e.licenca).toBe("Todos os direitos reservados");
+    const texto = textoDaLicenca(e.textos[0]);
+    expect(texto).toContain("Enéias Ramos");
+    expect(texto).toContain("não trazem licença");
+    expect(texto.toLowerCase()).not.toContain("autorizad");
+  });
+
+  it("só o crédito sem licença usa os rótulos de 'direitos reservados', traduzidos nos três idiomas", () => {
+    expect(CREDITOS.filter(semLicenca).map((c) => c.id)).toEqual(["eneias"]);
+    expect(pt["creditos.reservado"]).toBe("Todos os direitos reservados");
+    expect(pt["creditos.ver_direitos"]).not.toBe(pt["creditos.ver"]);
   });
 });
