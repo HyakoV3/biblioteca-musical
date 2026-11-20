@@ -901,10 +901,17 @@ async function principal() {
   // Depois de parar, a gravação leva um tempo para chegar à lista (o áudio é fechado, guardado no IndexedDB e a lista relida). Esperar um tempo fixo (900 ms)
   // falhava no runner lento do GitHub; aqui se espera ela APARECER (até 10 s), conferindo a cada 200 ms.
   const esperarGravacao = async (quantas = 1) => {
+    let apareceu = false;
     for (let fim = Date.now() + 10000; Date.now() < fim; ) {
-      if ((await av(`document.querySelectorAll('.gravacao-item').length`)) >= quantas) break;
+      if ((await av(`document.querySelectorAll('.gravacao-item').length`)) >= quantas) {
+        apareceu = true;
+        break;
+      }
       await dormir(200);
     }
+    // O estouro da espera aparece como falha própria, para não ficar escondido atrás do "audio: false, itens: 0" da conferência seguinte.
+    const motivo = apareceu ? null : await av(`({ texto: (document.getElementById('painel-gravador')?.innerText ?? '').replace(/\\s+/g, ' ').slice(0, 300), alertas: [...document.querySelectorAll('#painel-gravador [role="alert"], #painel-gravador .aviso')].map((e) => e.textContent.trim().slice(0, 120)), audios: document.querySelectorAll('#painel-gravador audio').length })`);
+    confere(apareceu, `Gravador: a gravação apareceu na lista em até 10 s (esperava ${quantas})${motivo ? ` — a tela mostrava: ${JSON.stringify(motivo)}` : ""}`);
     await dormir(150); // deixa o resto da linha (tempo, tamanho, formato) terminar de ser desenhado
   };
   // Apagar pede confirmação (dois toques): `apagarPrimeira` apaga a gravação do topo da lista; `limparLista` apaga todas.
