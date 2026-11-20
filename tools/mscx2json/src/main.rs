@@ -230,6 +230,18 @@ fn voz_do(c: Node, est: &Estado) -> usize {
     }
 }
 
+/// Uma respiração em `t` fecha os "*" que esperavam uma nota e não tiveram nenhuma antes dela: a introdução termina onde a respiração está.
+fn fecha_asteriscos_na_respiracao(asteriscos: &mut [f64], pendentes: &mut Vec<usize>, t: f64) {
+    pendentes.retain(|&i| {
+        if asteriscos[i] <= t + 1e-6 {
+            asteriscos[i] = t;
+            false
+        } else {
+            true
+        }
+    });
+}
+
 /// O "*" marca a nota que o segue: a introdução termina no fim dela. `inicio` e `fim` são os da nota que acabou de ser lida, em batidas. Fecha TODOS os "*"
 /// pendentes que estão no começo dessa nota ou antes dele; um "*" depois do começo da nota (a nota é de outra voz, que começa antes) continua esperando.
 fn fecha_asterisco(est: &mut Estado, inicio: f64, fim: f64) {
@@ -271,11 +283,9 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
             }
             "Breath" => {
                 est.respiracoes.push(*t);
-                // "*" logo antes da respiração, sem nota no meio: a introdução termina onde a respiração está (o "*" dessa mesma hora deixa de esperar).
-                let asteriscos = &*est.asteriscos;
-                let t_respiracao = *t;
-                est.asteriscos_pendentes
-                    .retain(|&i| (asteriscos[i] - t_respiracao).abs() > 1e-6);
+                // "*" logo antes da respiração, sem nota no meio: a introdução termina onde a respiração está (no 250, o "*" fica em 11 e a respiração em 12,
+                // depois de um `tick`; parar no "*" deixava uma batida de fora).
+                fecha_asteriscos_na_respiracao(est.asteriscos, est.asteriscos_pendentes, *t);
             }
             // O "*" aparece como texto de pauta (<StaffText><text>) ou como cifra (<Harmony><name>), conforme a partitura.
             "StaffText" | "Harmony" => {
@@ -2708,6 +2718,18 @@ mod testes {
             notas_de(h.introducao.as_ref().expect("introdução"), 0),
             vec![(0.0, 2.0, 62), (2.0, 1.0, 64)]
         );
+    }
+
+    /// Como no hino 250: o "*" vem depois de uma pausa invisível, um `tick` leva o tempo adiante e só então vem a respiração. A introdução termina na
+    /// respiração, e não no "*" (que fica antes dela). O `tick` só vale na leitura por plano, então a regra é testada direto.
+    #[test]
+    fn respiracao_depois_do_asterisco_fecha_a_introducao_nela() {
+        let mut asteriscos = vec![11.0, 20.0];
+        let mut pendentes = vec![0usize, 1];
+        fecha_asteriscos_na_respiracao(&mut asteriscos, &mut pendentes, 12.0);
+        // o "*" de 11 fecha na respiração (12); o de 20 ainda é do futuro e continua esperando a sua nota
+        assert_eq!(asteriscos, vec![12.0, 20.0]);
+        assert_eq!(pendentes, vec![1]);
     }
 
     #[test]
