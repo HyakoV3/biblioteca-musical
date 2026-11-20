@@ -209,6 +209,7 @@ export const pt = {
   "hino.karaoke_ajuda": "Acompanha a letra e a partitura enquanto o hino toca.",
   "hino.nao_encontrado": "Hino não encontrado.",
   "hino.estrofe": "Estrofe {n}",
+  "hino.coro": "Coro",
   "ajustes.titulo": "Ajustes",
   "ajustes.idioma": "Idioma da interface",
   "ajustes.conteudo": "Conteúdo",

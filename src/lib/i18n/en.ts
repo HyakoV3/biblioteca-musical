@@ -209,6 +209,7 @@ export const en: Dicionario = {
   "hino.karaoke_ajuda": "Follows the lyrics and the score while the hymn plays.",
   "hino.nao_encontrado": "Hymn not found.",
   "hino.estrofe": "Verse {n}",
+  "hino.coro": "Chorus",
   "ajustes.titulo": "Settings",
   "ajustes.idioma": "Interface language",
   "ajustes.conteudo": "Content",
