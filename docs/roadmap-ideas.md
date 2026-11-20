@@ -948,7 +948,7 @@ Como o plugin de HTTP do Tauri trata cabeçalhos condicionais (ETag) no Android;
 
 ## I-26 — Karaokê na partitura por NOTA (cursor por nota)
 
-- **Status:** **revisada com o responsável (2026-11-19) e implementada na branch `karaoke-por-nota`** (gerador, limpeza do SVG no Rust, interface, testes unitários e de ponta a ponta; **falta**: pacote de partituras novo, APK e o teste no celular); amplia a I-12 (fase B), que hoje destaca o **compasso**
+- **Status:** **revisada com o responsável (2026-11-19) e implementada na branch `karaoke-por-nota`** (gerador, limpeza do SVG no Rust, interface, testes unitários e de ponta a ponta); **pacote `partituras-004.zip` (480 hinos) no servidor e APK 036 entregues (2026-11-19)**; **falta o teste no celular**; amplia a I-12 (fase B), que hoje destaca o **compasso**
 - **Origem:** pedido do responsável, 2026-11-17, ao testar o APK 025/026: "tu tá marcando no karaokê apenas o compasso né? Achei que tu marcaria a nota."
 - **Prioridade:** a definir (o destaque do compasso funciona; a nota é o que ele esperava)
 
@@ -986,7 +986,7 @@ na lista de permitidos, com valor numérico conferido), **nenhum mapa de ids** (
   atrás da nota, só quando o conjunto muda; o retângulo do compasso fica mais fraco quando a partitura traz as notas; no alto contraste só o contorno).
 - **Testes**: unitários (`tests/notas.test.ts`, `tools/test_gerar_partituras.py`, `svg.rs`) e o e2e do karaokê (notas em sequência, duas vozes, pausa, pausa entre as partes,
   pausado, desligado e fora da aba).
-- **Falta:** montar o **pacote de partituras novo** (`partituras-004.zip`: subir ao servidor e atualizar `src/lib/partituras/manifesto.json`), gerar o **APK**, e o **teste no
+- **Feito depois:** o **pacote `partituras-004.zip`** (480 hinos) está no servidor e no manifesto (PR #86) e o **APK 036** foi entregue. **Falta:** o **teste no
   celular** (o halo ao tocar um hino de verdade, no retrato e na paisagem, e nos temas).
 
 ### Critérios de aceitação (propostos)
