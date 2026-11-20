@@ -212,8 +212,12 @@ struct Estado<'a> {
     /// Sílabas e respirações (instantes) da pauta atual.
     silabas: &'a mut Vec<Silaba>,
     respiracoes: &'a mut Vec<f64>,
-    /// Instantes (em batidas) dos textos de pauta "*", que marcam o fim da introdução.
+    /// Instantes (em batidas) em que a introdução termina: o fim do acorde (ou da pausa) que leva o texto de pauta "*". O "*" é escrito sobre a
+    /// ÚLTIMA nota da introdução, que o autor fecha com a respiração (em 413 dos 480 hinos do Dó vem "*", acorde, respiração): a introdução vai até o
+    /// fim dessa nota, e não até o começo dela.
     asteriscos: &'a mut Vec<f64>,
+    /// Posição, em `asteriscos`, do "*" que ainda espera o acorde ou a pausa que ele marca (o próximo da pauta).
+    asterisco_pendente: Option<usize>,
 }
 
 fn voz_do(c: Node, est: &Estado) -> usize {
@@ -221,6 +225,13 @@ fn voz_do(c: Node, est: &Estado) -> usize {
         numero::<usize>(c, "track").map_or(0, |t| t % 4)
     } else {
         est.voz_base
+    }
+}
+
+/// O "*" marca a nota que o segue: a introdução termina no fim dela (`fim`, em batidas).
+fn fecha_asterisco(est: &mut Estado, fim: f64) {
+    if let Some(i) = est.asterisco_pendente.take() {
+        est.asteriscos[i] = fim;
     }
 }
 
@@ -249,7 +260,11 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                     *t = v / est.divisao;
                 }
             }
-            "Breath" => est.respiracoes.push(*t),
+            "Breath" => {
+                est.respiracoes.push(*t);
+                // "*" logo antes da respiração, sem nota no meio: a introdução termina onde a respiração está.
+                est.asterisco_pendente = None;
+            }
             // O "*" aparece como texto de pauta (<StaffText><text>) ou como cifra (<Harmony><name>), conforme a partitura.
             "StaffText" | "Harmony" => {
                 let rotulo = if c.has_tag_name("Harmony") {
@@ -263,18 +278,24 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                     .map(str::trim)
                     == Some("*")
                 {
-                    est.asteriscos.push(*t);
+                    est.asteriscos.push(*t); // provisório: vira o fim da nota que vem a seguir (ver `fecha_asterisco`)
+                    est.asterisco_pendente = Some(est.asteriscos.len() - 1);
                 }
             }
             "endTuplet" => {
                 est.tuplos.pop();
             }
-            "Rest" => *t += duracao(c, est.compasso)? * est.tuplos.iter().product::<f64>(),
+            "Rest" => {
+                let dur = duracao(c, est.compasso)? * est.tuplos.iter().product::<f64>();
+                fecha_asterisco(est, *t + dur);
+                *t += dur;
+            }
             "Chord" => {
                 if e_apojatura(c) {
                     continue;
                 }
                 let dur = duracao(c, est.compasso)? * est.tuplos.iter().product::<f64>();
+                fecha_asterisco(est, *t + dur);
                 let mut notas = vec![];
                 for nota in c.children().filter(|n| n.has_tag_name("Note")) {
                     if texto(nota, "play") == Some("0") {
@@ -1069,6 +1090,7 @@ pub fn converter_com(
                     silabas: &mut silabas,
                     respiracoes: &mut respiracoes,
                     asteriscos: &mut asteriscos,
+                    asterisco_pendente: None,
                 };
                 let mut t = inicio_compasso;
                 percorrer(no, &mut t, &mut est)?;
@@ -1210,8 +1232,8 @@ pub fn converter_com(
         })
     };
 
-    // Introdução: do começo até o primeiro "*" (hipótese a confirmar com o responsável). Sai das vozes já
-    // montadas, então tem as mesmas vozes, na mesma ordem. O "*" fica entre dois acordes, no meio do compasso.
+    // Introdução: do começo até o fim da nota que leva o primeiro "*" (o autor o escreve sobre a última nota da introdução, que fecha com a
+    // respiração). Sai das vozes já montadas, então tem as mesmas vozes, na mesma ordem.
     let fim_intro = asteriscos.iter().copied().fold(f64::INFINITY, f64::min);
     let introducao = if fim_intro.is_finite() && fim_intro > 0.0 {
         let intro = recortar_inicio(&vozes, fim_intro);
@@ -2581,7 +2603,7 @@ mod testes {
             .collect()
     }
 
-    /// Dois compassos de 4/4; no 2º, uma mínima, o texto de pauta "*" e outra mínima (o "*" cai no meio do compasso).
+    /// Dois compassos de 4/4; no 2º, uma mínima, o texto de pauta "*" e outra mínima (o "*" é escrito sobre a 2ª mínima, a última nota da introdução).
     fn hino_com_asterisco() -> String {
         let marca = "<StaffText><text>*</text></StaffText>";
         let m1 = comp_marcado("", 60);
@@ -2594,24 +2616,83 @@ mod testes {
     }
 
     #[test]
-    fn introducao_vai_do_comeco_ate_o_asterisco_no_meio_do_compasso() {
+    fn introducao_inclui_a_nota_que_leva_o_asterisco() {
         let h = converter(&hino_com_asterisco(), 1).unwrap();
-        // O "*" está depois da 1ª mínima do compasso 2: 4 + 2 = 6 batidas.
+        // O "*" está sobre a 2ª mínima do compasso 2 (começa em 6): a introdução vai até o FIM dela, 6 + 2 = 8 batidas.
         let intro = h.introducao.as_ref().expect("deveria ter introdução");
-        assert_eq!(notas_de(intro, 0), vec![(0.0, 4.0, 60), (4.0, 2.0, 62)]);
+        assert_eq!(
+            notas_de(intro, 0),
+            vec![(0.0, 4.0, 60), (4.0, 2.0, 62), (6.0, 2.0, 64)]
+        );
         // A passada normal continua inteira.
         assert_eq!(notas(&h, 0).len(), 3);
         assert!(
             h.avisos
                 .iter()
-                .any(|a| a.contains("introdução") && a.contains("6")),
+                .any(|a| a.contains("introdução") && a.contains("8")),
             "{:?}",
             h.avisos
         );
         let json = para_json(&h);
         assert_eq!(
             json["introducao"]["vozes"][0]["notas"],
-            json!([[0.0, 4.0, 60], [4.0, 2.0, 62]])
+            json!([[0.0, 4.0, 60], [4.0, 2.0, 62], [6.0, 2.0, 64]])
+        );
+    }
+
+    /// O caso de 413 dos 480 hinos do Dó: "*", a última nota da introdução e a respiração que a fecha; depois a música continua.
+    #[test]
+    fn introducao_termina_junto_da_respiracao_e_nao_corta_a_ultima_nota() {
+        let marca = "<StaffText><text>*</text></StaffText>";
+        let m = format!(
+            "<Measure><voice>{C44}{}{marca}{}<Breath/>{}</voice></Measure>",
+            acorde("half", 62),
+            acorde("quarter", 64),
+            acorde("quarter", 65)
+        );
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &m)), 1).unwrap();
+        // 62 (0 a 2), "*" sobre o 64 (2 a 3), respiração aos 3 e o 65 já é da música.
+        assert_eq!(
+            notas_de(h.introducao.as_ref().expect("introdução"), 0),
+            vec![(0.0, 2.0, 62), (2.0, 1.0, 64)]
+        );
+    }
+
+    #[test]
+    fn asterisco_sobre_uma_pausa_vai_ate_o_fim_dela() {
+        let marca = "<StaffText><text>*</text></StaffText>";
+        let m = format!(
+            "<Measure><voice>{C44}{}{marca}<Rest><durationType>quarter</durationType></Rest>{}</voice></Measure>",
+            acorde("half", 62),
+            acorde("quarter", 64)
+        );
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &m)), 1).unwrap();
+        // a pausa (2 a 3) entra na introdução, mas não tem nota: só o 62 aparece, e o 64 (em 3) fica de fora
+        assert_eq!(
+            notas_de(h.introducao.as_ref().expect("introdução"), 0),
+            vec![(0.0, 2.0, 62)]
+        );
+        assert!(
+            h.avisos
+                .iter()
+                .any(|a| a.contains("introdução") && a.contains("3")),
+            "{:?}",
+            h.avisos
+        );
+    }
+
+    #[test]
+    fn asterisco_logo_antes_da_respiracao_termina_onde_ela_esta() {
+        let marca = "<StaffText><text>*</text></StaffText>";
+        let m = format!(
+            "<Measure><voice>{C44}{}{marca}<Breath/>{}</voice></Measure>",
+            acorde("half", 62),
+            acorde("half", 64)
+        );
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &m)), 1).unwrap();
+        assert_eq!(
+            notas_de(h.introducao.as_ref().expect("introdução"), 0),
+            vec![(0.0, 2.0, 62)]
         );
     }
 
@@ -2626,7 +2707,7 @@ mod testes {
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &m)), 1).unwrap();
         assert_eq!(
             notas_de(h.introducao.as_ref().expect("deveria ter introdução"), 0),
-            vec![(0.0, 2.0, 62)]
+            vec![(0.0, 2.0, 62), (2.0, 2.0, 64)]
         );
     }
 

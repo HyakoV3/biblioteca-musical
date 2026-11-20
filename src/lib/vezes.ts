@@ -9,7 +9,7 @@ import type { Nota, Voz } from "./sintetizador";
 export type HinoComFinal = {
   vozes: Voz[];
   final?: { vozes: Voz[] } | null;
-  /** Do começo até o marcador "*" (mesmas vozes, na mesma ordem). */
+  /** Do começo até o fim da nota marcada com "*" (mesmas vozes, na mesma ordem). */
   introducao?: { vozes: Voz[] } | null;
 };
 

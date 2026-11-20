@@ -58,11 +58,16 @@ e as vozes.
 
 ### Introdução
 
-Opcionalmente o hino ganha `introducao`: as notas do **começo da partitura até o marcador `*`**, com as mesmas
+Opcionalmente o hino ganha `introducao`: as notas do **começo da partitura até o fim da nota marcada com `*`**, com as mesmas
 vozes, na mesma ordem e com os mesmos nomes de `vozes`, e o tempo começando em 0. A interface oferece um botão
 **Intro** que a toca sozinha e, em **"Tocar o hino todo"**, toca a introdução antes da 1ª vez. Entre as partes (a
 introdução e cada vez) há uma **pausa de 2 segundos**. Um arquivo cuja `introducao` tenha vozes diferentes das de
 `vozes` é recusado na importação. Sem `introducao`, o botão não aparece.
+
+**Onde a introdução termina.** O autor escreve o `*` sobre a **última nota da introdução** (e a fecha com a respiração): em 413 dos 480 hinos do Dó a sequência no
+arquivo é `*`, acorde, respiração. Por isso a introdução vai até o **fim** dessa nota (que coincide com a respiração), e não até o começo dela. Se o `*` vem logo
+antes de uma pausa, vai até o fim da pausa; se vem logo antes da respiração sem nota no meio, até onde a respiração está. (Até 2026-11-20 o conversor parava no começo
+da nota marcada e cortava a última nota da introdução em 477 dos 480 hinos.)
 
 ```json
 { "numero": 457, "vozes": [{ "nome": "Soprano", "notas": [[0, 1, 64]] }],
@@ -168,7 +173,7 @@ que soa (I-12, fase B). O conversor `mscx2json` gera o campo sozinho.
   que é também a **ordem dos `g.measure` do SVG** da partitura (conferido nos hinos de amostra, comparando com os ids que o Verovio atribui). Um compasso
   que se repete na execução (as repetições e as casas de volta) aparece nas listas com o mesmo índice, em instantes diferentes.
 - O **tempo está na régua do próprio fluxo**, a mesma das notas (`vozes`, `final.vozes`, `introducao.vozes`): `normal` vale para as vezes normais, `final`
-  (só em hino com final) para a última vez, e `introducao` para a introdução (os compassos que começam antes do marcador `*`; o que contém o `*` entra).
+  (só em hino com final) para a última vez, e `introducao` para a introdução (os compassos que começam antes do fim da nota marcada com `*`; o que contém o `*` entra).
   O conversor usa a mesma conta que já monta cada passada, então o instante de um compasso é exatamente onde as notas dele caem.
 - **Por que não o `timemap` do Verovio:** ele expande as repetições com ids de compasso que **não existem no SVG** (no hino 457, 56 compassos únicos contra
   38 desenhados). O conversor, que lê o `.mscx` e conhece as repetições de cada passada, é quem sabe qual compasso escrito toca em cada instante.
