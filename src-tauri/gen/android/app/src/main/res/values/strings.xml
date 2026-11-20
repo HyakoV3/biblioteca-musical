@@ -4,4 +4,5 @@
     <string name="canal_reproducao">Reprodução do hino</string>
     <string name="notificacao_tocando">Tocando</string>
     <string name="notificacao_parar">Parar</string>
+    <string name="notificacao_gravando">Gravando</string>
 </resources>

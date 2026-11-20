@@ -2,4 +2,5 @@
     <string name="canal_reproducao">Hymn playback</string>
     <string name="notificacao_tocando">Playing</string>
     <string name="notificacao_parar">Stop</string>
+    <string name="notificacao_gravando">Recording</string>
 </resources>

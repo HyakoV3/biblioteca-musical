@@ -9,6 +9,8 @@
     <!-- I-03: o Gravador usa o microfone (getUserMedia na WebView). O wry pede a permissão em tempo de execução, só ao gravar. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Gravar com a tela bloqueada: o mesmo serviço em primeiro plano ganha o tipo microfone (Android 14 em diante exige a permissão do tipo). -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
 
     <!-- AndroidTV support -->
     <uses-feature android:name="android.software.leanback" android:required="false" />
@@ -35,7 +37,7 @@
         <service
             android:name=".ServicoAudio"
             android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
+            android:foregroundServiceType="mediaPlayback|microphone" />
 
         <provider
           android:name="androidx.core.content.FileProvider"

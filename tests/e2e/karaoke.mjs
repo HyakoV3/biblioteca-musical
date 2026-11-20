@@ -1108,6 +1108,25 @@ async function principal() {
   await av(`window.__atrasoMic = 0; 1`);
   await apagarPrimeira();
   await dormir(300);
+  // No Android o serviço em primeiro plano (microfone) assume a gravação: com a tela bloqueada (página escondida) ela SEGUE, e para pelo botão da
+  // notificação. A ponte falsa registra as chamadas.
+  await av(`window.__ponte = []; window.BmccbServico = { iniciar() {}, parar() {}, iniciarGravacao() { window.__ponte.push('ligar'); }, pararGravacao() { window.__ponte.push('desligar'); } }; 1`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(600);
+  await esconder(true);
+  await dormir(1500);
+  const g7 = await estadoGravador();
+  confere(g7.pressionado === "true" && g7.ativos === 1, `Gravador: com o serviço do Android, a página escondida NÃO para a gravação: ${JSON.stringify(g7)}`);
+  await av(`window.__bmccbGravacaoParadaPelaNotificacao && window.__bmccbGravacaoParadaPelaNotificacao(); 1`);
+  await dormir(1200);
+  await esconder(false);
+  const g8 = await estadoGravador();
+  const ponte8 = await av(`window.__ponte.join(',')`);
+  confere(g8.pressionado === "false" && g8.ativos === 0 && g8.audio === true && ponte8 === "ligar,desligar", `Gravador: o botão Parar da notificação para, guarda e solta o serviço: ${JSON.stringify(g8)} / ${ponte8}`);
+  await av(`delete window.BmccbServico; 1`);
+  await av(`window.__atrasoMic = 0; 1`);
+  await apagarPrimeira();
+  await dormir(300);
   // Sair da aba com a gravação em curso: para, devolve o microfone e a gravação feita até ali fica.
   await av(`document.getElementById('gravar').click(); 1`);
   await dormir(1500);

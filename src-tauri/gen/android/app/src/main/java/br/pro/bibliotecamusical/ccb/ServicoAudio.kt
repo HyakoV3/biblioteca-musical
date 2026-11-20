@@ -41,6 +41,18 @@ class ServicoAudio : Service() {
          */
         var aguardandoPrimeiroPlano = false
         var paradaPendente = false
+
+        /**
+         * O que o serviço está segurando agora: um hino tocando e/ou uma gravação do microfone (Gravador). O serviço só se encerra quando
+         * nenhum dos dois precisa dele (ver `PonteServico`). Gravar com a tela bloqueada exige o tipo `microphone`: sem ele o Android corta o
+         * microfone do app que sai da tela (a gravação parava em cerca de 30 s).
+         */
+        var tocando = false
+        var gravando = false
+
+        /** Avisa o JavaScript que a pessoa tocou em "Parar" na notificação durante uma gravação (definido pela ponte; nulo com o app fechado). */
+        @Volatile
+        var aoPararGravacao: (() -> Unit)? = null
     }
 
     private var wakeLock: PowerManager.WakeLock? = null
@@ -50,6 +62,9 @@ class ServicoAudio : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACAO_PARAR) {
             aoParar?.invoke()
+            aoPararGravacao?.invoke()
+            tocando = false
+            gravando = false
             encerrar()
             return START_NOT_STICKY
         }
@@ -58,7 +73,9 @@ class ServicoAudio : Service() {
             criarCanal()
             val notificacao = montarNotificacao(titulo)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(ID_NOTIFICACAO, notificacao, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK)
+                var tipo = if (tocando || !gravando) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK else 0
+                if (gravando) tipo = tipo or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                startForeground(ID_NOTIFICACAO, notificacao, tipo)
             } else {
                 startForeground(ID_NOTIFICACAO, notificacao)
             }
@@ -84,6 +101,8 @@ class ServicoAudio : Service() {
     }
 
     override fun onDestroy() {
+        tocando = false
+        gravando = false
         soltarCpu()
         super.onDestroy()
     }
@@ -135,7 +154,7 @@ class ServicoAudio : Service() {
         return construtor
             .setSmallIcon(R.drawable.ic_notificacao)
             .setContentTitle(titulo)
-            .setContentText(getString(R.string.notificacao_tocando))
+            .setContentText(getString(if (gravando) R.string.notificacao_gravando else R.string.notificacao_tocando))
             .setContentIntent(abrir)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
