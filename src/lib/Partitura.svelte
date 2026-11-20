@@ -4,7 +4,7 @@
   import Aviso from "./Aviso.svelte";
   import { biblioteca, type Compassos } from "./biblioteca.svelte";
   import { compassoDoPonto } from "./compassos";
-  import { indexarNotas, mesmasNotas, notasDoPonto, temNotas, type NotaDoDesenho } from "./notas";
+  import { acesasDoPonto, indexarNotas, mesmasNotas, progressoDaCurva, temNotas, type Acesa, type NotaDoDesenho } from "./notas";
   import { reproducao } from "./reproducao.svelte";
   import Estado from "./Estado.svelte";
   import { traduzirErro } from "./erros";
@@ -80,7 +80,27 @@
   let aureolas: SVGEllipseElement[] = [];
   let porNota = false; // o SVG traz o tempo das notas (uma partitura de um pacote antigo não traz: fica só o compasso)
 
+  // A ligadura: a curva ganha uma cópia dourada, recortada da esquerda para a direita conforme a primeira nota soa (a luz corre do halo dela até
+  // a segunda nota, que acende quando a curva termina).
+  type CurvaAcesa = { n: NotaDoDesenho<Element>; recorte: SVGRectElement; clip: SVGClipPathElement; copia: SVGPathElement; largura: number };
+  let curvasAcesas: CurvaAcesa[] = [];
+  let contadorDeRecortes = 0;
+  const reduzirMovimento = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function limparCurvas() {
+    for (const c of curvasAcesas) {
+      c.copia.remove();
+      c.clip.remove();
+    }
+    curvasAcesas = [];
+  }
+
   function limparNotas() {
+    limparCurvas();
+    limparHalos();
+  }
+
+  function limparHalos() {
     for (const a of aureolas) a.remove();
     aureolas = [];
     notasAcesas = [];
@@ -95,10 +115,12 @@
     limparNotas();
   }
 
-  /** Põe o halo nas notas que soam agora e tira o das que pararam. Só mexe no desenho quando o conjunto muda. */
-  function destacarNotas(novas: NotaDoDesenho<Element>[]) {
+  /** Põe o halo nas notas que soam agora e tira o das que pararam; a luz da ligadura anda a cada chamada. Só recria o desenho quando o conjunto muda. */
+  function destacarNotas(acesas: Acesa<Element>[]) {
+    destacarCurvas(acesas.filter((a) => a.n.ligadura));
+    const novas = acesas.filter((a) => !a.n.ligadura).map((a) => a.n);
     if (mesmasNotas(novas, notasAcesas)) return;
-    limparNotas();
+    limparHalos();
     notasAcesas = novas;
     for (const { el } of novas) {
       // A cabeça da nota (ou a pausa inteira): a haste e a bandeirola ficam de fora do tamanho do halo.
@@ -118,6 +140,45 @@
       a.setAttribute("ry", String(Math.max(caixa.height, caixa.width) * 0.75));
       el.insertBefore(a, el.firstChild); // primeiro filho: desenhado antes (atrás) da cabeça, da haste e do acidente
       aureolas.push(a);
+    }
+  }
+
+  function destacarCurvas(curvas: Acesa<Element>[]) {
+    const mesmas = curvas.length === curvasAcesas.length && curvas.every((c, i) => c.n === curvasAcesas[i].n);
+    if (!mesmas) {
+      limparCurvas();
+      for (const { n } of curvas) {
+        const original = n.el.querySelector("path") as SVGPathElement | null;
+        if (!original) continue;
+        let caixa: DOMRect;
+        try {
+          caixa = original.getBBox();
+        } catch {
+          continue; // sem layout (painel escondido): não destaca
+        }
+        if (caixa.width === 0) continue;
+        const ns = "http://www.w3.org/2000/svg";
+        const clip = document.createElementNS(ns, "clipPath");
+        clip.setAttribute("id", `recorte-ligadura-${++contadorDeRecortes}`);
+        const recorte = document.createElementNS(ns, "rect");
+        recorte.setAttribute("x", String(caixa.x));
+        recorte.setAttribute("y", String(caixa.y - caixa.height));
+        recorte.setAttribute("height", String(caixa.height * 3));
+        recorte.setAttribute("width", "0");
+        clip.appendChild(recorte);
+        const copia = document.createElementNS(ns, "path");
+        copia.setAttribute("class", "destaque-ligadura");
+        copia.setAttribute("d", original.getAttribute("d") ?? "");
+        copia.setAttribute("clip-path", `url(#${clip.getAttribute("id")})`);
+        n.el.append(clip, copia); // depois da curva: desenhada por cima dela
+        curvasAcesas.push({ n, recorte, clip, copia, largura: caixa.width });
+      }
+    }
+    for (const c of curvasAcesas) {
+      const local = curvas.find((x) => x.n === c.n)?.local ?? c.n.f;
+      // Pedindo menos movimento, a curva aparece inteira de uma vez (sem a luz correndo).
+      const p = reduzirMovimento ? 1 : progressoDaCurva(c.n, local);
+      c.recorte.setAttribute("width", String(c.largura * p));
     }
   }
 
@@ -187,8 +248,9 @@
       retangulo = null;
       barra = null;
       compassoAceso = -1;
-      // Os halos e as notas lidas eram do DOM antigo.
+      // Os halos, as curvas e as notas lidas eram do DOM antigo.
       aureolas = [];
+      curvasAcesas = [];
       notasAcesas = [];
       indiceNotas = null;
       porNota = false;
@@ -223,7 +285,7 @@
         limparDestaque(); // trocou o jeito de mostrar o compasso: refaz do zero
       }
       destacar(compassoDoPonto(compassos, ponto));
-      destacarNotas(tem ? notasDoPonto(compassos, ponto, indiceNotas) : []);
+      destacarNotas(tem ? acesasDoPonto(compassos, ponto, indiceNotas) : []);
     };
     untrack(atualizar);
     if (!tocando) return;
@@ -316,6 +378,10 @@
     fill: var(--ouro); fill-opacity: 0.55; stroke: var(--ouro-linha); stroke-width: 0.125rem; vector-effect: non-scaling-stroke; pointer-events: none;
   }
   :global(:root[data-tema="alto-contraste"]) .folha :global(svg ellipse.destaque-nota) { fill-opacity: 0.18; stroke-width: 0.1875rem; }
+  /* A ligadura: a cópia dourada da curva, recortada da esquerda para a direita conforme a primeira nota soa. */
+  .folha :global(svg path.destaque-ligadura) {
+    fill: var(--ouro); fill-opacity: 0.9; stroke: var(--ouro-linha); stroke-width: 0.125rem; vector-effect: non-scaling-stroke; pointer-events: none;
+  }
   /* A barra dourada à esquerda do compasso que toca (como a barra da estrofe da vez na letra): diz qual é o compasso. */
   .folha :global(svg line.barra-compasso) { stroke: var(--ouro-linha); stroke-width: 0.25rem; stroke-linecap: butt; vector-effect: non-scaling-stroke; pointer-events: none; }
 </style>

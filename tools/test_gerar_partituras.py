@@ -499,36 +499,52 @@ class MarcarNotas(unittest.TestCase):
 
     def test_poe_data_t_e_data_f_em_notas_e_pausas(self):
         tempos = {"a": (0, 1), "p": (1, 2)}
-        svg, n = g.marcar_notas(self.SVG, tempos, {})
+        svg, n = g.marcar_notas(self.SVG, tempos, [])
         self.assertEqual(n, 2)
         self.assertIn('<g id="a" class="note" data-t="0" data-f="1">', svg)
         self.assertIn('<g id="p" class="rest" data-t="1" data-f="2">', svg)
         # sem tempo: intocado
         self.assertIn('<g id="b" class="note">', svg)
 
-    def test_a_segunda_nota_da_ligadura_nao_acende_e_a_primeira_soma_a_duracao(self):
-        tempos = {"a": (2, 4), "b": (0, 2)}  # a no fim do compasso 1, b (ligada) no começo do compasso 2
-        svg, n = g.marcar_notas(self.SVG, tempos, {"a": "b"})
-        self.assertEqual(n, 1)
-        self.assertIn('<g id="a" class="note" data-t="2" data-f="6">', svg)
-        self.assertIn('<g id="b" class="note">', svg)
+    SVG_LIGADURA = (
+        '<g id="m1" class="measure"><g id="a" class="note"></g><g id="t1" class="tie"><path d="M0,0"/></g></g>'
+        '<g id="m2" class="measure"><g id="b" class="note"></g><g id="c" class="note"></g><g id="t2" class="tie"></g><g id="t3" class="tie"></g></g>'
+    )
 
-    def test_ligadura_em_cadeia_soma_tudo(self):
-        tempos = {"a": (3, 4), "b": (0, 4), "c": (0, 1)}
-        svg, _ = g.marcar_notas(self.SVG, tempos, {"a": "b", "b": "c"})
-        self.assertIn('<g id="a" class="note" data-t="3" data-f="9">', svg)
+    def test_cada_nota_da_ligadura_acende_no_seu_tempo_e_a_curva_leva_o_tempo_da_primeira(self):
+        tempos = {"a": (2, 4), "b": (0, 2), "c": (2, 3)}
+        svg, n = g.marcar_notas(self.SVG_LIGADURA, tempos, [("t1", "a", "b")])
+        self.assertEqual(n, 3)
+        self.assertIn('<g id="a" class="note" data-t="2" data-f="4">', svg)
+        self.assertIn('<g id="b" class="note" data-t="0" data-f="2">', svg)  # a segunda também acende, no tempo dela
+        self.assertIn('<g id="t1" class="tie" data-t="2" data-f="4">', svg)  # a luz corre pela curva enquanto a primeira soa
+
+    def test_ligadura_em_cadeia_tem_uma_curva_para_cada_par(self):
+        tempos = {"a": (0, 1), "b": (1, 3), "c": (3, 4)}
+        svg, _ = g.marcar_notas(self.SVG_LIGADURA, tempos, [("t1", "a", "b"), ("t2", "b", "c")])
+        self.assertIn('<g id="t1" class="tie" data-t="0" data-f="1">', svg)
+        self.assertIn('<g id="t2" class="tie" data-t="1" data-f="3">', svg)
+
+    def test_ligadura_partida_pelo_fim_da_linha_divide_o_tempo_entre_os_pedacos(self):
+        svg, _ = g.marcar_notas(self.SVG_LIGADURA, {"a": (0, 4), "b": (4, 5)}, [("t2", "a", "b"), ("t3", "a", "b")])
+        self.assertIn('<g id="t2" class="tie" data-t="0" data-f="2">', svg)
+        self.assertIn('<g id="t3" class="tie" data-t="2" data-f="4">', svg)
+
+    def test_ligadura_sem_tempo_na_primeira_nota_fica_sem_atributos(self):
+        svg, _ = g.marcar_notas(self.SVG_LIGADURA, {"b": (0, 2)}, [("t1", "a", "b")])
+        self.assertIn('<g id="t1" class="tie">', svg)
 
     def test_ligadura_em_ciclo_nao_trava(self):
-        svg, n = g.marcar_notas(self.SVG, {"a": (0, 1), "b": (1, 2)}, {"a": "b", "b": "a"})
-        self.assertEqual(n, 0)  # as duas são "segundas" uma da outra: nenhuma acende, e o laço termina
+        svg, n = g.marcar_notas(self.SVG_LIGADURA, {"a": (0, 1), "b": (1, 2)}, [("t1", "a", "b"), ("t2", "b", "a")])
+        self.assertEqual(n, 2)
 
     def test_nota_de_enfeite_sem_duracao_nao_acende(self):
-        svg, n = g.marcar_notas(self.SVG, {"e": (1, 1)}, {})
+        svg, n = g.marcar_notas(self.SVG, {"e": (1, 1)}, [])
         self.assertEqual(n, 0)
         self.assertNotIn("data-t", svg)
 
     def test_so_marca_g_de_nota_e_pausa(self):
-        svg, n = g.marcar_notas(self.SVG, {"x": (0, 1), "m1": (0, 4)}, {})
+        svg, n = g.marcar_notas(self.SVG, {"x": (0, 1), "m1": (0, 4)}, [])
         self.assertEqual((n, svg), (0, self.SVG))
 
 

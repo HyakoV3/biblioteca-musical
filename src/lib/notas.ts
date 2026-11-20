@@ -11,7 +11,8 @@ const EPS = 1e-6;
 const COMPASSOS_PARA_TRAS = 4;
 
 export type TempoDaNota = { t: number; f: number };
-export type NotaDoDesenho<E> = TempoDaNota & { el: E };
+/** Uma nota, pausa ou ligadura (`ligadura: true`: a curva `g.tie`, por onde a luz corre do halo da primeira nota até a segunda). */
+export type NotaDoDesenho<E> = TempoDaNota & { el: E; ligadura?: boolean };
 
 /** Os dois atributos de uma nota, ou `null` se faltam ou não valem (não número, negativo, fim que não vem depois do começo). */
 export function lerTempo(t: string | null, f: string | null): TempoDaNota | null {
@@ -30,18 +31,26 @@ export function indexarNotas<E extends ComAtributos>(medidas: ArrayLike<Medida<E
   const saida: NotaDoDesenho<E>[][] = [];
   for (let i = 0; i < medidas.length; i++) {
     const lista: NotaDoDesenho<E>[] = [];
-    for (const el of Array.from(medidas[i].querySelectorAll("g.note[data-t], g.rest[data-t]"))) {
+    for (const el of Array.from(medidas[i].querySelectorAll("g.note[data-t], g.rest[data-t], g.tie[data-t]"))) {
       const tempo = lerTempo(el.getAttribute("data-t"), el.getAttribute("data-f"));
-      if (tempo) lista.push({ ...tempo, el });
+      if (!tempo) continue;
+      const ligadura = (el.getAttribute("class") ?? "").split(/\s+/).includes("tie");
+      lista.push(ligadura ? { ...tempo, el, ligadura } : { ...tempo, el });
     }
     saida.push(lista);
   }
   return saida;
 }
 
-/** Se alguma nota foi indexada (senão a partitura não traz o tempo das notas). */
-export function temNotas(porCompasso: readonly (readonly unknown[])[]): boolean {
-  return porCompasso.some((c) => c.length > 0);
+/** Se alguma nota foi indexada (senão a partitura não traz o tempo das notas). Só curvas de ligadura não bastam. */
+export function temNotas(porCompasso: readonly (readonly { ligadura?: boolean }[])[]): boolean {
+  return porCompasso.some((c) => c.some((n) => !n.ligadura));
+}
+
+/** Quanto da curva já foi percorrido (0 a 1) no instante `local` (em batidas, dentro do compasso onde a nota está). */
+export function progressoDaCurva(n: TempoDaNota, local: number): number {
+  const p = (local - n.t) / (n.f - n.t);
+  return Number.isFinite(p) ? Math.min(1, Math.max(0, p)) : 0;
 }
 
 /**
@@ -50,9 +59,15 @@ export function temNotas(porCompasso: readonly (readonly unknown[])[]): boolean 
  * inválida ou depois da última nota.
  */
 export function notasEm<E>(lista: readonly InicioDeCompasso[], batida: number, porCompasso: readonly (readonly NotaDoDesenho<E>[])[]): NotaDoDesenho<E>[] {
+  return acesasEm(lista, batida, porCompasso).map((a) => a.n);
+}
+
+/** Como `notasEm`, mas com o instante local (em batidas, dentro do compasso onde cada uma está): é o que mede o quanto de uma curva já foi percorrido. */
+export type Acesa<E> = { n: NotaDoDesenho<E>; local: number };
+export function acesasEm<E>(lista: readonly InicioDeCompasso[], batida: number, porCompasso: readonly (readonly NotaDoDesenho<E>[])[]): Acesa<E>[] {
   const atual = posicaoEm(lista, batida);
   if (atual === null) return [];
-  const acesas: NotaDoDesenho<E>[] = [];
+  const acesas: Acesa<E>[] = [];
   // Só olha para trás enquanto os compassos ESCRITOS forem consecutivos: a ligadura une um compasso ao que vem logo depois no papel, e depois de um salto
   // de repetição (7, 8 e volta ao 1) a nota ligada do 8 não continua no 1.
   let inicio = atual;
@@ -60,7 +75,7 @@ export function notasEm<E>(lista: readonly InicioDeCompasso[], batida: number, p
   for (let j = inicio; j <= atual; j++) {
     const local = batida - lista[j][0];
     for (const n of porCompasso[lista[j][1]] ?? []) {
-      if (n.t - EPS <= local && local < n.f - EPS && !acesas.includes(n)) acesas.push(n);
+      if (n.t - EPS <= local && local < n.f - EPS && !acesas.some((a) => a.n === n)) acesas.push({ n, local });
     }
   }
   return acesas;
@@ -71,6 +86,13 @@ export function notasDoPonto<E>(c: Compassos | null | undefined, p: PontoDeCompa
   if (!c || !p) return [];
   const lista = listaDoPonto(c, p);
   return lista ? notasEm(lista, p.batida, porCompasso) : [];
+}
+
+/** Como `notasDoPonto`, com o instante local de cada uma. */
+export function acesasDoPonto<E>(c: Compassos | null | undefined, p: PontoDeCompasso | null, porCompasso: readonly (readonly NotaDoDesenho<E>[])[]): Acesa<E>[] {
+  if (!c || !p) return [];
+  const lista = listaDoPonto(c, p);
+  return lista ? acesasEm(lista, p.batida, porCompasso) : [];
 }
 
 /** Duas listas de notas são a mesma (os mesmos elementos, na mesma ordem)? Para só mexer no desenho quando o conjunto muda. */

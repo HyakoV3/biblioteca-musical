@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { indexarNotas, lerTempo, mesmasNotas, notasDoPonto, notasEm, temNotas, type NotaDoDesenho } from "../src/lib/notas";
+import { acesasEm, indexarNotas, lerTempo, mesmasNotas, notasDoPonto, notasEm, progressoDaCurva, temNotas, type NotaDoDesenho } from "../src/lib/notas";
 import { posicaoEm } from "../src/lib/compassos";
 import type { Compassos } from "../src/lib/biblioteca.svelte";
 
@@ -103,5 +103,39 @@ describe("mesmasNotas", () => {
     expect(mesmasNotas([a, b], [b, a])).toBe(false);
     expect(mesmasNotas([a], [a, b])).toBe(false);
     expect(mesmasNotas([], [])).toBe(true);
+  });
+});
+
+describe("ligadura: a luz corre pela curva", () => {
+  const curva = (t: string, f: string) => ({ nome: "curva", getAttribute: (n: string) => (n === "data-t" ? t : n === "data-f" ? f : n === "class" ? "tie" : null) });
+
+  it("a curva com tempo é indexada como ligadura, e a nota comum não leva a marca", () => {
+    const m = indexarNotas([medida(el("a", "0", "2") as never, curva("0", "2") as never)]);
+    expect(m[0].map((n) => n.ligadura ?? false)).toEqual([false, true]);
+  });
+
+  it("só curvas não contam como 'partitura com tempo por nota' (sem notas ficaria sem halo e sem fundo)", () => {
+    expect(temNotas([[{ ligadura: true }]])).toBe(false);
+    expect(temNotas([[{ ligadura: true }, {}]])).toBe(true);
+  });
+
+  it("o progresso vai de 0 a 1 enquanto a primeira nota soa e fica nos limites fora dela", () => {
+    expect(progressoDaCurva({ t: 2, f: 4 }, 2)).toBe(0);
+    expect(progressoDaCurva({ t: 2, f: 4 }, 3)).toBe(0.5);
+    expect(progressoDaCurva({ t: 2, f: 4 }, 4)).toBe(1);
+    expect(progressoDaCurva({ t: 2, f: 4 }, 9)).toBe(1);
+    expect(progressoDaCurva({ t: 2, f: 4 }, -1)).toBe(0);
+    expect(progressoDaCurva({ t: 2, f: 2 }, 2)).toBe(0); // fim igual ao começo: sem divisão por zero
+  });
+
+  it("acesasEm devolve o instante local de cada uma; a segunda nota acende quando a curva termina", () => {
+    const lista = [[0, 0]] as [number, number][];
+    const primeira = nota("a", 0, 2);
+    const curvaDela: NotaDoDesenho<string> = { el: "curva", t: 0, f: 2, ligadura: true };
+    const segunda = nota("b", 2, 4);
+    const porCompasso = [[primeira, curvaDela, segunda]];
+    expect(acesasEm(lista, 1, porCompasso).map((a) => [a.n.el, a.local])).toEqual([["a", 1], ["curva", 1]]);
+    expect(acesasEm(lista, 2, porCompasso).map((a) => a.n.el)).toEqual(["b"]);
+    expect(notasEm(lista, 1, porCompasso).map((n) => n.el)).toEqual(["a", "curva"]);
   });
 });
