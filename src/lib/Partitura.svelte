@@ -78,7 +78,7 @@
   let indiceNotas: NotaDoDesenho<Element>[][] | null = null; // lido do SVG na primeira vez que se precisa
   let notasAcesas: NotaDoDesenho<Element>[] = [];
   let aureolas: SVGEllipseElement[] = [];
-  let porNota = $state(false); // o SVG traz o tempo das notas (uma partitura de um pacote antigo não traz: fica só o compasso)
+  let porNota = false; // o SVG traz o tempo das notas (uma partitura de um pacote antigo não traz: fica só o compasso)
 
   function limparNotas() {
     for (const a of aureolas) a.remove();
@@ -152,15 +152,21 @@
     }
     if (caixa.width === 0 || caixa.height === 0) return;
     const folga = Math.min(caixa.width, caixa.height) * 0.04;
-    const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    r.setAttribute("class", "destaque-compasso");
-    r.setAttribute("x", String(caixa.x - folga));
-    r.setAttribute("y", String(caixa.y - folga));
-    r.setAttribute("width", String(caixa.width + 2 * folga));
-    r.setAttribute("height", String(caixa.height + 2 * folga));
-    r.setAttribute("rx", String(folga * 2));
-    medida.insertBefore(r, medida.firstChild);
-    retangulo = r;
+    // O fundo (retângulo) só existe quando a partitura NÃO traz o tempo das notas (pacote antigo): lá ele é o único destaque. Com o tempo das notas,
+    // o compasso é mostrado só pela barra dourada à esquerda, e o halo da nota fica sozinho (o fundo o apagava).
+    let ancora: Element | null = null;
+    if (!porNota) {
+      const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      r.setAttribute("class", "destaque-compasso");
+      r.setAttribute("x", String(caixa.x - folga));
+      r.setAttribute("y", String(caixa.y - folga));
+      r.setAttribute("width", String(caixa.width + 2 * folga));
+      r.setAttribute("height", String(caixa.height + 2 * folga));
+      r.setAttribute("rx", String(folga * 2));
+      medida.insertBefore(r, medida.firstChild);
+      retangulo = r;
+      ancora = r;
+    }
     // A barra dourada na esquerda: mostra QUAL compasso é sem encher o fundo (o fundo apagava o halo da nota).
     const b = document.createElementNS("http://www.w3.org/2000/svg", "line");
     b.setAttribute("class", "barra-compasso");
@@ -168,7 +174,7 @@
     b.setAttribute("x2", String(caixa.x - folga));
     b.setAttribute("y1", String(caixa.y - folga));
     b.setAttribute("y2", String(caixa.y + caixa.height + folga));
-    medida.insertBefore(b, r.nextSibling); // logo depois do retângulo, que continua sendo o primeiro filho
+    medida.insertBefore(b, ancora ? ancora.nextSibling : medida.firstChild); // atrás das notas: primeiro filho, ou logo depois do retângulo
     barra = b;
     garantirVisivel(medida);
   }
@@ -208,11 +214,15 @@
     }
     const atualizar = () => {
       const ponto = reproducao.ponto(numero);
-      destacar(compassoDoPonto(compassos, ponto));
       if (!folha) return;
+      // O índice das notas vem ANTES do destaque do compasso: com tempo por nota o compasso não leva o fundo.
       indiceNotas ??= indexarNotas(folha.querySelectorAll("svg g.measure"));
       const tem = temNotas(indiceNotas);
-      if (tem !== porNota) porNota = tem;
+      if (tem !== porNota) {
+        porNota = tem;
+        limparDestaque(); // trocou o jeito de mostrar o compasso: refaz do zero
+      }
+      destacar(compassoDoPonto(compassos, ponto));
       destacarNotas(tem ? notasDoPonto(compassos, ponto, indiceNotas) : []);
     };
     untrack(atualizar);
@@ -262,7 +272,7 @@
     <!-- Uma região que rola para os lados precisa receber o foco do teclado (quem não usa toque não alcançaria o resto). -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div class="rolagem" role="region" aria-label={t("partitura.rolagem", { numero })} tabindex="0">
-      <div class="folha" class:por-nota={porNota} role="img" aria-label={t("partitura.aria", { numero })} data-variante={variante} style:--zoom={escala} bind:this={folha}>
+      <div class="folha" role="img" aria-label={t("partitura.aria", { numero })} data-variante={variante} style:--zoom={escala} bind:this={folha}>
         <!-- O SVG vem do Rust já limpo (src-tauri/src/svg.rs: lista de permitidos, sem CSS nem script, ids com prefixo). -->
         {@html carga.svg}
       </div>
@@ -300,14 +310,12 @@
   .folha :global(svg rect.destaque-compasso) {
     fill: var(--ouro); fill-opacity: 0.3; stroke: var(--ouro-linha); stroke-width: 0.125rem; vector-effect: non-scaling-stroke; pointer-events: none;
   }
-  /* Karaokê por nota (I-26): o halo atrás de cada nota e pausa que soa. A nota fica na cor do tema, por cima. Com o tempo das notas, o compasso passa a ser só um
-     fundo leve (contexto). No alto contraste (amarelo sobre preto) o preenchimento quase some e o contorno carrega o destaque, para não apagar a nota. */
+  /* Karaokê por nota (I-26): o halo atrás de cada nota e pausa que soa. A nota fica na cor do tema, por cima. Com o tempo das notas o compasso não leva fundo nem borda
+     (só a barra dourada abaixo). No alto contraste (amarelo sobre preto) o preenchimento quase some e o contorno carrega o destaque, para não apagar a nota. */
   .folha :global(svg ellipse.destaque-nota) {
     fill: var(--ouro); fill-opacity: 0.55; stroke: var(--ouro-linha); stroke-width: 0.125rem; vector-effect: non-scaling-stroke; pointer-events: none;
   }
   :global(:root[data-tema="alto-contraste"]) .folha :global(svg ellipse.destaque-nota) { fill-opacity: 0.18; stroke-width: 0.1875rem; }
   /* A barra dourada à esquerda do compasso que toca (como a barra da estrofe da vez na letra): diz qual é o compasso. */
   .folha :global(svg line.barra-compasso) { stroke: var(--ouro-linha); stroke-width: 0.25rem; stroke-linecap: butt; vector-effect: non-scaling-stroke; pointer-events: none; }
-  /* Com o tempo das notas o fundo amarelo do compasso sai (ele apagava o destaque do halo): fica só o contorno fino e a barra. */
-  .folha.por-nota :global(svg rect.destaque-compasso) { fill-opacity: 0; stroke-opacity: 0.4; stroke-width: 0.0625rem; }
 </style>
