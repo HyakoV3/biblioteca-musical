@@ -192,7 +192,7 @@
 <!-- O topo das abas Letra e Partitura: o andamento (o mesmo controle da aba Ouvir) e o karaokê. -->
 {#snippet acoesDoTopo()}
   <span class="acoes-do-topo">
-    {#if mostrarAndamento && hino}<AndamentoDoTopo {hino} />{/if}
+    {#if mostrarAndamento && hino}{#key hino.numero}<AndamentoDoTopo {hino} />{/key}{/if}
     {#if mostrarKaraoke}{@render botaoKaraoke()}{/if}
   </span>
 {/snippet}
