@@ -228,6 +228,8 @@ export const es: Dicionario = {
   "ajustes.creditos": "Créditos y licencias",
   "creditos.intro": "La app usa trabajos de terceros. Aquí están los autores y las licencias, como piden los términos de cada uno. Los textos de las licencias se muestran en el idioma original.",
   "creditos.por": "por {autor}",
+  "creditos.reservado": "Todos los derechos reservados",
+  "creditos.ver_direitos": "Ver los derechos de autor",
   "creditos.licenca": "Licencia: {licenca}",
   "creditos.ver": "Ver el texto de la licencia",
   "creditos.uso.eneias": "Las transcripciones de los himnos (archivos de MuseScore) de donde salen las notas, las letras y las partituras, en sus repositorios de GitHub.",

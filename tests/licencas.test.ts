@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { pt } from "../src/lib/i18n/pt";
-import { CREDITOS, textoDaLicenca } from "../src/lib/licencas";
+import { CREDITOS, semLicenca, textoDaLicenca } from "../src/lib/licencas";
 import { TEXTO_APACHE_2, TEXTO_GENERALUSER, TEXTO_MIT, TEXTO_OFL } from "../src/lib/licencas-textos";
 
 describe("créditos e licenças", () => {
@@ -77,5 +77,11 @@ describe("créditos e licenças", () => {
     expect(texto).toContain("Enéias Ramos");
     expect(texto).toContain("não trazem licença");
     expect(texto.toLowerCase()).not.toContain("autorizad");
+  });
+
+  it("só o crédito sem licença usa os rótulos de 'direitos reservados', traduzidos nos três idiomas", () => {
+    expect(CREDITOS.filter(semLicenca).map((c) => c.id)).toEqual(["eneias"]);
+    expect(pt["creditos.reservado"]).toBe("Todos os direitos reservados");
+    expect(pt["creditos.ver_direitos"]).not.toBe(pt["creditos.ver"]);
   });
 });

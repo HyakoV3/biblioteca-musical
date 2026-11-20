@@ -94,6 +94,11 @@ export const CREDITOS: readonly Credito[] = [
   },
 ] as const;
 
+/** O crédito não tem licença (só "direitos reservados")? Aí o rótulo e o botão não podem prometer um texto de licença: a tela usa `creditos.reservado` e `creditos.ver_direitos`. */
+export function semLicenca(c: Credito): boolean {
+  return c.textos.length > 0 && c.textos.every((x) => x.tipo === "reservado");
+}
+
 /** O texto de uma licença para um crédito (com a linha de direitos autorais, quando há). */
 export function textoDaLicenca(t: Credito["textos"][number]): string {
   switch (t.tipo) {

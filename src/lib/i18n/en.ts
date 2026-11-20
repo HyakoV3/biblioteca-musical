@@ -228,6 +228,8 @@ export const en: Dicionario = {
   "ajustes.creditos": "Credits and licenses",
   "creditos.intro": "The app uses third-party work. Here are the authors and licenses, as each one's terms require. The license texts are shown in their original language.",
   "creditos.por": "by {autor}",
+  "creditos.reservado": "All rights reserved",
+  "creditos.ver_direitos": "View copyright notice",
   "creditos.licenca": "License: {licenca}",
   "creditos.ver": "View the license text",
   "creditos.uso.eneias": "The hymn transcriptions (MuseScore files) that the notes, lyrics and scores come from, in his GitHub repositories.",
