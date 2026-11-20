@@ -131,7 +131,7 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
 - [ ] **I-09 e I-10 (partes e pausa):** ver no aparelho; trocar o **instrumento com a música tocando** (hoje os controles ficam
       travados): decisão do responsável.
 - [ ] **I-12 (karaokê, fase A):** ver no aparelho; **mudar o andamento na pausa** mantendo o lugar do destaque não tem teste
-      automatizado. A fase B (partitura) está em [`roadmap-ideas.md`](roadmap-ideas.md) e depende da I-08.
+      automatizado. A fase B (partitura) está feita (ver I-12 fase B e I-26 abaixo).
 - [ ] **I-15 (timbres):** ouvir os sintéticos novos de **flauta doce, violino, clarinete, viola, violoncelo, contrabaixo e trompa** e
       dizer se algum ficou fraco; o teste cego com o gravado (critério de aceitação) não foi feito; **4 vozes de metal ao mesmo
       tempo no celular** (custo de um filtro a mais por nota).
@@ -142,3 +142,10 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
       retroceder (faixa de toque do miniplayer e do ponto); o botão de tamanho e alinhamento da letra.
 - [x] ~~**I-07:** testar as 4 vozes gravadas ao mesmo tempo no celular~~ e ~~aceitar o tamanho do pacote (36 MB)~~: feitos e aprovados
       pelo responsável em 2026-11-15.
+- [ ] **I-08 (partitura):** a **autorização do Enéias** para publicar os pacotes; a marca de andamento do autor sai do SVG no pacote 006; coros 1 a 6 não convertidos. **(depende do responsável)**
+- [ ] **I-12 (fase B) e I-26 (karaokê por nota):** nenhum teste automático muda o **zoom** com a curva da ligadura acesa (o código refaz a folga; só o celular conferiu); o e2e do **Gravador** falha com frequência no CI (ver I-03).
+- [ ] **I-13 (afinador):** a **etapa 2 (ouvir e medir)** é a I-32 em [`roadmap-ideas.md`](roadmap-ideas.md); o Rust não declara `armadura` nem `modo`.
+- [ ] **I-19 (letra):** o **negrito** do coro e do final (I-33); os hinos **61, 162, 185 e 238** sem o bloco "Final"; o **283** (versos colados) precisa da foto; vetar os **45 hífens de pronome** dos hinos 1 a 30; letras pendentes do 61, 62, 185, 189, 198, 238 e 475. **(depende do responsável)**
+- [ ] **I-22 (tela bloqueada):** MediaSession (controles na tela de bloqueio); o teste longo e o "hino todo" com as pausas de 2 s não foram registrados.
+- [ ] **I-24 (Ajustes em cartões):** nada de função.
+- [ ] **I-28 (abas da tela inicial):** a rolagem de cada aba não tem teste de ponta a ponta; confirmar a ordem das abas (Hinos primeiro).

@@ -1022,3 +1022,661 @@ sistema. **Não verificado:** se o WebView do Android e o do iOS repassam essa p
 - Falta (seção 7 de [`../roadmap-pendencias.md`](../roadmap-pendencias.md)): ver no celular e a revisão por uma pessoa com baixa visão.
 
 ---
+
+---
+
+## I-08 — Mostrar a partitura no hino
+
+> **Arquivada em 2026-11-20:** feita: a aba Partitura existe (pacotes 003 a 005); ver o sumário.
+
+
+> **Origem:** sugestão do responsável: "como temos letras, mostrarmos a partitura também". Não estava no escopo
+> inicial. O formato já tem o campo opcional `partitura` (caminho de arquivo), mas nunca foi usado.
+
+### O que se deseja
+Uma aba **Partitura** no hino (ao lado de Ouvir e Letra) para o músico ler a música enquanto ouve.
+
+### Decisões (responsável, 2026-11-16)
+1. **Ferramentas:** MuseScore 4 (Flatpak) e Verovio (pacote Python) instalados **fora do repositório**: só geram o conteúdo.
+2. **Diagramação:** **Verovio, pensada para o celular** (a página tem a largura da tela e reflui em sistemas curtos), no lugar de
+   copiar a diagramação do MuseScore, que é de página larga e exigiria rolagem lateral.
+3. **Entrega:** as partituras vão **dentro do pacote `.zip`** (o `hinario.json` e os SVGs), fora do Git.
+4. **Aba Partitura:** com o pacote já importado, aparece **só nos hinos que têm partitura**. Quem acabou de instalar e ainda não
+   importou nada vê a aba **com um aviso e um botão para Ajustes**, onde baixa o arquivo. (Cursor na partitura, I-12 fase B: fica
+   para depois, mas o instante de cada nota já sai no **timemap**, para não regerar tudo mais tarde.)
+
+### Caminho
+1. **Gerar fora do app** (`python3 tools/gerar-partituras.py ENTRADA SAIDA`): `.mscx` → **MusicXML** (MuseScore 4, sem janela) →
+   **SVG** (Verovio), uma página por hino, mais um `hino-N.timemap.json`.
+2. **Empacotar** no `.zip` junto do `hinario.json`, usando o campo `partitura` (PR 2: importador em Rust e **sanitização do SVG**).
+3. **Aba "Partitura"** com zoom e rolagem (PR 3). SVG fica nítido em qualquer tamanho, o que ajuda quem tem baixa visão.
+4. **Teste no emulador e no celular** num APK (PR 4).
+
+**Por que não desenhar a partitura a partir do JSON:** o JSON guarda só altura e duração. Faltam armadura, fórmula
+de compasso, acidentes, ligaduras, cifras e casas de volta. Reconstruir isso seria reinventar a roda.
+
+### Primeiro teste (PR 1, feito nos 5 hinos de amostra)
+O MuseScore converte cada hino em MusicXML em menos de 1 s, e o Verovio o desenha em segundos. Medido com `largura=700`, `escala=40`:
+
+| Hino | SVG | SVG comprimido (gzip) | timemap |
+|---:|---:|---:|---:|
+| 1 | 134 KB | 23 KB | 7 KB |
+| 276 | 71 KB | 14 KB | 3 KB |
+| 283 | 167 KB | 28 KB | 11 KB |
+| 398 | 304 KB | 50 KB | 20 KB |
+| 457 | 243 KB | 40 KB | 26 KB |
+
+Média de **184 KB por hino**, ou **uns 31 KB comprimido**. Para 480 hinos: ~88 MB sem compressão e **uns 15 MB num zip** (o pacote
+real de 5 hinos, com o `hinario.json`, tem 166 KB). Os números da primeira medição (400 KB por hino) incluíam, em **cada** SVG, a
+fonte Leipzig embutida (58 KB em base64, igual em todos) e a indentação; sem elas o arquivo cai a menos da metade (ver a PR 2). O
+limite de 20 MB de hoje, para o `hinario.json`, não serve para o pacote com partituras: a PR 2 aceita o `.zip`. (No aparelho, o SVG
+gravado depois da limpeza fica uns **14% maior** que o do zip: o prefixo dos `id` e as tags fechadas por extenso; para 480 hinos,
+uns 100 MB em disco.)
+
+O que se aprendeu, e que a ferramenta já faz:
+- **Largura 700 em vez de 1000:** olhando num celular de 412 px, as notas ficam bem maiores e há poucos compassos por linha; o
+  arquivo só cresce 3%.
+- **Elisão ("sempre_em", duas palavras numa nota):** o MuseScore escreve o sinal como um texto solto numa fonte privada, que a página
+  mostra como um quadrado (▯). A ferramenta o troca pelo `<elision>` padrão do MusicXML, e o Verovio o desenha como a ligação "‿",
+  como no hinário impresso.
+- **Espaço entre as palavras da letra:** com o padrão do Verovio, onde duas vozes cantam letras diferentes as palavras se colam
+  ("bemu-", "ComJe-sus"). `lyricWordSpace` em 2,5 resolve.
+- **O SVG usa só `svg`, `g`, `path`, `use`, `text`, `tspan`, `rect`, `ellipse`, `style`, `defs` e `desc`**, e todo `href` é interno
+  (`#id`). Isso permite sanitizar por **lista de permitidos** (o app roda com `csp: null`, então um SVG com `<script>` ou
+  referência externa não pode passar): é o `src-tauri/src/svg.rs`, da PR 2, que lê, confere e **reescreve** o SVG.
+- **A fonte embutida:** o Verovio coloca em cada SVG um `<style>` com um `@font-face` da fonte Leipzig, 58 KB em base64
+  (`url(data:...)`), igual em todos os hinos. A primeira versão da limpeza recusou os 5 hinos reais por causa desse `url(`; e
+  liberar `url(data:` seria abrir a porta que a limpeza existe para fechar. Em vez disso, `smuflTextFont: "none"` tira a fonte do
+  SVG, e o app a traz uma vez só (licença OFL 1.1). Conferido no Chrome: com a Leipzig vinda da página, o desenho fica **idêntico,
+  byte a byte**, ao do SVG com a fonte embutida; sem ela, só os glifos de **texto** da fonte falham (a figura de nota do andamento, "♩ = 58", vira um quadrado ▯); as notas, pautas e claves são `path` e ficam. O `<style>` que sobra era só de negrito, itálico e `stroke:currentColor`, e é **descartado** na importação (um `<style>` em SVG embutido vale para a página inteira, e o vandame mostrou que isso deixaria um pacote malicioso falsificar botões); o CSS equivalente vai no app, escopado à partitura (ver `FORMATO.md`).
+- **Cor pelo tema:** o `<svg>` vem com `color="black"` e o preenchimento padrão é preto, então uma cor no contêiner de fora **não**
+  pinta nada (testado: preto sobre preto). O que funciona, testado no Chrome com o SVG **embutido na página** (inline, depois de
+  sanitizado), é uma regra de CSS no próprio `svg`: `color: var(--texto); fill: currentColor`. Aí pauta, notas, letra e andamento
+  seguem o tema escuro e o alto contraste (amarelo sobre preto) sem regerar nada. Como `<img>`, não dá: a CSS da página não entra
+  no SVG.
+- **Andamento esquisito no topo ("( - 84) ♩ = 63")** vem do próprio arquivo do autor (o texto do andamento está assim na
+  transcrição), não é defeito da geração.
+- O Verovio avisa quando um sistema fica muito apertado (razão de justificação < 0,8); nos 5 hinos a leitura não foi prejudicada.
+
+### Pontos de atenção
+- **Direitos:** as partituras vêm das mesmas transcrições, então a resposta do autor vale aqui também. As
+  imagens ficam **fora do Git**, como as letras (e as capturas de tela de partituras reais também).
+- **Importação:** hoje o app importa um só JSON (limite de 20 MB). Com imagens, é preciso um **pacote de vários
+  arquivos** (um `.zip`). É a parte de maior trabalho (PR 2).
+- **Licenças das ferramentas:** MuseScore (GPL-3.0) e Verovio (LGPL-3.0) só **geram** o conteúdo; nenhum dos dois entra no app.
+  O SVG gerado é do conteúdo, não das ferramentas.
+
+### Critérios de aceitação (propostos)
+- A partitura de um hino de amostra aparece nítida na aba, com zoom e rolagem, no emulador e no desktop.
+- O pacote importa sem passar de um tamanho combinado e sem ir para o Git.
+- Com a fonte do sistema no máximo e nos temas claro, escuro e baixa visão, a aba continua utilizável.
+
+---
+
+## I-12 — Karaokê na partitura (fase B)
+
+> **Arquivada em 2026-11-20:** feita (fase B): o compasso que toca fica com a barra dourada, e o karaokê por nota (I-26) acende cada nota; ver o sumário.
+
+
+- **Status:** **escolhida como a próxima frente** pelo responsável (2026-11-16); **passo 0 (medição) feito**; **etapa 1 (os dados) feita**: o conversor emite `compassos` e o app os lê (`docs/FORMATO.md`); **etapa 2 (a interface) feita e testada no celular pelo responsável (APK 025/026: "funcionou")**: o compasso que toca fica destacado na aba Partitura, com rolagem e o mesmo botão do karaokê da letra. **Ele esperava a NOTA, e não o compasso**: o cursor por nota virou a **I-26** (a **fase A**, o karaokê na letra, está feita: ver [`archive/roadmap-implementadas.md`](roadmap-implementadas.md))
+- **Origem:** sugestão do responsável: um karaokê "tanto na letra das músicas como nas partituras".
+- **Prioridade:** depende da I-08 (aba Partitura)
+
+### O que se deseja
+Um cursor ou destaque de compasso na **partitura** acompanhando a música, como a letra já faz na aba Letra.
+
+### Perguntas em aberto
+1. Cursor por **nota** ou destaque por **compasso**? (O campo `sincronia` do hinário traz tempos por **sílaba**, não por
+   compasso: o conversor precisaria gerar também os tempos de cada compasso ou nota.)
+2. O histórico e as decisões da fase A (posição do botão, como a sílaba acende, latência da saída de áudio) estão em
+   [`archive/ideias-implementadas.md`](ideias-implementadas.md), seção I-12.
+
+### Passo 0: casar o tempo do app com o `timemap` do Verovio (2026-11-16, medido)
+Antes de construir, mediu-se nos 5 hinos de amostra se o tempo das notas que o app toca casa com o `timemap` que o Verovio gera (`tools/gerar-partituras.py` já o grava por hino e por versão).
+
+- **A escala é a mesma.** O `qstamp` do `timemap` conta semínimas; no app a colcheia vale 0,5 batida e a semínima 1. Não há conversão de unidade.
+- **O app tem até 3 fluxos de notas por hino:** a vez normal, a introdução e o final. Pareando cada nota do soprano com os eventos do `timemap` pela altura, **100% das notas de cada fluxo casam num único deslocamento constante** (`qstamp - t`): a vez normal e a introdução em **0**, e o **final do 457 em 48 batidas** (a duração da vez normal). Hinos 1, 276, 283, 398: normal 48/48, 25/25, 80/80, 138/138 e introdução 18/18, 11/11, 20/20, 12/12 em 0; 457: normal 55/55, introdução 13/13 e final 110/110.
+- **Mas o `timemap` expande as repetições com ids que não existem no SVG.** No 457 o desenho tem 38 compassos e o `timemap` lista 56 compassos de ids **únicos**. O destaque **não pode usar os ids do `timemap`** (os dos compassos repetidos não estão no SVG).
+
+**Decisão proposta (a confirmar com o responsável):**
+1. **Destaque por compasso**, não cursor por nota (pergunta 1): é o que dá para fazer de forma robusta e legível; o cursor por nota fica para depois.
+2. **Quem diz qual compasso toca em cada instante é o conversor** (`tools/mscx2json`), que já conhece o instante de cada compasso e as repetições e casas de volta de cada passada (`Estrutura`: `inicio_compasso`, a passada normal e a do final). Ele emitiria, por fluxo, uma lista `[batida local, índice do compasso escrito]`, no mesmo molde da `sincronia` da letra. O app marca o N-ésimo `g.measure` do SVG (a ordem no documento seria a ordem escrita). **Sem o `timemap` no pacote.**
+3. **A rolagem** que acompanha o compasso tem de respeitar "reduzir movimento" (`tools/verificar-movimento.py`), e o liga/desliga é o mesmo do karaokê da letra.
+
+**Riscos (verificados na etapa 1, nos 5 hinos de amostra):** a ordem dos `g.measure` no SVG **é** a ordem escrita dos compassos do `.mscx`. O número de compassos do SVG é o que o conversor usa (11, 8, 18, 56 e 38), e cada início da passada normal do conversor corresponde ao `g.measure[i]` pelo id que o Verovio atribui; no final do 457 (só existe expandido no `timemap`), os 37 compassos têm início e comprimento idênticos aos do `timemap`. **Verificado na etapa 2:** o `class="measure"` sobrevive à limpeza do SVG no Rust (10 de 10 arquivos, mesmo número de compassos antes e depois), e o retrato e a paisagem de cada hino têm o mesmo número de compassos, então o índice vale nas duas versões.
+
+### Critérios de aceitação (propostos)
+- O destaque na partitura e o da letra andam juntos, na pausa congelam e ao mudar o andamento seguem no lugar certo.
+
+---
+
+## I-19 — Organizar como os hinos aparecem na letra
+
+> **Arquivada em 2026-11-20:** feita: quebras de verso, correção de digitação, **coro** e **final** em blocos próprios (PR #92 e #96). Faltam o negrito (I-33) e os hinos 61, 162, 185 e 238.
+
+
+- **Status:** **em andamento**: as **quebras de verso** já foram corrigidas no conversor (2026-11-16); falta o **coro** e o resto
+  (ver "O que se descobriu")
+- **Origem:** pedido do responsável, 2026-11-16: organizar "como os hinos aparecem no hinário, na parte de letra", a partir de
+  fotos que ele vai tirar.
+- **Prioridade:** a definir
+
+### O que se deseja
+Que a aba Letra apresente cada hino como ele aparece no hinário impresso (ordem e numeração das estrofes, coro, quebras de
+verso, títulos). O desenho exato depende das fotos.
+
+### O que se descobriu (2026-11-16, com 4 fotos: hinos 1, 276, 398 e 457)
+- **Versos partidos:** o conversor quebrava a linha em **toda respiração** da partitura, mas o hinário imprime **um verso por
+  linha**, e a partitura respira também no meio do verso. Das quebras do conversor nos 4 hinos, só 36 de 57 eram fim de verso. A
+  pista confiável é o **texto**: o verso novo começa em maiúscula, e a continuação, em minúscula (com exceção dos nomes
+  reverenciais). Com essa regra, **46 dos 48 versos impressos** conferidos passaram a sair iguais (**48 de 48** depois dos consertos
+  de hífen e de digitação, abaixo), e as quebras acertaram 57 de 57. Descrita em `docs/FORMATO.md`. A regra foi ajustada olhando esses 4 hinos, então vale **validar com mais fotos**.
+- **Coro (refrão):** nos hinos 398 e 457 o hinário imprime o coro **em negrito e separado** da estrofe, sem número. **Posição:**
+  no 457 (hino com final) o coro vem **depois da última estrofe**, e o autor o escreveu sob a estrofe 1; o conversor agora o
+  passa para a última (2026-11-16; desde 2026-11-20, `separar_o_final`, como bloco "Final" depois dela). No 398 o coro vem logo **depois da estrofe 1**, e já saía
+  ali. **Feito (2026-11-20, pedido do responsável ao testar o hino 5):** o coro virou um parágrafo `Coro. ...` (estrofe 0 na sincronia), mostrado à parte, com o subtítulo "Coro" e aceso depois de cada estrofe; 309 dos 480 hinos têm coro (ver `docs/FORMATO.md`). **Falta:** negrito, como no impresso.
+- **Versos colados:** no hino 283 a partitura não tem respiração entre dois versos, e eles saem na mesma linha. A regra de
+  maiúscula não resolve (a letra tem frases com maiúscula no meio de um verso); o **arquivo de correções** (I-05, feita) tem o verbo
+  `quebrar_antes`, mas falta a foto do hino 283 para saber onde ficam os versos.
+- **Erros de digitação do autor** nos arquivos `.mscx`. **O conversor já conserta, por regra segura** (2026-11-16): pronome
+  colado sem hífen depois de vogal acentuada (com o "I" no lugar do "l") e "~" literal. A regra "ãc" vira "ãe" **foi removida** (2026-11-16): o
+  autor tinha escrito "mãc" para "mão"; o que é ambíguo não se adivinha. **O resto** (sílaba
+  sem o marcador de continuação, a palavra que sai partida em duas, letras trocadas) **conserta-se com o arquivo de correções**
+  (I-05, feita 2026-11-16, [`correcoes-da-letra.md`](../correcoes-da-letra.md)); nos 5 hinos de amostra, 10 correções deixaram as palavras
+  iguais ao impresso (hinos 1, 276, 398 e 457) e sem palavras desconhecidas para o dicionário (exceto uma palavra do 283, sem foto).
+- **A pauta no topo** de cada hino impresso é o **começo da melodia**, no tom e no compasso do hino; o tamanho dela é o do
+  primeiro verso. Não está no `.mscx`, então não serve de régua para as quebras.
+
+### Perguntas em aberto
+1. Quais diferenças entre os hinos existem (coro, estribilho, estrofes numeradas ou não, repetições)?
+2. O justificado da I-04 ainda faz sentido com esse desenho? (hoje ele abre espaços largos nos versos que quebram)
+
+---
+
+## I-13 — Afinador: dar o tom e mostrar se a nota está baixa ou alta
+
+> **Arquivada em 2026-11-20:** etapa 1 feita (a aba Afinador dá o tom); o "Tom de um hino" foi descartado; a **etapa 2 (ouvir e medir) continua aberta na I-32** de `roadmap-ideas.md`.
+
+
+- **Status:** **etapa 1 pronta, sem o "Tom de um hino".** **DESCARTADO (2026-11-17, o responsável): o "Tom de um hino" (digitar o número do hino e ouvir a tônica) não é necessário e não será feito;** o código foi escrito, testado e **retirado** (commit `c8a81d4`, só local, sem PR). O que ficou: o conversor grava `armadura`, `modo` e `tonalidade` (PR #66) e a tonalidade aparece na lista e no cabeçalho do hino. O Rust do app ainda **não declara** `armadura` nem `modo` (o serde os descarta sem erro); quem os quiser usar um dia, declare-os como `Option<i64>` e `Option<String>` e valide depois de ler. Onde a spec abaixo fala de "Tom de um hino" (decisão 2, o esboço da tela, o item "Tom de um hino" e as etapas de entrega), **vale o descarte**. Fora isso, segue: Feito (2026-11-17): a aba **Afinador** com o **Lá 440 Hz** (botão largo, fora de cartão) e **outra nota** (12 notas num cartão fechado, oitava), o **temporizador** (cartão fechado: até parar, 10, 20 ou 30 s; o tom para sozinho; o botão mostra o que falta e uma barra de progresso; vale para o Lá e para outra nota e recomeça a cada nota nova; não é lembrado), tom sustentado com contexto de áudio próprio, um som de cada vez, sem volume na tela (o do celular), o `afinador.ts` e a `contagem.ts` puros e testados, e o teste de ponta a ponta que **mede o som gerado** (440,3 Hz) e a contagem em tempo real. **Falta:** a **etapa 2** (ouvir e medir), que começa pelo teste do microfone no aparelho. Especificada e revisada por subagente Opus 5 em 2026-11-17 (18 achados, aplicados; ver "Revisão").
+- **Origem:** pedido do responsável, 2026-11-14; especificada em 2026-11-17.
+- **Prioridade:** a definir. Depende da **I-28** (a aba Afinador na tela inicial), que entra **junto** com a primeira tela do afinador.
+
+### O que se deseja (nas palavras do responsável, 2026-11-14)
+
+Um **afinador** que **dá o tom** e, se a pessoa estiver de **fone de ouvido**, oferece **escutar o som** do instrumento
+ou da voz e mostrar se está **baixo ou alto**, num **medidor (gauge) parecido com o de um acelerador**, com o ponteiro
+indo para baixo ou para cima da nota certa.
+
+### Decisões do responsável (2026-11-17)
+
+1. **Duas etapas.** Primeiro **dar o tom** (não usa microfone nem permissão), depois **ouvir e medir**.
+2. **O tom do hino vem da partitura.** O conversor passa a ler a **tonalidade** do arquivo do MuseScore e a gravá-la no hinário (ver "Dados: a tonalidade").
+3. **Onde fica:** uma **aba da tela inicial** (`Hinos | Afinador | Gravador | …`), no mesmo estilo do `Ouvir | Letra | Partitura` de dentro do hino. É a **I-28**, que reaproveita o componente de abas.
+
+### Etapa 1 — Dar o tom
+
+**A aba Afinador** (esboço, no celular em pé; a barra de baixo é a da I-28):
+
+```
+┌──────────────────────────────────────────────┐
+│ Biblioteca Musical                      ⚙    │
+├──────────────────────────────────────────────┤
+│ Afinador                                     │
+│                                              │
+│   ┌──────────────────────────────────┐       │
+│   │      ▶  Lá 440 Hz                │       │
+│   └──────────────────────────────────┘       │
+│                                              │
+│   ▸ Outra nota                Dó4 · 262 Hz   │
+│     (fechado; abre para escolher a nota,     │
+│      a oitava e tocar)                       │
+│                                              │
+│   Tom de um hino                             │
+│   Hino nº [ 276 ]        Mi♭ maior           │
+│   ┌──────────────────────────────────┐       │
+│   │      ▶  Dar o tom                │       │
+│   └──────────────────────────────────┘       │
+├──────────────────────────────────────────────┤
+│    Hinos        ▌ Afinador ▐    Gravador     │
+└──────────────────────────────────────────────┘
+```
+
+**O que faz**
+- **Lá 440 Hz.** Um botão toca o lá central (A4) e **sustenta** a nota até ser apertado de novo (botão de ligar e desligar, com `aria-pressed`).
+- **Outra nota.** É um **cartão fechado** (o mesmo `Cartao.svelte` de Ajustes): a linha de cima mostra a nota e a frequência ("Dó4 · 262 Hz") e quem quiser o abre. Dentro, a pessoa escolhe a nota entre **12 botões** e a **oitava** (2 a 6), vê o nome e a frequência e toca; o mesmo botão toca e para. O cartão **não é lembrado** (começa fechado) e **fechá-lo com a nota soando a para**, porque o botão de parar fica dentro dele. **Grafia fixa dos 12:** Dó, Dó♯, Ré, Mi♭, Mi, Fá, Fá♯, Sol, Lá♭, Lá, Si♭, Si (os bemóis dos tons que os hinos mais usam e os sustenidos só onde faltam). Os botões formam um `radiogroup`, e cada um leva um `aria-label` **por extenso** ("Mi bemol"), porque o leitor de tela pode ler "♭" e "♯" como símbolos.
+- **Tom de um hino.** A pessoa escolhe o hino (campo com o número, a mesma busca da lista) e a tela mostra a **tonalidade** ("Mi♭ maior", no idioma da interface). **Dar o tom** toca a **tônica** dessa tonalidade. A **oitava padrão é a 4** (de Dó4 a Si4); abaixo da 3 o alto-falante do celular quase não reproduz o som, e a tela **avisa**. Hino sem tonalidade no hinário (conteúdo importado antes desta mudança) deixa o botão desligado com a explicação "importe um hinário atualizado".
+- **Som.** Timbre **sintetizado** `orgao_suave` (`src/lib/instrumentos.ts`: quase uma onda simples, **sem vibrato**, fácil de afinar de ouvido). Os instrumentos gravados ficam de fora porque o afinador **tem de funcionar sem nenhum pacote baixado** (o `smplr` até tem laço, `loadLoopData`, mas isso não muda o motivo).
+- **Temporizador.** Um segundo cartão, fechado, com a escolha atual na linha de cima ("Até parar" / "20 s"). O padrão é o de sempre: o tom soa até a pessoa parar. Com 10, 20 ou 30 s o tom **para sozinho** (sai com a envoltória) e o botão volta a "tocar". Vale para o Lá e para outra nota (uma escolha só) e **a contagem recomeça a cada nota ou oitava nova**; mudar o tempo com o tom soando vale a partir de agora, e voltar a "até parar" cancela a contagem sem parar o tom. A escolha **não é lembrada**. O botão de parar mostra "Parar · faltam 14 s" e um fio de progresso na borda de baixo (só visual: o leitor de tela só é avisado do fim, "Tom encerrado pelo temporizador", e não ouve a contagem segundo a segundo; a barra anda em passos de 1 s, sem animação).
+- **Sem controle de volume na tela** (decisão do responsável, 2026-11-17: "como é celular, não faz sentido ter volume ali; a pessoa controla nos botões físicos"). O tom tem ganho fixo e quem ajusta é o volume de mídia do celular. Afinação de referência fixa em **440 Hz** nesta etapa (temperamento igual).
+
+**Áudio: um contexto próprio e um som de cada vez** (achado de bloqueio da revisão)
+- O hino toca num `AudioContext` **privado** do `Sintetizador` (nasce dentro de `tocar()`), e a pausa do hino é `ctx.suspend()`. Se o afinador usasse o mesmo contexto, **pausar o hino calaria o tom**. Logo o afinador tem o **seu próprio** `AudioContext`, criado e retomado **no toque** (o áudio só inicia depois de um gesto do usuário). **Reaproveita os perfis e a construção das ondas, não o contexto.**
+- **Nota sustentada é código novo:** `agendarNota` exige a duração e agenda a soltura de antemão. A nota do afinador precisa de rampa de entrada, nota sem fim, rampa de saída e `stop` do oscilador só depois da soltura (sem estalo).
+- **Dar o tom para o hino** que estiver tocando. Como `reproducao.pausar()` **não faz nada enquanto o hino ainda carrega** (`trocando`), o afinador **observa `reproducao.estado`** e só toca quando o hino não está tocando nem carregando.
+- **O caminho inverso também vale:** se a pessoa der "Tocar" no miniplayer (ou na tela do hino) **com o tom soando**, o tom **se cala**. O hino **não volta sozinho** depois que o tom para.
+- **Quando o tom para:** ao apertar de novo, ao sair da aba, quando a página vai para segundo plano (`visibilitychange`) e quando o hino começa.
+
+**Dados: a tonalidade** (o conversor e o formato)
+
+Hoje o conversor **não grava `tonalidade`**: o campo existe no formato (`docs/FORMATO.md`, e `Hino.tonalidade` no Rust) e a tela já o mostra, mas nos 5 hinos de amostra ele vem vazio. O arquivo do MuseScore traz a **armadura** (`<KeySig><accidental>-3</accidental>`: número de bemóis, negativo, ou de sustenidos, positivo) e, nos arquivos de amostra, **não traz o modo** (todos são do MuseScore **2.06**; que o MuseScore 4 grave `<concertKey>` e um `<mode>` **não foi confirmado**: aceitar o que existir e usar o modo escrito quando houver).
+
+- **Armadura:** a do **primeiro** `KeySig` da partitura (um braço `"KeySig"` em `percorrer`, como o `"Tempo"`, que também guarda só o primeiro); sem o elemento, armadura 0. Modulações no meio da peça são ignoradas (documentar).
+- **Tônica e modo (hipótese a validar):** a tônica **maior** da armadura é `(armadura × 7)` módulo 12 (em Rust, **`rem_euclid`**, porque o resto de um número negativo é negativo); a da **relativa menor** fica 3 semitons abaixo. O modo sai da **nota final do baixo**: se bate com a menor, **menor**; senão, **maior**. A "nota final" é a da passada **final**, se o hino tiver uma, ou a da normal. Se não bater com nenhuma, usa a **primeira** nota do baixo; se ainda não bater, assume maior e o conversor **avisa** na saída.
+- **Medido nos 5 hinos de amostra:** 4 trazem `KeySig` (−3, −3, +1 e −2) e o 457 não traz o elemento (a primeira nota do baixo é Dó: armadura 0). Nos 4 com armadura, a nota final do baixo é a tônica **maior** (Mi♭, Mi♭, Sol e Si♭) e igual à primeira nota do baixo. **Nenhum hino de amostra é menor**, então o ramo "menor" ainda não foi visto em dado real.
+- **O nome vem da armadura, não da tônica** (a mesma classe de nota tem dois nomes: +6 é Fá♯ maior e −6 é Sol♭ maior). Tabela, da armadura à tonalidade (maior / relativa menor):
+
+  | Armadura | −7 | −6 | −5 | −4 | −3 | −2 | −1 | 0 | +1 | +2 | +3 | +4 | +5 | +6 | +7 |
+  |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+  | Maior | Dó♭ | Sol♭ | Ré♭ | Lá♭ | Mi♭ | Si♭ | Fá | Dó | Sol | Ré | Lá | Mi | Si | Fá♯ | Dó♯ |
+  | Menor | Lá♭ | Mi♭ | Si♭ | Fá | Dó | Sol | Ré | Lá | Mi | Si | Fá♯ | Dó♯ | Sol♯ | Ré♯ | Lá♯ |
+
+- **O que se grava no hinário** (opcional; hinários antigos continuam válidos): `armadura` (−7 a +7), `modo` (`"maior"` ou `"menor"`) e, por compatibilidade com versões antigas do app, `tonalidade` em texto no idioma do hinário. **A tônica não é gravada:** o app a deriva de `armadura` e `modo` (função pura e testada em `afinador.ts`).
+- **Nomes por idioma:** o app **monta o nome** a partir de `armadura` e `modo` no idioma da **interface** (pt "Mi♭ maior", en "E♭ major", es "Mi♭ mayor"), e usa o texto `tonalidade` só se os campos faltarem. Efeito colateral a decidir: a **lista de hinos** e o cabeçalho do hino passam a mostrar a tonalidade de cada hino (o código já existe e hoje não aparece nada).
+- **Rust (`src-tauri/src/hinario.rs`):** declarar `armadura: Option<i64>` e `modo: Option<String>` (não um tipo mais estreito): um **tipo errado** num campo declarado faz o serde **recusar o hinário inteiro** (`json_invalido`), ao contrário de `compassos`, cujo descarte só acontece com o tipo certo e o conteúdo inválido. Validar **depois** de ler (armadura em −7 a 7, modo em `maior`/`menor`) e, se algo estiver inválido, **descartar os dois sem recusar o hino**. Sem declarar, o serde os descartaria em silêncio na ida ao front.
+- **`docs/FORMATO.md`:** o exemplo traz `"tonalidade": "Dó"`, sem modo; atualizar.
+- **Reconverter e reimportar o hinário** é parte do teste (a mesma lição dos `compassos`).
+
+**Impacto técnico da etapa 1 (hipóteses)**
+- `tools/mscx2json`: o braço `"KeySig"`, o modo, os campos novos (`armadura`, `modo`, `tonalidade`) e testes com armaduras de −7 a +7, ausência de `KeySig`, hino menor e caso ambíguo.
+- `src-tauri/src/hinario.rs` e `src/lib/biblioteca.svelte.ts`: os campos e a validação.
+- `src/lib/afinador.ts` (**funções puras**, testáveis no Vitest): `tonicaDe(armadura, modo)`, nome da nota e da tonalidade por idioma (pt, en, es), frequência de uma nota dada a afinação (`440 × 2^((n−69)/12)`; já existe `frequencia` em `sintetizador.ts`), cents entre duas frequências e nota mais próxima. Serve também à etapa 2.
+- Um módulo do **tom sustentado** (com o `AudioContext` próprio), usando os perfis de `src/lib/instrumentos.ts`.
+- Componente `Afinador.svelte` com a prop `ativa`, como a `Partitura.svelte`. Textos nos 3 idiomas, tamanhos em `rem`, botões com `aria-pressed`.
+- **Teste de ponta a ponta:** o teste de hoje não alcança o grafo de áudio privado do app, e o Chrome do `tests/e2e/karaoke.mjs` roda com `--autoplay-policy=no-user-gesture-required`, o que **esconde** o problema do gesto. Então: (1) conferir a frequência com um **nó de teste** exposto só em modo de teste, ou com um `OfflineAudioContext` que renderiza o mesmo perfil, e (2) rodar o trecho do gesto **sem essa flag** (mantendo `--mute-audio`) para provar que o toque inicia o áudio.
+
+### Etapa 2 — Ouvir e medir
+
+O app escuta o microfone, descobre a nota e mostra **quantos cents** ela está acima ou abaixo (1 semitom = 100 cents), num **ponteiro** que vai de "baixo" a "alto" passando pelo centro ("afinado").
+
+**O medidor**
+- Mostra o **nome da nota** mais próxima, o **número de cents** (com sinal) e a **palavra** ("baixo", "alto", "afinado"); o ponteiro nunca depende só da cor, e respeita "reduzir movimento".
+- **"Afinado":** ±5 cents (a banda mais comum nos afinadores; o limiar de percepção fica em 5 a 6 cents), com **histerese** para a palavra não piscar na borda. A tolerância fica configurável.
+- **Faixa:** de cerca de 65 Hz (Dó2) a 2100 Hz (Dó7); fora dela, "sem nota".
+- Sem som ou com sinal fraco, o medidor **descansa** e diz "toque ou cante uma nota", em vez de inventar uma leitura.
+- **Leitor de tela:** o medidor leva `aria-live` com **taxa limitada** (anunciar a mudança de nota e de palavra, no máximo uma vez por segundo, e não cada leitura em cents).
+
+**Como detecta (pesquisado em 2026-11-17)**
+- **Biblioteca: `pitchy`** (algoritmo MPM, de McLeod): tipos TypeScript, cerca de 2,8 KB comprimida (com a dependência `fft.js`), versão 4.1.0 de janeiro de 2024. Licença **MIT** no pacote do npm e **0BSD** no repositório (conferidos na revisão): as duas servem a um projeto MIT. API: `PitchDetector.forFloat32Array(N).findPitch(buffer, taxa)` devolve a frequência e uma **clareza** de 0 a 1. Ressalva: o último lançamento tem quase 3 anos (há commits recentes e uma issue de lançamento automático aberta), mas é pequeno o bastante para **copiar para o repositório** se for abandonado.
+- **Recusadas:** `pitchfinder` (a licença é "GNU v3" no `package.json`, sem arquivo de licença, e o YIN vem do aubio, que é GPL), `aubiojs` (aubio é GPL-3.0; 427 KB) e CREPE (precisa do TensorFlow.js e de um modelo; pesado demais). `@audio/pitch` (MIT, 2026) é uma alternativa **muito nova** (3 estrelas) e de cálculo O(N²).
+- **Janela:** 2048 amostras (de 42,7 a 46,4 ms a 48 e 44,1 kHz) cobrem dois períodos até ~65 Hz. **Ler a cada quadro** (~16 ms), com janelas sobrepostas, e não a cada 50 a 100 ms: a mediana abaixo precisa de várias leituras e, com leituras espaçadas, o atraso passaria de 400 ms. A latência de captura pesa pouco perto da janela, então **começar com `AnalyserNode`** (`getFloatTimeDomainData`), mais simples que um `AudioWorklet`, e só passar ao `AudioWorklet` se o teste no aparelho pedir.
+- **Filtros por cima do detector** (a biblioteca não os traz): corte por **clareza** (começar em 0,9 e calibrar entre 0,7 e 0,9, como relatam usuários do `pitchy`), corte por **volume** (RMS), **mediana sobre ~200 ms** (cerca de 12 leituras a ~16 ms) para o vibrato da voz (taxa de 4 a 7 Hz) e **regra de oitava**: travar a faixa e ignorar saltos de ~1200 cents até que persistam por N quadros. São **inferências**, a calibrar com voz e instrumentos reais.
+- **Precisão em voz cantada e metais não tem número publicado** que eu tenha achado (o mantenedor do `pitchy` nunca testou voz; há relatos de picos espúrios), então o desempenho **só se confirma testando** com a voz e os instrumentos do responsável.
+
+**Microfone no Tauri 2 para Android (pesquisado em 2026-11-17)**
+- O **wry trata o pedido de permissão da WebView** (`RustWebChromeClient.kt`, conferido na revisão): para captura de áudio ele pede `RECORD_AUDIO` e `MODIFY_AUDIO_SETTINGS` em tempo de execução e só concede se a pessoa aceitar; senão nega. As versões atuais são wry 0.57.2 e tauri 2.12.6.
+- **O manifesto precisa declarar** `RECORD_AUDIO` e `MODIFY_AUDIO_SETTINGS` (hoje só tem `INTERNET`, em `src-tauri/gen/android/app/src/main/AndroidManifest.xml`, que está versionado; nada em `capabilities/` nem em `tauri.conf.json` afeta o microfone). Sem a segunda há relato de `NotReadableError` (discussão tauri-apps/tauri#12732). Essa discussão sugere código extra na `MainActivity`; **não foi possível confirmar se ainda é necessário**.
+- Chamar `getUserMedia` **uma vez só, a partir de um toque**, sem chamadas paralelas: há uma issue aberta no wry (#1917) em que um resultado de permissão vazio é tratado como concedido e dois pedidos simultâneos se sobrescrevem.
+- **Não mudar `useHttpsScheme`:** muda a origem do armazenamento da WebView (e os dados do app). Que `http://tauri.localhost` conte como contexto seguro **não foi confirmado**, embora a discussão indique que funciona.
+- iOS: `NSMicrophoneUsageDescription` em `src-tauri/Info.ios.plist` (fora do escopo agora).
+- Não há plugin oficial; o plugin de comunidade encontrado **grava** nativamente e não serve para Web Audio. **Nada disso foi testado em Android 12 a 15**: é o motivo do teste de aparelho antes de construir o medidor.
+
+**Restrições de áudio**
+- Pedir `echoCancellation`, `noiseSuppression` e `autoGainControl` como `false` (como `ideal`), `channelCount: 1`, e **conferir o que valeu** com `track.getSettings()`. No código atual do Chromium para Android, sem o cancelamento de eco ele **não usa o caminho de chamada** (que mexe no sinal). Há um relato isolado de que desligar o AGC e o NS não evitou quedas de volume em vogais sustentadas; **testar com a voz**.
+
+**Casos de borda da escuta**
+- **Permissão negada "para sempre":** o app só pode **explicar** e mandar a pessoa para os ajustes do aparelho (não há plugin para abri-los daqui). **Dar o tom continua funcionando.**
+- **Segundo plano e bloqueio de tela:** soltar o microfone em `visibilitychange`.
+- **Chamada telefônica e foco de áudio:** o comportamento da WebView com Web Audio **não foi confirmado**; testar no aparelho.
+
+**Fone, Bluetooth e o ciclo de áudio** (a premissa original muda; **proposta minha, não decisão do responsável**: ver a pergunta 1)
+- O rascunho dizia "só com fone". Se os dois modos forem **exclusivos** (ao escutar, a nota de referência **para**; ao tocar a nota, o microfone **fecha**), o app não cria o ciclo alto-falante → microfone por conta própria e **não precisa detectar fone** na v1. Ao ligar a escuta, o app também **pausa** o hino que estiver tocando.
+- Ouvir e tocar **ao mesmo tempo** (a ideia original, com fone) exige saber se há fone. No navegador isso é **pouco confiável** na WebView do Android (o evento `devicechange` só existe a partir do Chrome 132, os nomes dos dispositivos podem vir vazios, relatos de só aparecer o dispositivo `default`). O caminho sustentável é um **plugin Tauri pequeno em Kotlin** com `AudioManager.getDevices` e `registerAudioDeviceCallback`, que avisa o JavaScript (não achei plugin pronto). Fica para uma etapa 3, junto com o gravador (I-03), que tem a mesma necessidade.
+- **Fone Bluetooth:** quando o microfone usado é o do fone Bluetooth, o Chromium coloca o Android em **modo de comunicação** e a saída passa do perfil de música (A2DP) para o de voz (SCO), de qualidade de chamada (commit `78d0de138346e6edfc8c33bdd22c45b3eec4f3d0` do Chromium, "android audio: Set communication mode when using Bluetooth microphone"; a revisão leu a mensagem do commit, não o código). Recomendação: **fone com fio (ou USB-C)** ou o microfone do próprio aparelho. Forçar o microfone do aparelho por `deviceId` quando houver Bluetooth é uma ideia **não testada**.
+
+### Perguntas em aberto (com a minha recomendação)
+
+1. **Abandonar a premissa "só com fone" na v1** (modos exclusivos, sem detectar fone)? É **proposta minha**; o responsável pediu a escuta "se a pessoa estiver de fone". **Recomendo sim**: entrega a escuta sem depender de um plugin nativo, e a escuta e o tom ao mesmo tempo ficam para a etapa 3.
+2. **Atalho "Dar o tom" dentro do player do hino**, usando a **transposição** escolhida (o cartão "Andamento e Tom")? **Recomendo sim, depois da etapa 1**: é a hora em que a pessoa mais precisa.
+3. **Nota inicial de cada voz** (soprano, contralto, tenor e baixo) além da tônica? **Recomendo sim, é barato**: os dados já existem em `vozes`.
+4. **Tocar o acorde da tônica** (tônica, terça e quinta), e não só a nota? **Recomendo só a nota na v1.**
+5. **Mostrar a tonalidade na lista de hinos** e no cabeçalho do hino (o código já existe)? **Recomendo sim**, é pequena e útil a quem canta.
+6. **Instrumentos que transpõem** (si bemol, mi bemol, fá): **mostrar a nota real** (a que soa) na etapa 2, e uma opção "instrumento" depois.
+7. **Afinação de referência** de 440 para 442 Hz: **fixa em 440 Hz** na etapa 1; configurável na etapa 2.
+8. **Voz cantada** também? **Sim desde a etapa 2** (a mediana trata o vibrato); validar com a voz do responsável.
+9. **Escolher o microfone** (aparelho, fio, Bluetooth) numa lista? **Só se o teste de aparelho mostrar o problema do Bluetooth.**
+
+### Etapas de entrega (pull requests, nesta ordem)
+
+1. **Conversor, Rust e formato:** `armadura`, `modo` e `tonalidade` (com testes e `docs/FORMATO.md`). Sozinha já é útil: a tonalidade aparece nos hinos reconvertidos.
+2. **Aba Afinador, "dar o tom", junto com a I-28** (a barra de abas só aparece com mais de uma aba, então a I-28 sozinha não mostraria nada): `afinador.ts`, o tom sustentado, a tela e os testes. **Fim da etapa 1.**
+3. **Teste do microfone no aparelho (spike, antes de qualquer medidor):** um APK de teste com as duas permissões no manifesto e uma tela mínima que chama `getUserMedia`, mostra `track.getSettings()` e o nível do sinal. Confere, no aparelho do responsável, se pede a permissão, se funciona e como fica com fone com fio e Bluetooth.
+4. **Medição e medidor:** detector (`pitchy`), filtros e o ponteiro.
+5. **Mais tarde:** escuta e nota ao mesmo tempo com fone (plugin Kotlin), junto com o gravador.
+
+### Critérios de aceitação (propostos)
+
+**Etapa 1**
+- O Lá toca a 440 Hz (medido no teste, com folga de 1 Hz) e para ao apertar de novo, ao sair da aba, ao ir para segundo plano e quando o hino começa.
+- **Pausar o hino não cala o tom**, e o tom não começa **por cima** de um hino que está tocando ou carregando; dar "Tocar" no miniplayer com o tom soando **cala o tom**; o hino **não volta sozinho** depois do tom.
+- O toque inicia o áudio **sem** a flag de autoplay do Chrome de teste.
+- Para uma nota escolhida e para a tônica de um hino de amostra, a frequência bate com a fórmula do temperamento igual.
+- A tonalidade dos hinos de amostra sai certa no hinário (hinos 1, 276, 283, 398 e 457: Mi♭ maior, Mi♭ maior, Sol maior, Si♭ maior e Dó maior), os nomes saem corretos em pt, en e es, e um hino sem ela tem o botão desligado com a explicação.
+- Nenhum estalo ao ligar e desligar. Legível em todos os temas, em `rem`, com o teclado e o leitor de tela (o nome da nota é anunciado por extenso).
+
+**Etapa 2**
+- Com um tom puro de 440 Hz vindo de outra fonte, o medidor marca **afinado** (±5 cents); a 20 cents abaixo ou acima, marca **baixo** ou **alto** com o número certo (±3 cents).
+- Funciona com a voz do responsável e com pelo menos um instrumento de sopro, sem pular de oitava de forma visível.
+- Ao negar a permissão de microfone, **dar o tom continua funcionando** e a tela explica o que aconteceu.
+- Ao escutar, a nota de referência está parada; ao tocar a nota, o microfone está fechado; o hino que tocava é pausado.
+- O medidor se entende sem cor (número e palavra) e com "reduzir movimento".
+
+### Revisão
+
+Revisão por subagente **Opus 5** em 2026-11-17, só leitura, com o código aberto: **18 achados** (1 bloqueio, 15 a corrigir e 2 sugestões), todos aplicados acima; os mais pesados foram conferidos por mim no código antes de aplicar.
+- **Bloqueio:** o `AudioContext` do hino é privado e a pausa dele é `ctx.suspend()`; um afinador no mesmo contexto calaria ao pausar o hino. Agora o afinador tem contexto próprio.
+- **Mudou o desenho:** `reproducao.pausar()` não age enquanto o hino carrega (o afinador observa o estado); o serde **recusa o hinário inteiro** se um campo declarado vier com tipo errado (campos `Option<i64>` e `Option<String>`, validados depois); nomes de tonalidade pela armadura (tabela) e montados no idioma da interface; a I-28 entra junto com a aba Afinador; leitura a cada quadro, não a cada 50 a 100 ms.
+- **Corrigido por engano meu:** "as amostras gravadas não fazem laço" (o `smplr` tem laço); trocada a justificativa do timbre sintetizado.
+- **Confirmado pela revisão:** a matemática (fórmula, 65 a 2093 Hz, janela de 42,7 a 46,4 ms, relativa menor 3 semitons abaixo), os dados medidos nas amostras, a licença do `pitchy` (MIT no npm, 0BSD no repositório), o tratamento de permissão no wry e o commit do Chromium (hash completo acima).
+- **Não confirmado:** o `<mode>`/`<concertKey>` do MuseScore 4, o foco de áudio da WebView em chamada, o "desde 2022" do wry e a duração de ~3 s das amostras gravadas (que deixei de usar como argumento).
+- **Risco que mais preocupava o revisor:** o contexto compartilhado, que deixaria a etapa 1 muda justamente no caso "pausar o hino". Resolvido pelo contexto próprio e pelos critérios de aceitação acima.
+
+---
+
+## I-22 — Continuar tocando com a tela bloqueada
+
+> **Arquivada em 2026-11-20:** feita e confirmada no celular do responsável (APK 030); falta MediaSession (controles na tela de bloqueio).
+
+
+- **Status:** **implementada (APK 030) e confirmada no celular do responsável (2026-11-19): com o hino tocando no miniplayer, o som segue com a tela bloqueada.** Histórico: teste no emulador e implementação do caminho 1 em 2026-11-17. **Teste (emulador Android 17, APK 029 em diante, sem nada de segundo plano):** o hino 1 tocou com a tela **bloqueada** por mais de 1 minuto e o som **não cortou**: o stream de áudio do app seguiu `started` (`dumpsys audio`) e, ao desbloquear, o hino estava em 1:14, na 2ª estrofe (o relógio do JavaScript seguiu). **(Na época não valia como prova para o celular do responsável; hoje vale, pela confirmação acima.)** Detalhes do que o emulador não cobria: o emulador não imita as economias de bateria dos fabricantes nem o Doze depois de vários minutos no bolso, e não deu para testar o "hino todo" com as pausas de 2 s. O teste de trocar de aplicativo (Home) foi **inconclusivo** (a tela apagou por tempo). **Implementado (e já confirmado no aparelho, ver acima; a duração do teste e o "hino todo" com as pausas de 2 s não foram registrados):** serviço em primeiro plano de mídia (`ServicoAudio.kt`) com notificação (título do hino e botão "Parar"), `WAKE_LOCK` parcial e a ponte `window.BmccbServico` (`PonteServico.kt`), ligada e desligada pelo `reproducao.estado` no layout (`servico.ts`). Ainda **não há** MediaSession (controles na tela de bloqueio além do "Parar" e botões do fone).
+- **Origem:** pedido do responsável, 2026-11-16: "o miniplayer, mesmo com a tela do celular bloqueada, se ele estiver ativo, deve continuar tocando o som... com a tela bloqueada etc."
+- **Prioridade:** a definir (para quem estuda ouvindo o hino com o celular no bolso, é quase requisito)
+
+### O problema
+Hoje o som é gerado **dentro da WebView** do app (Web Audio: `AudioContext` em `src/lib/sintetizador.ts`, com as notas agendadas por JavaScript
+em `src/lib/reproducao.svelte.ts`). O app **não tem nada para segundo plano**: nem MediaSession, nem wake lock, nem serviço em primeiro plano, e
+o manifesto Android só pede `INTERNET`. A hipótese forte é que, **com a tela bloqueada ou o app em segundo plano, o Android pausa o JavaScript
+da WebView e o som para** (ainda **não foi testado** no aparelho; precisa ser o primeiro passo). O miniplayer fica no app e para junto.
+
+### O que se deseja
+Com um hino tocando (miniplayer ativo), **bloquear a tela ou trocar de aplicativo não interrompe o som**. Idealmente há também **controles
+na tela de bloqueio e na barra de notificações** (tocar/pausar, parar, o título do hino), como qualquer tocador de música, e os botões do
+fone de ouvido funcionam.
+
+### Perguntas em aberto
+1. **Só Android por enquanto?** Os APKs de teste são Android; o iOS tem outro mecanismo (modo de fundo de áudio) e outra política. Começar pelo Android?
+2. **Controles na tela de bloqueio:** só continuar tocando, ou também a notificação com tocar/pausar/parar? (O Android **exige** uma notificação
+   para um serviço em primeiro plano, então, na prática, ela existe de qualquer jeito.)
+3. **O karaokê e a letra:** ao desbloquear, a aba Letra deve estar **no ponto certo** da música (o relógio do áudio continua, então a posição
+   deve voltar certa; conferir).
+4. **Quando o hino termina ou a pessoa para:** o serviço e a notificação **somem** (sem consumir bateria à toa).
+5. **Interrupções:** chamada telefônica ou outro aplicativo tocando (foco de áudio): pausar, e voltar depois?
+6. **Tocar o hino todo com as pausas de 2 s entre as partes** e a transição entre as vezes dependem de temporizadores do JavaScript, os mais
+   sujeitos a parar em segundo plano. Precisam seguir funcionando.
+
+### Caminhos possíveis (hipóteses, não verificadas)
+A pesquisa inicial (2026-11-16) não achou um guia específico para o Tauri; os relatos de Capacitor, Ionic e React Native em WebView
+apontam sempre o mesmo padrão: o Android **pausa o JavaScript com a tela desligada**, e o remédio usual é um **serviço em primeiro plano**,
+mas há relatos de que **a WebView sozinha pode não ser coberta por esse serviço**, então o áudio talvez precise tocar **fora da WebView**.
+1. **Serviço em primeiro plano + Web Audio** (menor mudança): iniciar um serviço (tipo de mídia, com notificação) quando o hino começa
+   a tocar, mais `WAKE_LOCK`, e manter o `AudioContext`. **Pode não bastar**: falta saber se o JavaScript da WebView continua rodando.
+   É o teste mais barato e deve vir primeiro.
+2. **Renderizar o hino em um buffer de áudio e tocar por um elemento `<audio>` + MediaSession.** Navegadores tratam a mídia de um
+   `<audio>` como reprodução de verdade (controles de bloqueio e segundo plano), ao contrário de um grafo Web Audio. Custa: o som deixa de
+   ser gerado em tempo real (mudar andamento, tom e silenciar vozes passaria a exigir **renderizar de novo**), então mexe nos controles
+   do player (I-10) e no karaokê, que hoje seguem o relógio do `AudioContext`.
+3. **Player nativo** (Kotlin com ExoPlayer/Media3 num serviço de mídia, via plugin do Tauri): o mais robusto no Android e o que dá controles de
+   bloqueio e fone de graça, mas é **reescrever o motor de som fora da WebView** (sintetizador e pacote de sons gravados), muito mais trabalho, e
+   só no Android.
+- **Permissões prováveis** (a confirmar): `FOREGROUND_SERVICE`, `FOREGROUND_SERVICE_MEDIA_PLAYBACK`, `POST_NOTIFICATIONS` (Android 13+) e `WAKE_LOCK`.
+  Do Android 12 em diante, o serviço em primeiro plano só pode ser **iniciado com o app visível** (o toque em "tocar" serve).
+- **Pesquisar antes de construir** (regra do projeto): ler a documentação de plugins móveis do Tauri e de MediaSession, e registrar o que for lido.
+  Fontes da pesquisa inicial: fóruns de Capacitor e Ionic sobre áudio em segundo plano, o README do `tauri-plugin-native-audio` (permissões) e
+  relatos de WebView no React Native.
+
+### Critérios de aceitação (propostos)
+- Tocando um hino no aparelho, **bloquear a tela por 2 minutos e desbloquear**: o som não cortou nenhuma vez e a letra está no ponto certo.
+- **Trocar de aplicativo** durante o hino também não corta; o hino todo (com as pausas entre as partes) chega ao fim com a tela apagada.
+- Parar ou terminar o hino **remove a notificação** e o serviço (conferir no Android que o app deixou de estar em primeiro plano).
+- Teste manual registrado no `docs/apk-de-teste.md` (aparelho, versão do Android, o que aconteceu): não há como provar isso só no e2e do Chrome.
+
+---
+
+## I-24 — Ajustes em cartões, com um cartão de Conteúdo (hinário, partituras e sons gravados)
+
+> **Arquivada em 2026-11-20:** feita (fatias 1 a 4): Ajustes em cartões com o cartão Conteúdo.
+
+
+- **Status:** **implementada** (2026-11-17, fatias 1 a 4): `Cartao.svelte` e `LinhaPacote.svelte` (o player e Ajustes migraram sem mudar a aparência); Ajustes em cartões, com a linha de estado e o cartão **Conteúdo** (o Hinário sem caixa, com os botões lado a lado, por pedido do responsável ao testar); Aparência, Idioma e Conteúdo **lembram** se ficaram abertos (`prefs.ajustes`; Sobre e Créditos abrem sempre fechados); e o botão "Abrir Ajustes" da aba Partitura leva a `/ajustes?abrir=partituras`, que abre o Conteúdo e rola até as partituras **sem gravar** essa abertura. O título de cada cartão é um `<h2>` dentro do resumo (navegação por títulos do leitor de tela). Reescrita em 2026-11-17 sobre o estado atual da tela (a primeira versão, de 2026-11-16, era anterior à PR #42) e revisada por subagente Opus 5 no mesmo dia (12 achados, aplicados; ver "Revisão"). Pode ir para `docs/archive/` depois que o responsável testar.
+- **Origem:** pedido do responsável, 2026-11-16: "no Ajustes já cabe uns cards... o de temas, o de importação (importar hinário agora, apesar de que no futuro não existe, mas teria o importar partituras e importar sons gravados dentro)". E, em 2026-11-17: "tá me atrapalhando já um pouco o Ajustes".
+- **Prioridade:** **a próxima**, depois da I-13 (o responsável, 2026-11-17).
+
+### O problema
+Hoje **Ajustes** é uma coluna de **sete blocos soltos** mais a versão. Só "Sobre o app" e "Créditos e licenças" são cartões que se recolhem (`<details class="cartao">`):
+
+```
+┌──────────────────────────────────────────────────────┐
+│ Ajustes                                              │
+│ APARÊNCIA                                            │
+│   Modo    [Automático][Claro][Escuro][Alto contr.]   │
+│   Estilo  [Normal][Pergaminho][Marinho]              │
+│ IDIOMA                                               │
+│   [ Português                                  ▾ ]   │
+│ BIBLIOTECA                                           │
+│   Amostra de teste · 5 hinos                         │
+│   [Importar hinário]  [Remover importação]           │
+│ PARTITURAS                             (#partituras) │
+│   ┌────────────────────────────────────────────┐     │
+│   │ Todas as partituras                        │     │
+│   │ Instaladas: 5                    [Remover] │     │
+│   └────────────────────────────────────────────┘     │
+│ SONS GRAVADOS                                        │
+│   ┌────────────────────────────────────────────┐     │
+│   │ Todos os sons gravados                     │     │
+│   │ 36 MB · Não instalado    [Baixar (36 MB)]  │     │
+│   └────────────────────────────────────────────┘     │
+│ ⓘ Aplicativo não oficial (sem ligação com a CCB)     │
+│ ▸ Sobre o app                                        │
+│ ▸ Créditos e licenças                                │
+│         Versão 0.3.0 (…)                             │
+└──────────────────────────────────────────────────────┘
+```
+
+O que incomoda:
+1. **A tela é comprida**, e fica mais ainda com a fonte do sistema grande (tudo cresce em `rem`). Cada pacote novo (a I-25 acrescenta um estado "atualização" a cada linha) piora.
+2. **A mesma coisa, desenhos diferentes.** Hinário, partituras e sons gravados são **conteúdo que se instala e remove**, mas o hinário é um texto com botões soltos, enquanto partituras e sons usam o bloco `.pacote`.
+3. **Código duplicado.** O bloco `.pacote` está escrito **duas vezes** (Partituras e Sons) e o cartão com resumo (`.cartao` + `<summary>`) também (Ajustes e o **player**, que já tem "Andamento e Tom" com resumo na linha de cima). Um terceiro uso seria uma terceira cópia.
+
+### O que já está decidido (não reabrir)
+- **Partituras não têm importação manual.** O app **baixa** o pacote do servidor e confere o SHA-256 (PR #42; `docs/FORMATO.md`; o teste de ponta a ponta exige que o cartão não tenha campo de arquivo).
+- **O pacote de partituras é separado do hinário.** O `.zip` só aceita `partituras/…` e grava a marca `.hinario` com o `id` do hinário instalado (`src-tauri/src/pacote.rs`); baixar ou remover partituras **nunca** troca o hinário.
+- **"Importar hinário" aceita só `.json`** ("no futuro não existe": o hinário virá de um pacote). O teste confere o `accept`.
+
+### O que se deseja
+Ajustes em **cartões recolhíveis**, cada um com uma **linha de estado quando fechado** (recolher não esconde o que importa), e um cartão **Conteúdo** com as três coisas instaláveis. **Decisão do responsável ao testar (2026-11-17):** o **Hinário** não leva caixa (o texto do hinário e os dois botões **lado a lado**); as **partituras** e os **sons** ficam no desenho de linha (`LinhaPacote`):
+
+```
+┌──────────────────────────────────────────────────────┐
+│ Ajustes                                              │
+│ ⓘ Aplicativo não oficial (aviso sempre à vista)      │
+│ ▸ Aparência        Automático · Normal               │
+│ ▸ Idioma           Português                         │
+│ ▾ Conteúdo         Amostra · 5 partituras · sem sons │
+│   HINÁRIO                                            │
+│   Amostra de teste                                   │
+│   5 hinos                                            │
+│   [Importar hinário]    [Remover importação]         │
+│   PARTITURAS                                         │
+│   ┌────────────────────────────────────────────┐     │
+│   │ Todas as partituras                        │     │
+│   │ Instaladas: 5                    [Remover] │     │
+│   └────────────────────────────────────────────┘     │
+│   SONS GRAVADOS                                      │
+│   ┌────────────────────────────────────────────┐     │
+│   │ Todos os sons gravados                     │     │
+│   │ 36 MB · Não instalado    [Baixar (36 MB)]  │     │
+│   └────────────────────────────────────────────┘     │
+│ ▸ Sobre o app                                        │
+│ ▸ Créditos e licenças                                │
+│         Versão 0.3.0 (…)                             │
+└──────────────────────────────────────────────────────┘
+```
+
+O aviso "aplicativo não oficial" continua **sempre à vista** (não é cartão).
+
+**Princípios do projeto:** medidas em `rem`; cores só das variáveis do tema; estado por **texto e ícone**, nunca só por cor; vale nos temas claro, escuro e alto contraste; **teclado e leitor de tela** (o `<details>` e o `<summary>` já dão isso); textos nos 3 idiomas.
+
+### O que se reaproveita
+- **`Cartao.svelte`** (novo, extraído do que já existe): props `titulo`, `resumo`, `aberto` (ligável) e `name` (opcional, para o acordeão nativo que o player usa). Substitui o `.cartao` duplicado do player (`Player.svelte`) e o de Ajustes; **o player migra junto**, para não ficarem três cópias.
+- **`LinhaPacote.svelte`** (novo, do bloco `.pacote`): título, detalhe, e a ação (baixar, andamento, remover, **atualizar**: a I-25). A **lógica** de baixar, conferir e instalar **já está separada** (`src/lib/sons/pacotes.svelte.ts`, `src/lib/partituras/partituras.svelte.ts`, os dois sobre `baixarZip`) e **não muda**: a duplicação é só do desenho.
+- **O molde de preferências** de `lerCartoes` (`src/lib/preferencias.ts`): leitura validada, valor ruim volta ao padrão, `try/catch`.
+
+### Comportamento
+- **Linha de estado dos cartões fechados:**
+  - **Aparência:** "{modo} · {estilo}"; com Alto contraste (que ignora o estilo), só "Alto contraste".
+  - **Idioma:** o nome do idioma, na própria língua.
+  - **Conteúdo:** hinário em uso, partituras instaladas e sons instalados (por exemplo "Amostra · 5 partituras · sem sons"). **Durante um download ou um erro**, a linha mostra "baixando N%" ou "erro" com ícone (não só cor), porque o `<Aviso>` e o progresso **ficam dentro** do cartão e sumiriam se ele estivesse fechado.
+- **Estado lembrado** (só Aparência, Idioma e Conteúdo): uma **chave nova** `prefs.ajustes` (a `prefs.cartoes` **já é do player**), com um objeto de booleanos, validado como `lerCartoes`. **Sobre e Créditos não entram** (continuam abrindo fechados). Padrão: **todos fechados**.
+- **"Abrir Ajustes" da aba Partitura** (hoje `<a href="/ajustes">`, em `Partitura.svelte`): passa a `/ajustes?abrir=partituras`. A tela lê o parâmetro ao montar, **abre o cartão Conteúdo**, espera (`tick`) e rola até `#partituras`. **Essa abertura forçada não é gravada.** O texto `partitura.sem_pacote_texto` ("… no cartão Partituras") muda nos 3 idiomas. Não conto com a abertura automática do `<details>` ao seguir um `#hash` (depende da versão da WebView); abro por código.
+- **Remover:** "Remover importação" (hinário) **tem diálogo** e apaga o hinário **e** as partituras (volta ao exemplo); o "Remover" das partituras e o dos sons **apagam na hora**, sem confirmar (o pacote se baixa de novo). Ver a pergunta 5.
+
+### Perguntas em aberto (com a minha recomendação)
+1. **Um cartão "Conteúdo" com as três linhas, ou três cartões?** **Um:** é a mesma coisa para a pessoa e o desenho da linha é o mesmo.
+2. **Cartões livres ou acordeão** (abrir um fecha os outros, como no player)? **Livre**, para comparar Conteúdo com Aparência; lembra só o que a pessoa abriu.
+3. **Padrão e a abertura pelo link da aba Partitura:** todos fechados no primeiro uso; quem chega pelo link vê o Conteúdo aberto e rolado, sem gravar isso. **Concordo.**
+4. **A linha "Hinário":** "Importar arquivo" (`.json`) como hoje, e, quando o hinário passar a vir de um pacote, ele **vai para um submenu "Avançado"**, em vez de sumir (serve para testar hinários sem servidor). **Concordo.**
+5. **"Remover" de partituras e de sons pede confirmação?** Hoje nenhum pede. **Recomendo não:** o pacote se baixa de novo; o diálogo fica só no "Remover importação", que **não** é recuperável.
+6. **O player migra para o `Cartao.svelte` na primeira fatia?** **Sim**: senão ficam três cópias do mesmo cartão. É o trecho mais arriscado (o player usa `name` e guarda o estado em `prefs.cartoes`).
+
+### Impacto técnico (hipóteses, a verificar)
+- `src/routes/ajustes/+page.svelte` (a tela): trocar as seções por `Cartao` e `LinhaPacote`; o resumo de cada cartão é `$derived`.
+- `src/lib/preferencias.ts` e `tests/preferencias.test.ts`: a chave `prefs.ajustes`, com testes de valor ruim.
+- `src/lib/i18n/pt.ts`, `en.ts` e `es.ts`: as chaves novas (resumos, rótulos); o `Dicionario` tipado faz o `svelte-check` exigir a paridade.
+- `src/lib/Partitura.svelte` e o texto `partitura.sem_pacote_texto`: o link com `?abrir=partituras`.
+- **Não muda:** o Rust (`remover_partituras` **já é** um comando, em `lib.rs`), o formato do pacote e as lojas de estado dos sons e das partituras.
+- **Teste de ponta a ponta** (`tests/e2e/karaoke.mjs`) depende de Ajustes: do `id="partituras"` (**manter na linha**), do `innerText` do cartão (com o `<details>` fechado o texto some: **abrir o cartão antes de ler**), de `href === "/ajustes"` (passa a `/ajustes?abrir=partituras`) e do primeiro `input[type=file]` da página (fica na linha Hinário, dentro de Conteúdo). Ajustar sem afrouxar o que ele afirma (sem campo de arquivo nas partituras; `accept` só `.json`).
+- **Cruza com a I-25:** a `LinhaPacote` precisa do estado "atualização disponível" (texto e ícone), e o interruptor de "verificar atualização" (pergunta 5 da I-25) precisa de um lugar: no cartão Conteúdo. A I-28 (abas da tela inicial) **não interage** com Ajustes.
+
+### Fatias de entrega (pull requests, nesta ordem)
+1. **`Cartao.svelte` e `LinhaPacote.svelte`**, migrando o player e Ajustes **sem mudar o comportamento** (o teste de ponta a ponta passa como está).
+2. **Ajustes em cartões, com a linha de estado** (o teste ajustado).
+3. **Estado lembrado** (`prefs.ajustes`) e os testes de preferências.
+4. **O link `?abrir=partituras`** da aba Partitura, com o texto nos 3 idiomas.
+
+### Critérios de aceitação (propostos)
+- Com todos os cartões fechados, **cada um mostra a linha de estado correta** (modo e estilo, ou só Alto contraste; idioma; hinário, partituras e sons), **inclusive durante o download e depois de um erro**. É testável no e2e pelo texto do `<summary>`.
+- A aba Partitura sem partituras leva a **Conteúdo → Partituras**, com o cartão aberto e a linha à vista; a abertura não fica gravada.
+- **Teclado:** cada cartão abre e fecha com Enter e Espaço; a ordem de foco é a visual. **Leitor de tela:** o estado é lido junto do nome do cartão.
+- **Capturas conferidas** (nada cortado nem sobreposto): fonte do sistema a **200%**, os **3 temas** (claro, escuro, alto contraste) e largura de **360 dp**.
+- O que ficou aberto é lembrado entre aberturas (só Aparência, Idioma e Conteúdo); valor ruim na chave volta ao padrão; as regras de `rem`, tema e i18n do projeto passam nos verificadores.
+- O e2e cobre: abrir e fechar, a linha de estado, o caminho da aba Partitura até o cartão, o importar do hinário (só `.json`) e que as partituras **seguem sem** campo de arquivo.
+
+### Revisão
+Revisão por subagente **Opus 5** em 2026-11-17, só leitura, com o código aberto: **12 achados** (4 bloqueios), todos aplicados; **os quatro bloqueios eu conferi no código** antes de reescrever.
+- **A seção original estava desatualizada**: foi escrita antes da PR #42 e descrevia um app que já mudou. O diagrama "hoje" não tinha a seção Partituras (que já existe, com estado, Baixar, progresso e Remover); o "problema 1" dizia que as partituras entravam pelo "Importar hinário" (falso: ele só aceita `.json`); a pergunta 4 e o desenho propunham um **"Importar .zip" de partituras**, que **reabria uma decisão tomada**; a pergunta 5 propunha **separar** o pacote de partituras do hinário, que **já é separado**; e o texto dizia que `remover_partituras` "não é um comando", mas é.
+- **Acrescentado pela revisão:** a chave `prefs.cartoes` já é do player (a nova é `prefs.ajustes`); o cartão com resumo **já existe** no player (extrair `Cartao.svelte` e migrar os dois); a abertura por link precisa ser feita por código; o e2e depende de `#partituras` e do texto dos cartões; o `<Aviso>` e o progresso dentro de um cartão fechado somem; a pergunta certa sobre remover é "pede confirmação?".
+- **Risco que mais preocupava o revisor:** implementar a partir da versão antiga, reabrindo decisões já tomadas e quebrando o teste de `#partituras` sem ninguém entender o porquê. Resolvido pela seção "O que já está decidido".
+
+---
+
+## I-26 — Karaokê na partitura por NOTA (cursor por nota)
+
+> **Arquivada em 2026-11-20:** feita e testada no celular pelo responsável até o APK 045 (halo por nota, barra do compasso, luz que corre pela ligadura).
+
+
+- **Status:** **revisada com o responsável (2026-11-19) e implementada na branch `karaoke-por-nota`** (gerador, limpeza do SVG no Rust, interface, testes unitários e de ponta a ponta); **pacote `partituras-004.zip` (480 hinos) no servidor e APK 036 entregues (2026-11-19)**; **falta o teste no celular**; amplia a I-12 (fase B), que hoje destaca o **compasso**
+- **Origem:** pedido do responsável, 2026-11-17, ao testar o APK 025/026: "tu tá marcando no karaokê apenas o compasso né? Achei que tu marcaria a nota."
+- **Prioridade:** a definir (o destaque do compasso funciona; a nota é o que ele esperava)
+
+### O problema
+O destaque de hoje (I-12, etapa 2) pinta o **compasso inteiro**. Quem acompanha cantando ou tocando tem várias notas por compasso, e o compasso aceso não diz **qual nota soa agora**.
+
+### O que se deseja
+A(s) nota(s) que soa(m) **agora** ficam destacadas na partitura, **no instante em que soam**, e o destaque anda **nota a nota**.
+
+### O que já se sabe (medido em 2026-11-17, nos 5 hinos de amostra)
+- O `timemap` do Verovio traz, para cada instante, os ids das notas que **começam** (`on`) e que **terminam** (`off`): é a matéria-prima.
+- **A dificuldade das repetições, a mesma do compasso:** o `timemap` é expandido, e nas repetições traz ids de notas **copiadas** que não existem no SVG (hino 457: **669** notas distintas no `timemap` contra **459** desenhadas).
+  **A função `getExpansionIdsForElement` do Verovio resolve as 669 para ids reais do desenho (100%), e nenhuma nota do desenho fica sem evento.** Nos outros 4 hinos (sem repetição) os ids do `timemap` já são os do SVG.
+  Isso torna o destaque por nota **viável e robusto**.
+- **Os ids mudam a cada desenho:** o retrato e a paisagem **não têm nenhum id em comum** (medido na I-12), então o mapa de notas é **por versão** (2 por hino).
+
+### Decisões (responsável, 2026-11-19)
+1. **Quais vozes:** **todas as que estão soando agora.** Se soam soprano e tenor, os dois acendem; não há filtro de voz.
+2. **Como destacar:** a nota **continua preta** (cor do tema) e ganha um **halo dourado atrás**, com contorno e preenchimento translúcido, a mesma ideia do retângulo do compasso (que hoje já é desenhado atrás das notas). Um mecanismo só, sem recolorir cabeça, haste, bandeirola e acidente (peças separadas no desenho). **O destaque do compasso fica, mais fraco, como contexto.** No **alto contraste** (amarelo sobre preto) vale só o contorno do halo, para não apagar a nota (como o compasso já faz).
+3. **Casos especiais:** **pausa acende** (o mesmo halo no lugar do símbolo); **enfeite (nota de adorno) não acende**; **ligadura não precisa de tratamento**: a segunda nota de uma ligadura **não acende de novo**, e a primeira fica acesa pela duração somada (interpretação do assistente; **o responsável pode corrigir**).
+4. **Ajustes:** **sem opção nova**. Continua só o botão do karaokê, e o padrão passa a ser nota + compasso fraco. Uma opção (compasso, nota, desligado) só entra se alguém achar a nota demais.
+
+### Como ficou (implementação, 2026-11-19)
+Mudou em relação ao rascunho: **o tempo de cada nota vai dentro do próprio SVG**, e não num arquivo `.notas.json` à parte. Cada `<g class="note">` e `<g class="rest">`
+ganha `data-t` e `data-f` (começo e fim, em batidas, dentro do compasso). Vantagens: **nenhum arquivo novo no zip nem comando novo no Rust** (só os dois atributos entram
+na lista de permitidos, com valor numérico conferido), **nenhum mapa de ids** (o tempo está no elemento, então retrato e paisagem se resolvem sozinhos e o prefixo
+`bmccb-p-` não importa) e o pacote antigo continua funcionando (sem os atributos, só o compasso). Formato em `docs/FORMATO.md` ("Notas na partitura").
+- **Gerador** (`tools/gerar-partituras.py`): lê o `timemap` do Verovio com `includeRests`, traduz os ids das cópias das repetições para os do desenho
+  (`getExpansionIdsForElement`), calcula o instante dentro do compasso (`qstamp` da nota menos o `qstamp` do `measureOn`), junta as **ligaduras** (`startid` e `endid`
+  de cada `<g class="tie">`: a segunda nota não leva tempo, a primeira soma a duração) e ignora duração zero (enfeite). Conferido nos 5 hinos de amostra: todas as notas
+  desenhadas têm tempo, menos as 43 segundas de ligadura do 457; o instante de cada nota somado ao início do compasso bate com as notas do hinário (as diferenças são só
+  ligaduras e uníssonos). O SVG cresce uns 5% (uns 1,5% comprimido).
+- **Rust** (`src-tauri/src/svg.rs`): `data-t` e `data-f` permitidos, só com número como o gerador escreve; qualquer outro `data-*` continua recusado.
+- **App**: `src/lib/notas.ts` (lê os atributos, acha as notas que soam em cada batida, incluindo a ligada que atravessa a barra) e `Partitura.svelte` (halo dourado
+  atrás da nota, só quando o conjunto muda; quando a partitura traz as notas, o compasso perde o fundo amarelo e fica só com um **contorno fino e uma barra dourada à esquerda** (pedido do responsável depois de testar o APK 036: o fundo apagava o halo); no alto contraste só o contorno do halo).
+- **Testes**: unitários (`tests/notas.test.ts`, `tools/test_gerar_partituras.py`, `svg.rs`) e o e2e do karaokê (notas em sequência, duas vozes, pausa, pausa entre as partes,
+  pausado, desligado e fora da aba).
+- **Feito depois:** o **pacote `partituras-004.zip`** (480 hinos) está no servidor e no manifesto (PR #86) e o **APK 036** foi entregue.
+
+### Depois do teste no celular (2026-11-20, APKs 036 a 045)
+O responsável testou e pediu ajustes; todos feitos e testados por ele no 044 e no 045 ("ficou bom"):
+- **Compasso só com a barra dourada** (PR #88 e #90): o fundo amarelo apagava o halo.
+- **Introdução até o fim da última nota** (PR #89): o `*` fica sobre a última nota, e a introdução a cortava em 477 dos 480 hinos.
+- **Coro separado** (PR #92): o refrão vira um parágrafo `Coro. ...` (estrofe 0 na sincronia), com o subtítulo "Coro" e aceso depois de cada estrofe; 309 hinos.
+- **Final separado** (PR #96): nos hinos com final, o texto cantado só na última vez vira o bloco "Final" depois da última estrofe; 33 dos 37 hinos (ficam como estavam 61, 162, 185 e 238, de letra pendente).
+- **Ligadura no som** (PR #93): os `.mscx` do hinário são do MuseScore 2, com o fim da ligadura em `<endSpanner id>` dentro da nota, que o conversor não reconhecia; a nota ligada tocava **duas vezes** (148 dos 480 hinos). Achado no final da introdução do 457.
+- **Halo que acompanha a ligadura** (PR #94, #95 e pacote **005**): cada nota acende no seu tempo (a segunda também) e a curva leva o tempo da primeira; no app, uma **faixa dourada de 0,6 rem** atrás da curva, o traço fino por cima e um **ponto brilhante** correm da esquerda para a direita enquanto a primeira nota soa, e a segunda acende no tempo dela. A folga acompanha o zoom.
+- **Andamento no topo** (aba Letra e Partitura): um botão com o valor de agora abre o mesmo controle da aba Ouvir (`ControleAndamento.svelte`, usado nos dois lugares), com a mesma regra (só parado ou pausado). A marca de andamento que o autor escreveu na partitura (`g.tempo`) fica escondida.
+- **Pendente:** o e2e do **Gravador** falha com frequência no CI (a gravação para e nada entra na lista, sem erro na tela); a causa não foi achada (não reproduz fora do runner). Retirar `g.tempo` do SVG de vez fica para um próximo pacote.
+
+### Critérios de aceitação (propostos)
+- A nota destacada é a que soa, em cada instante, nos 5 hinos de amostra, **inclusive nas repetições e no final do 457**; **todas as vozes que soam acendem**, a **pausa acende**, o **enfeite não**.
+- Pausado, congela; ao arrastar o slider, acompanha; fora da aba, some.
+- Sem o mapa de notas (pacote antigo), o app **cai no destaque por compasso**.
+- Legível em todos os temas (contraste).
+
+---
+
+## I-28 — Abas na tela inicial (Hinos | Afinador | Gravador | …)
+
+> **Arquivada em 2026-11-20:** feita: a tela inicial tem as abas Hinos, Afinador e Gravador.
+
+
+- **Status:** **implementada** (2026-11-17) junto com a aba Afinador (I-13, etapa 1): a barra `Hinos | Afinador` na tela inicial, o mesmo `Abas.svelte` do hino, os painéis montados, a busca preservada ao trocar de aba e a aba reaberta ao voltar de um hino. **Em aberto:** a rolagem de cada aba é guardada e restaurada, mas isso ainda não tem teste de ponta a ponta; e a ordem das abas (assumi `Hinos` primeiro) espera a confirmação do responsável. Revisada por subagente Opus 5 em 2026-11-17 (achados aplicados).
+- **Origem:** pedido do responsável, 2026-11-17: "o Afinador vai ser o primeiro tab na tela inicial de lista, lá vai ter Hinos | Afinador | Gravador... entre outras, no mesmo estilo do que temos dentro do hino para Ouvir | Letra | Partituras", e "podemos até reaproveitar o frontend do componente, talvez o backend".
+- **Prioridade:** a definir (a primeira peça das ferramentas de estudo: afinador I-13, gravador I-03 e, talvez, metrônomo I-20)
+
+### O problema
+A tela inicial é só a lista de hinos. As ferramentas de estudo que pedimos (afinador, gravador, metrônomo) não pertencem a um hino específico, e não há onde pô-las. Dentro do hino o app já resolveu o problema parecido com **abas** (`Ouvir | Letra | Partitura`).
+
+### O que se deseja
+A tela inicial ganha uma **barra de abas** igual à do hino: **`Hinos | Afinador | Gravador | …`**. A aba **Hinos** é a lista de hoje (busca e lista); cada ferramenta nova entra como uma aba. A engrenagem de Ajustes continua no cabeçalho.
+
+**Atenção à frase do responsável:** "o Afinador vai ser o **primeiro** tab" pode querer dizer a **primeira aba nova** (depois de Hinos) ou a **primeira da barra**. Os dois exemplos dele listam `Hinos | Afinador | Gravador`, então leio como a primeira nova; **confirmar** (pergunta 1).
+
+### O que se reaproveita (conferido no código na revisão)
+- **`src/lib/Abas.svelte`, como está:** não tem nada preso ao hino. Barra fixa embaixo, **trilho lateral** com o celular deitado, as variáveis `--altura-navegacao` e `--largura-trilho` (o `.conteudo` do layout e o `Miniplayer` já as leem e abrem espaço) e a semântica WAI-ARIA de abas (`aba-<id>` e `painel-<id>`).
+- **O padrão de painéis do hino:** todos ficam **montados** e só um fica visível (`hidden`), então a **busca** (que mora em `biblioteca.busca`) **não se perde** ao trocar de aba. A lógica é a mesma do hino (`aba` como `$state`, lista de abas derivada, rótulos pelo i18n); **não** pede abstração nova agora, só a segunda ocupação do mesmo padrão.
+- **A barra só aparece com mais de uma aba**, como no hino: enquanto só existir **Hinos** e **Afinador**, são duas; o Gravador entra quando existir (I-03).
+
+### Comportamento
+- **A aba Afinador existe sempre**, também **fora** do `{#if biblioteca.pacote}` de `+page.svelte`: o Lá 440 não depende de hinário carregado (hoje essa condição envolve a tela toda).
+- **Cada ferramenta recebe `ativa`**, como a `Partitura.svelte`, e **solta o que usa** quando a aba não está à vista (nota do afinador, microfone).
+- **A rolagem não é do contêiner, é do documento:** a lista de hinos é longa e a aba Afinador é curta; ao trocar para ela, a página encurta e o navegador **corta a rolagem**, que se perde. Então a tela **guarda e restaura o `scrollY` de cada aba**.
+- **Voltar de um hino para a lista** reabre a aba em que a pessoa estava (estado guardado em módulo, como a busca), em vez de sempre voltar a **Hinos**.
+- **Áudio:** uma ferramenta que toca ou escuta **pausa** o hino que estiver tocando no miniplayer (um som de cada vez; ver as regras do tom na I-13).
+- O miniplayer continua aparecendo **acima** da barra de abas, como já faz dentro do hino.
+
+### Perguntas em aberto
+1. **Ordem e aba inicial:** `Hinos` à **esquerda** e aberta ao iniciar o app, com o Afinador em seguida? **Recomendo sim** (e confirmar a frase do responsável acima).
+2. A aba escolhida **fica lembrada** ao fechar o app, ou o app sempre abre em Hinos? **Recomendo abrir sempre em Hinos.**
+3. Com o celular **deitado**, o trilho lateral divide a largura com a lista (que já respeita `--largura-trilho`): conferir se a lista fica confortável.
+
+### Impacto técnico (hipóteses, a verificar)
+- `src/routes/+page.svelte`: envolver a lista num painel e acrescentar a barra; o componente `Afinador.svelte` (I-13) como segundo painel, **fora** da condição do pacote carregado.
+- **i18n:** a chave do rótulo de cada aba (`rotulo` de `Abas`) nos 3 idiomas, e o `aria-labelledby` **condicional** nos painéis (como no hino, que só o põe quando há mais de uma aba).
+- Teste de ponta a ponta: trocar de aba mantém a busca, o foco e a **rolagem de cada aba**, e a barra some se houver uma só aba.
+- O que a barra publica (`--altura-navegacao`) já é lido pelo `.conteudo` e pelo miniplayer.
+
+### Critérios de aceitação (propostos)
+- A tela inicial mostra a barra com as abas existentes, no celular em pé (embaixo) e deitado (trilho), igual à do hino.
+- Trocar de aba não apaga a busca nem a rolagem da lista (cada aba volta onde estava); o teclado e o leitor de tela se comportam como no hino.
+- A aba Afinador abre **sem hinário carregado**.
+- Sair da aba de uma ferramenta a solta (sem som, sem microfone aberto).
+- O miniplayer não cobre a barra nem o conteúdo.
