@@ -167,6 +167,9 @@ fn liga_fim(nota: Node) -> bool {
             && match c.tag_name().name() {
                 "Spanner" => c.attribute("type") == Some("Tie") && filho(c, "prev").is_some(),
                 "endTie" => true,
+                // MuseScore 3: o fim da ligadura é um `<endSpanner id="N"/>` dentro da nota (o início é `<Tie id="N">`). A volta e a
+                // ligadura de expressão também usam endSpanner, mas no compasso ou na voz, nunca dentro de uma `<Note>`.
+                "endSpanner" => true,
                 _ => false,
             }
     })
@@ -1781,6 +1784,16 @@ mod testes {
                 "a nota depois da tercina começa em 1: {n:?}"
             );
         }
+    }
+
+    #[test]
+    fn ligadura_do_musescore_3_une_as_notas() {
+        // início: <Tie id> dentro da nota; fim: <endSpanner id> dentro da nota seguinte (formato dos .mscx do hinário)
+        let inicio = r#"<Chord><durationType>half</durationType><Note><Tie id="2"></Tie><pitch>60</pitch></Note></Chord>"#;
+        let fim = r#"<Chord><durationType>quarter</durationType><Note><endSpanner id="2"/><pitch>60</pitch></Note></Chord>"#;
+        let c = format!("{C44}{inicio}{fim}{}", acorde("quarter", 62));
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso(&c))), 1).unwrap();
+        assert_eq!(notas(&h, 0), vec![(0.0, 3.0, 60), (3.0, 1.0, 62)]);
     }
 
     #[test]
