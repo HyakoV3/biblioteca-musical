@@ -350,7 +350,7 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                         est.silabas.push(Silaba {
                             t: *t,
                             voz,
-                            verso: numero(l, "no").filter(|&v| v < CORO - 1).unwrap_or(0),
+                            verso: numero(l, "no").filter(|&v| v < FINAL).unwrap_or(0),
                             continua: matches!(texto(l, "syllabic"), Some("begin" | "middle")),
                             quebra_antes: false,
                             texto: sil,
@@ -611,9 +611,9 @@ fn corrigir_silabas(silabas: &mut [Silaba]) {
     }
 }
 
-/// Num hino com final, o texto do trecho final (o coro cantado só na última vez, depois da última estrofe) costuma vir escrito pelo
+/// Num hino com final, o texto do trecho final (cantado só na última vez, depois da última estrofe) costuma vir escrito pelo
 /// autor sob a estrofe 1, que é a camada que ele já tinha aberta. No hinário impresso ele vem DEPOIS da última estrofe. Então o
-/// texto que começa em `t_final` (o início da 2ª casa) e está sob uma estrofe que não é a última passa para a última estrofe.
+/// texto que começa em `t_final` (o início da 2ª casa) e está sob uma estrofe que não é a última vira o bloco FINAL, logo depois da última estrofe.
 /// Só se mexe quando esse texto está todo sob UMA estrofe: com mais de uma, não há como saber a qual cada trecho pertence.
 fn coro_para_a_ultima_estrofe(silabas: &mut [Silaba], t_final: f64) {
     const EPS: f64 = 1e-6;
@@ -630,7 +630,7 @@ fn coro_para_a_ultima_estrofe(silabas: &mut [Silaba], t_final: f64) {
             .iter_mut()
             .filter(|s| s.t >= t_final - EPS && s.verso != ultima)
         {
-            sil.verso = ultima;
+            sil.verso = FINAL;
         }
     }
 }
@@ -655,6 +655,9 @@ fn ultimo_instante_com_estrofes_juntas(silabas: &[Silaba]) -> Option<f64> {
 
 /// Marcador interno do coro (refrão): não é número de estrofe. Na letra vira o parágrafo "Coro. ..." e na sincronia, a estrofe 0.
 const CORO: u32 = u32::MAX - 1;
+/// Marcador interno do final (o texto cantado só na última vez, num hino com final): na letra vira o parágrafo "Final. ..." depois da última
+/// estrofe e, na sincronia, a estrofe 0 (um hino não tem coro e final juntos: o coro do hino com final é o próprio final).
+const FINAL: u32 = u32::MAX - 2;
 /// Com menos sílabas que isto depois das estrofes, o resto não é refrão: é o fim de uma estrofe escrito só uma vez (hinos 61, 62, 189...).
 const SILABAS_MINIMAS_DO_CORO: usize = 6;
 
@@ -877,6 +880,8 @@ fn montar_letra(mut silabas: Vec<Silaba>, mut respiracoes: Vec<f64>) -> (Vec<Str
         for (i, l) in e.linhas.into_iter().filter(|l| !l.is_empty()).enumerate() {
             saida.push(if i == 0 && verso == CORO {
                 format!("Coro. {l}")
+            } else if i == 0 && verso == FINAL {
+                format!("Final. {l}")
             } else if i == 0 {
                 format!("{}. {l}", verso + 1)
             } else {
@@ -925,7 +930,11 @@ fn estrofes_da_passada(
         }
         if algum {
             saida.push(EstrofeSinc {
-                estrofe: if verso == CORO { 0 } else { verso + 1 },
+                estrofe: if verso == CORO || verso == FINAL {
+                    0
+                } else {
+                    verso + 1
+                },
                 linhas,
             });
         }
@@ -2264,7 +2273,7 @@ mod testes {
     }
 
     #[test]
-    fn coro_escrito_sob_a_estrofe_1_vai_para_a_ultima() {
+    fn texto_do_final_escrito_sob_a_estrofe_1_vira_o_bloco_final_depois_da_ultima() {
         let mut s = estrofes_com_coro(0);
         coro_para_a_ultima_estrofe(&mut s, 10.0);
         let (letra, _) = montar_letra(s, vec![9.5]);
@@ -2276,7 +2285,8 @@ mod testes {
                 "2. gama delta",
                 "",
                 "3. eta teta",
-                "coro final"
+                "",
+                "Final. coro final"
             ]
         );
     }
@@ -2512,7 +2522,10 @@ mod testes {
         ]
         .concat();
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap();
-        assert_eq!(h.letra, vec!["1. a c e", "", "2. b d f g coro final"]);
+        assert_eq!(
+            h.letra,
+            vec!["1. a c e", "", "2. b d f g", "", "Final. coro final"]
+        );
     }
 
     #[test]

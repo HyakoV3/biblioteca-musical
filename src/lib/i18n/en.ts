@@ -210,6 +210,7 @@ export const en: Dicionario = {
   "hino.nao_encontrado": "Hymn not found.",
   "hino.estrofe": "Verse {n}",
   "hino.coro": "Chorus",
+  "hino.final": "Ending",
   "ajustes.titulo": "Settings",
   "ajustes.idioma": "Interface language",
   "ajustes.conteudo": "Content",

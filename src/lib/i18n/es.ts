@@ -210,6 +210,7 @@ export const es: Dicionario = {
   "hino.nao_encontrado": "Himno no encontrado.",
   "hino.estrofe": "Estrofa {n}",
   "hino.coro": "Coro",
+  "hino.final": "Final",
   "ajustes.titulo": "Ajustes",
   "ajustes.idioma": "Idioma de la interfaz",
   "ajustes.conteudo": "Contenido",
