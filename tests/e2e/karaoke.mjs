@@ -53,7 +53,7 @@ const NOTAS_DO_COMPASSO = [
   [["m1n0", 0, 4], ["m1n1", 0, 2]],
   [["m2p0", 0, 2, "rest"]],
 ];
-const SVG_PARTITURA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" overflow="hidden"><svg class="definition-scale" color="black" viewBox="0 0 400 120"><g id="bmccb-p-folha">${[20, 35, 50, 65, 80].map((y) => `<path d="M10 ${y} L390 ${y}"></path>`).join("")}<ellipse cx="60" cy="50" rx="10" ry="7"></ellipse><rect x="90" y="30" width="6" height="40"></rect><text x="120" y="110" font-family="Leipzig" font-size="30px">&#xE1D5; = 58</text>${[10, 130, 250].map((x, i) => `<g class="measure" id="bmccb-p-m${i}"><path d="M${x} 20 L${x} 80"></path><path d="M${x + 120} 20 L${x + 120} 80"></path>${NOTAS_DO_COMPASSO[i].map(([id, ini, fim, tipo], k) => tipo === "rest" ? `<g class="rest" id="bmccb-p-${id}" data-t="${ini}" data-f="${fim}"><rect x="${x + 20}" y="45" width="14" height="6"></rect></g>` : `<g class="note" id="bmccb-p-${id}" data-t="${ini}" data-f="${fim}"><g class="notehead"><ellipse cx="${x + 20 + 30 * k}" cy="${55 + 10 * k}" rx="8" ry="6"></ellipse></g><rect x="${x + 27 + 30 * k}" y="${25 + 10 * k}" width="2" height="30"></rect></g>`).join("")}</g>`).join("")}</g></svg></svg>`;
+const SVG_PARTITURA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" overflow="hidden"><svg class="definition-scale" color="black" viewBox="0 0 400 120"><g id="bmccb-p-folha">${[20, 35, 50, 65, 80].map((y) => `<path d="M10 ${y} L390 ${y}"></path>`).join("")}<ellipse cx="60" cy="50" rx="10" ry="7"></ellipse><rect x="90" y="30" width="6" height="40"></rect><text x="120" y="110" font-family="Leipzig" font-size="30px">&#xE1D5; = 58</text>${[10, 130, 250].map((x, i) => `<g class="measure" id="bmccb-p-m${i}"><path d="M${x} 20 L${x} 80"></path><path d="M${x + 120} 20 L${x + 120} 80"></path>${NOTAS_DO_COMPASSO[i].map(([id, ini, fim, tipo], k) => tipo === "rest" ? `<g class="rest" id="bmccb-p-${id}" data-t="${ini}" data-f="${fim}"><rect x="${x + 20}" y="45" width="14" height="6"></rect></g>` : `<g class="note" id="bmccb-p-${id}" data-t="${ini}" data-f="${fim}"><g class="notehead"><ellipse cx="${x + 20 + 30 * k}" cy="${55 + 10 * k}" rx="8" ry="6"></ellipse></g><rect x="${x + 27 + 30 * k}" y="${25 + 10 * k}" width="2" height="30"></rect></g>`).join("")}${i === 0 ? '<g class="tie" id="bmccb-p-lig0" data-t="0" data-f="2"><path d="M28 70 C45 82 65 82 88 70 C65 88 45 88 28 70"></path></g>' : ""}</g>`).join("")}</g></svg></svg>`;
 // A versão de paisagem é outro desenho (marcado com data-largo, para saber qual foi entregue).
 const SVG_PARTITURA_PAISAGEM = SVG_PARTITURA.replace('id="bmccb-p-folha"', 'id="bmccb-p-folha" data-largo="1"');
 // Sílabas esperadas na 1ª vez (estrofe 1) e na 2ª (estrofe 2), com o início de cada uma em batidas.
@@ -669,6 +669,30 @@ async function principal() {
     const h = await halos();
     confere(JSON.stringify(h.ids) === JSON.stringify(esperado) && h.atras && h.semFundoDoCompasso && h.semCor, `aos ${s} s (${quando}) acendem ${JSON.stringify(esperado)}: ${JSON.stringify(h)}`);
   }
+  // Ligadura: enquanto a 1ª nota do compasso 1 soa (0 a 2 batidas), a luz corre pela curva (a cópia dourada, recortada) e cresce; quando a 2ª nota começa, a
+  // curva sai e só o halo da 2ª fica.
+  const curva = () => av(`(() => {
+    const c = document.querySelector('#painel-partitura path.destaque-ligadura');
+    const r = c ? document.querySelector('#painel-partitura clipPath rect') : null;
+    return { tem: !!c, largura: r ? Number(r.getAttribute('width')) : -1, noRecorte: !!c && c.getAttribute('clip-path').startsWith('url(#recorte-ligadura-') };
+  })()`);
+  // Tocando do começo, a luz corre: a largura do recorte da curva cresce de um quadro para o outro enquanto a 1ª nota soa.
+  await buscar(".mini .busca-entrada", 0);
+  await dormir(300);
+  await av("document.querySelector('.mini .acao').click(); 1"); // toca
+  const larguras = [];
+  for (let i = 0; i < 25; i++) {
+    const c = await curva();
+    if (c.tem) larguras.push(c.largura);
+    await dormir(30);
+  }
+  await av("document.querySelector('.mini .acao').click(); 1"); // pausa
+  const cresce = larguras.length >= 3 && larguras.every((w, i) => i === 0 || w >= larguras[i - 1]) && larguras[larguras.length - 1] > larguras[0];
+  confere(cresce, `a luz corre pela ligadura enquanto a 1ª nota soa (larguras do recorte): ${JSON.stringify(larguras)}`);
+  await buscar(".mini .busca-entrada", 1.6);
+  await dormir(500);
+  const depoisDaCurva = await curva();
+  confere(!depoisDaCurva.tem, `quando a 2ª nota começa a curva sai: ${JSON.stringify(depoisDaCurva)}`);
   // pausado, o halo não anda
   await buscar(".mini .busca-entrada", 2);
   await dormir(500);

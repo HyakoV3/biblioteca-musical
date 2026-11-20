@@ -166,9 +166,10 @@ def versoes(largura: int, largura_paisagem: int | None):
 
 # Cada nota e cada pausa do SVG leva o instante em que soa, DENTRO do compasso, em semínimas (as mesmas "batidas" do hinário): `data-t` é o
 # começo e `data-f` o fim (I-26, karaokê por nota). O app lê estes dois atributos direto do elemento e os soma ao início do compasso que
-# toca (a lista `compassos` do hinário), então não precisa de mapa de ids nem de arquivo à parte. Fim maior que o do compasso é normal:
-# é a nota ligada, que fica acesa pela duração somada.
+# toca (a lista `compassos` do hinário), então não precisa de mapa de ids nem de arquivo à parte. Cada nota tem o SEU tempo, inclusive a
+# segunda de uma ligadura (a curva, `<g class="tie">`, leva o tempo da nota que a abre: é por onde a luz corre até a segunda nota).
 ELEMENTO_COM_TEMPO = re.compile(r'<g id="([^"]+)" class="(?:note|rest)">')
+LIGADURA_NO_SVG = re.compile(r'<g id="([^"]+)" class="tie">')
 CASAS_DO_TEMPO = 4
 
 
@@ -202,39 +203,54 @@ def tempos_no_compasso(timemap: list, real) -> dict:
     return saida
 
 
-def marcar_notas(svg: str, tempos: dict, ligaduras: dict) -> tuple:
-    """O SVG com `data-t` e `data-f` em cada nota e pausa que tem tempo. Devolve (svg, quantos elementos foram marcados).
-    `ligaduras` vai da nota que começa a ligadura à que termina: a segunda NÃO leva tempo (não acende de novo) e a primeira fica acesa pela
-    duração somada. Sem tempo (nota sem evento) ou com duração zero (nota de enfeite): sem atributos, não acende."""
-    segundas = set(ligaduras.values())
+def marcar_notas(svg: str, tempos: dict, ligaduras: list) -> tuple:
+    """O SVG com `data-t` e `data-f` em cada nota e pausa que tem tempo, e nas ligaduras. Devolve (svg, quantas notas e pausas foram marcadas).
+    Cada nota acende no SEU tempo, inclusive a segunda de uma ligadura (o som é uma nota só, mas na partitura o halo acompanha a curva e depois
+    preenche a segunda nota). `ligaduras` é uma lista de `(id do <g class="tie">, id da nota que abre, id da que fecha)`: a curva leva o tempo da
+    nota que abre (de onde a luz parte até onde a segunda começa). Se a ligadura foi partida em duas pelo fim da linha, o tempo se divide em partes
+    iguais, na ordem. Sem tempo (nota sem evento) ou com duração zero (nota de enfeite): sem atributos, não acende."""
     marcados = 0
-
-    def total(id_):
-        inicio, fim = tempos[id_]
-        visto = {id_}
-        while id_ in ligaduras and ligaduras[id_] in tempos and ligaduras[id_] not in visto:
-            id_ = ligaduras[id_]
-            visto.add(id_)
-            fim += tempos[id_][1] - tempos[id_][0]
-        return inicio, fim
 
     def troca(m):
         nonlocal marcados
         id_ = m.group(1)
-        if id_ not in tempos or id_ in segundas:
+        if id_ not in tempos:
             return m.group(0)
-        inicio, fim = total(id_)
+        inicio, fim = tempos[id_]
         if fim - inicio <= 1e-6:
             return m.group(0)
         marcados += 1
         return f'{m.group(0)[:-1]} data-t="{numero_curto(inicio)}" data-f="{numero_curto(fim)}">'
 
-    return ELEMENTO_COM_TEMPO.sub(troca, svg), marcados
+    svg = ELEMENTO_COM_TEMPO.sub(troca, svg)
+
+    # a curva da ligadura: o tempo da nota que abre, dividido entre os pedaços da mesma ligadura
+    pedacos = {}
+    for gid, de, ate in ligaduras:
+        pedacos.setdefault((de, ate), []).append(gid)
+    tempo_da_curva = {}
+    for (de, _), ids in pedacos.items():
+        if de not in tempos:
+            continue
+        inicio, fim = tempos[de]
+        if fim - inicio <= 1e-6:
+            continue
+        passo = (fim - inicio) / len(ids)
+        for k, gid in enumerate(ids):
+            tempo_da_curva[gid] = (inicio + k * passo, inicio + (k + 1) * passo)
+
+    def curva(m):
+        t = tempo_da_curva.get(m.group(1))
+        if t is None:
+            return m.group(0)
+        return f'{m.group(0)[:-1]} data-t="{numero_curto(t[0])}" data-f="{numero_curto(t[1])}">'
+
+    return LIGADURA_NO_SVG.sub(curva, svg), marcados
 
 
 def tempos_do_desenho(tk, svg: str, timemap: list) -> tuple:
     """Pergunta ao Verovio o que o `timemap` e o SVG não dizem sozinhos: as cópias que cada elemento tem nas repetições
-    (`getExpansionIdsForElement`) e as ligaduras (`startid` e `endid` de cada `<g class="tie">`)."""
+    (`getExpansionIdsForElement`) e as ligaduras (`startid` e `endid` de cada `<g class="tie">`, como lista de `(id da curva, nota que abre, nota que fecha)`)."""
     desenhados = [m.group(1) for m in ELEMENTO_COM_TEMPO.finditer(svg)]
     copia_para_real = {}
     for r in desenhados:
@@ -242,12 +258,12 @@ def tempos_do_desenho(tk, svg: str, timemap: list) -> tuple:
             if c:
                 copia_para_real[c] = r
     real = lambda i: copia_para_real.get(i, i)  # sem repetição o Verovio não devolve cópias: o id do timemap já é o do desenho
-    ligaduras = {}
-    for m in re.finditer(r'<g id="([^"]+)" class="tie">', svg):
+    ligaduras = []
+    for m in LIGADURA_NO_SVG.finditer(svg):
         a = tk.getElementAttr(m.group(1))
         inicio, fim = (a.get("startid") or "").lstrip("#"), (a.get("endid") or "").lstrip("#")
         if inicio and fim:
-            ligaduras[real(inicio)] = real(fim)
+            ligaduras.append((m.group(1), real(inicio), real(fim)))
     return tempos_no_compasso(timemap, real), ligaduras
 
 
