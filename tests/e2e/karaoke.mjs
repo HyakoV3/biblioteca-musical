@@ -86,7 +86,9 @@ const STUB = `window.__TAURI_INTERNALS__ = {
           sessionStorage.removeItem("e2e-falha-partitura");
           throw JSON.stringify(["ler", "falha simulada"]);
         }
-        return args.paisagem === true ? ${JSON.stringify(SVG_PARTITURA_PAISAGEM)} : ${JSON.stringify(SVG_PARTITURA)};
+        const svg = args.paisagem === true ? ${JSON.stringify(SVG_PARTITURA_PAISAGEM)} : ${JSON.stringify(SVG_PARTITURA)};
+        // "e2e-sem-tempo-nas-notas": a partitura vem como a de um pacote antigo, sem data-t e data-f.
+        return sessionStorage.getItem("e2e-sem-tempo-nas-notas") === "1" ? svg.replace(/ data-[tf]="[^"]*"/g, "") : svg;
       }
       throw JSON.stringify(["sem_partitura", String(args.numero)]);
     }
@@ -613,12 +615,13 @@ async function principal() {
   // batidas: 0-4, 4-8, 8-10), a 120 bpm (2 batidas por segundo), e a vez 2 começa na batida 14 (7 s). Pausado, o slider leva a música a um ponto conhecido.
   const destaque = () => av(`(() => {
     const medidas = [...document.querySelectorAll('#painel-partitura g.measure')];
-    const caixa = document.querySelector('#painel-partitura rect.destaque-compasso');
-    const m = medidas.find((g) => g.querySelector('rect.destaque-compasso'));
-    const rc = caixa?.getBoundingClientRect(), mc = m?.getBoundingClientRect();
-    return { indice: medidas.findIndex((g) => g.querySelector('rect.destaque-compasso')), retangulos: document.querySelectorAll('rect.destaque-compasso').length, medidas: medidas.length,
-      cobre: !!rc && !!mc && rc.left <= mc.left + 0.5 && rc.right >= mc.right - 0.5 && rc.top <= mc.top + 0.5 && rc.bottom >= mc.bottom - 0.5,
-      atras: !!caixa && caixa === m?.firstElementChild };
+    const barra = document.querySelector('#painel-partitura line.barra-compasso');
+    const m = medidas.find((g) => g.querySelector('line.barra-compasso'));
+    const bb = barra?.getBoundingClientRect(), mc = m?.getBoundingClientRect();
+    return { indice: medidas.findIndex((g) => g.querySelector('line.barra-compasso')), retangulos: document.querySelectorAll('line.barra-compasso').length, medidas: medidas.length,
+      semFundo: document.querySelectorAll('#painel-partitura rect.destaque-compasso').length === 0,
+      cobre: !!bb && !!mc && bb.left <= mc.left + 0.5 && bb.left >= mc.left - 8 && bb.top <= mc.top + 0.5 && bb.bottom >= mc.bottom - 0.5,
+      atras: !!barra && barra === m?.firstElementChild };
   })()`);
   // Passos anteriores pararam a música (e um deles desligou o karaokê): começa de novo, como a pessoa faria, e vai para a aba Partitura.
   await av("document.getElementById('aba-ouvir').click(); 1");
@@ -646,21 +649,16 @@ async function principal() {
     confere(d.indice === esperado && d.retangulos === 1 && d.medidas === 3, `aos ${s} s (${quando}) o compasso ${esperado + 1} está destacado: ${JSON.stringify(d)}`);
   }
   const d1 = await destaque();
-  confere(d1.cobre && d1.atras, `o destaque cobre o compasso inteiro e fica ATRÁS das notas (primeiro filho do compasso): ${JSON.stringify(d1)}`);
-  // A barra dourada à esquerda diz qual é o compasso; o fundo amarelo sai quando a partitura traz o tempo das notas (ele apagava o halo).
-  const dc = await av(`(() => {
-    const r = document.querySelector('#painel-partitura rect.destaque-compasso'), b = document.querySelector('#painel-partitura line.barra-compasso');
-    const m = r?.parentElement, rb = r?.getBoundingClientRect(), bb = b?.getBoundingClientRect();
-    return { barras: document.querySelectorAll('#painel-partitura line.barra-compasso').length, dentro: b?.parentElement === m, naEsquerda: !!rb && !!bb && Math.abs(bb.left - rb.left) < 6 && bb.height >= rb.height - 2,
-      semFundo: !!r && getComputedStyle(r).fillOpacity === '0', depoisDoRetangulo: r?.nextElementSibling === b };
-  })()`);
-  confere(dc.barras === 1 && dc.dentro && dc.naEsquerda && dc.semFundo && dc.depoisDoRetangulo, `a barra dourada fica na esquerda do compasso que toca e o fundo amarelo sai: ${JSON.stringify(dc)}`);
+  confere(d1.cobre && d1.atras && d1.semFundo, `a barra dourada acompanha a altura do compasso na esquerda, fica ATRÁS das notas (primeiro filho do compasso) e não há retângulo de fundo: ${JSON.stringify(d1)}`);
+  // Com o tempo das notas, o compasso é mostrado SÓ pela barra dourada à esquerda: nem fundo nem borda (o retângulo nem é criado).
+  const dc = await av(`(() => ({ barras: document.querySelectorAll('#painel-partitura line.barra-compasso').length, retangulos: document.querySelectorAll('#painel-partitura rect.destaque-compasso').length }))()`);
+  confere(dc.barras === 1 && dc.retangulos === 0, `com o tempo das notas há uma barra e nenhum retângulo no compasso: ${JSON.stringify(dc)}`);
   // Karaokê por nota (I-26): as notas que soam ganham um halo ATRÁS (primeiro filho da nota) e a nota não muda de cor. Todas as vozes que soam
   // acendem, a pausa também, e na pausa entre as partes nenhuma nota fica acesa (só o compasso).
   const halos = () => av(`(() => {
     const hs = [...document.querySelectorAll('#painel-partitura ellipse.destaque-nota')];
     return { ids: hs.map((h) => h.parentElement.id.replace('bmccb-p-', '')).sort(), atras: hs.every((h) => h === h.parentElement.firstElementChild),
-      porNota: document.querySelector('#painel-partitura .folha').classList.contains('por-nota'),
+      semFundoDoCompasso: document.querySelectorAll('#painel-partitura rect.destaque-compasso').length === 0,
       semCor: hs.every((h) => !h.parentElement.getAttribute('fill') && !h.parentElement.getAttribute('style')) };
   })()`);
   // Os instantes caem no MEIO de cada nota: o slider tem ~1 batida de antecedência em relação ao que o compasso lê (conferido: o mesmo vale para o destaque do compasso).
@@ -669,7 +667,7 @@ async function principal() {
     await buscar(".mini .busca-entrada", s);
     await dormir(500);
     const h = await halos();
-    confere(JSON.stringify(h.ids) === JSON.stringify(esperado) && h.atras && h.porNota && h.semCor, `aos ${s} s (${quando}) acendem ${JSON.stringify(esperado)}: ${JSON.stringify(h)}`);
+    confere(JSON.stringify(h.ids) === JSON.stringify(esperado) && h.atras && h.semFundoDoCompasso && h.semCor, `aos ${s} s (${quando}) acendem ${JSON.stringify(esperado)}: ${JSON.stringify(h)}`);
   }
   // pausado, o halo não anda
   await buscar(".mini .busca-entrada", 2);
@@ -699,7 +697,7 @@ async function principal() {
   // o liga/desliga é o do karaokê: desligado, o destaque some; ligado, volta
   await av("document.querySelector('.chave-karaoke').click(); 1");
   await dormir(300);
-  const off = await av(`({ ligado: document.querySelector('.chave-karaoke').getAttribute('aria-pressed'), retangulos: document.querySelectorAll('rect.destaque-compasso').length })`);
+  const off = await av(`({ ligado: document.querySelector('.chave-karaoke').getAttribute('aria-pressed'), retangulos: document.querySelectorAll('line.barra-compasso').length })`);
   confere(off.ligado === "false" && off.retangulos === 0, `com o karaokê desligado não há destaque: ${JSON.stringify(off)}`);
   confere((await av("document.querySelectorAll('ellipse.destaque-nota').length")) === 0, "com o karaokê desligado também não há halo de nota");
   confere((await av("document.querySelectorAll('line.barra-compasso').length")) === 0, "com o karaokê desligado também não há barra de compasso");
@@ -710,7 +708,7 @@ async function principal() {
   // fora da aba Partitura não gasta nada e não deixa destaque
   await av("document.getElementById('aba-letra').click(); 1");
   await dormir(300);
-  confere((await av("document.querySelectorAll('rect.destaque-compasso').length")) === 0, "fora da aba Partitura o destaque some");
+  confere((await av("document.querySelectorAll('line.barra-compasso, rect.destaque-compasso').length")) === 0, "fora da aba Partitura o destaque some");
   confere((await av("document.querySelectorAll('ellipse.destaque-nota').length")) === 0, "fora da aba Partitura o halo das notas some");
   await av("document.getElementById('aba-partitura').click(); 1");
   await dormir(400);
@@ -729,6 +727,30 @@ async function principal() {
   confere(await abrirHino(998), "hino 998 carregado (a letra apareceu)");
   const h998 = await av(`({ abas: [...document.querySelectorAll('[role="tab"]')].map((t) => t.id), painel: !!document.getElementById('painel-partitura'), barra: !!document.querySelector('[role="tablist"]') })`);
   confere(!h998.painel && h998.abas.length === 0 && !h998.barra, `hino sem partitura, num pacote com partituras: sem aba Partitura: ${JSON.stringify(h998)}`);
+
+  // Partitura de um pacote ANTIGO (sem data-t e data-f): sem halo, e o compasso continua com o fundo (o único destaque que ela tem) mais a barra.
+  await av("sessionStorage.setItem('e2e-sem-tempo-nas-notas', '1'); 1");
+  confere(await abrirHino(999), "hino 999 carregado com a partitura de pacote antigo (sem o tempo das notas)");
+  await av("document.getElementById('aba-ouvir').click(); 1");
+  await dormir(300);
+  await av(`(() => { const b = [...document.querySelectorAll('#painel-ouvir button')].find((x) => /hino todo|whole|todo/i.test(x.textContent)); b?.click(); return !!b; })()`);
+  await dormir(700);
+  await av("document.getElementById('aba-partitura').click(); 1");
+  await dormir(600);
+  if ((await av(`document.querySelector('.chave-karaoke')?.getAttribute('aria-pressed') ?? null`)) === "false") {
+    await av("document.querySelector('.chave-karaoke').click(); 1");
+    await dormir(300);
+  }
+  if ((await lido()).tocando) {
+    await av("document.querySelector('.mini .acao').click(); 1");
+    await dormir(500);
+  }
+  await buscar(".mini .busca-entrada", 2);
+  await dormir(600);
+  const antigo = await av(`(() => ({ retangulos: document.querySelectorAll('#painel-partitura rect.destaque-compasso').length, barras: document.querySelectorAll('#painel-partitura line.barra-compasso').length,
+    halos: document.querySelectorAll('#painel-partitura ellipse.destaque-nota').length, notasComTempo: document.querySelectorAll('#painel-partitura [data-t]').length }))()`);
+  confere(antigo.notasComTempo === 0 && antigo.retangulos === 1 && antigo.barras === 1 && antigo.halos === 0, `pacote antigo (sem tempo nas notas): compasso com fundo e barra, e nenhum halo: ${JSON.stringify(antigo)}`);
+  await av("sessionStorage.removeItem('e2e-sem-tempo-nas-notas'); 1");
 
   // Nenhum pacote com partituras importado (partituras = []): a aba aparece com o aviso e o botão para Ajustes.
   await av("sessionStorage.setItem('e2e-sem-partituras', '1'); 1");
