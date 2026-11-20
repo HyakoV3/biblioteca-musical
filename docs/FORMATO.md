@@ -199,6 +199,7 @@ partir do `timemap` do Verovio; o app os soma ao início do compasso que toca (a
 - **Ligadura:** a **segunda** nota não leva tempo (não acende de novo) e a **primeira** tem o fim somado: `data-f` pode passar do fim do compasso, e o app
   mantém a nota acesa no compasso seguinte.
 - **Repetições:** o instante dentro do compasso é o mesmo em todas as passadas, então vale um só por elemento; quem decide a passada é a lista `compassos`.
+- **Como aparece:** o halo dourado atrás da nota (a nota fica na cor do tema); o compasso que toca ganha só um **contorno fino** e uma **barra dourada à esquerda** (como a barra da estrofe da vez na letra), **sem o fundo amarelo**, que apagava o halo.
 - **Sem os atributos** (um pacote de partituras antigo), o app destaca só o compasso, como antes. As partituras novas precisam de um **pacote novo**.
 
 `partitura` é opcional e vale `"partituras/hino-N.svg"` quando o pacote traz a partitura do hino. Ele só **informa**: o app lê a

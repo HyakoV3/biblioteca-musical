@@ -647,6 +647,14 @@ async function principal() {
   }
   const d1 = await destaque();
   confere(d1.cobre && d1.atras, `o destaque cobre o compasso inteiro e fica ATRÁS das notas (primeiro filho do compasso): ${JSON.stringify(d1)}`);
+  // A barra dourada à esquerda diz qual é o compasso; o fundo amarelo sai quando a partitura traz o tempo das notas (ele apagava o halo).
+  const dc = await av(`(() => {
+    const r = document.querySelector('#painel-partitura rect.destaque-compasso'), b = document.querySelector('#painel-partitura line.barra-compasso');
+    const m = r?.parentElement, rb = r?.getBoundingClientRect(), bb = b?.getBoundingClientRect();
+    return { barras: document.querySelectorAll('#painel-partitura line.barra-compasso').length, dentro: b?.parentElement === m, naEsquerda: !!rb && !!bb && Math.abs(bb.left - rb.left) < 6 && bb.height >= rb.height - 2,
+      semFundo: !!r && getComputedStyle(r).fillOpacity === '0', depoisDoRetangulo: r?.nextElementSibling === b };
+  })()`);
+  confere(dc.barras === 1 && dc.dentro && dc.naEsquerda && dc.semFundo && dc.depoisDoRetangulo, `a barra dourada fica na esquerda do compasso que toca e o fundo amarelo sai: ${JSON.stringify(dc)}`);
   // Karaokê por nota (I-26): as notas que soam ganham um halo ATRÁS (primeiro filho da nota) e a nota não muda de cor. Todas as vozes que soam
   // acendem, a pausa também, e na pausa entre as partes nenhuma nota fica acesa (só o compasso).
   const halos = () => av(`(() => {
@@ -694,6 +702,7 @@ async function principal() {
   const off = await av(`({ ligado: document.querySelector('.chave-karaoke').getAttribute('aria-pressed'), retangulos: document.querySelectorAll('rect.destaque-compasso').length })`);
   confere(off.ligado === "false" && off.retangulos === 0, `com o karaokê desligado não há destaque: ${JSON.stringify(off)}`);
   confere((await av("document.querySelectorAll('ellipse.destaque-nota').length")) === 0, "com o karaokê desligado também não há halo de nota");
+  confere((await av("document.querySelectorAll('line.barra-compasso').length")) === 0, "com o karaokê desligado também não há barra de compasso");
   await av("document.querySelector('.chave-karaoke').click(); 1");
   await dormir(300);
   const on = await destaque();

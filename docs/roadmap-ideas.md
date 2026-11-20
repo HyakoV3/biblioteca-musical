@@ -983,7 +983,7 @@ na lista de permitidos, com valor numérico conferido), **nenhum mapa de ids** (
   ligaduras e uníssonos). O SVG cresce uns 5% (uns 1,5% comprimido).
 - **Rust** (`src-tauri/src/svg.rs`): `data-t` e `data-f` permitidos, só com número como o gerador escreve; qualquer outro `data-*` continua recusado.
 - **App**: `src/lib/notas.ts` (lê os atributos, acha as notas que soam em cada batida, incluindo a ligada que atravessa a barra) e `Partitura.svelte` (halo dourado
-  atrás da nota, só quando o conjunto muda; o retângulo do compasso fica mais fraco quando a partitura traz as notas; no alto contraste só o contorno).
+  atrás da nota, só quando o conjunto muda; quando a partitura traz as notas, o compasso perde o fundo amarelo e fica só com um **contorno fino e uma barra dourada à esquerda** (pedido do responsável depois de testar o APK 036: o fundo apagava o halo); no alto contraste só o contorno do halo).
 - **Testes**: unitários (`tests/notas.test.ts`, `tools/test_gerar_partituras.py`, `svg.rs`) e o e2e do karaokê (notas em sequência, duas vozes, pausa, pausa entre as partes,
   pausado, desligado e fora da aba).
 - **Feito depois:** o **pacote `partituras-004.zip`** (480 hinos) está no servidor e no manifesto (PR #86) e o **APK 036** foi entregue. **Falta:** o **teste no

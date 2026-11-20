@@ -72,6 +72,7 @@
   let folha = $state<HTMLDivElement>();
   let compassoAceso = -1; // o índice destacado agora (não reativo: só o DOM muda)
   let retangulo: SVGRectElement | null = null;
+  let barra: SVGLineElement | null = null; // a linha dourada à esquerda do compasso que toca (como a barra da estrofe da vez na letra)
   // I-26, por nota: cada nota e pausa do SVG traz o instante em que soa dentro do compasso (`data-t` e `data-f`, ver `notas.ts`). As
   // soando agora ganham um halo dourado ATRÁS (a nota fica na cor do tema), e o retângulo do compasso vira só um fundo mais fraco.
   let indiceNotas: NotaDoDesenho<Element>[][] | null = null; // lido do SVG na primeira vez que se precisa
@@ -88,6 +89,8 @@
   function limparDestaque() {
     retangulo?.remove();
     retangulo = null;
+    barra?.remove();
+    barra = null;
     compassoAceso = -1;
     limparNotas();
   }
@@ -135,6 +138,8 @@
     if (alvo === compassoAceso) return;
     retangulo?.remove();
     retangulo = null;
+    barra?.remove();
+    barra = null;
     compassoAceso = alvo;
     if (indice === null || !folha) return;
     const medida = folha.querySelectorAll<SVGGElement>("svg g.measure")[indice];
@@ -156,6 +161,15 @@
     r.setAttribute("rx", String(folga * 2));
     medida.insertBefore(r, medida.firstChild);
     retangulo = r;
+    // A barra dourada na esquerda: mostra QUAL compasso é sem encher o fundo (o fundo apagava o halo da nota).
+    const b = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    b.setAttribute("class", "barra-compasso");
+    b.setAttribute("x1", String(caixa.x - folga));
+    b.setAttribute("x2", String(caixa.x - folga));
+    b.setAttribute("y1", String(caixa.y - folga));
+    b.setAttribute("y2", String(caixa.y + caixa.height + folga));
+    medida.insertBefore(b, r.nextSibling); // logo depois do retângulo, que continua sendo o primeiro filho
+    barra = b;
     garantirVisivel(medida);
   }
 
@@ -165,6 +179,7 @@
     void folha;
     untrack(() => {
       retangulo = null;
+      barra = null;
       compassoAceso = -1;
       // Os halos e as notas lidas eram do DOM antigo.
       aureolas = [];
@@ -291,5 +306,8 @@
     fill: var(--ouro); fill-opacity: 0.55; stroke: var(--ouro-linha); stroke-width: 0.125rem; vector-effect: non-scaling-stroke; pointer-events: none;
   }
   :global(:root[data-tema="alto-contraste"]) .folha :global(svg ellipse.destaque-nota) { fill-opacity: 0.18; stroke-width: 0.1875rem; }
-  .folha.por-nota :global(svg rect.destaque-compasso) { fill-opacity: 0.12; stroke-opacity: 0.45; stroke-width: 0.0625rem; }
+  /* A barra dourada à esquerda do compasso que toca (como a barra da estrofe da vez na letra): diz qual é o compasso. */
+  .folha :global(svg line.barra-compasso) { stroke: var(--ouro-linha); stroke-width: 0.25rem; stroke-linecap: butt; vector-effect: non-scaling-stroke; pointer-events: none; }
+  /* Com o tempo das notas o fundo amarelo do compasso sai (ele apagava o destaque do halo): fica só o contorno fino e a barra. */
+  .folha.por-nota :global(svg rect.destaque-compasso) { fill-opacity: 0; stroke-opacity: 0.4; stroke-width: 0.0625rem; }
 </style>
