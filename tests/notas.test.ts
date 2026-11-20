@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { acesasEm, indexarNotas, lerTempo, mesmasNotas, notasDoPonto, notasEm, progressoDaCurva, temNotas, type NotaDoDesenho } from "../src/lib/notas";
+import { acesasEm, alturaEm, indexarNotas, lerTempo, mesmasNotas, notasDoPonto, notasEm, progressoDaCurva, temNotas, type NotaDoDesenho } from "../src/lib/notas";
 import { posicaoEm } from "../src/lib/compassos";
 import type { Compassos } from "../src/lib/biblioteca.svelte";
 
@@ -137,5 +137,22 @@ describe("ligadura: a luz corre pela curva", () => {
     expect(acesasEm(lista, 1, porCompasso).map((a) => [a.n.el, a.local])).toEqual([["a", 1], ["curva", 1]]);
     expect(acesasEm(lista, 2, porCompasso).map((a) => a.n.el)).toEqual(["b"]);
     expect(notasEm(lista, 1, porCompasso).map((n) => n.el)).toEqual(["a", "curva"]);
+  });
+});
+
+describe("alturaEm (o ponto brilhante anda pelo meio da curva)", () => {
+  const linha = [{ x: 0, y: 10 }, { x: 10, y: 20 }, { x: 20, y: 10 }];
+  it("interpola entre os pontos vizinhos", () => {
+    expect(alturaEm(linha, 5)).toBe(15);
+    expect(alturaEm(linha, 15)).toBe(15);
+    expect(alturaEm(linha, 10)).toBe(20);
+  });
+  it("fora da linha vale a ponta mais próxima, e vazia vale 0", () => {
+    expect(alturaEm(linha, -3)).toBe(10);
+    expect(alturaEm(linha, 99)).toBe(10);
+    expect(alturaEm([], 1)).toBe(0);
+  });
+  it("dois pontos no mesmo x não dividem por zero", () => {
+    expect(Number.isFinite(alturaEm([{ x: 0, y: 1 }, { x: 5, y: 2 }, { x: 5, y: 4 }, { x: 9, y: 3 }], 5))).toBe(true);
   });
 });

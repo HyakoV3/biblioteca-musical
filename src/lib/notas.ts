@@ -99,3 +99,16 @@ export function acesasDoPonto<E>(c: Compassos | null | undefined, p: PontoDeComp
 export function mesmasNotas<E>(a: readonly NotaDoDesenho<E>[], b: readonly NotaDoDesenho<E>[]): boolean {
   return a.length === b.length && a.every((n, i) => n === b[i]);
 }
+
+/** A altura (y) de uma linha poligonal, ordenada por x crescente, na posição `x` (interpola entre os dois pontos vizinhos; fora dela vale a ponta mais próxima). Vazia: 0. */
+export function alturaEm(pontos: readonly { x: number; y: number }[], x: number): number {
+  if (pontos.length === 0) return 0;
+  if (x <= pontos[0].x) return pontos[0].y;
+  const ultimo = pontos[pontos.length - 1];
+  if (x >= ultimo.x) return ultimo.y;
+  let i = 1;
+  while (pontos[i].x < x) i++;
+  const a = pontos[i - 1];
+  const b = pontos[i];
+  return b.x === a.x ? b.y : a.y + ((b.y - a.y) * (x - a.x)) / (b.x - a.x);
+}

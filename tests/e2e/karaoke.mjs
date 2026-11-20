@@ -674,21 +674,32 @@ async function principal() {
   const curva = () => av(`(() => {
     const c = document.querySelector('#painel-partitura path.destaque-ligadura');
     const r = c ? document.querySelector('#painel-partitura clipPath rect') : null;
-    return { tem: !!c, largura: r ? Number(r.getAttribute('width')) : -1, noRecorte: !!c && c.getAttribute('clip-path').startsWith('url(#recorte-ligadura-') };
+    const f = document.querySelector('#painel-partitura path.faixa-ligadura');
+    const pt = document.querySelector('#painel-partitura circle.ponto-ligadura');
+    return { faixaAtras: !!f && !!f.nextElementSibling && f.nextElementSibling.tagName.toLowerCase() === 'path' && !f.nextElementSibling.getAttribute('class'),
+      pontoX: pt ? Number(pt.getAttribute('cx')) : -1, tem: !!c, largura: r ? Number(r.getAttribute('width')) : -1, noRecorte: !!c && c.getAttribute('clip-path').startsWith('url(#recorte-ligadura-') };
   })()`);
   // Tocando do começo, a luz corre: a largura do recorte da curva cresce de um quadro para o outro enquanto a 1ª nota soa.
   await buscar(".mini .busca-entrada", 0);
   await dormir(300);
   await av("document.querySelector('.mini .acao').click(); 1"); // toca
   const larguras = [];
+  const pontos = [];
+  let faixasAtras = true;
   for (let i = 0; i < 25; i++) {
     const c = await curva();
-    if (c.tem) larguras.push(c.largura);
+    if (c.tem) {
+      larguras.push(c.largura);
+      pontos.push(c.pontoX);
+      faixasAtras = faixasAtras && c.faixaAtras;
+    }
     await dormir(30);
   }
   await av("document.querySelector('.mini .acao').click(); 1"); // pausa
   const cresce = larguras.length >= 3 && larguras.every((w, i) => i === 0 || w >= larguras[i - 1]) && larguras[larguras.length - 1] > larguras[0];
   confere(cresce, `a luz corre pela ligadura enquanto a 1ª nota soa (larguras do recorte): ${JSON.stringify(larguras)}`);
+  confere(faixasAtras, "a faixa larga da ligadura fica ATRÁS da curva (logo antes dela)");
+  confere(pontos.length >= 3 && pontos.every((x, i) => i === 0 || x >= pontos[i - 1]) && pontos[pontos.length - 1] > pontos[0], `o ponto brilhante anda junto da luz, da esquerda para a direita: ${JSON.stringify(pontos.map((x) => Math.round(x)))}`);
   await buscar(".mini .busca-entrada", 1.6);
   await dormir(500);
   const depoisDaCurva = await curva();
