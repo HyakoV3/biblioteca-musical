@@ -1189,8 +1189,14 @@ A amostra tem hinos de 42 a 178 KB de `.mscx`, então o total real pode variar u
 - **Dúvidas para o responsável:** cerca de 300 nos relatórios (grafia, texto que falta na fonte, hífen de pronome "Faz-me"/"Dá-nos", que entrou por regra de ortografia e não por evidência do `.mscx`).
 - **Limites do formato de correções / conversor** (pedidos repetidos pelos subagentes): sem verbo para **mover sílaba entre estrofes** (ex.: refrão do 475), **juntar linhas**, **recuperar sílaba que está fora das notas** (finais de estrofe dos hinos 61 e 62), nem casar `_` literal; falta um `--mostrar-silabas`, tratar sílaba terminada em ` -` e dizer o compasso nos avisos de "notas do meio omitidas"; `varrer_letra.py` e `verifica_svg.py` têm o caminho do lote 01 fixo.
 
+### Estado do `hinario.json` (2026-11-19, `hinario-480-final.json`, fora do Git)
+Os 480 hinos do Dó, com as 1.121 correções dos lotes, as letras trocadas pelo OCR e correções manuais do responsável por cima (hinos 2, 61, 62, 83, 96, 110, 143, 178, 185, 189, 198, 238 e 475). **Validado** (480 números, 1 a 480; marcas do karaokê dentro de cada linha; mesmo número de linhas que a letra). **Não validado:** o app (o leitor em Rust e o `svg::limpar`) ainda não leu este arquivo, e **o JSON ainda não é reproduzível**, porque os ajustes manuais vivem em scripts fora do repositório (`correcoes.json` não os cobre: faltam verbos para mover sílaba, juntar linhas e recuperar sílaba fora das notas).
+- **Partituras dos 480 hinos conferidas no app (2026-11-19):** zip único `partituras-480.zip` (480 partituras, todas com paisagem, 18,7 MiB, SHA-256 `7e761027…`, fora do Git) montado com `tools/montar-pacote.py` das 16 pastas de lote. Pelo teste `conteudo_real` (leitor e `svg::limpar` do app, ver `docs/pacote-de-partituras.md`): **o hinário de 480 hinos foi lido, 480 partituras importadas, 0 recusadas, todas lidas de volta (retrato e paisagem)**. **Não testado:** num celular (22 MB de zip viram ~29 MB de texto na ponte do Tauri) nem a divisão em faixas de 100; **não publicado** (sem acesso ao servidor e sem a autorização do Enéias).
+- **Causa de vários defeitos (responsável):** a **ligadura por baixo das notas confunde o OCR** do autor, e o final da estrofe vem escrito uma vez, sob a estrofe 1 (hinos 61, 62, 189, 198).
+- **Pendente (o responsável decidiu deixar como está por enquanto):** 61 (frase "Contigo na luz, ó meu Redentor…"), 62 ("implo-re Ti" e a quebra da estrofe 4), 189 (fim da estrofe 1), 185 (trecho partido da estrofe 1), 238 ("nhor," solto e fim da estrofe 3), 475 (fim da estrofe 3 e "O sano Evangelho"), os hinos 1 a 30 (sem passada de correções) e as dúvidas de grafia dos relatórios de lote.
+
 ### Perguntas em aberto
-1. O que o Enéias respondeu, e **o que ele autoriza** (uso, redistribuição, crédito)? Define o que pode entrar no repositório.
+1. O que o Enéias respondeu, e **o que ele autoriza** (uso, redistribuição, crédito)? Define o que pode entrar no repositório **e se os pacotes podem ficar num repositório público do GitHub (Releases) ou só no servidor próprio** (ver I-31).
 2. URLs, ramos e estrutura dos repositórios dele; os nomes dos arquivos seguem a numeração do hinário?
 3. Total de hinos e se há hinos com mais de uma versão ou sem partitura.
 4. Como acompanhar atualizações dele (clonar numa pasta de trabalho, ou submódulo)?
@@ -1205,6 +1211,46 @@ A amostra tem hinos de 42 a 178 KB de `.mscx`, então o total real pode variar u
 - Relatório consolidado por lote e um total.
 - Nenhum conteúdo de terceiros no repositório nem no CI.
 - Crédito ao Eneas e a origem registrados (`docs/licencas-de-terceiros.md` e tela "Sobre").
+
+## I-31 — Servir hinário e partituras em produção (GitHub, com nginx no Vidar como reserva)
+
+- **Status:** anotada, **rascunho** (2026-11-19)
+- **Origem:** o responsável, 2026-11-19: "quando for para produção de fato, subir nginx com compose para servir esses dados do Vidar"; endereço provável **`bm.driit.co`** ou **`bibliotecamusical.driit.co`**.
+- **Prioridade:** a definir (depende da autorização do Enéias, I-30)
+
+### O problema
+Hoje os pacotes (partituras e sons) saem de um link público do File Browser (`fb.hm.hv2.xyz`), que baixa a **pasta inteira em zip** e não é feito para servir arquivo. Com o hinário completo (hinário ~4 MB, partituras ~20 MB em zip, sons 38 MB) e publicação de verdade, o servidor precisa de endereço próprio e estável.
+
+### O que se deseja
+**Principal: GitHub Releases** (ver a seção abaixo). **Reserva opcional:** um **nginx num `docker-compose`, no Vidar**, servindo só arquivos estáticos: o hinário, os pacotes de partituras (por faixa de 100 hinos, ver I-30) e os sons, com os manifestos. Endereço **`bm.driit.co`** (curto) ou **`bibliotecamusical.driit.co`** (claro).
+
+### Alternativa gratuita: servir de dentro do GitHub (ideia do responsável, 2026-11-19)
+Dá para hospedar os pacotes **sem servidor**, em um **repositório público só dos pacotes** (separado do código, para o CI e o histórico do código ficarem sem conteúdo de terceiros):
+- **GitHub Releases (a melhor):** até **2 GiB por arquivo**, sem cota de banda declarada, URL estável por arquivo (`github.com/<dono>/<repo>/releases/download/<tag>/partituras-001.zip`, ou `releases/latest/download/…`), sem zip de pasta. Cabem folgados o hinário (~4 MB), as partituras (~19 MB) e os sons (38 MB).
+- **GitHub Pages:** site de até 1 GB e ~100 GB/mês de banda (limite flexível), com **domínio personalizado** (`bm.driit.co` poderia apontar para ele).
+- **Não servem:** `raw.githubusercontent.com` (limita requisições, é para texto pequeno), **Git LFS** (1 GB/mês de banda) e **repositório privado** (o app não sabe se autenticar).
+- **No app:** `capabilities/default.json` passa a liberar `github.com` e o domínio para onde ele redireciona os downloads (`objects.githubusercontent.com`; a verificar), o que pede **APK novo**; o SHA-256 do manifesto continua valendo.
+- **O que decide é a autorização do Enéias (I-30):** publicar num repositório público é **distribuir** o trabalho dele (hoje "todos os direitos reservados") e o GitHub pode derrubar o conteúdo se houver reclamação. A regra vigente (nada de terceiros em *release* público) vale até ele autorizar.
+- **Decisão do responsável (2026-11-19): servir pelo GitHub, que fica melhor que o servidor próprio** (sem custo nem manutenção, mais banda e disponibilidade). **GitHub Releases é o principal**; o **nginx no Vidar vira reserva opcional** (bm.driit.co), caso o conteúdo seja derrubado ou o GitHub mude as regras. **Riscos:** ponto único (uma reclamação de direitos derruba o repositório inteiro, então **guardar uma cópia local dos pacotes**) e a **autorização do Enéias antes de publicar**. O app poderia tentar um endereço e cair no outro (a verificar; hoje o manifesto tem um endereço só).
+
+### Perguntas em aberto
+0. **Reserva:** vale subir o nginx no Vidar como segunda fonte (e o app cair nele), ou só o GitHub e uma cópia guardada?
+1. **Nome do domínio:** `bm.driit.co` ou `bibliotecamusical.driit.co`?
+2. **Acesso:** público, ou atrás de alguma proteção? O app não sabe pedir senha; o conteúdo é de terceiros (I-30), então a **autorização do Enéias** decide se pode ser público.
+3. **Onde vive o proxy reverso e o TLS** no Vidar (já há um, ou o compose traz o seu)?
+4. **Cache e ETag:** o nginx entrega `ETag`/`Last-Modified`, o que ajuda a atualização automática de pacotes (I-25).
+5. **Estrutura de pastas e nomes** estáveis (`/partituras/partituras-NNN.zip`, `/sons/`, `/hinario/`), em vez do zip de pasta do File Browser; o app hoje acha o zip de dentro pelo nome.
+
+### Impacto técnico (hipóteses, a verificar)
+- `src-tauri/capabilities/default.json` hoje só libera `https://fb.hm.hv2.xyz/*`: o endereço novo entra ali e nos manifestos (`src/lib/partituras/manifesto.json`, `src/lib/sons/manifesto.json`), o que pede **APK novo**.
+- Com arquivo servido direto (não zip de pasta), o app pode baixar o arquivo certo sem abrir o zip de fora.
+- Compose enxuto: `nginx:alpine`, um volume só-leitura com os pacotes, cabeçalhos de cache, `Content-Type` correto, sem listagem de diretório.
+- Nada de conteúdo de terceiros no Git nem no CI (regra vigente).
+
+### Critérios de aceitação (propostos)
+- O app baixa hinário, partituras e sons do endereço novo, conferindo tamanho e SHA-256 do manifesto.
+- Trocar um pacote no servidor não exige mexer no compose.
+- O endereço não lista diretórios nem expõe nada além dos pacotes.
 
 ---
 

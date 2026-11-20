@@ -516,6 +516,51 @@ mod testes {
         ])
     }
 
+    /// Confere um hinário e um pacote REAIS (os do responsável, que não vão para o Git): `BMCCB_HINARIO` (o `.json`) e `BMCCB_ZIP`
+    /// (o pacote de partituras). Passa o hinário pelo leitor e cada SVG pela limpeza do app, e falha se alguma partitura for recusada ou
+    /// não puder ser lida de volta. Fora do `cargo test` normal:
+    /// `BMCCB_HINARIO=... BMCCB_ZIP=... cargo test --lib conteudo_real -- --ignored --nocapture`.
+    #[test]
+    #[ignore = "precisa dos arquivos reais (BMCCB_HINARIO e BMCCB_ZIP)"]
+    fn conteudo_real() {
+        let json = std::fs::read_to_string(std::env::var("BMCCB_HINARIO").expect("BMCCB_HINARIO"))
+            .unwrap();
+        let zip = std::fs::read(std::env::var("BMCCB_ZIP").expect("BMCCB_ZIP")).unwrap();
+        let d = dir_teste("real");
+        let p = hinario::importar(&d, &json).unwrap();
+        println!("hinário lido: {} hinos", p.hinario.hinos.len());
+        let r = importar_zip(&d, &zip).unwrap();
+        println!(
+            "partituras importadas: {}; recusadas: {}",
+            r.partituras,
+            r.recusadas.len()
+        );
+        for x in r.recusadas.iter().take(40) {
+            println!("  recusada {}: {}", x.numero, x.motivo);
+        }
+        let numeros = numeros(&d, &p.hinario.hinario.id).unwrap();
+        let mut falhas = 0;
+        for n in &numeros {
+            for paisagem in [false, true] {
+                if let Err(e) = ler_partitura(&d, *n, paisagem) {
+                    println!("  leitura falhou: hino {n}, paisagem={paisagem}: {e}");
+                    falhas += 1;
+                }
+            }
+        }
+        println!(
+            "hinos com partitura: {}; leituras com falha: {falhas}",
+            numeros.len()
+        );
+        // a pasta de teste guarda o hinário e as partituras limpas (dezenas de MB): sai antes do assert, para valer também na falha
+        std::fs::remove_dir_all(&d).ok();
+        assert!(
+            r.partituras > 0 && !numeros.is_empty(),
+            "nenhuma partitura importada"
+        );
+        assert!(r.recusadas.is_empty() && falhas == 0);
+    }
+
     fn arquivos(dir: &Path) -> Vec<String> {
         let mut v = Vec::new();
         fn anda(base: &Path, p: &Path, v: &mut Vec<String>) {

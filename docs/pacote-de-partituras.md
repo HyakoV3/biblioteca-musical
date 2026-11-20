@@ -50,6 +50,13 @@ python3 tools/montar-pacote.py <pasta dos svg> partituras-NNN.zip
 python3 tools/montar-manifesto-partituras.py <link público da pasta> partituras-NNN.zip
 ```
 
+**Conferir um pacote real antes de publicar (sem celular):** o teste `conteudo_real` do `src-tauri/src/pacote.rs` passa o hinário e o zip **reais** pelo mesmo leitor e pela mesma limpeza de SVG do app, e falha se alguma partitura for recusada ou não puder ser lida de volta (retrato e paisagem):
+
+```sh
+BMCCB_HINARIO=/caminho/hinario.json BMCCB_ZIP=/caminho/partituras-NNN.zip \
+  cargo test --manifest-path src-tauri/Cargo.toml --lib conteudo_real -- --ignored --nocapture
+```
+
 **Pasta própria, fora de `BibliotecaMusicalSons/`:** o link público do File Browser baixa a **pasta inteira em zip** (não há download de arquivo
 avulso por esse tipo de link). Se o zip das partituras ficasse dentro de `BibliotecaMusicalSons/` (a pasta dos sons), o download dos sons o traria
 junto e o das partituras traria os 38 MB de sons. Numa pasta só dele, o servidor entrega uma pasta em zip com o `partituras-001.zip` dentro; o app
