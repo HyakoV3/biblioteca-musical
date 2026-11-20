@@ -7,6 +7,7 @@
   import { LIMITE_PARA_GUARDAR_MS, TAMANHO_DA_PAGINA, comLimite, gravacoes, type MetaGravacao, type Resumo } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
+  import { aoFalharServicoDeGravacao, aoPararGravacaoPelaNotificacao, desligarServicoDeGravacao, foneConectado, ligarServicoDeGravacao } from "./servico";
 
   // A aba Gravador (I-03, primeira versão): grava o microfone, ouve de volta e descarta. Nada sai do aparelho. A permissão de microfone é pedida só
   // ao tocar em "Gravar". Gravar para o hino que estiver tocando (o alto-falante entraria no microfone). O microfone é devolvido ao aparelho ao parar,
@@ -21,6 +22,8 @@
   };
 
   let gravando = $state(false);
+  /** No Android o serviço em primeiro plano (microfone) assumiu a gravação: ela segue com a tela bloqueada e o app em segundo plano. */
+  let protegida = false;
   /** Segundos gravados até agora (a tela só mostra; o tempo certo da gravação é o medido ao parar). */
   let decorrido = $state(0);
   let relogio: ReturnType<typeof setInterval> | null = null;
@@ -98,7 +101,8 @@
     const minha = ++tentativa;
     erro = null;
     descartar();
-    reproducao.parar(); // um som de cada vez: o hino que tocava calaria dentro da gravação
+    // Sem fone, um som de cada vez: o hino que tocava calaria dentro da gravação. Com fone, o hino segue e o microfone só ouve a pessoa.
+    if (!foneConectado()) reproducao.parar();
     tocandoId = null; // e uma gravação da lista que tocava também: o alto-falante entraria na nova
     try {
       await gravador.iniciar();
@@ -112,6 +116,7 @@
       return;
     }
     gravando = true;
+    protegida = ligarServicoDeGravacao();
     decorrido = 0;
     const comeco = performance.now();
     relogio = setInterval(() => (decorrido = (performance.now() - comeco) / 1000), 250);
@@ -126,7 +131,7 @@
     }, 80);
     // O app já estava em segundo plano quando o microfone chegou (a permissão já estava dada e a pessoa saiu antes): o evento de esconder já passou.
     // Espera um instante antes de parar, porque o diálogo de permissão do Android também esconde a página por um momento.
-    if (document.hidden) setTimeout(() => (gravando && document.hidden ? void parar() : undefined), 1000);
+    if (document.hidden && !protegida) setTimeout(() => (gravando && document.hidden ? void parar() : undefined), 1000);
   }
 
   async function parar() {
@@ -134,6 +139,8 @@
     tentativa++;
     pararRelogio();
     gravando = false;
+    protegida = false;
+    desligarServicoDeGravacao();
     const nova = await gravador.parar();
     if (destruido) {
       if (nova) URL.revokeObjectURL(nova.url); // o componente se foi durante a parada: ninguém vai usar esta gravação
@@ -306,26 +313,42 @@
     observador.observe(fim);
     return () => observador.disconnect();
   });
-  // Um hino que começa a tocar com a gravação em curso: para a gravação (o alto-falante entraria nela).
+  // Um hino que começa a tocar com a gravação em curso: sem fone, para a gravação (o alto-falante entraria nela); com fone, os dois seguem.
   $effect(() => {
-    if (reproducao.estado === "tocando" && gravando) void parar();
+    if (reproducao.estado === "tocando" && gravando && !foneConectado()) void parar();
   });
-  // App em segundo plano: para uma gravação EM CURSO e devolve o microfone. Um pedido de permissão que ainda espera NÃO é cancelado: o próprio
+  // App em segundo plano: para uma gravação EM CURSO e devolve o microfone, a menos que o Android a tenha assumido com o serviço em primeiro plano
+  // (`protegida`): aí ela segue, mesmo com a tela bloqueada, até a pessoa tocar em "Parar" (no app ou na notificação). Um pedido de permissão que ainda espera NÃO é cancelado: o próprio
   // diálogo de permissão do Android esconde a página por um instante, e cancelar ali jogava fora o microfone que a pessoa acabava de permitir
   // (e a mensagem de "permissão negada").
   $effect(() => {
     const aoEsconder = () => {
-      if (document.hidden && gravando) void parar();
+      if (document.hidden && gravando && !protegida) void parar();
     };
     document.addEventListener("visibilitychange", aoEsconder);
     return () => document.removeEventListener("visibilitychange", aoEsconder);
   });
   onMount(() => {
+    const soltarAviso = aoPararGravacaoPelaNotificacao(() => {
+      if (gravando) void parar();
+    });
+    // O serviço do Android não subiu (a ponte avisa depois de já ter dito que sim): sem ele a gravação não está protegida. Com a página escondida o
+    // microfone já se foi, então para e guarda o que houver, em vez de seguir "gravando" em silêncio.
+    const soltarFalha = aoFalharServicoDeGravacao(() => {
+      protegida = false;
+      if (gravando && document.hidden) void parar();
+    });
     void carregarLista();
     void atualizarResumo();
+    return () => {
+      soltarAviso();
+      soltarFalha();
+    };
   });
   onDestroy(() => {
     destruido = true;
+    protegida = false;
+    desligarServicoDeGravacao();
     if (relogioTudo !== null) clearTimeout(relogioTudo);
     tentativa++; // um pedido de microfone que ainda espera é jogado fora quando chegar
     pararRelogio();

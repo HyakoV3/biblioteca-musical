@@ -82,6 +82,7 @@ export class Gravacoes {
     const aberto = new Promise<IDBDatabase>((ok, falha) => {
       const r = idb.open(BANCO, VERSAO);
       r.onupgradeneeded = () => {
+        rastro("armazenamento: criando o banco");
         const b = r.result;
         const meta = b.createObjectStore("meta", { keyPath: "id" });
         meta.createIndex("porData", ["criadaEm", "id"]); // da mais nova para a mais antiga, com o id desempatando
@@ -89,6 +90,7 @@ export class Gravacoes {
       };
       r.onsuccess = () => {
         const b = r.result;
+        rastro("armazenamento: banco aberto");
         // Se o navegador fechar a conexão (dados limpos, erro de disco) ou outra versão pedir para fechá-la, esquece-a: a próxima chamada reabre. Sem isso, toda
         // transação passaria a lançar `InvalidStateError` até reiniciar o app.
         b.onclose = () => {
@@ -101,7 +103,10 @@ export class Gravacoes {
         ok(b);
       };
       r.onerror = () => falha(r.error ?? new Error("não abriu o armazenamento"));
-      r.onblocked = () => falha(new Error("armazenamento bloqueado"));
+      r.onblocked = () => {
+        rastro("armazenamento: abertura bloqueada por outra conexão");
+        falha(new Error("armazenamento bloqueado"));
+      };
     });
     // Uma falha ao abrir não fica guardada: a próxima chamada tenta de novo.
     this.abrindo = aberto.catch((e) => {
@@ -118,7 +123,9 @@ export class Gravacoes {
    */
   async salvar(blob: Blob, tipo: string, segundos: number): Promise<MetaGravacao> {
     const comeco = performance.now();
+    rastro(`lendo os ${blob.size} bytes do arquivo`);
     const dados = await blob.arrayBuffer();
+    rastro(`bytes lidos em ${Math.round(performance.now() - comeco)} ms; abrindo o armazenamento`);
     const banco = await this.banco();
     rastro(`armazenamento pronto em ${Math.round(performance.now() - comeco)} ms`);
     const meta: MetaGravacao = {

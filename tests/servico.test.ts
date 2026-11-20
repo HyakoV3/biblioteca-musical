@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-type Global = { BmccbServico?: { iniciar: (t: string) => void; parar: () => void }; __bmccbParadoPelaNotificacao?: () => void };
+type Global = { BmccbServico?: { iniciar: (t: string) => void; parar: () => void; iniciarGravacao?: () => void; pararGravacao?: () => void }; __bmccbParadoPelaNotificacao?: () => void; __bmccbGravacaoParadaPelaNotificacao?: () => void };
 const g = globalThis as Global;
 
 // O módulo guarda se o serviço está ligado: cada teste começa com um módulo novo.
@@ -70,3 +70,84 @@ describe("serviço de reprodução (I-22)", () => {
     expect(parou).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("serviço de gravação (Gravador em segundo plano)", () => {
+  afterEach(() => {
+    delete g.BmccbServico;
+    delete g.__bmccbGravacaoParadaPelaNotificacao;
+    vi.restoreAllMocks();
+  });
+
+  it("liga e desliga pela ponte e avisa que o Android assumiu a gravação", async () => {
+    const chamadas: string[] = [];
+    g.BmccbServico = { iniciar: () => {}, parar: () => {}, iniciarGravacao: () => chamadas.push("ligar"), pararGravacao: () => chamadas.push("desligar") };
+    const { ligarServicoDeGravacao, desligarServicoDeGravacao } = await carregar();
+    expect(ligarServicoDeGravacao()).toBe(true);
+    desligarServicoDeGravacao();
+    expect(chamadas).toEqual(["ligar", "desligar"]);
+  });
+
+  it("sem a ponte (navegador) ou com uma ponte antiga, devolve falso e não falha", async () => {
+    const { ligarServicoDeGravacao, desligarServicoDeGravacao } = await carregar();
+    expect(ligarServicoDeGravacao()).toBe(false);
+    g.BmccbServico = { iniciar: () => {}, parar: () => {} };
+    expect(ligarServicoDeGravacao()).toBe(false);
+    expect(() => desligarServicoDeGravacao()).not.toThrow();
+  });
+
+  it("uma falha da ponte vira falso, com aviso no console", async () => {
+    const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
+    g.BmccbServico = { iniciar: () => {}, parar: () => {}, iniciarGravacao: () => { throw new Error("recusou"); } };
+    const { ligarServicoDeGravacao } = await carregar();
+    expect(ligarServicoDeGravacao()).toBe(false);
+    expect(aviso).toHaveBeenCalled();
+  });
+
+  it("o botão Parar da notificação chama o que o Gravador registrou, e soltar remove", async () => {
+    const { aoPararGravacaoPelaNotificacao } = await carregar();
+    const parou = vi.fn();
+    const soltar = aoPararGravacaoPelaNotificacao(parou);
+    g.__bmccbGravacaoParadaPelaNotificacao?.();
+    expect(parou).toHaveBeenCalledTimes(1);
+    soltar();
+    expect(g.__bmccbGravacaoParadaPelaNotificacao).toBeUndefined();
+  });
+});
+
+describe("detecção de fone", () => {
+  afterEach(() => {
+    delete g.BmccbServico;
+  });
+
+  it("devolve o que a ponte diz; sem ponte, ponte antiga ou falha, devolve falso", async () => {
+    const { foneConectado } = await carregar();
+    expect(foneConectado()).toBe(false);
+    g.BmccbServico = { iniciar: () => {}, parar: () => {} };
+    expect(foneConectado()).toBe(false);
+    (g.BmccbServico as { temFone?: () => boolean }).temFone = () => true;
+    expect(foneConectado()).toBe(true);
+    (g.BmccbServico as { temFone?: () => boolean }).temFone = () => { throw new Error("x"); };
+    const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(foneConectado()).toBe(false);
+    expect(aviso).toHaveBeenCalled();
+    aviso.mockRestore();
+  });
+});
+
+describe("falha do serviço de gravação", () => {
+  afterEach(() => {
+    delete (globalThis as { __bmccbServicoDeGravacaoFalhou?: () => void }).__bmccbServicoDeGravacaoFalhou;
+  });
+
+  it("o aviso do Android chama o que o Gravador registrou, e soltar remove", async () => {
+    const { aoFalharServicoDeGravacao } = await carregar();
+    const g2 = globalThis as { __bmccbServicoDeGravacaoFalhou?: () => void };
+    const falhou = vi.fn();
+    const soltar = aoFalharServicoDeGravacao(falhou);
+    g2.__bmccbServicoDeGravacaoFalhou?.();
+    expect(falhou).toHaveBeenCalledTimes(1);
+    soltar();
+    expect(g2.__bmccbServicoDeGravacaoFalhou).toBeUndefined();
+  });
+});
+
