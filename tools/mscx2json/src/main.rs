@@ -216,8 +216,10 @@ struct Estado<'a> {
     /// ÚLTIMA nota da introdução, que o autor fecha com a respiração (em 413 dos 480 hinos do Dó vem "*", acorde, respiração): a introdução vai até o
     /// fim dessa nota, e não até o começo dela.
     asteriscos: &'a mut Vec<f64>,
-    /// Posição, em `asteriscos`, do "*" que ainda espera o acorde ou a pausa que ele marca (o próximo da pauta).
-    asterisco_pendente: Option<usize>,
+    /// Posições, em `asteriscos`, dos "*" que ainda esperam o acorde ou a pausa que marcam. É uma lista (pode haver mais de um "*" antes da mesma nota,
+    /// por exemplo um texto de pauta e uma cifra). Vale só dentro do compasso e da voz: um "*" que fica sem nota depois dele (no fim do compasso) marca o fim
+    /// da nota anterior, que é o instante em que foi lido.
+    asteriscos_pendentes: &'a mut Vec<usize>,
 }
 
 fn voz_do(c: Node, est: &Estado) -> usize {
@@ -228,11 +230,18 @@ fn voz_do(c: Node, est: &Estado) -> usize {
     }
 }
 
-/// O "*" marca a nota que o segue: a introdução termina no fim dela (`fim`, em batidas).
-fn fecha_asterisco(est: &mut Estado, fim: f64) {
-    if let Some(i) = est.asterisco_pendente.take() {
-        est.asteriscos[i] = fim;
-    }
+/// O "*" marca a nota que o segue: a introdução termina no fim dela. `inicio` e `fim` são os da nota que acabou de ser lida, em batidas. Fecha TODOS os "*"
+/// pendentes que estão no começo dessa nota ou antes dele; um "*" depois do começo da nota (a nota é de outra voz, que começa antes) continua esperando.
+fn fecha_asterisco(est: &mut Estado, inicio: f64, fim: f64) {
+    let asteriscos = &mut *est.asteriscos;
+    est.asteriscos_pendentes.retain(|&i| {
+        if inicio >= asteriscos[i] - 1e-6 {
+            asteriscos[i] = fim;
+            false
+        } else {
+            true
+        }
+    });
 }
 
 fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
@@ -262,8 +271,11 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
             }
             "Breath" => {
                 est.respiracoes.push(*t);
-                // "*" logo antes da respiração, sem nota no meio: a introdução termina onde a respiração está.
-                est.asterisco_pendente = None;
+                // "*" logo antes da respiração, sem nota no meio: a introdução termina onde a respiração está (o "*" dessa mesma hora deixa de esperar).
+                let asteriscos = &*est.asteriscos;
+                let t_respiracao = *t;
+                est.asteriscos_pendentes
+                    .retain(|&i| (asteriscos[i] - t_respiracao).abs() > 1e-6);
             }
             // O "*" aparece como texto de pauta (<StaffText><text>) ou como cifra (<Harmony><name>), conforme a partitura.
             "StaffText" | "Harmony" => {
@@ -279,7 +291,7 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                     == Some("*")
                 {
                     est.asteriscos.push(*t); // provisório: vira o fim da nota que vem a seguir (ver `fecha_asterisco`)
-                    est.asterisco_pendente = Some(est.asteriscos.len() - 1);
+                    est.asteriscos_pendentes.push(est.asteriscos.len() - 1);
                 }
             }
             "endTuplet" => {
@@ -287,7 +299,7 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
             }
             "Rest" => {
                 let dur = duracao(c, est.compasso)? * est.tuplos.iter().product::<f64>();
-                fecha_asterisco(est, *t + dur);
+                fecha_asterisco(est, *t, *t + dur);
                 *t += dur;
             }
             "Chord" => {
@@ -295,7 +307,7 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
                     continue;
                 }
                 let dur = duracao(c, est.compasso)? * est.tuplos.iter().product::<f64>();
-                fecha_asterisco(est, *t + dur);
+                fecha_asterisco(est, *t, *t + dur);
                 let mut notas = vec![];
                 for nota in c.children().filter(|n| n.has_tag_name("Note")) {
                     if texto(nota, "play") == Some("0") {
@@ -1079,6 +1091,7 @@ pub fn converter_com(
             }
 
             for (voz, plano, no) in fontes {
+                let mut asteriscos_pendentes: Vec<usize> = vec![]; // por compasso e voz: um "*" sem nota depois dele vale o fim da nota anterior
                 let mut est = Estado {
                     andamento,
                     tuplos: vec![],
@@ -1090,7 +1103,7 @@ pub fn converter_com(
                     silabas: &mut silabas,
                     respiracoes: &mut respiracoes,
                     asteriscos: &mut asteriscos,
-                    asterisco_pendente: None,
+                    asteriscos_pendentes: &mut asteriscos_pendentes,
                 };
                 let mut t = inicio_compasso;
                 percorrer(no, &mut t, &mut est)?;
@@ -2678,6 +2691,22 @@ mod testes {
                 .any(|a| a.contains("introdução") && a.contains("3")),
             "{:?}",
             h.avisos
+        );
+    }
+
+    /// Revisão do Vandame (#89): um texto de pauta e uma cifra "*" antes da mesma nota fecham os dois no fim dela; nenhum fica com o começo da nota.
+    #[test]
+    fn dois_asteriscos_antes_da_mesma_nota_fecham_os_dois() {
+        let m = format!(
+            "<Measure><voice>{C44}{}<StaffText><text>*</text></StaffText><Harmony><name>*</name></Harmony>{}<Breath/>{}</voice></Measure>",
+            acorde("half", 62),
+            acorde("quarter", 64),
+            acorde("quarter", 65)
+        );
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &m)), 1).unwrap();
+        assert_eq!(
+            notas_de(h.introducao.as_ref().expect("introdução"), 0),
+            vec![(0.0, 2.0, 62), (2.0, 1.0, 64)]
         );
     }
 
