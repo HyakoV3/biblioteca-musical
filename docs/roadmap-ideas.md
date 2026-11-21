@@ -248,9 +248,9 @@ com a fonte do sistema a 130% e 200%, e na barra lateral com o celular deitado),
 - **G. Indicador de tempo (atualizado em 2026-11-21):** o responsável quer, no futuro, um **gauge de ponteiro** (como os de painel de carro) e mais de um tipo, escolhido pela pessoa. **Feito: pêndulo que vai e
   volta** (como um metrônomo de verdade: **cada clique é uma ponta**, par à esquerda e ímpar à direita; a posição vem do relógio de áudio; com movimento reduzido a bolinha só pula de ponta em ponta), com **uma
   bolinha por tempo do compasso embaixo** (a do 1º tempo maior, a do tempo atual acesa). A versão anterior (uma trilha que desliza só para a direita) segue no código (`progressoNoCompasso`) para uma opção futura.
-- **Compassos (2026-11-21):** **1, 2, 3, 4, 5, 6, 7, 9 e 12 tempos.** O levantamento das partituras do hinário (480 hinos) deu 4/4 em 235, 6/8 em 90, 3/4 em 84, 6/4 em 34, 9/8 em 18, 2/4 em 10, 2/2 em 10, 12/8 em 6,
-  9/4 em 4 e 3/2 em 1; 12 hinos mudam de compasso no meio (94, 296, 342, 346, 348, 350, 352, 359, 368, 415: só importa na etapa 2). Em 6/8, 9/8 e 12/8 os músicos contam o pulso da semínima pontuada (2, 3 e 4 tempos);
-  as opções 6, 9 e 12 servem para contar as colcheias.
+- **Compassos (2026-11-21, decididos): 2, 3, 4 (simples) e 6, 9, 12 (compostos).** Fora: o **1** (não existe como fórmula de compasso: nenhuma fonte séria o confirma) e o **5 e o 7** (irregulares, não aparecem nos hinos). O levantamento das
+  partituras do hinário (480 hinos) deu 4/4 em 235, 6/8 em 90, 3/4 em 84, 6/4 em 34, 9/8 em 18, 2/4 em 10, 2/2 em 10, 12/8 em 6, 9/4 em 4 e 3/2 em 1; 12 hinos mudam de compasso no meio (94, 296, 342, 346, 348, 350, 352, 359, 368,
+  415: só importa na etapa 2). Em 6/8, 9/8 e 12/8 os músicos contam o pulso da semínima pontuada (2, 3 e 4 tempos); as opções 6, 9 e 12 servem para contar as colcheias. Valores antigos guardados (1, 5, 7) voltam ao padrão na leitura.
 
 ### Perguntas em aberto
 1. **Compasso:** o formato do hino traz o `andamento` (bpm), mas **não o compasso** (2/4, 3/4, 4/4, 6/8). Para acentuar o 1º

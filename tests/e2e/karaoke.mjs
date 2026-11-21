@@ -920,7 +920,7 @@ async function principal() {
   await av(`(() => { const b = [...document.querySelectorAll('#painel-metronomo .passo button')].find((x) => x.textContent.trim() === '+5'); for (let i = 0; i < 36; i++) b.click(); return 1; })()`);
   await dormir(200);
   const antesMet = await av(`({ painel: !document.getElementById('painel-metronomo').hidden, bpm: document.querySelector('#painel-metronomo .passo output').textContent.trim(), ctxs: window.__ctxs, cliques: window.__cliques.length, botoes: [...document.querySelectorAll('#painel-metronomo .compasso button')].length })`);
-  confere(antesMet.painel && /240/.test(antesMet.bpm) && antesMet.ctxs === 0 && antesMet.cliques === 0 && antesMet.botoes === 9, `Metrônomo: a aba abre, o andamento chega a 240 e NENHUM áudio nasce antes do toque em Iniciar: ${JSON.stringify(antesMet)}`);
+  confere(antesMet.painel && /240/.test(antesMet.bpm) && antesMet.ctxs === 0 && antesMet.cliques === 0 && antesMet.botoes === 6, `Metrônomo: a aba abre, o andamento chega a 240 e NENHUM áudio nasce antes do toque em Iniciar: ${JSON.stringify(antesMet)}`);
   await av(`document.getElementById('metronomo-iniciar').click(); 1`);
   await dormir(3000);
   const m1 = await av(`window.__cliques.map((c) => ({ w: c.when, a: c.agora, hz: c.hz }))`);

@@ -9,7 +9,8 @@ export const BPM_MIN = 30;
 export const BPM_MAX = 240;
 export const BPM_PADRAO = 60;
 /** Tempos por compasso que a tela oferece. */
-export const COMPASSOS = [1, 2, 3, 4, 5, 6, 7, 9, 12] as const;
+/** Os simples (2, 3 e 4 tempos) e os compostos (6, 9 e 12: colcheias, de 3 em 3). Não há 1 (não existe como compasso) nem 5 e 7 (irregulares, fora dos hinos). */
+export const COMPASSOS = [2, 3, 4, 6, 9, 12] as const;
 export const COMPASSO_PADRAO = 4;
 
 /** Quanto, depois de o áudio acordar, o 1º clique espera (s): a saída ainda está começando, e no Bluetooth o primeiro som costuma se perder. */
