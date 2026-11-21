@@ -904,7 +904,47 @@ async function principal() {
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-afinador')`)); ) await dormir(250);
   await dormir(500);
   const abasInicio = await av(`({ abas: [...document.querySelectorAll('[role="tab"]')].map((a) => a.id), hinos: !document.getElementById('painel-hinos').hidden, afinador: !document.getElementById('painel-afinador').hidden })`);
-  confere(abasInicio.abas.join() === "aba-hinos,aba-afinador,aba-gravador" && abasInicio.hinos && !abasInicio.afinador, `a tela inicial tem as abas Hinos, Afinador e Gravador e abre em Hinos: ${JSON.stringify(abasInicio)}`);
+  confere(abasInicio.abas.join() === "aba-hinos,aba-afinador,aba-gravador,aba-metronomo" && abasInicio.hinos && !abasInicio.afinador, `a tela inicial tem as abas Hinos, Afinador, Gravador e Metrônomo e abre em Hinos: ${JSON.stringify(abasInicio)}`);
+
+  // O Metrônomo (I-20): espia o `start()` dos osciladores (quando cada clique foi agendado e com que frequência) e o número de AudioContext criados. A 240 bpm (0,25 s por clique) conferimos
+  // o agendamento no relógio de áudio, o acento do 1º tempo, que o clique CONTINUA com a página escondida (a tela bloqueada) e que para ao tocar em Parar.
+  await av(`document.getElementById('aba-metronomo').click(); 1`);
+  await dormir(300);
+  await av(`(() => {
+    window.__cliques = []; window.__ctxs = 0;
+    const O = window.AudioContext;
+    window.AudioContext = class extends O { constructor(...a) { super(...a); window.__ctxs++; } };
+    const start = AudioScheduledSourceNode.prototype.start;
+    AudioScheduledSourceNode.prototype.start = function (when) { window.__cliques.push({ when, agora: this.context.currentTime, hz: this.frequency ? this.frequency.value : 0 }); return start.apply(this, arguments); };
+    return 1; })()`);
+  await av(`(() => { const b = [...document.querySelectorAll('#painel-metronomo .passo button')].find((x) => x.textContent.trim() === '+5'); for (let i = 0; i < 36; i++) b.click(); return 1; })()`);
+  await dormir(200);
+  const antesMet = await av(`({ painel: !document.getElementById('painel-metronomo').hidden, bpm: document.querySelector('#painel-metronomo .passo output').textContent.trim(), ctxs: window.__ctxs, cliques: window.__cliques.length, botoes: [...document.querySelectorAll('#painel-metronomo .compasso button')].length })`);
+  confere(antesMet.painel && /240/.test(antesMet.bpm) && antesMet.ctxs === 0 && antesMet.cliques === 0 && antesMet.botoes === 4, `Metrônomo: a aba abre, o andamento chega a 240 e NENHUM áudio nasce antes do toque em Iniciar: ${JSON.stringify(antesMet)}`);
+  await av(`document.getElementById('metronomo-iniciar').click(); 1`);
+  await dormir(3000);
+  const m1 = await av(`window.__cliques.map((c) => ({ w: c.when, a: c.agora, hz: c.hz }))`);
+  const dif = m1.slice(1).map((c, i) => c.w - m1[i].w);
+  confere(m1.length >= 10 && m1.every((c) => c.w - c.a > 0) && dif.every((d) => Math.abs(d - 0.25) < 0.001) && new Set(m1.map((c) => c.w)).size === m1.length, `Metrônomo: a 240 bpm os cliques são agendados à frente, a cada 0,25 s (±1 ms) e sem repetição: ${m1.length} cliques, desvio máx ${Math.max(...dif.map((d) => Math.abs(d - 0.25))).toFixed(6)}`);
+  confere(m1.every((c, i) => (i % 4 === 0 ? c.hz > 1200 : c.hz < 1200)), `Metrônomo: o 1º tempo de cada compasso de 4 é o forte (mais agudo): ${m1.slice(0, 8).map((c) => Math.round(c.hz)).join(',')}`);
+  const estado1 = await av(`({ pressionado: document.getElementById('metronomo-iniciar').getAttribute('aria-pressed'), recente: [...document.querySelectorAll('#painel-metronomo .recentes button')].map((b) => b.textContent.trim()), pos: document.querySelector('#painel-metronomo .trilha').dataset.posicao, aceso: document.querySelector('#painel-metronomo .trilha').dataset.aceso })`);
+  confere(estado1.pressionado === 'true' && estado1.recente.length === 1 && /240/.test(estado1.recente[0]) && estado1.aceso !== '', `Metrônomo: ligado, a lista dos últimos tem o 240 · 4 tempos e a bolinha anda na trilha: ${JSON.stringify(estado1)}`);
+  // Escondido (tela bloqueada): o clique continua, e a grade segue em 0,25 s.
+  const antesEsc = (await av(`window.__cliques.length`));
+  await av(`Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); 1`);
+  await dormir(2500);
+  const m2 = await av(`window.__cliques.map((c) => c.w)`);
+  const dif2 = m2.slice(1).map((w, i) => w - m2[i]);
+  confere(m2.length > antesEsc + 6 && dif2.every((d) => Math.abs(d - 0.25) < 0.001), `Metrônomo: com a página escondida o clique CONTINUA (antes ${antesEsc}, depois ${m2.length}) e a grade segue em 0,25 s (maior desvio ${Math.max(...dif2.map((d) => Math.abs(d - 0.25))).toFixed(4)}; intervalos fora: ${JSON.stringify(dif2.map((d, i) => [i, +d.toFixed(4)]).filter(([, d]) => Math.abs(d - 0.25) >= 0.001).slice(0, 5))})`);
+  await av(`Object.defineProperty(document, 'hidden', { configurable: true, get: () => false }); document.dispatchEvent(new Event('visibilitychange')); 1`);
+  await av(`document.getElementById('metronomo-iniciar').click(); 1`);
+  await dormir(400);
+  const aoParar = await av(`window.__cliques.length`);
+  await dormir(1200);
+  const depoisParar = await av(`({ n: window.__cliques.length, pressionado: document.getElementById('metronomo-iniciar').getAttribute('aria-pressed') })`);
+  confere(depoisParar.pressionado === 'false' && depoisParar.n === aoParar, `Metrônomo: ao tocar em Parar nenhum clique novo é agendado (${aoParar} → ${depoisParar.n})`);
+  await av(`document.getElementById('aba-hinos').click(); 1`);
+  await dormir(300);
 
   // A busca da lista sobrevive à troca de aba (os painéis ficam montados).
   await av(`(() => { const i = document.querySelector('#painel-hinos input[type="search"]'); i.value = '998'; i.dispatchEvent(new Event('input', { bubbles: true })); })()`);
