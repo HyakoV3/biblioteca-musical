@@ -112,7 +112,7 @@
   </button>
 
   <!-- Só para o leitor de tela: ligou e parou, com o andamento e o compasso. Nunca anuncia tempo a tempo (falaria por cima do clique). -->
-  <p class="so-leitor" role="status">{metronomo.ligado ? t("metronomo.status_on", { bpm: metronomo.bpm, n: metronomo.compasso }) : t("metronomo.status_off")}</p>
+  <p class="so-leitor" role="status">{metronomo.ligado ? (metronomo.compasso === 1 ? t("metronomo.status_on_um", { bpm: metronomo.bpm }) : t("metronomo.status_on", { bpm: metronomo.bpm, n: metronomo.compasso })) : t("metronomo.status_off")}</p>
 
   {#if metronomo.recentes.length > 0}
     <section class="recentes" aria-labelledby="titulo-recentes">
@@ -121,7 +121,7 @@
         {#each metronomo.recentes as r (`${r.bpm}-${r.compasso}`)}
           <li>
             <button class="botao" aria-current={r.bpm === metronomo.bpm && r.compasso === metronomo.compasso} onclick={() => metronomo.usar(r)}>
-              {t("metronomo.recente", { bpm: r.bpm, n: r.compasso })}
+              {r.compasso === 1 ? t("metronomo.recente_um", { bpm: r.bpm }) : t("metronomo.recente", { bpm: r.bpm, n: r.compasso })}
             </button>
           </li>
         {/each}

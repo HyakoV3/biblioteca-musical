@@ -179,6 +179,22 @@ describe("pêndulo", () => {
       antes = p;
     }
   });
+  it("depois de batidas perdidas o pêndulo não salta: o intervalo cobre várias batidas e a bolinha faz o mesmo número de idas e vindas", () => {
+    for (const perdidas of [1, 2, 3]) {
+      const fila: Clique[] = [{ tempo: 10, indice: 0, n: 4 }, { tempo: 10 + 0.5 * (1 + perdidas), indice: (1 + perdidas) % 4, n: 5 + perdidas }];
+      let antes = posicaoDoPendulo(fila, 10, 120)!;
+      expect(antes).toBeCloseTo(0, 9); // n = 4: esquerda
+      for (let a = 10.01; a < 10 + 0.5 * (1 + perdidas); a += 0.01) {
+        const p = posicaoDoPendulo(fila, a, 120)!;
+        expect(Math.abs(p - antes)).toBeLessThan(0.05); // sem salto de largura total
+        expect(p).toBeGreaterThanOrEqual(0);
+        expect(p).toBeLessThanOrEqual(1);
+        antes = p;
+      }
+      expect(posicaoDoPendulo(fila, 10 + 0.5 * (1 + perdidas), 120)).toBeCloseTo((5 + perdidas) % 2, 9); // a ponta certa do clique seguinte
+    }
+  });
+
   it("o agendador numera os cliques em sequência e mantém a numeração ao pular batidas perdidas", () => {
     const a = agendar(novoEstado(), { bpm: 120, compasso: 3, agora: 0, janela: 1.2 });
     expect(a.cliques.map((c) => c.n)).toEqual([0, 1, 2]);

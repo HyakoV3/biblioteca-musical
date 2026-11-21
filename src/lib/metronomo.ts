@@ -103,10 +103,14 @@ export function progressoNoCompasso(fila: readonly Clique[], agora: number, bpm:
 export function posicaoDoPendulo(fila: readonly Clique[], agora: number, bpm: number): number | null {
   const c = cliqueAtual(fila, agora);
   if (!c || !(bpm > 0)) return null;
+  // Se o agendador atrasou e pulou batidas, o intervalo até o próximo clique da fila cobre VÁRIAS batidas (`passos`): a bolinha faz esse número de idas e vindas, no ritmo certo, em vez de
+  // uma só (que, com um número ímpar de batidas perdidas, voltaria de uma ponta à outra num salto).
   const prox = fila.find((x) => x.tempo > c.tempo);
-  const periodo = prox ? prox.tempo - c.tempo : 60 / bpm;
-  const f = Math.min(Math.max((agora - c.tempo) / periodo, 0), 1);
-  return c.n % 2 === 0 ? f : 1 - f;
+  const passos = prox ? Math.max(1, prox.n - c.n) : 1;
+  const periodo = prox ? (prox.tempo - c.tempo) / passos : 60 / bpm;
+  const t = Math.min(Math.max((agora - c.tempo) / periodo, 0), passos);
+  const m = (c.n + t) % 2; // onda triangular: 0 (esquerda) → 1 (direita) → 0…
+  return m <= 1 ? m : 2 - m;
 }
 
 /** De que lado o clique mais recente soou (0 = esquerda, 1 = direita), ou null antes do primeiro: com movimento reduzido a bolinha só pula de ponta em ponta. */
