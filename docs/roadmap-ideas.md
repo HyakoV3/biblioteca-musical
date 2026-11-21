@@ -155,10 +155,11 @@ Botões "parte anterior" e "próxima parte" (Intro, 1ª, 2ª...) no miniplayer e
 
 ## I-20 — Metrônomo embutido
 
-- **Status:** anotada
+- **Status:** rascunho de desenho escrito (2026-11-20); aguardando revisão e a decisão do responsável sobre as perguntas 1, 2 e 4
 - **Origem:** pedido do responsável, 2026-11-16: "fazer um metrônomo também, embutido".
 - **Prioridade:** a definir
 - **Nota (2026-11-17):** a tela inicial vai ter abas de ferramentas (I-28: `Hinos | Afinador | Gravador | …`, "entre outras"). Se o metrônomo também for uma aba, a pergunta 3 ("onde fica") se resolve por ela.
+- **Decisão do responsável (2026-11-20):** o metrônomo é uma **aba própria** (`Hinos | Afinador | Gravador | Metrônomo`). A pergunta 3 está respondida.
 
 ### O problema
 Quem estuda uma voz precisa de um pulso firme, e hoje o app só dá o pulso dentro da música tocada. Para praticar sem o hino
@@ -167,6 +168,84 @@ tocando, ou para entrar no tempo certo, é preciso outro aplicativo.
 ### O que se deseja
 Um **metrônomo dentro do app**: um clique regular no andamento do hino (e ajustável), com o primeiro tempo do compasso
 acentuado, que se liga e desliga.
+
+### Rascunho de desenho (2026-11-20, revisado pelo Opus 5 no mesmo dia: primeira versão, aba própria, sem tocar com o hino)
+Escopo da **primeira etapa**: uma ferramenta de estudo independente do player. Fica de fora (etapa 2): tocar por cima do hino, contagem de entrada
+antes da música, o compasso vindo do hino e ligar ao andamento do hino aberto. Em princípio é front (Svelte/TypeScript); **não mexe no conversor nem no
+`hinario.json`**. Isso só deixa de valer se o responsável quiser o clique com a tela bloqueada (pergunta A, abaixo: pede Kotlin).
+
+#### Tela (aba Metrônomo)
+- **Andamento:** reaproveitar o `ControleAndamento.svelte` (− −5 valor +5 +, com `aria-live`), que hoje usa 40 a 160 (`ANDAMENTO_MIN/MAX` em `reproducao.svelte.ts`):
+  passar `min`/`max` por propriedade. **Sem slider** (210 valores no celular é impreciso). Faixa a decidir (pergunta C). Muda **na hora**, sem parar o clique.
+- **Compasso:** botões com o número de tempos (2, 3, 4, 6), 1º tempo acentuado. Mudar o compasso reinicia a contagem no 1º tempo.
+- **Iniciar/Parar:** botão grande (mesma linguagem do Afinador e do Gravador). **Sem volume na tela**: quem ajusta é o volume de mídia (decisão do Afinador, `Afinador.svelte`
+  e `tom.ts`); sem a música junto não há o que equilibrar. Revisitar na etapa 2.
+- **Indicador de tempo:** uma bolinha por tempo, a atual acesa. O 1º tempo **não** se distingue só pela cor (regra do projeto, como o ✓/negrito/borda do Afinador):
+  bolinha maior ou outra forma. O "pisca" fica **só nas bolinhas** (área pequena), com troca de cor sem animação, o que já passa por `movimento.css` e `verificar-movimento.py`;
+  nada de pisca de tela cheia (WCAG 2.3.1: no máximo 3 piscadas por segundo, e a 180 bpm ou mais já passaria disso).
+- **Leitor de tela:** um `role="status"` só com início, parada, bpm e compasso (como o Afinador). **Sem anúncio por tempo.**
+- **Alvos:** 3rem (48 px) como o resto do app.
+- **Quando o hino toca:** valem as mesmas regras do Afinador: Iniciar chama `reproducao.parar()` (um som de cada vez) e um `$effect` para o metrônomo quando um hino começa a tocar.
+
+#### Som
+Clique sintetizado (oscilador curto com envoltória rápida; o 1º tempo mais agudo e um pouco mais forte, a diferença confirmada pelo `hz` no teste). Nada para baixar.
+
+#### Como agendar os cliques (o ponto técnico)
+- O padrão conhecido é o do "A Tale of Two Clocks" (Chris Wilson): um temporizador **grosso** (~25 ms) só **olha adiante** (~100 ms) e agenda no relógio de áudio
+  (`AudioContext.currentTime`) os cliques que caem na janela (`osc.start(tempo)`). Nunca usar `setInterval` para soar o clique.
+- **Estado e cálculo (corrigido na revisão):** guardar `ultimoTempo` (instante do último clique agendado) e `tempoAtual` (0 a n−1). O próximo instante é calculado
+  **só na hora de agendar**: `ultimoTempo + 60 / bpmAtual`. (Somar `60 / bpm` logo depois de agendar fixaria o intervalo com o bpm antigo e atrasaria a troca em um clique.)
+  A troca de bpm vale a partir do **primeiro clique ainda não agendado**; o que já está na janela de ~100 ms soa como estava.
+- **Atraso do temporizador:** se o temporizador acorda tarde (coleta de lixo, aparelho lento), o `start(t)` com `t` no passado soaria **na hora, todos juntos**. Se
+  `proximoTempo < currentTime`, pular para o próximo ponto da grade (`n = ceil(atraso / período)`), avançando `tempoAtual` em `n % compasso` (mantém a fase), sem rajada.
+- **Cancelar o que ainda não soou:** guardar os osciladores agendados. Ao parar, ou ao mudar compasso/bpm de modo que invalide a janela, `stop()`/`disconnect()` nos que ainda
+  não soaram e esvaziar a fila visual (senão soam cliques fantasmas ao reiniciar, e o acento antigo sai depois de trocar o compasso).
+- **Visual alinhado ao som:** fila `(tempoDeÁudio, índice)` consumida no `requestAnimationFrame` quando `currentTime − outputLatency ≥ tempo` (com detecção da propriedade; há o precedente
+  `audivel()` em `sintetizador.ts`), para a bolinha não adiantar o som no Bluetooth (100 a 300 ms). Ao voltar à tela, descartar a fila velha e mostrar só o tempo atual.
+- **Início:** depois do `await resume()`, começar em `currentTime + 0,1 s` (como o `ATRASO_INICIAL` do sintetizador), sempre com `tempoAtual = 0`. Limitação conhecida: o Bluetooth pode engolir o 1º clique.
+- **`AudioContext`:** **próprio** (não o do sintetizador: o `ctx` é privado e pausar o hino faz `ctx.suspend()`, que calaria o clique; `tom.ts` já registra essa decisão), criado no **toque** em Iniciar,
+  com a mesma guarda de geração do `TomSustentado` (Iniciar→Parar rápido e sair da aba durante o `await resume()`). `parar()` mantém o contexto e `sair()` o fecha com atraso, como o Afinador.
+  Ouvir `ctx.onstatechange`: se sair de `running` com o metrônomo ligado (ligação telefônica, outro app com o foco de áudio), **parar e avisar** na tela, sem tentar `resume()` sozinho (sem gesto falha).
+- **Segundo plano:** sem serviço, o Chrome limita os temporizadores da página escondida (a ~1 por segundo; com som nos últimos 30 s a limitação é mínima) e o Android pode congelar o processo.
+  Por isso, **na etapa 1 sem serviço: para ao esconder o app, e avisa na tela** (como o `afinador.explica`). O Gravador agora segue gravando porque ganhou um serviço em primeiro plano com microfone
+  (`ServicoAudio.kt`); para o metrônomo seguir seria preciso um terceiro motivo ali (como `gravando`) e uma notificação "Metrônomo · Parar", e uma janela adaptativa (~100 ms com a tela à vista,
+  ~2 s escondido, bpm travado). `sincronizarServico` **não** serve como está (`ligadoCom` é um só e o layout o desliga sempre que `reproducao.estado` muda).
+- **Módulo puro e testável:** "dado o bpm, o compasso, o último instante e o agora, quais cliques agendar" fica numa função pura (`agendar(estado, agora, janela)` → `[{tempo, indice}]`),
+  testada no vitest com relógio falso; o `AudioContext` entra só na casca fina.
+
+#### Arquivos que a aba nova toca (não estavam no rascunho)
+`src/lib/inicio.svelte.ts` (tipo `AbaInicio` e `rolagem`), `src/routes/+page.svelte` (`ABAS`, `ROTULOS`, painel), `src/lib/Abas.svelte` (cabem 4 abas? "Metrônomo"/"Metrónomo" em 412 px
+com a fonte do sistema a 130% e 200%, e na barra lateral com o celular deitado), `ControleAndamento.svelte` (`min`/`max` por propriedade), `src/lib/preferencias.ts` e `tests/preferencias.test.ts`
+(se lembrar bpm e compasso: chave `prefs.metronomo`, validada na leitura: bpm limitado, compasso ∈ {2,3,4,6}), os 3 dicionários i18n (`inicio.aba_metronomo`, `metronomo.*`; o tipo `Dicionario` e o
+`npm run check` garantem as chaves, e textos com `{n}` pedem um teste como o de `erros.test.ts`) e o **e2e** (`karaoke.mjs` confere a lista exata de abas e vai quebrar).
+
+#### Critérios de aceitação (revisados: mensuráveis)
+- **vitest (função pura, relógio falso):** 1000 cliques com `t_n = t0 + n·p` (±1e-9), sem deriva; troca de bpm e de compasso no meio da janela; recuperação depois de 3 s sem rajada; reinício no 1º tempo.
+- **e2e (Chrome mudo):** interceptar `AudioScheduledSourceNode.prototype.start` guardando `{when, agora: context.currentTime, hz}` (há precedente de trocar `AudioContext` em `karaoke.mjs`). A 240 bpm
+  (30 cliques ≈ 7,5 s): (a) todo `when − agora > 0`; (b) intervalos = 60/bpm ± 1 ms e nenhum `when` repetido; (c) o mesmo com um laço ocupado de 150 ms; (d) acento a cada n cliques, conferido pelo `hz`
+  (substitui o "audivelmente diferente"); (e) nenhum `start` depois de esconder o app e `context.state === "closed"` ao sair da aba.
+  O Chrome do e2e roda com `--autoplay-policy=no-user-gesture-required`, então o gesto não é provado por ele: contar as chamadas a `new AudioContext` antes do clique em Iniciar (devem ser 0).
+- Uma sonda `window.__bmccbMetronomo` só em desenvolvimento (como `__bmccbTom` em `tom.ts`), com estado, fila e um analisador. Também amostrar a bolinha acesa a cada 25 ms contra `currentTime − outputLatency`.
+- Para ao esconder o app (etapa 1 sem serviço), ao sair da aba e ao desmontar, e libera o `AudioContext`.
+- Respeita tema, `rem` e movimento reduzido; alvos de 3rem; textos nos 3 idiomas.
+
+#### Decisões do responsável (2026-11-20, depois da revisão)
+- **A. Tela bloqueada:** o clique **continua com a tela bloqueada e só para quando a pessoa pedir** (botão Parar, no app ou na notificação). Isso **entra na etapa 1** e
+  exige **Kotlin**: um terceiro motivo no `ServicoAudio.kt`/`PonteServico.kt` (ao lado de `tocando` e `gravando`), tipo `mediaPlayback`, notificação "Metrônomo · Parar", wake lock sem limite
+  enquanto ligado e uma janela de agendamento adaptativa (~100 ms com a tela à vista, ~2 s escondida, com o andamento e o compasso travados enquanto escondida). Deixa de valer o "só front".
+- **B. Gravar com o clique no fone:** é um caso de uso. Regra igual à do hino: **com fone** o metrônomo e a gravação andam juntos (`foneConectado()`); **sem fone**, um som de cada vez
+  (o clique do alto-falante entraria no microfone). Para isso a gravação **não pode parar ao trocar de aba** quando está protegida pelo serviço: o Gravador passa a seguir gravando em
+  segundo plano e a tela mostra um aviso fixo "● Gravando 0:34 · Parar" fora da aba (a decidir onde: na barra de abas ou no miniplayer). Mexe no `Gravador.svelte` (`sair()`) e no layout.
+- **C. Faixa de andamento:** de **30 a 240** bpm. O `ControleAndamento` recebe `min`/`max` por propriedade (o do player segue em 40 a 160).
+- **D. Acento:** o **1º tempo é forte** e todos os outros são fracos; ao voltar ao 1º tempo, forte de novo. **Sem apoio médio** (nem no 4º tempo do 6). Compassos de 2, 3, 4 e 6 tempos.
+- **E. Lembrar:** o app guarda o último andamento e compasso usados **e uma lista dos 5 a 10 últimos** (andamento + compasso, sem repetir; o mais recente no topo). Tocar num item da lista **substitui
+  na hora** o que está tocando (e, se estiver ligado, segue tocando no novo). Entra na lista ao tocar em Iniciar. Chave `prefs.metronomo` `{bpm, compasso, recentes: [{bpm, compasso}]}`, validada na leitura.
+- **F. Hino no miniplayer:** Iniciar o metrônomo **para** o hino que toca (e um hino que começa a tocar para o metrônomo), a menos que haja fone (aí vale a regra do B para a gravação; o hino
+  continua sendo um som de cada vez com o metrônomo).
+- **G. Indicador de tempo:** o responsável quer, no futuro, um **gauge de ponteiro** (como os de painel de carro) e mais de um tipo, escolhido pela pessoa. **Primeira versão: uma
+  trilha com uma bolinha que desliza da esquerda para a direita** (calculada do relógio de áudio a cada quadro: passa pelas marcas dos tempos exatamente no clique, a marca do 1º tempo
+  maior, e volta ao começo no 1º tempo seguinte). Com movimento reduzido, a bolinha não desliza: só a marca do tempo atual muda de estado. Depois: o gauge de ponteiro como segundo tipo
+  e a opção para escolher na tela.
 
 ### Perguntas em aberto
 1. **Compasso:** o formato do hino traz o `andamento` (bpm), mas **não o compasso** (2/4, 3/4, 4/4, 6/8). Para acentuar o 1º
