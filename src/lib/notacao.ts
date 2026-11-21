@@ -59,7 +59,7 @@ const INDICE: Record<string, number> = { Dó: 0, Do: 0, C: 0, Ré: 1, Re: 1, D: 
  * "maior/menor" na língua da interface. Um texto que não se reconhece volta como veio.
  */
 export function nomeDaTonalidade(tom: string, idioma: Idioma, notacao: Notacao = "auto"): string {
-  const m = BASE.exec(tom.trim());
+  const m = BASE.exec(tom.trim().normalize("NFC"));
   if (!m) return tom;
   const nota = NATURAIS[sistemaDe(notacao, idioma)][INDICE[m[1]!]!];
   const acidente = m[2] === "♭" || m[2] === "b" ? "♭" : m[2] === "♯" || m[2] === "#" ? "♯" : "";

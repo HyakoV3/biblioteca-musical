@@ -1640,7 +1640,6 @@ async function principal() {
   confere(lista1 === 'Si♭ major', `a tonalidade na lista segue a escolha (sílabas, mesmo com a interface em inglês): "${lista1}"`);
   await av(`document.getElementById('aba-afinador').click(); 1`);
   await dormir(500);
-  const afi2 = await av(`document.querySelector('#painel-afinador summary')?.parentElement?.innerText ?? ''`);
   const rotulos = await av(`[...document.querySelectorAll('#painel-afinador .grande, #painel-afinador summary')].map((e) => e.innerText.replace(/\\s+/g, ' ').trim())`);
   confere(rotulos.some((x) => /^Lá 440 Hz/.test(x)) && rotulos.some((x) => /Dó4/.test(x)), `Afinador com os nomes em sílabas: ${JSON.stringify(rotulos)}`);
   await av(`localStorage.setItem('notacao', 'letras'); 1`);

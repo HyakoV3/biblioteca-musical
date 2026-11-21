@@ -169,5 +169,6 @@ describe("nomes das notas em sílabas ou letras", () => {
     expect(nomeDaTonalidade("Sib maior", "pt", "letras")).toBe("B♭ maior"); // "b" digitado vale como bemol
     expect(nomeDaTonalidade("Fá# menor", "pt", "letras")).toBe("F♯ menor");
     expect(nomeDaTonalidade("tonalidade livre", "pt", "letras")).toBe("tonalidade livre"); // o que não se reconhece volta como veio
+    expect(nomeDaTonalidade("Re\u0301♭ maior".replace("Re\u0301", "Ré".normalize("NFD")), "pt", "letras")).toBe("D♭ maior"); // "Ré" decomposto (NFD) também vale
   });
 });

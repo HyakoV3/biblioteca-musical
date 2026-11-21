@@ -4,6 +4,7 @@ import { BYTES_POR_PEDACO, compartilharGravacao, nomeDoArquivo, podeCompartilhar
 afterEach(() => {
   delete (globalThis as Record<string, unknown>).BmCompartilhar;
   vi.restoreAllMocks();
+  vi.unstubAllGlobals(); // devolve o localStorage de verdade (ou a falta dele), mesmo que um teste falhe no meio
 });
 
 describe("nomes e tipos", () => {
@@ -107,7 +108,7 @@ describe("o formato do arquivo enviado (.webm ou .weba)", async () => {
 
   it("a escolha é lembrada, o valor ruim volta ao padrão e uma falha de armazenamento é ignorada", () => {
     const m = new Map<string, string>();
-    (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) };
+    vi.stubGlobal("localStorage", { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) });
     expect(lerFormatoWebm()).toBe(FORMATO_PADRAO);
     salvarFormatoWebm("weba");
     expect(JSON.parse(m.get(CHAVE_COMPARTILHAR)!)).toEqual({ webm: "weba" });
@@ -117,7 +118,7 @@ describe("o formato do arquivo enviado (.webm ou .weba)", async () => {
     m.set(CHAVE_COMPARTILHAR, "isto não é json");
     expect(lerFormatoWebm()).toBe("webm");
     expect(formatoValido("weba") && formatoValido("webm") && !formatoValido("m4a") && !formatoValido(null)).toBe(true);
-    delete (globalThis as { localStorage?: unknown }).localStorage;
+    vi.stubGlobal("localStorage", undefined);
     expect(lerFormatoWebm()).toBe("webm");
     expect(() => salvarFormatoWebm("weba")).not.toThrow();
   });

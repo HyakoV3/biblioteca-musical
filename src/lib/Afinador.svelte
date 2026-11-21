@@ -72,7 +72,7 @@
   const freqNota = $derived(frequenciaDe(midi, LA_PADRAO));
   const nomeNota = $derived(`${nomeDaNota(classe, i18n.idioma, notacao.atual)}${oitava}`);
   const hz = (f: number) => new Intl.NumberFormat(i18n.idioma, { maximumFractionDigits: f >= 100 ? 0 : 1 }).format(f);
-  const rotuloLa = $derived(`${nomeDaNota(9, i18n.idioma, notacao.atual)} ${LA_PADRAO} Hz`);
+  const rotuloLa = $derived(`${nomeDaNota(9, i18n.idioma, notacao.atual)} ${hz(LA_PADRAO)} Hz`);
   const grave = $derived(oitava < 3);
 
   function parar() {
