@@ -252,11 +252,13 @@
   .pilula { position: relative; }
   .pilula :global(summary) { padding-inline-end: 4.75rem; }
   .tocar-pilula {
-    position: absolute; inset: 0.0625rem 0.0625rem auto auto; width: 4.5rem; height: 2.9375rem; box-sizing: border-box; overflow: hidden;
+    position: absolute; inset: 0.0625rem 0.0625rem auto auto; width: 4.5rem; height: 3rem; box-sizing: border-box; overflow: hidden;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.05rem; padding: 0;
     border: 0; border-inline-start: 0.0625rem solid var(--borda-controle); border-radius: 0 0.6875rem 0 0;
     background: var(--acento); color: var(--acento-texto); cursor: pointer; font: inherit;
   }
+  /* O triângulo do Play ocupa de 8 a 19 na caixa de 24 do ícone: o centro dele cai 1,5 px à direita do centro da caixa. Recuar 1 px o põe no meio do botão. */
+  .tocar-pilula :global(.icone) { translate: -0.0625rem 0; }
   .tocar-pilula.fechada { border-radius: 0 0.6875rem 0.6875rem 0; }
   .tocar-pilula:focus-visible { outline: 0.1875rem solid var(--foco); outline-offset: -0.25rem; }
   .resta { font-size: 0.75rem; line-height: 1; font-variant-numeric: tabular-nums; }
