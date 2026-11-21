@@ -5,7 +5,7 @@ quem conduz **observa e não ensina**.
 
 ## Antes de começar
 
-- Instale o app no celular da pessoa (ou use o seu), com o `hinario.json` já importado.
+- Instale o app no celular da pessoa (ou use o seu), com o hinário **já baixado** (Ajustes → Conteúdo → Hinário completo; o primeiro acesso oferece o download) e, se quiser testar a partitura, as partituras também.
 - Combine: **você não está sendo avaliado, o app está.** Se algo for difícil, o erro é do app.
 - Peça para ela **pensar em voz alta** ("estou procurando o botão de...").
 - Ajuste o som do aparelho antes de começar. Tenha um fone por perto.
@@ -35,6 +35,11 @@ Para cada uma anote: **conseguiu?** (sim / com dificuldade / não), **tempo apro
 | 10 | "Saia da tela do hino com a música tocando e depois pause." | Vê e entende o miniplayer? |
 | 11 | "Mude para o tema escuro." | Acha **Ajustes**? |
 | 12 | "Mude o idioma do app para espanhol." | Acha o idioma? |
+| 13 | "Na tela inicial, dê o tom Lá para afinar o seu instrumento." | Acha a aba **Afinador**? Entende "Lá 440" e "Outra nota"? |
+| 14 | "Grave a sua voz por 10 segundos e ouça depois." | Acha a aba **Gravador**? Entende onde a gravação fica guardada? |
+| 15 | "Ligue um metrônomo a 90 bpm, em 3 tempos." | Acha a aba **Metrônomo**? Entende o andamento e o compasso? |
+| 16 | "Bloqueie a tela com o metrônomo ou a gravação ligados." | O som continua? Entende a notificação e o botão Parar? |
+| 17 | "Abra a partitura do hino e acompanhe a música." | Acha a aba **Partitura**? Entende o destaque da nota? |
 
 ## Perguntas ao final (uma por vez, sem sugerir a resposta)
 
