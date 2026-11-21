@@ -1,6 +1,6 @@
 import { IDBFactory, IDBKeyRange } from "fake-indexeddb";
 import { describe, expect, it, vi } from "vitest";
-import { Gravacoes, TAMANHO_DA_PAGINA, comLimite, formatarData } from "../src/lib/gravacoes";
+import { ESPERA_AO_ABRIR_MS, Gravacoes, TAMANHO_DA_PAGINA, TENTATIVAS_DE_ABRIR, comLimite, formatarData } from "../src/lib/gravacoes";
 
 // O Node não tem IDBKeyRange; no WebView ele é global.
 vi.stubGlobal("IDBKeyRange", IDBKeyRange);
@@ -174,6 +174,57 @@ describe("conexão com o banco", () => {
     expect(conexao(g)).toBeNull();
     await g.salvar(audio(50), "audio/webm", 1); // reabriu
     expect(await g.resumo()).toEqual({ quantidade: 2, bytes: 150 });
+  });
+});
+
+describe("abrir o banco quando o navegador não responde (o open() que nunca volta)", () => {
+  /** Uma fábrica cujos primeiros `mudos` pedidos de `open` nunca disparam evento nenhum; os seguintes vão para um IDBFactory de verdade. */
+  function fabricaMuda(mudos: number) {
+    const real = new IDBFactory();
+    const chamadas = { n: 0 };
+    const fabrica = {
+      open: (nome: string, versao?: number) => {
+        chamadas.n++;
+        if (chamadas.n <= mudos) return {} as IDBOpenDBRequest; // nunca chama onsuccess, onerror nem onblocked
+        return real.open(nome, versao);
+      },
+    } as unknown as IDBFactory;
+    return { fabrica, chamadas };
+  }
+
+  it("se a 1ª tentativa fica muda, pede de novo e guarda normalmente", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const { fabrica, chamadas } = fabricaMuda(1);
+      const g = new Gravacoes(() => fabrica);
+      const pronto = g.salvar(audio(500), "audio/webm", 3);
+      await vi.advanceTimersByTimeAsync(ESPERA_AO_ABRIR_MS + 10);
+      vi.useRealTimers(); // o fake-indexeddb precisa dos timers de verdade para concluir
+      const m = await pronto;
+      expect(m.bytes).toBe(500);
+      expect(chamadas.n).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("se nenhuma tentativa responde, falha com uma mensagem clara e a próxima chamada tenta de novo", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const { fabrica, chamadas } = fabricaMuda(TENTATIVAS_DE_ABRIR);
+      const g = new Gravacoes(() => fabrica);
+      const falhou = g.listar().then(
+        () => null,
+        (e: Error) => e.message,
+      );
+      await vi.advanceTimersByTimeAsync(ESPERA_AO_ABRIR_MS * TENTATIVAS_DE_ABRIR + 50);
+      expect(await falhou).toBe("o armazenamento não respondeu ao abrir");
+      expect(chamadas.n).toBe(TENTATIVAS_DE_ABRIR);
+      vi.useRealTimers();
+      expect((await g.listar()).itens).toEqual([]); // a falha não ficou guardada: agora abre
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
