@@ -1340,6 +1340,9 @@ async function principal() {
       t.oncomplete = () => { b.close(); ok(1); }; t.onerror = () => falha(t.error);
     };
   })`);
+  // A paginação carrega mais quando o fim da lista chega a 600 px da tela. Numa tela baixa essa zona é pequena e o resultado não depende de quanto a aba tem de texto
+  // em cima (o CI, com outras fontes, chegou a carregar a 2ª página sozinho numa tela alta).
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 420, deviceScaleFactor: 1, mobile: true });
   await abrirGravador();
   const contar = () => av(`({ itens: document.querySelectorAll('.gravacao-item').length, fim: !!document.getElementById('fim-lista'), resumo: document.getElementById('resumo-gravacoes')?.textContent.replace(/\\s+/g, ' ').trim() ?? null })`);
   const pag1 = await contar();
@@ -1357,6 +1360,7 @@ async function principal() {
   confere(pag3.itens === 25 && pag3.fim === false, `Gravador: a última página traz as 5 que faltam (25) e o fim da lista some: ${JSON.stringify(pag3)}`);
   const unicas = await av(`new Set([...document.querySelectorAll('.gravacao-item')].map((e) => e.dataset.id)).size`);
   confere(unicas === 25, `Gravador: nenhuma gravação repetida nem pulada (25 únicas): ${unicas}`);
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
   // Um arquivo que não toca (os zeros semeados não decodificam): a tela explica e devolve o botão "Ouvir" para tentar de novo, em vez de deixar um player cinza.
   await av(`document.querySelectorAll('.gravacao-item .ouvir')[0].click(); 1`);
   await dormir(1200);
