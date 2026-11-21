@@ -160,6 +160,7 @@ export const es: Dicionario = {
   "metronomo.parar": "Detener",
   "metronomo.compasso": "Compás",
   "metronomo.compasso_n": "{n} tiempos",
+  "metronomo.compasso_um": "1 tiempo",
   "metronomo.recentes": "Usados recientemente",
   "metronomo.recente": "{bpm} bpm · {n} tiempos",
   "metronomo.trilha": "Posición en el compás",

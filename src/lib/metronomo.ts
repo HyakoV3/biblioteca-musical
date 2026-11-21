@@ -9,7 +9,7 @@ export const BPM_MIN = 30;
 export const BPM_MAX = 240;
 export const BPM_PADRAO = 60;
 /** Tempos por compasso que a tela oferece. */
-export const COMPASSOS = [2, 3, 4, 6] as const;
+export const COMPASSOS = [1, 2, 3, 4, 5, 6, 7, 9, 12] as const;
 export const COMPASSO_PADRAO = 4;
 
 /** Quanto, depois de o áudio acordar, o 1º clique espera (s): a saída ainda está começando, e no Bluetooth o primeiro som costuma se perder. */
@@ -29,15 +29,16 @@ export function compassoValido(n: unknown): n is (typeof COMPASSOS)[number] {
   return typeof n === "number" && (COMPASSOS as readonly number[]).includes(n);
 }
 
-export type Clique = { tempo: number; indice: number };
-/** `ultimo`: instante (relógio de áudio) do último clique agendado, ou null se ainda não há nenhum. `indice`: o tempo (0 = o forte) do PRÓXIMO clique. */
-export type EstadoAgenda = { ultimo: number | null; indice: number };
+/** `n`: o número do clique desde que o metrônomo ligou (0, 1, 2…): a paridade diz de que lado do pêndulo ele está (par = esquerda, ímpar = direita). */
+export type Clique = { tempo: number; indice: number; n: number };
+/** `ultimo`: instante (relógio de áudio) do último clique agendado, ou null se ainda não há nenhum. `indice`: o tempo (0 = o forte) do PRÓXIMO clique. `n`: o número do PRÓXIMO clique desde que ligou. */
+export type EstadoAgenda = { ultimo: number | null; indice: number; n: number };
 
 /** Teto de cliques agendados numa chamada (a 240 bpm, 64 cliques são 16 s: muito além da maior janela). */
 const MAX_CLIQUES_POR_CHAMADA = 64;
 
 export function novoEstado(): EstadoAgenda {
-  return { ultimo: null, indice: 0 };
+  return { ultimo: null, indice: 0, n: 0 };
 }
 
 /**
@@ -60,22 +61,25 @@ export function agendar(
   const atraso = Number.isFinite(p.atrasoInicial) && (p.atrasoInicial as number) >= 0 ? (p.atrasoInicial as number) : ATRASO_INICIAL;
   let ultimo = estado.ultimo !== null && Number.isFinite(estado.ultimo) ? estado.ultimo : null;
   let indice = Number.isInteger(estado.indice) ? ((estado.indice % compasso) + compasso) % compasso : 0;
+  let seq = Number.isInteger(estado.n) && estado.n >= 0 ? estado.n : 0;
   let proximo = ultimo === null ? agora + atraso : ultimo + periodo;
   // O 1º clique (ultimo nulo) é sempre agendado, mesmo que o atraso inicial caia fora da janela: senão o começo dependeria de uma borda de comparação.
   while ((proximo < agora + janela || ultimo === null) && cliques.length < MAX_CLIQUES_POR_CHAMADA) {
     if (proximo < agora) {
       // atrasado: pula as batidas perdidas e segue na grade, na fase certa
-      const n = Math.ceil((agora - proximo) / periodo);
-      proximo += n * periodo;
-      indice = (indice + n) % compasso;
+      const perdidas = Math.ceil((agora - proximo) / periodo);
+      proximo += perdidas * periodo;
+      indice = (indice + perdidas) % compasso;
+      seq += perdidas;
       continue;
     }
-    cliques.push({ tempo: proximo, indice });
+    cliques.push({ tempo: proximo, indice, n: seq });
     ultimo = proximo;
     indice = (indice + 1) % compasso;
+    seq += 1;
     proximo = ultimo + periodo;
   }
-  return { cliques, estado: { ultimo, indice } };
+  return { cliques, estado: { ultimo, indice, n: seq } };
 }
 
 /**
@@ -90,6 +94,25 @@ export function progressoNoCompasso(fila: readonly Clique[], agora: number, bpm:
   const periodo = prox ? prox.tempo - c.tempo : 60 / bpm;
   const decorrido = Math.min(Math.max((agora - c.tempo) / periodo, 0), 1);
   return (c.indice + decorrido) / compasso;
+}
+
+/**
+ * Onde está a bolinha do PÊNDULO, de 0 (esquerda) a 1 (direita): cada clique é uma ponta (par à esquerda, ímpar à direita) e entre dois cliques ela vai de uma ponta à outra, como num
+ * metrônomo de verdade. O compasso não aparece no trajeto (só nas marcas e no acento). Antes do primeiro clique soar, devolve null.
+ */
+export function posicaoDoPendulo(fila: readonly Clique[], agora: number, bpm: number): number | null {
+  const c = cliqueAtual(fila, agora);
+  if (!c || !(bpm > 0)) return null;
+  const prox = fila.find((x) => x.tempo > c.tempo);
+  const periodo = prox ? prox.tempo - c.tempo : 60 / bpm;
+  const f = Math.min(Math.max((agora - c.tempo) / periodo, 0), 1);
+  return c.n % 2 === 0 ? f : 1 - f;
+}
+
+/** De que lado o clique mais recente soou (0 = esquerda, 1 = direita), ou null antes do primeiro: com movimento reduzido a bolinha só pula de ponta em ponta. */
+export function ladoDoClique(fila: readonly Clique[], agora: number): 0 | 1 | null {
+  const c = cliqueAtual(fila, agora);
+  return c ? (c.n % 2 === 0 ? 0 : 1) : null;
 }
 
 /** O tempo (0 = o forte) cujo clique soou por último até `agora`, ou null antes do primeiro. */
@@ -232,6 +255,20 @@ export class Metronomo {
     const ctx = this.ctx;
     if (!ctx || !this._ligado) return null;
     return progressoNoCompasso(this.fila, ctx.currentTime - atrasoDeSaida(ctx), this._bpm, this._compasso);
+  }
+
+  /** Posição do pêndulo (0 esquerda, 1 direita) no instante visível, ou null se não está tocando. */
+  posicaoPendulo(): number | null {
+    const ctx = this.ctx;
+    if (!ctx || !this._ligado) return null;
+    return posicaoDoPendulo(this.fila, ctx.currentTime - atrasoDeSaida(ctx), this._bpm);
+  }
+
+  /** O lado do clique mais recente (0 esquerda, 1 direita), ou null se não está tocando. */
+  ladoAceso(): 0 | 1 | null {
+    const ctx = this.ctx;
+    if (!ctx || !this._ligado) return null;
+    return ladoDoClique(this.fila, ctx.currentTime - atrasoDeSaida(ctx));
   }
 
   /** O tempo (0 = forte) aceso agora, ou null se não está tocando. */

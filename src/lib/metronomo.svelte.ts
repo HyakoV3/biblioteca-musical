@@ -107,8 +107,14 @@ class EstadoMetronomo {
     desligarServicoDoMetronomo();
   }
 
-  progresso(): number | null {
-    return this.nucleo.progresso();
+  /** Posição do pêndulo (0 esquerda, 1 direita). */
+  posicao(): number | null {
+    return this.nucleo.posicaoPendulo();
+  }
+
+  /** O lado do clique mais recente (0 esquerda, 1 direita). */
+  lado(): 0 | 1 | null {
+    return this.nucleo.ladoAceso();
   }
 
   tempoAceso(): number | null {

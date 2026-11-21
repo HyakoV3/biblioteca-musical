@@ -160,6 +160,7 @@ export const pt = {
   "metronomo.parar": "Parar",
   "metronomo.compasso": "Compasso",
   "metronomo.compasso_n": "{n} tempos",
+  "metronomo.compasso_um": "1 tempo",
   "metronomo.recentes": "Usados recentemente",
   "metronomo.recente": "{bpm} bpm · {n} tempos",
   "metronomo.trilha": "Posição no compasso",

@@ -26,18 +26,18 @@
     },
   };
 
-  /** A posição da bolinha na trilha (0 a 1) e o tempo aceso (0 = forte), lidos do relógio de áudio a cada quadro. */
+  /** A posição do pêndulo (0 esquerda, 1 direita) e o tempo aceso do compasso (0 = forte), lidos do relógio de áudio a cada quadro. */
   let posicao = $state(0);
   let aceso = $state<number | null>(null);
   const reduzirMovimento = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   let quadro = 0;
 
   function desenhar() {
-    const p = metronomo.progresso();
-    const a = metronomo.tempoAceso();
-    aceso = a;
-    // Com movimento reduzido a bolinha não desliza: fica na marca do tempo atual (só muda de lugar a cada tempo).
-    posicao = p === null ? 0 : reduzirMovimento && a !== null ? a / metronomo.compasso : p;
+    const p = metronomo.posicao();
+    const l = metronomo.lado();
+    aceso = metronomo.tempoAceso();
+    // Pêndulo: a bolinha vai de uma ponta à outra entre dois cliques (cada clique é uma ponta). Com movimento reduzido ela não desliza: só pula de ponta em ponta.
+    posicao = p === null ? 0 : reduzirMovimento && l !== null ? l : p;
     quadro = requestAnimationFrame(desenhar);
   }
 
@@ -65,6 +65,7 @@
   }
 
   const marcas = $derived(Array.from({ length: metronomo.compasso }, (_, i) => i));
+  const rotuloCompasso = (n: number) => (n === 1 ? t("metronomo.compasso_um") : t("metronomo.compasso_n", { n }));
 </script>
 
 <div class="metronomo">
@@ -77,18 +78,27 @@
   <div class="andamento"><ControleAndamento {cfg} editavel={true} min={BPM_MIN} max={BPM_MAX} /></div>
 
   <div class="compasso" role="group" aria-label={t("metronomo.compasso")}>
-    {#each COMPASSOS as n (n)}
-      <button class="botao" aria-pressed={metronomo.compasso === n} onclick={() => metronomo.mudarCompasso(n)}>{t("metronomo.compasso_n", { n })}</button>
-    {/each}
+    <span class="rotulo" aria-hidden="true">{t("metronomo.compasso")}</span>
+    <div class="botoes">
+      {#each COMPASSOS as n (n)}
+        <button class="botao" aria-pressed={metronomo.compasso === n} aria-label={rotuloCompasso(n)} onclick={() => metronomo.mudarCompasso(n)}>{n}</button>
+      {/each}
+    </div>
   </div>
 
-  <!-- A trilha do compasso: uma marca por tempo (a do 1º tempo é maior e mais alta, não só de outra cor) e a bolinha que desliza da esquerda para a direita
-       e passa por cada marca exatamente no clique. Decorativa para o leitor de tela (o aviso de status abaixo basta). -->
-  <div class="trilha" aria-hidden="true" data-aceso={aceso ?? ""} data-posicao={posicao.toFixed(3)}>
-    {#each marcas as i (i)}
-      <span class="marca" class:forte={i === 0} class:acesa={aceso === i} style:left={`${(i / metronomo.compasso) * 100}%`}></span>
-    {/each}
-    <span class="bola" style:left={`${posicao * 100}%`}></span>
+  <!-- O pêndulo: a bolinha vai e volta entre as duas pontas, e cada clique é uma ponta (como num metrônomo de verdade). Embaixo, uma bolinha por tempo do compasso: a do 1º tempo
+       (o forte) é maior, e a do tempo atual fica acesa. Decorativo para o leitor de tela (o aviso de status abaixo basta). -->
+  <div class="pendulo" aria-hidden="true" data-aceso={aceso ?? ""} data-posicao={posicao.toFixed(3)}>
+    <div class="trilha">
+      <span class="ponta esquerda"></span>
+      <span class="ponta direita"></span>
+      <span class="bola" style:left={`${posicao * 100}%`}></span>
+    </div>
+    <div class="tempos">
+      {#each marcas as i (i)}
+        <span class="tempo" class:forte={i === 0} class:aceso={aceso === i}></span>
+      {/each}
+    </div>
   </div>
 
   <button id="metronomo-iniciar" class="botao primario grande" aria-pressed={metronomo.ligado} onclick={alternar}>
@@ -124,18 +134,25 @@
   .metronomo { display: flex; flex-direction: column; gap: 1rem; }
   .meta { margin: 0; color: var(--suave); }
   .andamento { display: flex; }
-  .compasso { display: flex; gap: 0.5rem; }
-  .compasso button { flex: 1; min-height: 3rem; }
+  .compasso { display: flex; flex-direction: column; gap: 0.5rem; }
+  .compasso .rotulo { color: var(--suave); }
+  .compasso .botoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .compasso button { flex: 1 0 3rem; min-width: 3rem; min-height: 3rem; font-variant-numeric: tabular-nums; }
   .compasso button[aria-pressed="true"] { font-weight: 700; border-color: var(--ouro-linha); }
 
-  /* A trilha: uma linha fina com as marcas dos tempos e a bolinha por cima. A posição vem do JavaScript (relógio de áudio); sem transição de CSS, e com
-     movimento reduzido a bolinha só pula de marca em marca. */
-  .trilha { position: relative; height: 3rem; margin: 0.25rem 0.75rem; }
+  /* O pêndulo: uma trilha com as duas pontas e a bolinha por cima. A posição vem do JavaScript (relógio de áudio); sem transição de CSS, e com movimento reduzido a bolinha só
+     pula de ponta em ponta. Embaixo, uma bolinha por tempo do compasso (a do 1º é maior, não só de outra cor). */
+  .pendulo { display: flex; flex-direction: column; gap: 0.75rem; margin: 0.25rem 0.75rem; }
+  .trilha { position: relative; height: 2.5rem; }
   .trilha::before { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 0.0625rem); height: 0.125rem; background: var(--borda); }
-  .marca { position: absolute; top: calc(50% - 0.5rem); width: 0.125rem; margin-left: -0.0625rem; height: 1rem; background: var(--suave); }
-  .marca.forte { top: calc(50% - 1.125rem); height: 2.25rem; width: 0.25rem; margin-left: -0.125rem; background: var(--texto); }
-  .marca.acesa { background: var(--ouro-linha); }
+  .ponta { position: absolute; top: calc(50% - 1rem); width: 0.25rem; height: 2rem; background: var(--texto); }
+  .ponta.esquerda { left: -0.125rem; }
+  .ponta.direita { right: -0.125rem; }
   .bola { position: absolute; top: calc(50% - 0.75rem); width: 1.5rem; height: 1.5rem; margin-left: -0.75rem; box-sizing: border-box; border-radius: 50%; background: var(--ouro-linha); border: 0.125rem solid var(--texto); }
+  .tempos { display: flex; justify-content: center; align-items: center; gap: 0.5rem; min-height: 1.75rem; }
+  .tempo { width: 0.75rem; height: 0.75rem; border-radius: 50%; border: 0.125rem solid var(--suave); box-sizing: border-box; }
+  .tempo.forte { width: 1.5rem; height: 1.5rem; border-color: var(--texto); }
+  .tempo.aceso { background: var(--ouro-linha); border-color: var(--ouro-linha); }
 
   .grande { min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
 

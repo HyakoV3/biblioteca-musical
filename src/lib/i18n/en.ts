@@ -160,6 +160,7 @@ export const en: Dicionario = {
   "metronomo.parar": "Stop",
   "metronomo.compasso": "Time signature",
   "metronomo.compasso_n": "{n} beats",
+  "metronomo.compasso_um": "1 beat",
   "metronomo.recentes": "Recently used",
   "metronomo.recente": "{bpm} bpm · {n} beats",
   "metronomo.trilha": "Position in the bar",
