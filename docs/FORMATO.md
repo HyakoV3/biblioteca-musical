@@ -226,11 +226,12 @@ qualquer). Todos os campos além de `numero` e `titulo` são opcionais.
 
 ## Importar
 
-**Hinário.** Em **Ajustes**, o botão **Importar hinário** escolhe um arquivo **`.json`** (só `.json`: o hinário vai deixar de ser importado e
-virar um pacote baixado, como os sons). O app valida (versão, ao menos um hino, números de hino sem repetição, limite de 20 MB, conferido
-pelo `file.size` **antes de ler o arquivo**) e só então grava em `content/hinario.json`, de forma atômica: um arquivo inválido nunca
-substitui o conteúdo atual. As partituras já instaladas só ficam se o novo JSON for do mesmo hinário (mesmo `hinario.id`); com outro `id`,
-são apagadas, porque os números não combinariam. **Remover importação** apaga o `hinario.json` e as partituras e volta ao pacote de exemplo.
+**Hinário.** Não há importação manual: o hinário é um **pacote baixado** (`hinario-NNN.json`), como as partituras e os sons. Em **Ajustes → Conteúdo → Hinário completo**
+há **Baixar (tamanho)**, progresso e **Remover** (o primeiro acesso, com só o pacote de exemplo, oferece o mesmo download). O app confere o **tamanho e o SHA-256 contra o manifesto**
+(`src/lib/hinario/manifesto.json`, gerado por `tools/montar-manifesto-hinario.py`) e o UTF-8, e só então o Rust valida (versão, ao menos um hino, números de hino sem repetição,
+limite de 20 MB) e grava em `content/hinario.json`, de forma atômica: um arquivo inválido nunca substitui o conteúdo atual. As partituras já instaladas só ficam se o novo JSON
+for do mesmo hinário (mesmo `hinario.id`); com outro `id`, são apagadas, porque os números não combinariam. **Remover** apaga o `hinario.json` **e as partituras** e volta ao pacote de
+exemplo (as gravações do Gravador ficam). O processo de publicar está em [`pacote-do-hinario.md`](pacote-do-hinario.md).
 
 **Partituras (I-08).** Têm o **card próprio "Partituras"** em Ajustes, no molde dos sons gravados: estado ("Instaladas: N" ou "Não
 instaladas"), **Baixar (tamanho)**, progresso, **Remover** (só as partituras; o hinário fica). Não há importação manual. O app baixa o pacote

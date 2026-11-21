@@ -10,8 +10,9 @@ conteúdo **nunca entra no Git**: só o caminho do arquivo é informado na hora 
 
 - `src-tauri/build.rs` lê a variável `BM_PACOTE` (caminho de um `hinario.json`) e a copia para dentro do binário.
   Sem a variável, o app não leva conteúdo nenhum além do pacote de exemplo fictício.
-- Na primeira abertura, o app grava esse conteúdo como se a pessoa o tivesse importado (`hinario::semear`).
-  Ela pode removê-lo ou trocá-lo em **Ajustes**, como qualquer importação.
+- Na primeira abertura, o app grava esse conteúdo como se a pessoa o tivesse instalado (`hinario::semear`).
+  Ela pode removê-lo em **Ajustes**. **Desde o 060 os APKs de teste saem SEM o hinário embutido** (sem `BM_PACOTE`): o hinário é
+  baixado pelo app, de uma pasta própria do servidor ([`pacote-do-hinario.md`](pacote-do-hinario.md)).
 - Uma versão nova do APK com **conteúdo diferente** o substitui. Quem importou um hinário próprio **antes** de existir
   conteúdo embutido não perde o seu (só é sobrescrito por uma atualização posterior com conteúdo novo).
 
@@ -56,10 +57,13 @@ emulador pode ficar velho mesmo sem PR (foi o que aconteceu com os `compassos`).
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64          # o Java padrão (25) pode não servir ao Gradle
 export ANDROID_HOME=~/Android/Sdk ANDROID_SDK_ROOT=~/Android/Sdk
 export NDK_HOME=~/Android/Sdk/ndk/30.0.16248370
-BM_PACOTE=/caminho/do/hinario.json npm run tauri android build -- --apk --target aarch64
+npm run tauri android build -- --apk --target aarch64                      # sem hinário embutido (o padrão desde o 060)
+# BM_PACOTE=/caminho/do/hinario.json npm run tauri android build -- --apk --target aarch64   # só se for embutir um hinário
 ```
 
-Sai `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk` (~6 MB).
+Sai `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk` (~5 MB sem o hinário; ~6 MB com ele).
+**Conferir o tamanho:** bem acima disso, o APK está levando algo velho. Se o **nome da biblioteca Rust mudar** (o `name` do `[lib]` do `src-tauri/Cargo.toml`), apague as `lib*.so` antigas
+de `src-tauri/gen/android/app/src/main/jniLibs/*/` antes de gerar: elas ficam lá (pasta gerada, fora do Git) e entram no APK sem uso (foi o que aconteceu do 062 ao 064, +3,8 MB).
 **Não use `--debug`**: o APK fica com ~270 MB.
 
 `--target aarch64` gera só para `arm64` (quase todos os celulares atuais; aparelhos de 32 bits não instalam).
@@ -110,6 +114,14 @@ commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 
 | Zip | Versão (commit) | Data | Conteúdo | SHA-256 |
 |---|---|---|---|---|
+| **064** | 0.3.0 (c5fa434) | 2026-11-21 | **A branch da #118 (título de Ajustes em tela estreita) com o hinário 002**: o manifesto aponta para `hinario-002.json` (**hino 76, estrofe 3: "pode abalar"**). Sem hinário embutido. "Em nome do Senhor Jesus" ao lado de "Ajustes" e, abaixo de 360 px, na linha de baixo do título. Pacote `br.pro.bibliotecamusical`. Hinário baixado `a68de375…`. **Testar:** Ajustes → Hinário completo → **Remover** e **Baixar** (o Remover apaga também as partituras: baixe-as de novo); o 76 sem "podebalar". **Obs.:** leva uma biblioteca nativa antiga (`libbibliotecamusical_ccb_lib.so`) sem uso (+3,8 MB, por isso 8,9 MB); a partir do 065 sai sem ela. | `77d1e8dc4bf30f1cb0581c99d19aff31c292d2cafe02b2ec457ac38015fa77ee` |
+| **063** | 0.3.0 (6794698) | 2026-11-21 | **"Em nome do Senhor Jesus" na barra de Ajustes**, ao lado do título (ainda sem a correção de tela estreita). Manifesto ainda no `hinario-001.json`. Sem hinário embutido. Mesma biblioteca antiga sobrando do 064. | `6771206f78f7782d9c5e756c850e7ac382ab9d4b45c7527390be30cfbf2ee722` |
+| **062** | 0.3.0 (902c571) | 2026-11-21 | **A `main` com as PRs #116 e #117**: **hinário baixável** (aviso do primeiro acesso com Baixar e "Agora não"; linha "Hinário completo" em Ajustes, com Baixar e Remover; manifesto na pasta própria `BibliotecaMusicalHinario`, `hinario-001.json` `ee9b8cfb…`), **sem hinário embutido**; **nome sem "-CCB" e pacote Android `br.pro.bibliotecamusical`** (o Android o trata como **outro aplicativo**: não atualiza o 061, e as gravações e preferências do antigo ficam nele); botão de importar hinário de arquivo removido; **abas Afinador, Gravador e Metrônomo sem o texto explicativo e com o botão principal no topo**; listas de recentes que mostram só o que cabe na tela; **notas recentes no Afinador**. Mesma biblioteca antiga sobrando do 064. | `74eb63a4b13ea892b0d9d113e712288757d868e1506632e0f72c0f7db7a992ef` |
+| **061** | 0.3.0 (465e7d9) | 2026-11-21 | **Hinário baixável da branch da #116 com as correções do Vandame** (limpa a reprodução ao instalar, erro de UTF-8 traduzido, um escritor do conteúdo por vez), manifesto na pasta própria do hinário. Sem hinário embutido. Ainda com o pacote `.ccb`. | `bce95ac8104f1bee3c952c0eda573a72690ab5b48473db2e2d417733ae435aa1` |
+| **060** | 0.3.0 (4138d6a) | 2026-11-21 | **Primeiro APK sem hinário embutido** (branch da #116): o app abre com o pacote de exemplo e oferece baixar o hinário. Pacote `.ccb`. | `8352172b39fb845d4ea1c4f4208307f3b0642f7259aed5664b3a33c1707a4c81` |
+| **059** | 0.3.0 (—) | 2026-11-21 | **Último com o hinário embutido** (`ee9b8cfb…`): correções de texto do **lote 1** (56 pronomes com hífen e três mesóclises). Os 057 e 058 levam o mesmo código e o hinário embutido em etapas anteriores (última sílaba da estrofe e finais colados; ajustes dos hinos 61, 226, 238 e 475), sem mudança de interface. | `c2b8664f73182a6b97dadd56620f0571d4ffd4e69c7f47b0cf988b3d0ea86523` |
+| **058** | 0.3.0 (—) | 2026-11-21 | Hinário embutido em etapa anterior às do 059 (ver o 059). Mesmo código do 056. | `785fd6808fe910e110cb52939401d98f6fd04a733ddb3b6f31e52a4aefaf0bfc` |
+| **057** | 0.3.0 (—) | 2026-11-21 | Hinário embutido em etapa anterior às do 059 (ver o 059). Mesmo código do 056. | `c14a113a09bbd7a98133d4ad423be15d15e63d1606ae74da964d949b90d221e2` |
 | **056** | 0.3.0 (44405a5) | 2026-11-21 | **A `main` com a PR #112 (e a #113)**: **compassos do metrônomo só os simples (2, 3, 4) e os compostos (6, 9, 12)**, em **dois grupos de 3 botões** ("Simples" e "Compostos"); saem o 1, o 5 e o 7 (valores antigos guardados voltam ao padrão). **Abrir o banco de gravações** com limite de 3 s e até 3 tentativas (um `indexedDB.open()` que não responde deixa de pendurar a lista e o Gravador). Compilado da `main` limpa. Hinário `02c786b1…`. **Testar:** aba Metrônomo (os 6 botões bem distribuídos nos dois grupos); o clique com a tela bloqueada, a notificação "Metrônomo · Parar" e gravar com o clique no fone (itens do 053 e do 054, ainda sem teste no aparelho). | `5933e39a903a4d77e3d06b8667ccf50c97b01ea79029bbc1f99eae3399b50364` |
 | **055** | 0.3.0 (96f1fa7) | 2026-11-21 | **A `main` com as PRs #110 e #111**: **pêndulo que vai e volta** no metrônomo (cada clique é uma ponta, com uma bolinha por tempo do compasso embaixo; sem salto depois de batidas perdidas), **compassos de 1 a 12 tempos** (substituídos no 056) e o singular de "1 tempo". Gravador: texto de ajuda atualizado e **aviso na tela inicial** se a gravação não puder ser guardada ao sair da tela. Compilado da `main` limpa. Hinário `02c786b1…`. **Testar:** a bolinha indo e voltando, com o clique caindo em cada ponta. | `b8bbfa805d05fa002dce025b32ec2e84ae48374e8b2b5ba90ce72f37989732e2` |
 | **054** | 0.3.0 (812a666) | 2026-11-20 | **Metrônomo, parte 4 (PR #109, mergeada depois)**: a **gravação protegida pelo serviço segue ao trocar de aba**, com o aviso "● Gravando · Parar" nas outras abas; **com fone** o metrônomo e a gravação andam juntos, **sem fone** um som de cada vez; abrir um hino com a gravação em curso **para e guarda** a gravação. Compilado da branch da #109 com a `main` (#108) mesclada. Hinário `02c786b1…`. **Testar:** gravar com o fone, ir à aba Metrônomo, ligar o clique e parar pelo aviso; sem fone, ligar o clique deve parar a gravação (guardada). | `1b41da15b12efc8be4b530397ae62edffdbcf28cde7be7bc8e795abca829be8a` |

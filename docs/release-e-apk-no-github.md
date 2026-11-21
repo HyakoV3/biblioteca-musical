@@ -65,8 +65,8 @@ O SDK e o NDK do Android já vêm na imagem do Ubuntu do GitHub (a confirmar a v
 ## Conteúdo
 
 Os APKs do GitHub saem **sem os hinos embutidos** (o `BM_PACOTE` nunca entra no CI): o repositório é público e o
-conteúdo é de terceiros. Depois de instalar, o hinário é importado pelo app. O APK de teste fechado, com os 5 hinos,
-continua sendo gerado na máquina do responsável (`docs/apk-de-teste.md`).
+conteúdo é de terceiros. Depois de instalar, o hinário é **baixado pelo app** (Ajustes ou o aviso do primeiro acesso; ver `docs/pacote-do-hinario.md`). Os APKs de teste fechado
+continuam sendo gerados na máquina do responsável (`docs/apk-de-teste.md`), também sem o hinário embutido desde o 060.
 
 ## Segurança
 

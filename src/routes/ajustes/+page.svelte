@@ -300,6 +300,7 @@
           <li>{t("sobre.fazer_2")}</li>
           <li>{t("sobre.fazer_3")}</li>
           <li>{t("sobre.fazer_4")}</li>
+          <li>{t("sobre.fazer_5")}</li>
         </ul>
 
         <h3>{t("sobre.como_titulo")}</h3>

@@ -155,7 +155,7 @@ Botões "parte anterior" e "próxima parte" (Intro, 1ª, 2ª...) no miniplayer e
 
 ## I-20 — Metrônomo embutido
 
-- **Status:** **desenho revisado (Opus 5) e decidido pelo responsável (2026-11-20); implementação em andamento, por partes** (1: agendador puro; 2: aba e som; 3: serviço Kotlin e tela bloqueada; 4: Gravador em segundo plano). Em aberto só o que está listado em "Decisões do responsável" como futuro (o gauge de ponteiro)
+- **Status:** **implementada (2026-11-21), nas PRs #103 a #112**: aba própria, serviço Kotlin com a tela bloqueada, Gravador em segundo plano, pêndulo que vai e volta, compassos simples (2, 3, 4) e compostos (6, 9, 12), lista dos últimos usados (hoje limitada ao que cabe na tela). **Em aberto, como futuro:** o gauge de ponteiro, e os compassos irregulares 5 e 7 (com agrupamentos, ver "Decisões do responsável").
 - **Origem:** pedido do responsável, 2026-11-16: "fazer um metrônomo também, embutido".
 - **Prioridade:** a definir
 - **Nota (2026-11-17):** a tela inicial vai ter abas de ferramentas (I-28: `Hinos | Afinador | Gravador | …`, "entre outras"). Se o metrônomo também for uma aba, a pergunta 3 ("onde fica") se resolve por ela.
@@ -770,7 +770,7 @@ Dá para hospedar os pacotes **sem servidor**, em um **repositório público só
 - **Prioridade:** a definir. **Trava de tudo o que é conteúdo:** a **autorização do Enéias** (I-30). O que é só código (o APK sem hinos) não depende dela.
 
 ### O problema
-Hoje cada coisa sai de um lugar: o APK de teste vai para o Nextcloud, na mão, com o hinário embutido (teste fechado); as partituras e os sons saem de um **link público do File Browser** que baixa a **pasta inteira em zip**
+Hoje cada coisa sai de um lugar: o APK de teste vai para o Nextcloud, na mão (sem o hinário embutido desde o 060: o hinário é **baixado** de uma pasta própria do File Browser, `BibliotecaMusicalHinario`, ver [`pacote-do-hinario.md`](pacote-do-hinario.md)); as partituras e os sons saem de um **link público do File Browser** que baixa a **pasta inteira em zip**
 (`fb.hm.hv2.xyz`, ~500 KB/s); e **não há tag nem release** (a versão é `0.3.0` em todos os zips). Não há endereço estável por arquivo, nem jeito de uma pessoa de fora instalar o app sem pedir o zip ao responsável.
 
 ### O que se deseja
