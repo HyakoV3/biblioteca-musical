@@ -205,7 +205,7 @@ async function principal() {
     perfil = mkdtempSync(join(tmpdir(), "bmccb-e2e-"));
     const chrome = spawn(
       acharChrome(),
-      ["--headless=new", "--no-sandbox", "--disable-gpu", "--mute-audio", "--autoplay-policy=no-user-gesture-required", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream",
+      ["--headless=new", "--no-sandbox", "--disable-gpu", "--disable-features=BackForwardCache", "--mute-audio", "--autoplay-policy=no-user-gesture-required", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream",
         "--window-size=412,915", `--user-data-dir=${perfil}`, `--remote-debugging-port=${PORTA_CHROME}`, "about:blank"],
       { stdio: "ignore", detached: true },
     );
@@ -240,22 +240,30 @@ async function principal() {
     };
     return { chrome, ws, enviar, av, perfilDele: perfil };
   };
+  // O gancho do console (para o diagnóstico do Gravador) é instalado em TODO documento novo, logo na criação: assim o rastro pega a 1ª abertura do banco, que acontece quando a tela inicial monta,
+  // bem antes de o teste entrar na aba Gravador.
+  const GANCHO_CONSOLE = `(() => { if (window.__avisos) return; window.__avisos = []; for (const nivel of ['warn', 'debug']) { const w = console[nivel].bind(console); console[nivel] = (...a) => { try { window.__avisos.push(nivel + ': ' + a.map((x) => { try { return String(x); } catch { return Object.prototype.toString.call(x); } }).join(' ').slice(0, 200)); if (window.__avisos.length > 400) window.__avisos.shift(); } catch {} w(...a); }; } })()`;
+  // A SONDA: o app abre (e cria) o banco `bmccb-gravacoes` quando a tela inicial monta. A sonda NÃO abre banco nenhum (abrir esse com outra versão ou sem as tabelas estragaria o app): espera o
+  // banco do APP aparecer em `indexedDB.databases()`, o que só acontece depois de a abertura dele terminar. Se não aparece em 10 s, esse Chrome é descartado e outro sobe.
+  const sondaDoBanco = (av) => av(`new Promise((r) => { const ini = Date.now(); const olhar = async () => { try { const lista = await indexedDB.databases(); if (lista.some((d) => d.name === 'bmccb-gravacoes')) return r(true); } catch {} if (Date.now() - ini > 10000) return r(false); setTimeout(olhar, 200); }; olhar(); })`);
   let sessao = null;
   for (let tentativa = 1; tentativa <= 3; tentativa++) {
     sessao = await abrirChrome();
     await sessao.enviar("Page.enable");
     await sessao.enviar("Runtime.enable");
+    await sessao.enviar("Page.addScriptToEvaluateOnNewDocument", { source: GANCHO_CONSOLE });
     await sessao.enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
     await esperarUrl(`http://127.0.0.1:${PORTA_VITE}/`, 30000);
     await dormir(1500);
-    const idbOk = await sessao.av(`new Promise((r) => { try { const q = indexedDB.open('__sonda_e2e'); q.onsuccess = () => { q.result.close(); r(true); }; q.onerror = () => r(false); q.onblocked = () => r(false); setTimeout(() => r(false), 4000); } catch { r(false); } })`);
+    const idbOk = await sondaDoBanco(sessao.av);
     // BMCCB_E2E_FORCAR_REINICIO=1 finge uma sonda sem resposta na 1ª tentativa: serve para conferir, na máquina, que o reinício do Chrome funciona.
     const simulado = process.env.BMCCB_E2E_FORCAR_REINICIO === "1" && tentativa === 1;
     if (idbOk && !simulado) {
-      if (tentativa > 1) console.log(`Chrome com IndexedDB funcionando na tentativa ${tentativa}`);
+      if (tentativa > 1) console.log(`Chrome com o banco do app funcionando na tentativa ${tentativa}`);
       break;
     }
-    console.log(`AVISO: este Chrome subiu com o IndexedDB sem resposta (tentativa ${tentativa} de 3): descartando-o e subindo outro`);
+    const rastroDaSonda = await sessao.av(`(window.__avisos ?? []).slice(-12)`).catch(() => null);
+    console.log(`AVISO: o banco do app não abriu neste Chrome (tentativa ${tentativa} de 3): descartando-o e subindo outro. Rastro: ${JSON.stringify(rastroDaSonda)}`);
     sessao.ws.close();
     encerrar(sessao.chrome, "SIGTERM");
     await aguardarGrupo(sessao.chrome, 4000);
@@ -1077,7 +1085,7 @@ async function principal() {
       await dormir(200);
     }
     // O estouro da espera aparece como falha própria, para não ficar escondido atrás do "audio: false, itens: 0" da conferência seguinte.
-    const motivo = apareceu ? null : await av(`({ avisos: (window.__avisos ?? []).slice(-30), texto: (document.getElementById('painel-gravador')?.innerText ?? '').replace(/\\s+/g, ' ').slice(0, 300), alertas: [...document.querySelectorAll('#painel-gravador [role="alert"], #painel-gravador .aviso')].map((e) => e.textContent.trim().slice(0, 120)), audios: document.querySelectorAll('#painel-gravador audio').length })`);
+    const motivo = apareceu ? null : await av(`(async () => ({ avisos: (window.__avisos ?? []).slice(-30), texto: (document.getElementById('painel-gravador')?.innerText ?? '').replace(/\\s+/g, ' ').slice(0, 300), alertas: [...document.querySelectorAll('#painel-gravador [role="alert"], #painel-gravador .aviso')].map((e) => e.textContent.trim().slice(0, 120)), audios: document.querySelectorAll('#painel-gravador audio').length, bancos: await indexedDB.databases().then((l) => l.map((d) => d.name + '@' + d.version), (e) => 'databases() falhou: ' + e) }))()`);
     confere(apareceu, `Gravador: a gravação apareceu na lista em até 10 s (esperava ${quantas})${motivo ? ` — a tela mostrava: ${JSON.stringify(motivo)}` : ""}`);
     await dormir(150); // deixa o resto da linha (tempo, tamanho, formato) terminar de ser desenhado
   };
@@ -1096,7 +1104,7 @@ async function principal() {
   };
   await limparLista(); // começa sem gravações de execuções anteriores (o armazenamento do Chrome do teste é novo, mas assim vale também em outra ordem)
   // O gancho que conta os microfones abertos e permite atrasar ou mudar o microfone do teste; recarregar a página o perde, então é reinstalado a cada recarga.
-  const instalarGanchoDoMicrofone = () => av(`window.__avisos = []; for (const nivel of ['warn', 'debug']) { const w = console[nivel].bind(console); console[nivel] = (...a) => { try { window.__avisos.push(nivel + ': ' + a.map((x) => { try { return String(x); } catch { return Object.prototype.toString.call(x); } }).join(' ').slice(0, 200)); } catch {} w(...a); }; } window.__microfones = []; const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = async (c) => { window.__pedido = c; await new Promise((r) => setTimeout(r, window.__atrasoMic ?? 0)); let f = await pedir(c); if (window.__micMudo) { f.getTracks().forEach((t) => t.stop()); const ctx = new AudioContext(); f = ctx.createMediaStreamDestination().stream; } f.getTracks().forEach((t) => window.__microfones.push(t)); return f; }; 1`);
+  const instalarGanchoDoMicrofone = () => av(`window.__microfones = []; const pedir = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices); navigator.mediaDevices.getUserMedia = async (c) => { window.__pedido = c; await new Promise((r) => setTimeout(r, window.__atrasoMic ?? 0)); let f = await pedir(c); if (window.__micMudo) { f.getTracks().forEach((t) => t.stop()); const ctx = new AudioContext(); f = ctx.createMediaStreamDestination().stream; } f.getTracks().forEach((t) => window.__microfones.push(t)); return f; }; 1`);
   await instalarGanchoDoMicrofone();
   const g0 = await estadoGravador();
   confere(g0.pressionado === "false" && g0.audio === false && g0.erro === false, `Gravador: começa parado, sem gravação e sem erro: ${JSON.stringify(g0)}`);
@@ -1109,7 +1117,7 @@ async function principal() {
   await esperarGravacao();
   const g2 = await estadoGravador();
   confere(g2.pressionado === "false" && g2.audio === true && g2.ativos === 0 && /^0:0[1-3] · .+ · (webm|ogg|mp4)/.test(g2.info ?? ""), `Gravador: ao parar entrega a gravação (tempo, tamanho e formato) e devolve o microfone: ${JSON.stringify(g2)}`);
-  await av(`document.querySelector('.gravacao-item .ouvir').click(); 1`);
+  await av(`document.querySelector('.gravacao-item .ouvir')?.click(); 1`);
   await dormir(500);
   const tocavel = await av(`new Promise((ok) => { const a = document.querySelector('.gravacao-item audio'); if (!a) return ok(null); const fim = setTimeout(() => ok(null), 4000); a.addEventListener('durationchange', () => { if (Number.isFinite(a.duration)) { clearTimeout(fim); ok({ duracao: a.duration, erro: !!a.error }); } }); a.load(); })`);
   confere(tocavel && tocavel.erro === false && Number.isFinite(tocavel.duracao) && tocavel.duracao > 1 && tocavel.duracao < 4, `Gravador: o arquivo gravado carrega no player, com a duração certa (~2 s, e não infinita): ${JSON.stringify(tocavel)}`);
@@ -1301,12 +1309,12 @@ async function principal() {
   await abrirGravador(); // recarrega o app
   const depoisDeRecarregar = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, resumo: document.getElementById('resumo-gravacoes')?.textContent.replace(/\\s+/g, ' ').trim() ?? null })`);
   confere(depoisDeRecarregar.itens === 1 && /^1 /.test(depoisDeRecarregar.resumo ?? ""), `Gravador: a gravação guardada sobrevive a recarregar o app: ${JSON.stringify(depoisDeRecarregar)}`);
-  await av(`document.querySelector('.gravacao-item .apagar').click(); 1`);
+  await av(`document.querySelector('.gravacao-item .apagar')?.click(); 1`);
   await dormir(200);
-  const pedeConfirmar = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, texto: document.querySelector('.gravacao-item .apagar').textContent.trim() })`);
+  const pedeConfirmar = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, texto: (document.querySelector('.gravacao-item .apagar')?.textContent.trim() ?? null) })`);
   confere(pedeConfirmar.itens === 1 && /Really delete|Apagar mesmo|Borrar de verdad/.test(pedeConfirmar.texto), `Gravador: o primeiro toque em Apagar só pede confirmação (nada some): ${JSON.stringify(pedeConfirmar)}`);
   await dormir(4300); // sem o segundo toque o botão volta
-  const voltou = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, texto: document.querySelector('.gravacao-item .apagar').textContent.trim() })`);
+  const voltou = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, texto: (document.querySelector('.gravacao-item .apagar')?.textContent.trim() ?? null) })`);
   confere(voltou.itens === 1 && /^(Delete|Apagar|Borrar)$/.test(voltou.texto), `Gravador: sem o segundo toque a confirmação some e a gravação fica: ${JSON.stringify(voltou)}`);
   await apagarPrimeira();
   const apagou = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, resumo: !!document.getElementById('resumo-gravacoes'), vazio: !!document.getElementById('lista-vazia') })`);
@@ -1319,7 +1327,7 @@ async function principal() {
   const antesDeParar = await av(`document.querySelectorAll('.gravacao-item').length`);
   await av(`document.getElementById('gravar').click(); 1`);
   await esperarGravacao(antesDeParar + 1);
-  await av(`document.querySelector('.gravacao-item .ouvir').click(); 1`);
+  await av(`document.querySelector('.gravacao-item .ouvir')?.click(); 1`);
   await dormir(900);
   const tocaDeVerdade = await av(`(() => { const a = document.querySelector('.gravacao-item audio'); return a ? { pausado: a.paused, tempo: a.currentTime, erro: !!a.error } : null; })()`);
   confere(tocaDeVerdade && tocaDeVerdade.pausado === false && tocaDeVerdade.tempo > 0 && tocaDeVerdade.erro === false, `Gravador: o primeiro "Ouvir" toca e não se pausa sozinho: ${JSON.stringify(tocaDeVerdade)}`);
