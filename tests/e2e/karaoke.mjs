@@ -1598,13 +1598,12 @@ async function principal() {
     await enviar("Emulation.setDeviceMetricsOverride", { width: largura, height: 915, deviceScaleFactor: 1, mobile: true });
     await dormir(400);
     const nome = await av(`(() => {
-      const visivel = [document.querySelector('header .nome-senhor'), document.querySelector('header .textos p')].find((e) => e && e.offsetParent !== null);
-      const h = document.querySelector('header h1'); if (!visivel || !h) return { semVisivel: true, largura: window.innerWidth, estreita: matchMedia('(max-width: 22.4999em)').matches, larga: matchMedia('(min-width: 22.5em)').matches, nome: document.querySelector('header .nome-senhor') ? getComputedStyle(document.querySelector('header .nome-senhor')).display : null, sub: document.querySelector('header .textos p') ? getComputedStyle(document.querySelector('header .textos p')).display : null };
-      const r = visivel.getBoundingClientRect(); const rh = h.getBoundingClientRect(); const lh = parseFloat(getComputedStyle(h).lineHeight);
-      return { texto: visivel.textContent.trim(), ao_lado: visivel.matches('.nome-senhor'), tituloUmaLinha: rh.height <= lh * 1.2, fraseCabe: visivel.scrollWidth <= visivel.clientWidth + 1 && r.right <= window.innerWidth && r.left >= 0,
-        naCaixa: [...document.querySelectorAll('main .aviso')].some((e) => e.textContent.includes(visivel.textContent.trim())) };
+      const n = document.querySelector('header .nome-senhor'); const h = document.querySelector('header h1'); if (!n || !h || n.offsetParent === null) return { semFrase: true };
+      const r = n.getBoundingClientRect(); const rh = h.getBoundingClientRect(); const lh = parseFloat(getComputedStyle(h).lineHeight);
+      return { texto: n.textContent.trim(), ao_lado: r.top < rh.bottom, tituloUmaLinha: rh.height <= lh * 1.2, tituloInteiro: h.scrollWidth <= h.clientWidth + 1 && rh.right <= window.innerWidth,
+        fraseCabe: n.scrollWidth <= n.clientWidth + 1 && r.right <= window.innerWidth && r.left >= 0, naCaixa: [...document.querySelectorAll('main .aviso')].some((e) => e.textContent.includes(n.textContent.trim())) };
     })()`);
-    confere(nome && /Lord Jesus|Senhor Jesus|Señor Jesús/.test(nome.texto) && nome.tituloUmaLinha && nome.fraseCabe && !nome.naCaixa, `Ajustes (${largura} px): "Em nome do Senhor Jesus" na barra de cima (${nome?.ao_lado ? "ao lado do título" : "abaixo do título, em tela estreita"}), o título Ajustes numa linha só e a frase inteira na tela: ${JSON.stringify(nome)}`);
+    confere(nome && /Lord Jesus|Senhor Jesus|Señor Jesús/.test(nome.texto) && nome.tituloUmaLinha && nome.tituloInteiro && nome.fraseCabe && !nome.naCaixa, `Ajustes (${largura} px): "Em nome do Senhor Jesus" na barra de cima (${nome?.ao_lado ? "ao lado do título" : "na linha de baixo, em tela estreita"}), o título Ajustes numa linha só e a frase inteira na tela: ${JSON.stringify(nome)}`);
   }
   await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
   await dormir(300);

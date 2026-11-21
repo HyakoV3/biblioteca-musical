@@ -136,9 +136,8 @@
 
 <svelte:head><title>{t("ajustes.titulo")} · Biblioteca Musical</title></svelte:head>
 
-<!-- "Em nome do Senhor Jesus": ao lado do título quando cabe (`.nome-senhor`); em tela estreita, ou com letra grande, o título ia quebrar no meio da palavra, então a frase desce para a linha de baixo do
-     título (o subtítulo da barra). Os dois levam o mesmo texto e só um aparece de cada vez (o corte é em `em`, então acompanha o tamanho da letra). -->
-<Barra titulo={t("ajustes.titulo")} subtitulo={t("sobre.nome_titulo")} {voltar} rotuloVoltar={t("nav.voltar")}>
+<!-- "Em nome do Senhor Jesus": ao lado do título quando cabe e, se não couber (tela estreita, letra grande), na linha de baixo, à direita (`quebra`): o título não quebra no meio da palavra. -->
+<Barra titulo={t("ajustes.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} quebra>
   {#snippet acao()}<span class="nome-senhor">{t("sobre.nome_titulo")}</span>{/snippet}
 </Barra>
 
@@ -345,11 +344,8 @@
 </main>
 
 <style>
-  /* "Em nome do Senhor Jesus": ao lado do título quando cabe, numa linha só; abaixo de 22,5em (360 px com a letra padrão, e mais largo com a letra maior) desce para a linha de baixo do título. */
+  /* "Em nome do Senhor Jesus": numa linha só, com o tamanho acompanhando a largura da tela. Se não couber ao lado do título, a própria barra o põe na linha de baixo (`quebra`). */
   .nome-senhor { display: block; white-space: nowrap; font-size: clamp(0.7rem, 3.4vw, 1rem); font-weight: 600; color: var(--suave); text-align: end; }
-  :global(header .textos p) { white-space: nowrap; font-weight: 600; }
-  @media (min-width: 22.5em) { :global(header .textos p) { display: none; } }
-  @media not all and (min-width: 22.5em) { .nome-senhor { display: none; } }
   section { margin-bottom: 0.9rem; }
   .versao { margin: 0 0 1.5rem; text-align: center; }
   .sobre p, .sobre li { line-height: 1.5; }
