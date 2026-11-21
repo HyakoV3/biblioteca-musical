@@ -1551,7 +1551,7 @@ async function principal() {
   const cabem = async (id) => {
     await av(`document.getElementById('aba-${id}').click(); 1`);
     await dormir(700);
-    return av(`(() => { const bs = [...document.querySelectorAll('#painel-${id} .recentes button')]; const ult = bs.at(-1)?.getBoundingClientRect(); return { n: bs.length, fimUltimo: ult ? Math.round(ult.bottom + window.scrollY) : null, tela: window.innerHeight, rolagemMax: document.documentElement.scrollHeight - window.innerHeight }; })()`);
+    return av(`(() => { const bs = [...document.querySelectorAll('#painel-${id} .recentes button')]; const ult = bs.at(-1)?.getBoundingClientRect(); return { n: bs.length, fimUltimo: ult ? Math.round(ult.bottom + window.scrollY) : null, tela: Math.round(window.innerHeight - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--altura-navegacao')) || 0) - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--altura-miniplayer')) || 0)), rolagemMax: document.documentElement.scrollHeight - window.innerHeight }; })()`);
   };
   const metEmPe = await cabem('metronomo');
   confere(metEmPe.n >= 1 && metEmPe.n <= 10 && metEmPe.fimUltimo <= metEmPe.tela, `Metrônomo (celular em pé): a lista dos últimos mostra só os ${metEmPe.n} que cabem na tela, sem cortar nenhum: ${JSON.stringify(metEmPe)}`);
@@ -1572,6 +1572,8 @@ async function principal() {
   await dormir(500);
   await av(`document.querySelector('#painel-afinador .tocar-pilula').click(); 1`);
   await dormir(800);
+  await av(`const b = document.querySelectorAll('#painel-afinador .oitava button')[1]; b.click(); b.click(); 1`); // sobe duas oitavas COM o tom soando: não registra
+  await dormir(300);
   await av(`document.querySelector('#painel-afinador .tocar-pilula').click(); 1`); // para
   await dormir(300);
   const afi1 = await av(`({ salvo: localStorage.getItem('prefs.afinador'), lista: [...document.querySelectorAll('#painel-afinador .recentes button')].map((b) => b.textContent.trim()) })`);

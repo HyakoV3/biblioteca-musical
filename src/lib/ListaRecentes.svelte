@@ -34,7 +34,10 @@
     if (!secao || !ul || !li || !secao.offsetParent) return; // sem lista, ou aba escondida: nada a medir
     const topo = ul.getBoundingClientRect().top + window.scrollY;
     const vao = parseFloat(getComputedStyle(ul).rowGap) || 0;
-    const novo = quantosCabem(window.innerHeight - topo - MARGEM_BAIXO, li.getBoundingClientRect().height, vao, itens.length);
+    // A barra de abas e o miniplayer são fixos e cobrem o rodapé: o que fica atrás deles não conta como espaço.
+    const css = getComputedStyle(document.documentElement);
+    const reservado = (parseFloat(css.getPropertyValue("--altura-miniplayer")) || 0) + (parseFloat(css.getPropertyValue("--altura-navegacao")) || 0);
+    const novo = quantosCabem(window.innerHeight - reservado - topo - MARGEM_BAIXO, li.getBoundingClientRect().height, vao, itens.length);
     if (novo !== quantos) quantos = novo;
   }
 
@@ -45,12 +48,15 @@
     return () => cancelAnimationFrame(quadro);
   });
   $effect(() => {
-    if (typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => medir());
-    ro.observe(document.documentElement);
+    // `resize` vale sempre (girar o aparelho); o ResizeObserver só existe em WebViews recentes. As barras fixas avisam da própria altura pelo `style` da raiz (variáveis CSS).
     window.addEventListener("resize", medir);
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => medir()) : null;
+    ro?.observe(document.documentElement);
+    const mo = typeof MutationObserver !== "undefined" ? new MutationObserver(() => medir()) : null;
+    mo?.observe(document.documentElement, { attributes: true, attributeFilter: ["style"] });
     return () => {
-      ro.disconnect();
+      ro?.disconnect();
+      mo?.disconnect();
       window.removeEventListener("resize", medir);
     };
   });
@@ -60,7 +66,7 @@
   <section class="recentes" bind:this={secao} aria-label={titulo}>
     <h2>{titulo}</h2>
     <ul>
-      {#each visiveis as item, i (i)}
+      {#each visiveis as item (rotulo(item))}
         <li>
           <button class="botao" aria-current={atual(item)} onclick={() => aoEscolher(item)}>{rotulo(item)}</button>
         </li>

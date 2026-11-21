@@ -55,6 +55,7 @@
   async function usarRecente(n: NotaRecente) {
     classe = n.classe;
     oitava = n.oitava;
+    registrarNota();
     reproducao.parar();
     await soar("nota", frequenciaDe(midiDe(n.classe, n.oitava), LA_PADRAO));
   }
@@ -94,7 +95,6 @@
     encerrou = false;
     contagem.cancelar(); // a contagem da nota anterior não pode terminar no meio da troca
     tocando = qual;
-    if (qual === "nota") registrarNota(); // a nota entra na lista de recentes quando é pedida (a de agora é a escolhida na tela)
     try {
       await tom.tocar(freq);
       if (minha === tentativa) contagem.iniciar(limite); // a contagem começa quando o tom começa de fato, e recomeça a cada nota nova
@@ -112,6 +112,7 @@
   async function alternar(qual: "la" | "nota") {
     if (tocando === qual) return parar();
     reproducao.parar(); // um som de cada vez: dar o tom para o hino que tocava (ou que ainda estava carregando)
+    if (qual === "nota") registrarNota(); // só entra nos recentes a nota pedida de propósito (como no metrônomo): trocar de nota ou de oitava com o tom soando não registra
     await soar(qual, qual === "la" ? LA_PADRAO : freqNota);
   }
 
