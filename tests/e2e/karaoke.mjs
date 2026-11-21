@@ -71,7 +71,8 @@ const STUB = `window.__TAURI_INTERNALS__ = {
   invoke: async (cmd, args) => {
     if (cmd === "carregar_hinario") {
       const sem = sessionStorage.getItem("e2e-sem-partituras") === "1";
-      return { hinario: ${JSON.stringify(hinario)}, exemplo: false, partituras: sem ? [] : [999] };
+      // "e2e-exemplo": o app começa só com o pacote de exemplo (o caso do primeiro acesso, em que oferece baixar o hinário).
+      return { hinario: ${JSON.stringify(hinario)}, exemplo: sessionStorage.getItem("e2e-exemplo") === "1", partituras: sem ? [] : [999] };
     }
     if (cmd === "remover_partituras") {
       window.__removeu = (window.__removeu ?? 0) + 1;
@@ -1523,6 +1524,30 @@ async function principal() {
   await clicarGrande(1); // para
   await dormir(300);
 
+  // ---- O aviso do primeiro acesso: com só o pacote de exemplo, oferece baixar o hinário; "Agora não" o dispensa e a escolha é lembrada; o mesmo botão segue em Ajustes ----
+  const RAIZ_URL = `http://127.0.0.1:${PORTA_VITE}/`;
+  const irParaInicio = async () => {
+    await enviar("Page.navigate", { url: RAIZ_URL });
+    for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-afinador')`)); ) await dormir(250);
+    await dormir(700);
+  };
+  const estadoAviso = () => av(`({ aberto: !!document.querySelector('dialog.aviso-hinario[open]'), titulo: document.querySelector('dialog.aviso-hinario h2')?.textContent ?? null, baixar: document.getElementById('hinario-baixar')?.textContent.replace(/\\s+/g, ' ').trim() ?? null, agoraNao: !!document.getElementById('hinario-agora-nao'), lembrado: localStorage.getItem('prefs.hinario_aviso') })`);
+  await av(`localStorage.removeItem('prefs.hinario_aviso'); sessionStorage.setItem('e2e-exemplo', '1'); 1`);
+  await irParaInicio();
+  const av0 = await estadoAviso();
+  confere(av0.aberto && av0.agoraNao && /\d/.test(av0.baixar ?? "") && av0.lembrado === null, `Primeiro acesso: com só o pacote de exemplo, o aviso para baixar o hinário abre, com Baixar (e o tamanho) e Agora não: ${JSON.stringify(av0)}`);
+  await av(`document.getElementById('hinario-agora-nao').click(); 1`);
+  await dormir(400);
+  const av1 = await estadoAviso();
+  confere(!av1.aberto && av1.lembrado === 'dispensado', `"Agora não" fecha o aviso e a escolha é lembrada: ${JSON.stringify(av1)}`);
+  await irParaInicio();
+  const av2 = await estadoAviso();
+  confere(!av2.aberto, `depois de dispensar, o aviso não volta ao reabrir o app: ${JSON.stringify(av2)}`);
+  await av(`sessionStorage.removeItem('e2e-exemplo'); localStorage.removeItem('prefs.hinario_aviso'); 1`);
+  await irParaInicio();
+  const av3 = await estadoAviso();
+  confere(!av3.aberto, `com o hinário de verdade instalado o aviso não aparece: ${JSON.stringify(av3)}`);
+
   // ---- Ajustes: o que ficou aberto é lembrado, o valor ruim volta ao padrão e o link da aba Partitura abre o Conteúdo sem gravar (I-24, fatias 3 e 4) ----
   const AJ = `http://127.0.0.1:${PORTA_VITE}/ajustes`;
   const irParaAjustes = async (url) => {
@@ -1531,6 +1556,13 @@ async function principal() {
     await dormir(500);
   };
   const estadoCartoes = () => av(`(() => { const a = (id) => document.getElementById(id)?.open; return { aparencia: a('cartao-aparencia'), idioma: a('cartao-idioma'), conteudo: a('conteudo'), salvo: localStorage.getItem('prefs.ajustes') }; })()`);
+  await irParaAjustes(AJ);
+  await av(`document.querySelector('#conteudo summary').click(); 1`);
+  await dormir(300);
+  const linhaHinario = await av(`(() => { const l = [...document.querySelectorAll('#conteudo .pacote')].find((e) => e.querySelector('strong')?.textContent.trim() === 'Full hymnal'); return { achou: !!l, detalhe: l?.querySelector('.meta')?.textContent.trim() ?? null, remover: l?.querySelector('button')?.textContent.trim() ?? null }; })()`);
+  confere(linhaHinario.achou && /Installed/.test(linhaHinario.detalhe ?? "") && linhaHinario.remover === 'Remove', `Ajustes → Conteúdo: o hinário aparece como uma linha de pacote (instalado, com Remover): ${JSON.stringify(linhaHinario)}`);
+  await av(`document.querySelector('#conteudo summary').click(); 1`);
+  await dormir(200);
   await irParaAjustes(AJ);
   await av(`localStorage.removeItem('prefs.ajustes'); 1`);
   await irParaAjustes(AJ);

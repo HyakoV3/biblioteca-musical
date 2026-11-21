@@ -18,6 +18,7 @@
   import { CREDITOS, semLicenca, textoDaLicenca } from "$lib/licencas";
   import { traduzirErro } from "$lib/erros";
   import { LIMITE_JSON_BYTES, listaCurta } from "$lib/pacote";
+  import { hinario } from "$lib/hinario/hinario.svelte";
   import { partituras } from "$lib/partituras/partituras.svelte";
   import { lerAjustes, salvarAjustes } from "$lib/preferencias";
 
@@ -77,6 +78,19 @@
       resultado = { tipo: "erro", texto: t("importar.erro", { erro: traduzirErro(String(err), t) }) };
     }
   }
+
+  // --- Hinário: baixar do servidor (o texto e a música dos hinos não vão dentro do app) e remover, no molde das partituras. ---
+  const hinarioInstalado = $derived(biblioteca.pacote !== null && !biblioteca.pacote.exemplo);
+  const estadoHinario = $derived.by(() => {
+    const estado = hinarioInstalado ? t("hinario.instalado") : hinario.disponivel ? t("hinario.nao_instalado") : t("hinario.indisponivel");
+    return hinario.disponivel ? `${formatarMB(hinario.bytes, i18n.idioma)} · ${estado}` : estado;
+  });
+  const erroDoHinario = $derived.by(() => {
+    const e = hinario.andamento.erro;
+    if (!e) return "";
+    if ("codigo" in e) return t(e.codigo === "rede" ? "sons.erro_rede" : "sons.erro_arquivo");
+    return traduzirErro(e.bruto, t);
+  });
 
   // --- Partituras (I-08): baixar do servidor e remover, no molde dos sons gravados. ---
   const instaladas = $derived(biblioteca.pacote?.partituras.length ?? 0);
@@ -198,14 +212,29 @@
         <strong>{!biblioteca.pacote ? "…" : biblioteca.pacote.exemplo ? t("ajustes.hinario_exemplo") : biblioteca.pacote.hinario.hinario.nome}</strong>
         <span class="meta">{!biblioteca.pacote ? "" : biblioteca.pacote.exemplo ? t("biblioteca.aviso_exemplo") : i18n.tn("plural.hinos", biblioteca.pacote.hinario.hinos.length)}</span>
       </p>
+      <p class="meta">{t("hinario.explica")}</p>
+      <LinhaPacote
+        titulo={t("hinario.pacote")}
+        detalhe={estadoHinario}
+        fase={hinario.andamento.fase === "baixando" || hinario.andamento.fase === "conferindo" || hinario.andamento.fase === "instalando" ? hinario.andamento.fase : "ocioso"}
+        progresso={hinario.andamento.progresso}
+        textoBaixando={t("hinario.baixando", { n: Math.round(hinario.andamento.progresso * 100) })}
+        textoConferindo={t("hinario.conferindo")}
+        textoInstalando={t("hinario.instalando")}
+        instalado={hinarioInstalado}
+        rotuloRemover={t("hinario.remover")}
+        aoRemover={() => (confirmando = true)}
+        rotuloBaixar={hinario.disponivel ? t("hinario.baixar", { tamanho: formatarMB(hinario.bytes, i18n.idioma) }) : undefined}
+        aoBaixar={() => hinario.baixar()}
+      />
+      {#if hinario.andamento.fase === "erro"}
+        <Aviso tipo="erro">{erroDoHinario}</Aviso>
+      {/if}
       <div class="acoes lado-a-lado">
-        <label class="botao primario">
+        <label class="botao">
           {t("importar.botao")}
           <input type="file" accept=".json,application/json" onchange={importar} hidden />
         </label>
-        {#if biblioteca.pacote && !biblioteca.pacote.exemplo}
-          <button class="botao perigo" onclick={() => (confirmando = true)}>{t("importar.remover")}</button>
-        {/if}
       </div>
       {#if confirmando}
         <div class="confirma" role="alertdialog" aria-labelledby="confirma-titulo" aria-describedby="confirma-texto">
