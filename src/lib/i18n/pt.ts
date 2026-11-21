@@ -209,6 +209,7 @@ export const pt = {
   "gravador.erro_ler": "Não foi possível ler as gravações guardadas neste aparelho.",
   "gravador.erro_guardar": "Não foi possível guardar esta gravação (o espaço do app pode estar cheio). Ouça abaixo antes de descartar.",
   "gravador.perdida": "A gravação foi perdida: não deu para guardá-la ao sair da tela (o espaço do app pode estar cheio ou o armazenamento falhou).",
+  "gravador.perdida_incerta": "A gravação pode não ter sido guardada: o armazenamento demorou demais ao sair da tela. Confira a lista de gravações.",
   "gravador.fechar_aviso": "Entendi",
   "gravador.pronta": "Gravação pronta, {tempo}.",
   "gravador.sua_gravacao": "Sua gravação",

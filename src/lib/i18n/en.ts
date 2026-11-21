@@ -209,6 +209,7 @@ export const en: Dicionario = {
   "gravador.erro_ler": "Could not read the recordings saved on this device.",
   "gravador.erro_guardar": "Could not save this recording (the app's storage may be full). Listen below before discarding it.",
   "gravador.perdida": "The recording was lost: it could not be saved when leaving the screen (the app's storage may be full or failed).",
+  "gravador.perdida_incerta": "The recording may not have been saved: storage took too long when leaving the screen. Check the recordings list.",
   "gravador.fechar_aviso": "Got it",
   "gravador.pronta": "Recording ready, {tempo}.",
   "gravador.sua_gravacao": "Your recording",

@@ -209,6 +209,7 @@ export const es: Dicionario = {
   "gravador.erro_ler": "No se pudieron leer las grabaciones guardadas en este dispositivo.",
   "gravador.erro_guardar": "No se pudo guardar esta grabación (el espacio de la app puede estar lleno). Escúchela abajo antes de descartarla.",
   "gravador.perdida": "La grabación se perdió: no se pudo guardar al salir de la pantalla (el espacio de la app puede estar lleno o el almacenamiento falló).",
+  "gravador.perdida_incerta": "Puede que la grabación no se haya guardado: el almacenamiento tardó demasiado al salir de la pantalla. Revise la lista de grabaciones.",
   "gravador.fechar_aviso": "Entendido",
   "gravador.pronta": "Grabación lista, {tempo}.",
   "gravador.sua_gravacao": "Su grabación",

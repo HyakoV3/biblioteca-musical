@@ -58,8 +58,8 @@
   <!-- A gravação segue em outra aba (gravar com o metrônomo no fone): o aviso fica à vista fora da aba Gravador, com o Parar. O tempo é só visual; o leitor de tela
        ouve apenas que há uma gravação em curso (nada de anunciar segundo a segundo). -->
   {#if emCurso.perdida}
-    <Aviso tipo="erro"><span id="gravacao-perdida">{t("gravador.perdida")}</span></Aviso>
-    <button class="botao" onclick={() => (emCurso.perdida = false)}>{t("gravador.fechar_aviso")}</button>
+    <Aviso tipo="erro"><span id="gravacao-perdida">{t(emCurso.perdida === "incerta" ? "gravador.perdida_incerta" : "gravador.perdida")}</span></Aviso>
+    <button class="botao" onclick={() => (emCurso.perdida = null)}>{t("gravador.fechar_aviso")}</button>
   {/if}
   {#if emCurso.gravando && inicio.aba !== "gravador"}
     <div id="gravando-aviso" class="gravando-aviso" role="status">
