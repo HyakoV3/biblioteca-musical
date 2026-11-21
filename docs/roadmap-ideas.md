@@ -155,7 +155,7 @@ Botões "parte anterior" e "próxima parte" (Intro, 1ª, 2ª...) no miniplayer e
 
 ## I-20 — Metrônomo embutido
 
-- **Status:** rascunho de desenho escrito (2026-11-20); aguardando revisão e a decisão do responsável sobre as perguntas 1, 2 e 4
+- **Status:** **desenho revisado (Opus 5) e decidido pelo responsável (2026-11-20); implementação em andamento, por partes** (1: agendador puro; 2: aba e som; 3: serviço Kotlin e tela bloqueada; 4: Gravador em segundo plano). Em aberto só o que está listado em "Decisões do responsável" como futuro (o gauge de ponteiro)
 - **Origem:** pedido do responsável, 2026-11-16: "fazer um metrônomo também, embutido".
 - **Prioridade:** a definir
 - **Nota (2026-11-17):** a tela inicial vai ter abas de ferramentas (I-28: `Hinos | Afinador | Gravador | …`, "entre outras"). Se o metrônomo também for uma aba, a pergunta 3 ("onde fica") se resolve por ela.
@@ -169,10 +169,10 @@ tocando, ou para entrar no tempo certo, é preciso outro aplicativo.
 Um **metrônomo dentro do app**: um clique regular no andamento do hino (e ajustável), com o primeiro tempo do compasso
 acentuado, que se liga e desliga.
 
-### Rascunho de desenho (2026-11-20, revisado pelo Opus 5 no mesmo dia: primeira versão, aba própria, sem tocar com o hino)
+### Desenho (2026-11-20, revisado pelo Opus 5 e decidido pelo responsável: aba própria, primeira etapa sem tocar junto com o hino, mas com tela bloqueada)
 Escopo da **primeira etapa**: uma ferramenta de estudo independente do player. Fica de fora (etapa 2): tocar por cima do hino, contagem de entrada
 antes da música, o compasso vindo do hino e ligar ao andamento do hino aberto. Em princípio é front (Svelte/TypeScript); **não mexe no conversor nem no
-`hinario.json`**. Isso só deixa de valer se o responsável quiser o clique com a tela bloqueada (pergunta A, abaixo: pede Kotlin).
+`hinario.json`**. **Exceção, decidida (A):** o clique continua com a tela bloqueada, e isso exige **Kotlin** (serviço em primeiro plano); a etapa 1 deixa de ser só front.
 
 #### Tela (aba Metrônomo)
 - **Andamento:** reaproveitar o `ControleAndamento.svelte` (− −5 valor +5 +, com `aria-live`), que hoje usa 40 a 160 (`ANDAMENTO_MIN/MAX` em `reproducao.svelte.ts`):
@@ -207,9 +207,9 @@ Clique sintetizado (oscilador curto com envoltória rápida; o 1º tempo mais ag
   com a mesma guarda de geração do `TomSustentado` (Iniciar→Parar rápido e sair da aba durante o `await resume()`). `parar()` mantém o contexto e `sair()` o fecha com atraso, como o Afinador.
   Ouvir `ctx.onstatechange`: se sair de `running` com o metrônomo ligado (ligação telefônica, outro app com o foco de áudio), **parar e avisar** na tela, sem tentar `resume()` sozinho (sem gesto falha).
 - **Segundo plano:** sem serviço, o Chrome limita os temporizadores da página escondida (a ~1 por segundo; com som nos últimos 30 s a limitação é mínima) e o Android pode congelar o processo.
-  Por isso, **na etapa 1 sem serviço: para ao esconder o app, e avisa na tela** (como o `afinador.explica`). O Gravador agora segue gravando porque ganhou um serviço em primeiro plano com microfone
-  (`ServicoAudio.kt`); para o metrônomo seguir seria preciso um terceiro motivo ali (como `gravando`) e uma notificação "Metrônomo · Parar", e uma janela adaptativa (~100 ms com a tela à vista,
-  ~2 s escondido, bpm travado). `sincronizarServico` **não** serve como está (`ligadoCom` é um só e o layout o desliga sempre que `reproducao.estado` muda).
+  **Decisão A (substitui a ideia de "parar ao esconder"):** o metrônomo **continua com a tela bloqueada** até a pessoa parar. Para isso entra um terceiro motivo no `ServicoAudio.kt` (como `gravando`), a
+  notificação "Metrônomo · Parar", o wake lock sem limite enquanto ligado e uma janela de agendamento adaptativa (~100 ms com a tela à vista, ~2 s escondido; `JANELA`/`JANELA_ESCONDIDA` em `metronomo.ts`).
+  `sincronizarServico` **não** serve como está (`ligadoCom` é um só e o layout o desliga sempre que `reproducao.estado` muda).
 - **Módulo puro e testável:** "dado o bpm, o compasso, o último instante e o agora, quais cliques agendar" fica numa função pura (`agendar(estado, agora, janela)` → `[{tempo, indice}]`),
   testada no vitest com relógio falso; o `AudioContext` entra só na casca fina.
 
@@ -223,10 +223,13 @@ com a fonte do sistema a 130% e 200%, e na barra lateral com o celular deitado),
 - **vitest (função pura, relógio falso):** 1000 cliques com `t_n = t0 + n·p` (±1e-9), sem deriva; troca de bpm e de compasso no meio da janela; recuperação depois de 3 s sem rajada; reinício no 1º tempo.
 - **e2e (Chrome mudo):** interceptar `AudioScheduledSourceNode.prototype.start` guardando `{when, agora: context.currentTime, hz}` (há precedente de trocar `AudioContext` em `karaoke.mjs`). A 240 bpm
   (30 cliques ≈ 7,5 s): (a) todo `when − agora > 0`; (b) intervalos = 60/bpm ± 1 ms e nenhum `when` repetido; (c) o mesmo com um laço ocupado de 150 ms; (d) acento a cada n cliques, conferido pelo `hz`
-  (substitui o "audivelmente diferente"); (e) nenhum `start` depois de esconder o app e `context.state === "closed"` ao sair da aba.
+  (substitui o "audivelmente diferente"); (e) **escondido, o clique continua** (decisão A): com a página escondida os `start` seguem, a janela passa a ~2 s e os intervalos continuam em 60/bpm; e `context.state === "closed"` só ao **parar** (não ao esconder).
   O Chrome do e2e roda com `--autoplay-policy=no-user-gesture-required`, então o gesto não é provado por ele: contar as chamadas a `new AudioContext` antes do clique em Iniciar (devem ser 0).
 - Uma sonda `window.__bmccbMetronomo` só em desenvolvimento (como `__bmccbTom` em `tom.ts`), com estado, fila e um analisador. Também amostrar a bolinha acesa a cada 25 ms contra `currentTime − outputLatency`.
-- Para ao esconder o app (etapa 1 sem serviço), ao sair da aba e ao desmontar, e libera o `AudioContext`.
+- **Serviço em primeiro plano (A):** ligar o metrônomo liga o serviço (`iniciarMetronomo`/`pararMetronomo` na ponte), a notificação "Metrônomo · Parar" aparece e o botão para o clique de verdade (como o "Parar" do hino e da gravação);
+  o serviço só se encerra quando hino, gravação e metrônomo estão todos parados; o wake lock não expira com o metrônomo ligado; se o Android recusar o serviço, o JavaScript é avisado e o metrônomo para com um aviso na tela.
+- Para só quando a pessoa manda (botão na tela ou na notificação), quando o sistema tira o áudio (ligação, outro app: aviso na tela) ou quando um hino começa a tocar (sem fone, regra F). **Sair da aba não o para** (B: gravar com o clique no fone);
+  ao desmontar a tela o `AudioContext` fica enquanto o clique estiver ligado, e é liberado ao parar.
 - Respeita tema, `rem` e movimento reduzido; alvos de 3rem; textos nos 3 idiomas.
 
 #### Decisões do responsável (2026-11-20, depois da revisão)
