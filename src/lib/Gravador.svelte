@@ -3,7 +3,7 @@
   import Aviso from "./Aviso.svelte";
   import Icone from "./Icone.svelte";
   import ItemGravacao from "./ItemGravacao.svelte";
-  import { DetectorDeSom, Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nivelParaBarra, nomeDoFormato, rastro, suavizarBarra, type Gravacao, type MotivoDoErro } from "./gravador";
+  import { DetectorDeSom, Gravador, LIMITE_PARA_PARAR_MS, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nivelParaBarra, nomeDoFormato, rastro, suavizarBarra, type Gravacao, type MotivoDoErro } from "./gravador";
   import { LIMITE_PARA_GUARDAR_MS, TAMANHO_DA_PAGINA, comLimite, gravacoes, type MetaGravacao, type Resumo } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
   import { emCurso } from "./gravacaoEmCurso.svelte";
@@ -102,6 +102,7 @@
   async function iniciar() {
     const minha = ++tentativa;
     erro = null;
+    emCurso.perdida = false;
     descartar();
     // Sem fone, um som de cada vez: o hino que tocava calaria dentro da gravação. Com fone, o hino segue e o microfone só ouve a pessoa.
     if (!foneConectado()) {
@@ -370,12 +371,17 @@
   /** A tela inicial se foi (a pessoa abriu um hino) com a gravação seguindo em outra aba: para, GUARDA o que foi gravado e devolve o microfone. */
   async function pararEGuardarAoSair() {
     try {
-      const nova = await gravador.parar();
-      if (nova) {
-        URL.revokeObjectURL(nova.url);
-        await gravacoes.salvar(nova.blob, nova.tipo, nova.segundos);
+      const nova = await comLimite(gravador.parar(), LIMITE_PARA_PARAR_MS, "o gravador demorou demais para parar");
+      if (!nova) {
+        emCurso.perdida = true;
+        return;
       }
+      URL.revokeObjectURL(nova.url);
+      // Com o mesmo limite de espera de `guardar()`: um armazenamento lento não deixa a escrita pendente para sempre.
+      await comLimite(gravacoes.salvar(nova.blob, nova.tipo, nova.segundos), LIMITE_PARA_GUARDAR_MS, "o armazenamento demorou demais para guardar a gravação");
     } catch (e) {
+      // A tela do Gravador já se foi: o aviso vai por um estado global, que a tela inicial mostra quando a pessoa voltar a ela.
+      emCurso.perdida = true;
       console.warn("gravador: não foi possível guardar a gravação ao sair da tela", e);
     } finally {
       gravador.soltar();
