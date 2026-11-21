@@ -138,3 +138,36 @@ describe("nota mais próxima", () => {
     for (const ruim of [0, -440, NaN, Infinity, -Infinity]) expect(notaMaisProxima(440, ruim), String(ruim)).toBeNull();
   });
 });
+
+import { nomeDaNota as nome, nomeDaNotaPorExtenso as extenso, nomeDaTonalidade, sistemaDe } from "../src/lib/notacao";
+
+describe("nomes das notas em sílabas ou letras", () => {
+  it("automático segue o idioma; sílabas e letras forçam o sistema", () => {
+    expect(sistemaDe("auto", "pt")).toBe("pt");
+    expect(sistemaDe("auto", "en")).toBe("en");
+    expect(sistemaDe("silabas", "en")).toBe("pt");
+    expect(sistemaDe("silabas", "es")).toBe("es");
+    expect(sistemaDe("letras", "pt")).toBe("en");
+    expect(nome(10, "pt")).toBe("Si♭");
+    expect(nome(10, "pt", "letras")).toBe("B♭");
+    expect(nome(10, "en", "silabas")).toBe("Si♭");
+    expect(nome(0, "es", "silabas")).toBe("Do");
+    expect(nome(1, "pt", "letras")).toBe("C♯");
+  });
+  it("por extenso diz bemol ou flat na língua da interface, também com letras", () => {
+    expect(extenso(10, "pt", "letras")).toBe("B bemol");
+    expect(extenso(10, "en", "silabas")).toBe("Si flat");
+    expect(extenso(6, "es")).toBe("Fa sostenido");
+  });
+  it("a tonalidade do hinário muda de sistema sem trocar a grafia (Ré♭ não vira Dó♯) e traduz maior e menor", () => {
+    expect(nomeDaTonalidade("Si♭ maior", "pt", "auto")).toBe("Si♭ maior");
+    expect(nomeDaTonalidade("Si♭ maior", "pt", "letras")).toBe("B♭ maior");
+    expect(nomeDaTonalidade("Ré♭ maior", "pt", "letras")).toBe("D♭ maior");
+    expect(nomeDaTonalidade("Mi♭ maior", "en", "auto")).toBe("E♭ major");
+    expect(nomeDaTonalidade("Mi♭ maior", "es", "auto")).toBe("Mi♭ mayor");
+    expect(nomeDaTonalidade("Sol maior", "en", "silabas")).toBe("Sol major");
+    expect(nomeDaTonalidade("Sib maior", "pt", "letras")).toBe("B♭ maior"); // "b" digitado vale como bemol
+    expect(nomeDaTonalidade("Fá# menor", "pt", "letras")).toBe("F♯ menor");
+    expect(nomeDaTonalidade("tonalidade livre", "pt", "letras")).toBe("tonalidade livre"); // o que não se reconhece volta como veio
+  });
+});

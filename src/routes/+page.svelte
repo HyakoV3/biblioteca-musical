@@ -8,6 +8,9 @@
   import AvisoHinario from "$lib/AvisoHinario.svelte";
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
+  import { reproducao } from "$lib/reproducao.svelte";
+  import { nomeDaTonalidade } from "$lib/notacao";
+  import { notacao } from "$lib/notacao.svelte";
   import Icone from "$lib/Icone.svelte";
   import Estado from "$lib/Estado.svelte";
   import { traduzirErro } from "$lib/erros";
@@ -97,14 +100,19 @@
     {#if hinos.length}
       <ul>
         {#each hinos as h (h.numero)}
+          {@const estado = reproducao.atual?.numero === h.numero ? reproducao.estado : "parado"}
           <li>
-            <a href={`/hino/${h.numero}`}>
+            <a href={`/hino/${h.numero}`} class:tocando={estado === "tocando"} class:pausado={estado === "pausado"}>
               <span class="num"><span aria-hidden="true" class="zeros">{zerosAEsquerda(h.numero)}</span>{h.numero}</span>
               <span class="titulo">
                 <span>{h.titulo}</span>
                 {#if h.autoria}<span class="autoria">{h.autoria}</span>{/if}
               </span>
-              {#if h.tonalidade}<small>{h.tonalidade}</small>{/if}
+              {#if estado !== "parado"}
+                <!-- O hino que está tocando (ou pausado) leva a borda de destaque E um ícone (não só a cor); o leitor de tela ouve o estado. -->
+                <span class="estado"><Icone nome={estado === "tocando" ? "som" : "pause"} tamanho={18} /><span class="so-leitor">{t(estado === "tocando" ? "biblioteca.tocando" : "biblioteca.pausado")}</span></span>
+              {/if}
+              {#if h.tonalidade}<small>{nomeDaTonalidade(h.tonalidade, i18n.idioma, notacao.atual)}</small>{/if}
             </a>
           </li>
         {/each}
@@ -168,6 +176,10 @@
     padding: 0.5rem 0.9rem; text-decoration: none; color: var(--texto);
     background: var(--superficie); border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem;
   }
+  /* O hino que toca: borda na cor de destaque (um fio a mais por fora, sem mexer no tamanho da caixa) e o ícone de som; pausado, a borda fica mais fraca e o ícone é o de pausa. */
+  li > a.tocando { border-color: var(--acento); box-shadow: 0 0 0 0.0625rem var(--acento); }
+  li > a.pausado { border-color: color-mix(in srgb, var(--acento) 55%, var(--borda-controle)); }
+  .estado { flex: none; display: inline-flex; color: var(--acento); }
   /* Três dígitos com zeros à esquerda e algarismos de mesma largura: os números alinham em coluna. */
   .botao-icone { min-width: 3rem; padding: 0; }
   .num { font-weight: 700; min-width: 2.8rem; font-variant-numeric: tabular-nums; }
