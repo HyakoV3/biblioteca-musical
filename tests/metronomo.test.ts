@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BPM_MAX, BPM_MIN, Metronomo, agendar, compassoValido, limitarBpm, novoEstado, progressoNoCompasso, tempoAceso, type Clique, type EstadoAgenda } from "../src/lib/metronomo";
+import { BPM_MAX, BPM_MIN, COMPASSOS, Metronomo, agendar, compassoValido, ladoDoClique, posicaoDoPendulo, limitarBpm, novoEstado, progressoNoCompasso, tempoAceso, type Clique, type EstadoAgenda } from "../src/lib/metronomo";
 
 /** Roda o agendador como o temporizador de 25 ms faria, até `fim` (s), e devolve todos os cliques. */
 function simular(p: { bpm: number | ((t: number) => number); compasso: number | ((t: number) => number); fim: number; passo?: number; janela?: number }) {
@@ -96,9 +96,9 @@ describe("agendar (função pura)", () => {
     const nan = agendar(novoEstado(), { bpm: 120, compasso: 4, agora: 5, janela: 0.1, atrasoInicial: NaN });
     expect(nan.cliques[0].tempo).toBeCloseTo(5.1, 9);
     expect(agendar(novoEstado(), { bpm: 120, compasso: 2.5, agora: 0, janela: 1 }).cliques).toEqual([]);
-    const ruim = agendar({ ultimo: 1, indice: NaN }, { bpm: 120, compasso: 4, agora: 1, janela: 1 });
+    const ruim = agendar({ ultimo: 1, indice: NaN, n: NaN }, { bpm: 120, compasso: 4, agora: 1, janela: 1 });
     expect(ruim.cliques.every((c) => Number.isInteger(c.indice))).toBe(true);
-    expect(agendar({ ultimo: NaN, indice: 0 }, { bpm: 120, compasso: 4, agora: 1, janela: 0.2 }).cliques[0].tempo).toBeCloseTo(1.1, 9);
+    expect(agendar({ ultimo: NaN, indice: 0, n: 0 }, { bpm: 120, compasso: 4, agora: 1, janela: 0.2 }).cliques[0].tempo).toBeCloseTo(1.1, 9);
   });
 
   it("andamento e compasso inválidos não agendam nada", () => {
@@ -117,10 +117,10 @@ describe("agendar (função pura)", () => {
 
 describe("bolinha", () => {
   const fila: Clique[] = [
-    { tempo: 1, indice: 0 },
-    { tempo: 1.5, indice: 1 },
-    { tempo: 2, indice: 2 },
-    { tempo: 2.5, indice: 3 },
+    { tempo: 1, indice: 0, n: 0 },
+    { tempo: 1.5, indice: 1, n: 1 },
+    { tempo: 2, indice: 2, n: 2 },
+    { tempo: 2.5, indice: 3, n: 3 },
   ];
   it("antes do primeiro clique não há posição", () => {
     expect(progressoNoCompasso(fila, 0.9, 120, 4)).toBeNull();
@@ -143,8 +143,67 @@ describe("bolinha", () => {
 
 describe("bolinha depois de trocar o andamento", () => {
   it("usa o espaçamento até o próximo clique da fila, não o andamento novo (sem travar nem saltar)", () => {
-    const fila: Clique[] = [{ tempo: 10, indice: 0 }, { tempo: 12, indice: 1 }]; // soaram a 30 bpm (2 s); o andamento atual já é 240
+    const fila: Clique[] = [{ tempo: 10, indice: 0, n: 0 }, { tempo: 12, indice: 1, n: 1 }]; // soaram a 30 bpm (2 s); o andamento atual já é 240
     expect(progressoNoCompasso(fila, 11, 240, 4)).toBeCloseTo(0.125, 9); // metade dos 2 s do 1º tempo
+  });
+});
+
+describe("pêndulo", () => {
+  const fila: Clique[] = [
+    { tempo: 1, indice: 0, n: 0 },
+    { tempo: 1.5, indice: 1, n: 1 },
+    { tempo: 2, indice: 2, n: 2 },
+    { tempo: 2.5, indice: 0, n: 3 }, // compasso de 3: o 1º tempo seguinte cai do lado direito, como num metrônomo de verdade
+  ];
+  it("antes do primeiro clique não há posição nem lado", () => {
+    expect(posicaoDoPendulo(fila, 0.5, 120)).toBeNull();
+    expect(ladoDoClique(fila, 0.5)).toBeNull();
+  });
+  it("cada clique é uma ponta (par à esquerda, ímpar à direita) e entre dois cliques a bolinha vai de uma ponta à outra", () => {
+    expect(posicaoDoPendulo(fila, 1, 120)).toBeCloseTo(0, 9);
+    expect(posicaoDoPendulo(fila, 1.25, 120)).toBeCloseTo(0.5, 9);
+    expect(posicaoDoPendulo(fila, 1.5, 120)).toBeCloseTo(1, 9);
+    expect(posicaoDoPendulo(fila, 1.75, 120)).toBeCloseTo(0.5, 9); // voltando
+    expect(posicaoDoPendulo(fila, 2, 120)).toBeCloseTo(0, 9);
+    expect(posicaoDoPendulo(fila, 2.5, 120)).toBeCloseTo(1, 9);
+    expect(ladoDoClique(fila, 1.2)).toBe(0);
+    expect(ladoDoClique(fila, 1.5)).toBe(1);
+  });
+  it("sem salto nem volta ao começo: a posição varia pouco entre instantes próximos, mesmo na virada do compasso", () => {
+    let antes = posicaoDoPendulo(fila, 1, 120)!;
+    for (let a = 1.01; a < 2.9; a += 0.01) {
+      const p = posicaoDoPendulo(fila, a, 120)!;
+      expect(Math.abs(p - antes)).toBeLessThan(0.05);
+      expect(p).toBeGreaterThanOrEqual(0);
+      expect(p).toBeLessThanOrEqual(1);
+      antes = p;
+    }
+  });
+  it("depois de batidas perdidas o pêndulo não salta: o intervalo cobre várias batidas e a bolinha faz o mesmo número de idas e vindas", () => {
+    for (const perdidas of [1, 2, 3]) {
+      const fila: Clique[] = [{ tempo: 10, indice: 0, n: 4 }, { tempo: 10 + 0.5 * (1 + perdidas), indice: (1 + perdidas) % 4, n: 5 + perdidas }];
+      let antes = posicaoDoPendulo(fila, 10, 120)!;
+      expect(antes).toBeCloseTo(0, 9); // n = 4: esquerda
+      for (let a = 10.01; a < 10 + 0.5 * (1 + perdidas); a += 0.01) {
+        const p = posicaoDoPendulo(fila, a, 120)!;
+        expect(Math.abs(p - antes)).toBeLessThan(0.05); // sem salto de largura total
+        expect(p).toBeGreaterThanOrEqual(0);
+        expect(p).toBeLessThanOrEqual(1);
+        antes = p;
+      }
+      expect(posicaoDoPendulo(fila, 10 + 0.5 * (1 + perdidas), 120)).toBeCloseTo((5 + perdidas) % 2, 9); // a ponta certa do clique seguinte
+    }
+  });
+
+  it("o agendador numera os cliques em sequência e mantém a numeração ao pular batidas perdidas", () => {
+    const a = agendar(novoEstado(), { bpm: 120, compasso: 3, agora: 0, janela: 1.2 });
+    expect(a.cliques.map((c) => c.n)).toEqual([0, 1, 2]);
+    expect(a.cliques.map((c) => c.indice)).toEqual([0, 1, 2]);
+    const tarde = agendar(a.estado, { bpm: 120, compasso: 3, agora: 3.05, janela: 0.1 });
+    const t0 = a.cliques[0].tempo;
+    const k = Math.round((tarde.cliques[0].tempo - t0) / 0.5);
+    expect(tarde.cliques[0].n).toBe(k); // o número do clique é a posição na grade desde o começo
+    expect(tarde.cliques[0].indice).toBe(k % 3);
   });
 });
 
@@ -155,9 +214,10 @@ describe("limites", () => {
     expect(limitarBpm(100.6)).toBe(101);
     expect(limitarBpm(NaN)).toBe(60);
   });
-  it("só 2, 3, 4 e 6 tempos", () => {
-    expect([2, 3, 4, 6].every(compassoValido)).toBe(true);
-    expect([1, 5, 8, "4", null, undefined].some(compassoValido)).toBe(false);
+  it("os compassos são 1, 2, 3, 4, 5, 6, 7, 9 e 12 tempos (os que o hinário usa, mais 1, 5 e 7 para estudar)", () => {
+    expect([...COMPASSOS]).toEqual([1, 2, 3, 4, 5, 6, 7, 9, 12]);
+    expect([1, 2, 3, 4, 5, 6, 7, 9, 12].every(compassoValido)).toBe(true);
+    expect([0, 8, 10, 11, 13, "4", null, undefined].some(compassoValido)).toBe(false);
   });
 });
 

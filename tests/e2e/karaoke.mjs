@@ -920,15 +920,26 @@ async function principal() {
   await av(`(() => { const b = [...document.querySelectorAll('#painel-metronomo .passo button')].find((x) => x.textContent.trim() === '+5'); for (let i = 0; i < 36; i++) b.click(); return 1; })()`);
   await dormir(200);
   const antesMet = await av(`({ painel: !document.getElementById('painel-metronomo').hidden, bpm: document.querySelector('#painel-metronomo .passo output').textContent.trim(), ctxs: window.__ctxs, cliques: window.__cliques.length, botoes: [...document.querySelectorAll('#painel-metronomo .compasso button')].length })`);
-  confere(antesMet.painel && /240/.test(antesMet.bpm) && antesMet.ctxs === 0 && antesMet.cliques === 0 && antesMet.botoes === 4, `Metrônomo: a aba abre, o andamento chega a 240 e NENHUM áudio nasce antes do toque em Iniciar: ${JSON.stringify(antesMet)}`);
+  confere(antesMet.painel && /240/.test(antesMet.bpm) && antesMet.ctxs === 0 && antesMet.cliques === 0 && antesMet.botoes === 9, `Metrônomo: a aba abre, o andamento chega a 240 e NENHUM áudio nasce antes do toque em Iniciar: ${JSON.stringify(antesMet)}`);
   await av(`document.getElementById('metronomo-iniciar').click(); 1`);
   await dormir(3000);
   const m1 = await av(`window.__cliques.map((c) => ({ w: c.when, a: c.agora, hz: c.hz }))`);
   const dif = m1.slice(1).map((c, i) => c.w - m1[i].w);
   confere(m1.length >= 10 && m1.every((c) => c.w - c.a > 0) && dif.every((d) => Math.abs(d - 0.25) < 0.001) && new Set(m1.map((c) => c.w)).size === m1.length, `Metrônomo: a 240 bpm os cliques são agendados à frente, a cada 0,25 s (±1 ms) e sem repetição: ${m1.length} cliques, desvio máx ${Math.max(...dif.map((d) => Math.abs(d - 0.25))).toFixed(6)}`);
   confere(m1.every((c, i) => (i % 4 === 0 ? c.hz > 1200 : c.hz < 1200)), `Metrônomo: o 1º tempo de cada compasso de 4 é o forte (mais agudo): ${m1.slice(0, 8).map((c) => Math.round(c.hz)).join(',')}`);
-  const estado1 = await av(`({ pressionado: document.getElementById('metronomo-iniciar').getAttribute('aria-pressed'), recente: [...document.querySelectorAll('#painel-metronomo .recentes button')].map((b) => b.textContent.trim()), pos: document.querySelector('#painel-metronomo .trilha').dataset.posicao, aceso: document.querySelector('#painel-metronomo .trilha').dataset.aceso })`);
+  const estado1 = await av(`({ pressionado: document.getElementById('metronomo-iniciar').getAttribute('aria-pressed'), recente: [...document.querySelectorAll('#painel-metronomo .recentes button')].map((b) => b.textContent.trim()), pos: document.querySelector('#painel-metronomo .pendulo').dataset.posicao, aceso: document.querySelector('#painel-metronomo .pendulo').dataset.aceso })`);
   confere(estado1.pressionado === 'true' && estado1.recente.length === 1 && /240/.test(estado1.recente[0]) && estado1.aceso !== '', `Metrônomo: ligado, a lista dos últimos tem o 240 · 4 tempos e a bolinha anda na trilha: ${JSON.stringify(estado1)}`);
+  // O pêndulo VAI E VOLTA: cada clique é uma ponta. Amostra a posição a cada 40 ms durante ~2 s (8 cliques a 240 bpm): ela fica entre 0 e 1, encosta nas duas pontas, muda de
+  // sentido várias vezes e nunca dá um salto grande (um deslizar sempre para a direita voltaria de 1 a 0 de uma vez).
+  const amostras = [];
+  for (let i = 0; i < 50; i++) {
+    amostras.push(await av(`parseFloat(document.querySelector('#painel-metronomo .pendulo').dataset.posicao)`));
+    await dormir(40);
+  }
+  const saltos = amostras.slice(1).map((v, i) => Math.abs(v - amostras[i]));
+  let viradas = 0;
+  for (let i = 2; i < amostras.length; i++) if ((amostras[i] - amostras[i - 1]) * (amostras[i - 1] - amostras[i - 2]) < -1e-6) viradas++;
+  confere(amostras.every((v) => v >= 0 && v <= 1) && Math.min(...amostras) < 0.12 && Math.max(...amostras) > 0.88 && viradas >= 4 && Math.max(...saltos) < 0.6, `Metrônomo: o pêndulo vai e volta (pontas ${Math.min(...amostras).toFixed(2)} e ${Math.max(...amostras).toFixed(2)}, ${viradas} viradas, maior salto ${Math.max(...saltos).toFixed(2)})`);
   // Escondido (tela bloqueada): o clique continua, e a grade segue em 0,25 s.
   const antesEsc = (await av(`window.__cliques.length`));
   await av(`Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); 1`);
