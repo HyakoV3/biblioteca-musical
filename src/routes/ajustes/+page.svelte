@@ -17,7 +17,9 @@
   import { ESTILOS, TEMAS, estilo, tema } from "$lib/tema.svelte";
   import { CREDITOS, semLicenca, textoDaLicenca } from "$lib/licencas";
   import { traduzirErro } from "$lib/erros";
-  import { LIMITE_JSON_BYTES, listaCurta } from "$lib/pacote";
+  import { listaCurta } from "$lib/pacote";
+  import { hinario } from "$lib/hinario/hinario.svelte";
+  import { instalando } from "$lib/instalando.svelte";
   import { partituras } from "$lib/partituras/partituras.svelte";
   import { lerAjustes, salvarAjustes } from "$lib/preferencias";
 
@@ -58,25 +60,18 @@
     : codigo === "outro" ? "sons.erro_outro"
     : "sons.erro_arquivo";
 
-  async function importar(e: Event) {
-    const input = e.currentTarget as HTMLInputElement;
-    const arquivo = input.files?.[0];
-    input.value = ""; // permite escolher o mesmo arquivo de novo
-    if (!arquivo) return;
-    resultado = null;
-    try {
-      // O tamanho vem do arquivo, antes de lê-lo para a memória: um arquivo enorme não é nem aberto. (O Rust confere o mesmo limite.)
-      if (arquivo.size > LIMITE_JSON_BYTES) throw JSON.stringify(["grande_demais"]);
-      const p = await biblioteca.importar(await arquivo.text());
-      reproducao.limpar(); // o conteúdo mudou: para o som e esquece os ajustes dos hinos antigos
-      resultado = {
-        tipo: "sucesso",
-        texto: t("importar.ok", { total: i18n.tn("plural.hinos", p.hinario.hinos.length), nome: p.hinario.hinario.nome }),
-      };
-    } catch (err) {
-      resultado = { tipo: "erro", texto: t("importar.erro", { erro: traduzirErro(String(err), t) }) };
-    }
-  }
+  // --- Hinário: baixar do servidor (o texto e a música dos hinos não vão dentro do app) e remover, no molde das partituras. ---
+  const hinarioInstalado = $derived(biblioteca.pacote !== null && !biblioteca.pacote.exemplo);
+  const estadoHinario = $derived.by(() => {
+    const estado = hinarioInstalado ? t("hinario.instalado") : hinario.disponivel ? t("hinario.nao_instalado") : t("hinario.indisponivel");
+    return hinario.disponivel ? `${formatarMB(hinario.bytes, i18n.idioma)} · ${estado}` : estado;
+  });
+  const erroDoHinario = $derived.by(() => {
+    const e = hinario.andamento.erro;
+    if (!e) return "";
+    if ("codigo" in e) return t(e.codigo === "rede" ? "sons.erro_rede" : "sons.erro_arquivo");
+    return traduzirErro(e.bruto, t);
+  });
 
   // --- Partituras (I-08): baixar do servidor e remover, no molde dos sons gravados. ---
   const instaladas = $derived(biblioteca.pacote?.partituras.length ?? 0);
@@ -198,15 +193,25 @@
         <strong>{!biblioteca.pacote ? "…" : biblioteca.pacote.exemplo ? t("ajustes.hinario_exemplo") : biblioteca.pacote.hinario.hinario.nome}</strong>
         <span class="meta">{!biblioteca.pacote ? "" : biblioteca.pacote.exemplo ? t("biblioteca.aviso_exemplo") : i18n.tn("plural.hinos", biblioteca.pacote.hinario.hinos.length)}</span>
       </p>
-      <div class="acoes lado-a-lado">
-        <label class="botao primario">
-          {t("importar.botao")}
-          <input type="file" accept=".json,application/json" onchange={importar} hidden />
-        </label>
-        {#if biblioteca.pacote && !biblioteca.pacote.exemplo}
-          <button class="botao perigo" onclick={() => (confirmando = true)}>{t("importar.remover")}</button>
-        {/if}
-      </div>
+      <p class="meta">{t("hinario.explica")}</p>
+      <LinhaPacote
+        titulo={t("hinario.pacote")}
+        detalhe={estadoHinario}
+        fase={hinario.andamento.fase === "baixando" || hinario.andamento.fase === "conferindo" || hinario.andamento.fase === "instalando" ? hinario.andamento.fase : "ocioso"}
+        progresso={hinario.andamento.progresso}
+        textoBaixando={t("hinario.baixando", { n: Math.round(hinario.andamento.progresso * 100) })}
+        textoConferindo={t("hinario.conferindo")}
+        textoInstalando={t("hinario.instalando")}
+        instalado={hinarioInstalado}
+        rotuloRemover={t("hinario.remover")}
+        aoRemover={() => (confirmando = true)}
+        rotuloBaixar={hinario.disponivel ? t("hinario.baixar", { tamanho: formatarMB(hinario.bytes, i18n.idioma) }) : undefined}
+        aoBaixar={() => hinario.baixar()}
+        desabilitarBaixar={instalando.ocupado}
+      />
+      {#if hinario.andamento.fase === "erro"}
+        <Aviso tipo="erro">{erroDoHinario}</Aviso>
+      {/if}
       {#if confirmando}
         <div class="confirma" role="alertdialog" aria-labelledby="confirma-titulo" aria-describedby="confirma-texto">
           <h3 id="confirma-titulo">{t("ajustes.remover_titulo")}</h3>
@@ -236,6 +241,7 @@
           aoRemover={() => partituras.remover()}
           rotuloBaixar={partituras.disponivel ? t("partituras.baixar", { tamanho: formatarMB(partituras.bytes, i18n.idioma) }) : undefined}
           aoBaixar={() => partituras.baixar()}
+          desabilitarBaixar={instalando.ocupado}
         />
         {#if partituras.andamento.fase === "erro"}
           <Aviso tipo="erro">{erroDasPartituras}</Aviso>
@@ -376,8 +382,6 @@
   .segmentos input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
   .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0; }
   /* Os botões do hinário ficam sempre lado a lado, cada um com metade da linha; o texto quebra em duas linhas quando não cabe. */
-  .acoes.lado-a-lado { flex-wrap: nowrap; }
-  .acoes.lado-a-lado .botao { flex: 1 1 0; min-width: 0; padding: 0.4rem 0.5rem; text-align: center; line-height: 1.2; }
   .hinario-info { display: grid; gap: 0.15rem; margin: 0.2rem 0 0.4rem; }
   .confirma { margin: 0.8rem 0; padding: 1rem; border: 0.0625rem solid var(--perigo); border-radius: 0.75rem; background: var(--superficie); }
   .confirma h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }

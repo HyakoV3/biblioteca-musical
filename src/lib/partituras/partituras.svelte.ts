@@ -1,6 +1,7 @@
 // Estado do pacote de partituras: o andamento do download e o que foi recusado na instalação. O que está INSTALADO vem do Rust
 // (`biblioteca.pacote.partituras`). Usado pela tela Ajustes (Baixar e Remover), no mesmo molde dos sons gravados.
 import { biblioteca, type Recusada } from "../biblioteca.svelte";
+import { instalando } from "../instalando.svelte";
 import { baixarZip } from "../sons/baixar";
 import { ErroPacote, sha256Hex, type CodigoErro } from "../sons/extrair";
 import { baixarEInstalar, extrairDaPastaReal, type Fase } from "./baixar";
@@ -24,6 +25,8 @@ async function baixar() {
   const pacote = MANIFESTO.pacote;
   if (!pacote || !pacote.url) return;
   if (andamento.fase === "baixando" || andamento.fase === "conferindo" || andamento.fase === "instalando") return;
+  if (instalando.ocupado) return; // o hinário está sendo baixado: as partituras seriam instaladas contra o pacote de exemplo
+  instalando.ocupar();
   recusadas = [];
   andamento = { fase: "baixando", progresso: 0, erro: null };
   try {
@@ -36,6 +39,8 @@ async function baixar() {
     andamento = OCIOSO;
   } catch (e) {
     andamento = { fase: "erro", progresso: 0, erro: e instanceof ErroPacote ? { codigo: e.codigo } : { bruto: String(e) } };
+  } finally {
+    instalando.liberar();
   }
 }
 

@@ -5,6 +5,7 @@
   import Gravador from "$lib/Gravador.svelte";
   import Metronomo from "$lib/Metronomo.svelte";
   import Aviso from "$lib/Aviso.svelte";
+  import AvisoHinario from "$lib/AvisoHinario.svelte";
   import Barra from "$lib/Barra.svelte";
   import { biblioteca } from "$lib/biblioteca.svelte";
   import Icone from "$lib/Icone.svelte";
@@ -53,6 +54,8 @@
     </a>
   {/snippet}
 </Barra>
+
+<AvisoHinario />
 
 <main class="coluna conteudo">
   <!-- A gravação segue em outra aba (gravar com o metrônomo no fone): o aviso fica à vista fora da aba Gravador, com o Parar. O tempo é só visual; o leitor de tela

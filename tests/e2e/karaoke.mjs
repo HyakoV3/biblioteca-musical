@@ -5,7 +5,7 @@
 // desligar o botão apaga tudo. Depois confere a aba Partitura (I-08): quando aparece, o SVG embutido seguindo o tema, o zoom, a
 // fonte Leipzig e o aviso para Ajustes. Precisa de um Chrome ou Chromium instalado (variável CHROME para indicar o caminho).
 import { spawn, execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, truncateSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
@@ -71,7 +71,8 @@ const STUB = `window.__TAURI_INTERNALS__ = {
   invoke: async (cmd, args) => {
     if (cmd === "carregar_hinario") {
       const sem = sessionStorage.getItem("e2e-sem-partituras") === "1";
-      return { hinario: ${JSON.stringify(hinario)}, exemplo: false, partituras: sem ? [] : [999] };
+      // "e2e-exemplo": o app começa só com o pacote de exemplo (o caso do primeiro acesso, em que oferece baixar o hinário).
+      return { hinario: ${JSON.stringify(hinario)}, exemplo: sessionStorage.getItem("e2e-exemplo") === "1", partituras: sem ? [] : [999] };
     }
     if (cmd === "remover_partituras") {
       window.__removeu = (window.__removeu ?? 0) + 1;
@@ -898,30 +899,17 @@ async function principal() {
   confere(marca.logo.l === marca.botao.l && marca.logo.a === marca.botao.a, `a logo tem o tamanho do botão de Ajustes: ${JSON.stringify(marca)}`);
   confere(marca.carregou && marca.barraRem <= 3.6, `a imagem da logo carrega e a barra continua com ~3,5rem (${marca.barraRem}rem)`);
 
-  // Ajustes: "Importar hinário" aceita SÓ .json (o hinário vai deixar de ser importado; as partituras têm o card próprio).
+  // Ajustes: o hinário não se importa mais de arquivo (baixa-se do servidor, como as partituras): não há seletor de arquivo na tela.
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes` });
-  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('input[type="file"]')`)); ) await dormir(250);
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('conteudo')`)); ) await dormir(250);
   // Os blocos de Ajustes são cartões fechados de saída, com o estado na linha de cima (I-24): o Conteúdo mostra o hinário, as partituras e os sons.
   const resumoFechado = await av(`(() => { const d = document.getElementById('conteudo'); return { aberto: d.open, resumo: d.querySelector('summary').innerText.replace(/\\s+/g, ' ') }; })()`);
   confere(!resumoFechado.aberto && /\d+\s+(scores?|partituras?)/i.test(resumoFechado.resumo), `Ajustes: o cartão Conteúdo começa fechado e mostra o estado na linha de cima: ${JSON.stringify(resumoFechado)}`);
   // O texto de um cartão fechado não é renderizado: abre o Conteúdo antes de ler o que há dentro (hinário, partituras, sons).
   await av("document.getElementById('conteudo').open = true; 1");
   await dormir(400);
-  const aceita = await av(`document.querySelector('input[type="file"]').getAttribute('accept')`);
-  confere(/json/.test(aceita) && !/zip/i.test(aceita), `Importar hinário aceita só .json: accept="${aceita}"`);
-
-  // Arquivo acima de 20 MB: recusado pelo tamanho, sem ser lido. O arquivo é ESPARSO (só o tamanho conta, não ocupa disco).
-  const raiz = (await enviar("DOM.getDocument", {})).result.root.nodeId;
-  const entrada = (await enviar("DOM.querySelector", { nodeId: raiz, selector: 'input[type="file"]' })).result.nodeId;
-  confere(entrada > 0, "o seletor de arquivo de Ajustes foi encontrado");
-  const caminhoGrande = join(perfil, "hinario-enorme.json");
-  writeFileSync(caminhoGrande, "{");
-  truncateSync(caminhoGrande, 21 * 1024 * 1024);
-  await av("window.__leu = false; for (const m of ['text', 'arrayBuffer']) { const o = Blob.prototype[m]; Blob.prototype[m] = function () { window.__leu = true; return o.call(this); }; } 1");
-  await enviar("DOM.setFileInputFiles", { nodeId: entrada, files: [caminhoGrande] });
-  await dormir(1500);
-  const grande = await av(`({ leu: window.__leu, texto: document.body.innerText })`);
-  confere(!grande.leu && /20 MB/.test(grande.texto), `hinário de 21 MiB: recusado pelo tamanho, sem ser lido: ${JSON.stringify({ leu: grande.leu, tem20MB: /20 MB/.test(grande.texto) })}`);
+  const semArquivo = await av(`document.querySelectorAll('input[type="file"]').length`);
+  confere(semArquivo === 0, `Ajustes não tem mais o botão de importar hinário de arquivo: ${semArquivo} seletores`);
 
   // O card Partituras (no molde dos sons gravados): com partituras instaladas mostra "Instaladas" e Remover; remover chama só o comando
   // de remover partituras; depois, sem pacote publicado (manifesto vazio), não há botão Baixar nem importação manual.
@@ -1523,6 +1511,30 @@ async function principal() {
   await clicarGrande(1); // para
   await dormir(300);
 
+  // ---- O aviso do primeiro acesso: com só o pacote de exemplo, oferece baixar o hinário; "Agora não" o dispensa e a escolha é lembrada; o mesmo botão segue em Ajustes ----
+  const RAIZ_URL = `http://127.0.0.1:${PORTA_VITE}/`;
+  const irParaInicio = async () => {
+    await enviar("Page.navigate", { url: RAIZ_URL });
+    for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-afinador')`)); ) await dormir(250);
+    await dormir(700);
+  };
+  const estadoAviso = () => av(`({ aberto: !!document.querySelector('dialog.aviso-hinario[open]'), titulo: document.querySelector('dialog.aviso-hinario h2')?.textContent ?? null, baixar: document.getElementById('hinario-baixar')?.textContent.replace(/\\s+/g, ' ').trim() ?? null, agoraNao: !!document.getElementById('hinario-agora-nao'), lembrado: localStorage.getItem('prefs.hinario_aviso') })`);
+  await av(`localStorage.removeItem('prefs.hinario_aviso'); sessionStorage.setItem('e2e-exemplo', '1'); 1`);
+  await irParaInicio();
+  const av0 = await estadoAviso();
+  confere(av0.aberto && av0.agoraNao && /\d/.test(av0.baixar ?? "") && av0.lembrado === null, `Primeiro acesso: com só o pacote de exemplo, o aviso para baixar o hinário abre, com Baixar (e o tamanho) e Agora não: ${JSON.stringify(av0)}`);
+  await av(`document.getElementById('hinario-agora-nao').click(); 1`);
+  await dormir(400);
+  const av1 = await estadoAviso();
+  confere(!av1.aberto && av1.lembrado === 'dispensado', `"Agora não" fecha o aviso e a escolha é lembrada: ${JSON.stringify(av1)}`);
+  await irParaInicio();
+  const av2 = await estadoAviso();
+  confere(!av2.aberto, `depois de dispensar, o aviso não volta ao reabrir o app: ${JSON.stringify(av2)}`);
+  await av(`sessionStorage.removeItem('e2e-exemplo'); localStorage.removeItem('prefs.hinario_aviso'); 1`);
+  await irParaInicio();
+  const av3 = await estadoAviso();
+  confere(!av3.aberto, `com o hinário de verdade instalado o aviso não aparece: ${JSON.stringify(av3)}`);
+
   // ---- Ajustes: o que ficou aberto é lembrado, o valor ruim volta ao padrão e o link da aba Partitura abre o Conteúdo sem gravar (I-24, fatias 3 e 4) ----
   const AJ = `http://127.0.0.1:${PORTA_VITE}/ajustes`;
   const irParaAjustes = async (url) => {
@@ -1531,6 +1543,13 @@ async function principal() {
     await dormir(500);
   };
   const estadoCartoes = () => av(`(() => { const a = (id) => document.getElementById(id)?.open; return { aparencia: a('cartao-aparencia'), idioma: a('cartao-idioma'), conteudo: a('conteudo'), salvo: localStorage.getItem('prefs.ajustes') }; })()`);
+  await irParaAjustes(AJ);
+  await av(`document.querySelector('#conteudo summary').click(); 1`);
+  await dormir(300);
+  const linhaHinario = await av(`(() => { const l = [...document.querySelectorAll('#conteudo .pacote')].find((e) => e.querySelector('strong')?.textContent.trim() === 'Full hymnal'); return { achou: !!l, detalhe: l?.querySelector('.meta')?.textContent.trim() ?? null, remover: l?.querySelector('button')?.textContent.trim() ?? null }; })()`);
+  confere(linhaHinario.achou && /Installed/.test(linhaHinario.detalhe ?? "") && linhaHinario.remover === 'Remove', `Ajustes → Conteúdo: o hinário aparece como uma linha de pacote (instalado, com Remover): ${JSON.stringify(linhaHinario)}`);
+  await av(`document.querySelector('#conteudo summary').click(); 1`);
+  await dormir(200);
   await irParaAjustes(AJ);
   await av(`localStorage.removeItem('prefs.ajustes'); 1`);
   await irParaAjustes(AJ);
