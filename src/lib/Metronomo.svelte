@@ -67,6 +67,7 @@
   <p class="meta">{t("metronomo.explica")}</p>
 
   {#if metronomo.erroAudio}<Aviso tipo="erro">{t("metronomo.erro_audio")}</Aviso>{/if}
+  {#if metronomo.erroServico}<Aviso tipo="erro">{t("metronomo.erro_servico")}</Aviso>{/if}
   {#if metronomo.interrompido}<Aviso tipo="info">{t("metronomo.interrompido")}</Aviso>{/if}
 
   <div class="andamento"><ControleAndamento {cfg} editavel={true} min={BPM_MIN} max={BPM_MAX} /></div>

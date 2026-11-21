@@ -933,7 +933,7 @@ async function principal() {
   const antesEsc = (await av(`window.__cliques.length`));
   await av(`Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); 1`);
   await dormir(2500);
-  const m2 = await av(`window.__cliques.map((c) => c.w)`);
+  const m2 = await av(`window.__cliques.map((c) => c.when)`);
   const dif2 = m2.slice(1).map((w, i) => w - m2[i]);
   confere(m2.length > antesEsc + 6 && dif2.every((d) => Math.abs(d - 0.25) < 0.001), `Metrônomo: com a página escondida o clique CONTINUA (antes ${antesEsc}, depois ${m2.length}) e a grade segue em 0,25 s (maior desvio ${Math.max(...dif2.map((d) => Math.abs(d - 0.25))).toFixed(4)}; intervalos fora: ${JSON.stringify(dif2.map((d, i) => [i, +d.toFixed(4)]).filter(([, d]) => Math.abs(d - 0.25) >= 0.001).slice(0, 5))})`);
   await av(`Object.defineProperty(document, 'hidden', { configurable: true, get: () => false }); document.dispatchEvent(new Event('visibilitychange')); 1`);

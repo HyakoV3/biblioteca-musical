@@ -168,6 +168,7 @@ export const es: Dicionario = {
   "metronomo.status_off": "Metrónomo detenido.",
   "metronomo.erro_audio": "No se pudo iniciar el audio en este dispositivo.",
   "metronomo.interrompido": "El audio fue interrumpido por otra aplicación o una llamada y el metrónomo se detuvo.",
+  "metronomo.erro_servico": "Android no permitió mantener el metrónomo con la pantalla bloqueada, así que se detuvo. Inténtalo de nuevo con la app abierta.",
   "afinador.explica": "Toca una nota de referencia para afinar de oído. El sonido se detiene al salir de esta pestaña.",
   "afinador.la": "La 440 Hz",
   "afinador.outra_nota": "Otra nota",

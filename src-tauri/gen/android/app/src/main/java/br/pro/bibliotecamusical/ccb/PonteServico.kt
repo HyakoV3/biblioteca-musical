@@ -28,6 +28,16 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
                 wv.post { wv.evaluateJavascript("window.__bmccbGravacaoParadaPelaNotificacao && window.__bmccbGravacaoParadaPelaNotificacao()", null) }
             }
         }
+        ServicoAudio.aoPararMetronomo = {
+            fraca.get()?.let { wv ->
+                wv.post { wv.evaluateJavascript("window.__bmccbMetronomoParadoPelaNotificacao && window.__bmccbMetronomoParadoPelaNotificacao()", null) }
+            }
+        }
+        ServicoAudio.aoFalharMetronomo = {
+            fraca.get()?.let { wv ->
+                wv.post { wv.evaluateJavascript("window.__bmccbServicoDoMetronomoFalhou && window.__bmccbServicoDoMetronomoFalhou()", null) }
+            }
+        }
         ServicoAudio.aoFalhar = {
             fraca.get()?.let { wv ->
                 wv.post { wv.evaluateJavascript("window.__bmccbServicoDeGravacaoFalhou && window.__bmccbServicoDeGravacaoFalhou()", null) }
@@ -45,6 +55,8 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
         ServicoAudio.aoParar = null
         ServicoAudio.aoPararGravacao = null
         ServicoAudio.aoFalhar = null
+        ServicoAudio.aoPararMetronomo = null
+        ServicoAudio.aoFalharMetronomo = null
     }
 
     @JavascriptInterface
@@ -69,6 +81,23 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
         atividade.runOnUiThread {
             ServicoAudio.gravando = true
             ligar("")
+        }
+    }
+
+    /** O metrônomo ligou: o serviço (tipo mídia, wake lock sem limite) mantém o clique vivo com a tela bloqueada ou o app em segundo plano. */
+    @JavascriptInterface
+    fun iniciarMetronomo() {
+        atividade.runOnUiThread {
+            ServicoAudio.metronomo = true
+            ligar("")
+        }
+    }
+
+    @JavascriptInterface
+    fun pararMetronomo() {
+        atividade.runOnUiThread {
+            ServicoAudio.metronomo = false
+            desligarSeOcioso()
         }
     }
 
@@ -121,14 +150,17 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
             // O Android pode recusar (app fora da tela, restrição do fabricante): o hino segue tocando como antes, só sem a proteção.
             android.util.Log.w("bmccb", "serviço de reprodução não iniciou", e)
             val eraGravacao = ServicoAudio.gravando
+            val eraMetronomo = ServicoAudio.metronomo
             ServicoAudio.tocando = false
             ServicoAudio.gravando = false
+            ServicoAudio.metronomo = false
             if (eraGravacao) ServicoAudio.aoFalhar?.invoke()
+            if (eraMetronomo) ServicoAudio.aoFalharMetronomo?.invoke()
         }
     }
 
     private fun desligarSeOcioso() {
-        if (ServicoAudio.tocando || ServicoAudio.gravando) {
+        if (ServicoAudio.tocando || ServicoAudio.gravando || ServicoAudio.metronomo) {
             // Só uma das duas atividades terminou: o serviço fica, com o tipo, o título e o texto do que sobrou.
             if (ServicoAudio.ativo) ligar("")
             return

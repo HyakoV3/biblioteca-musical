@@ -49,6 +49,9 @@ class ServicoAudio : Service() {
         var tocando = false
         var gravando = false
 
+        /** O metrônomo está ligado (I-20): o clique segue com a tela bloqueada até a pessoa parar. Tipo `mediaPlayback`, wake lock sem limite. */
+        var metronomo = false
+
         /** Título do hino que toca (a notificação o mostra enquanto `tocando`); o da gravação é o nome do app. */
         var tituloAtual = ""
 
@@ -58,6 +61,14 @@ class ServicoAudio : Service() {
         /** O Android recusou subir o serviço de gravação: avisa o JavaScript, que deixa de contar com a proteção (definido pela ponte). */
         @Volatile
         var aoFalhar: (() -> Unit)? = null
+
+        /** Avisa o JavaScript que a pessoa tocou em "Parar" na notificação com o metrônomo ligado (definido pela ponte; nulo com o app fechado). */
+        @Volatile
+        var aoPararMetronomo: (() -> Unit)? = null
+
+        /** O Android recusou subir o serviço do metrônomo: avisa o JavaScript, que para e mostra o aviso. */
+        @Volatile
+        var aoFalharMetronomo: (() -> Unit)? = null
 
         /** Avisa o JavaScript que a pessoa tocou em "Parar" na notificação durante uma gravação (definido pela ponte; nulo com o app fechado). */
         @Volatile
@@ -72,19 +83,21 @@ class ServicoAudio : Service() {
         if (intent?.action == ACAO_PARAR) {
             aoParar?.invoke()
             aoPararGravacao?.invoke()
+            aoPararMetronomo?.invoke()
             tocando = false
             gravando = false
+            metronomo = false
             tituloAtual = ""
             encerrar()
             return START_NOT_STICKY
         }
         ativo = true
-        val titulo = if (tocando && tituloAtual.isNotBlank()) tituloAtual else getString(R.string.app_name)
+        val titulo = if (tocando && tituloAtual.isNotBlank()) tituloAtual else if (metronomo && !gravando) getString(R.string.notificacao_metronomo_titulo) else getString(R.string.app_name)
         try {
             criarCanal()
             val notificacao = montarNotificacao(titulo)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                var tipo = if (tocando || !gravando) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK else 0
+                var tipo = if (tocando || metronomo || !gravando) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK else 0
                 if (gravando) tipo = tipo or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
                 startForeground(ID_NOTIFICACAO, notificacao, tipo)
             } else {
@@ -97,9 +110,12 @@ class ServicoAudio : Service() {
             aguardandoPrimeiroPlano = false
             paradaPendente = false
             val eraGravacao = gravando
+            val eraMetronomo = metronomo
             tocando = false
             gravando = false
+            metronomo = false
             if (eraGravacao) aoFalhar?.invoke()
+            if (eraMetronomo) aoFalharMetronomo?.invoke()
             stopSelf()
             return START_NOT_STICKY
         }
@@ -119,6 +135,7 @@ class ServicoAudio : Service() {
         ativo = false
         tocando = false
         gravando = false
+        metronomo = false
         soltarCpu()
         super.onDestroy()
     }
@@ -139,7 +156,7 @@ class ServicoAudio : Service() {
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "bmccb:reproducao").apply {
             setReferenceCounted(false)
-            if (gravando) acquire() else acquire(LIMITE_WAKE_LOCK_MS)
+            if (gravando || metronomo) acquire() else acquire(LIMITE_WAKE_LOCK_MS)
         }
     }
 
@@ -175,7 +192,7 @@ class ServicoAudio : Service() {
         return construtor
             .setSmallIcon(R.drawable.ic_notificacao)
             .setContentTitle(titulo)
-            .setContentText(getString(if (gravando) R.string.notificacao_gravando else R.string.notificacao_tocando))
+            .setContentText(getString(if (gravando) R.string.notificacao_gravando else if (metronomo && !tocando) R.string.notificacao_metronomo else R.string.notificacao_tocando))
             .setContentIntent(abrir)
             .setOngoing(true)
             .setOnlyAlertOnce(true)

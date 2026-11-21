@@ -168,6 +168,7 @@ export const pt = {
   "metronomo.status_off": "Metrônomo parado.",
   "metronomo.erro_audio": "Não foi possível iniciar o áudio neste aparelho.",
   "metronomo.interrompido": "O áudio foi interrompido por outro aplicativo ou ligação e o metrônomo parou.",
+  "metronomo.erro_servico": "O Android não permitiu manter o metrônomo com a tela bloqueada, então ele parou. Tente de novo com o app aberto.",
   "afinador.explica": "Toque uma nota de referência para afinar de ouvido. O som para ao sair desta aba.",
   "afinador.la": "Lá 440 Hz",
   "afinador.outra_nota": "Outra nota",

@@ -168,6 +168,7 @@ export const en: Dicionario = {
   "metronomo.status_off": "Metronome stopped.",
   "metronomo.erro_audio": "The audio could not start on this device.",
   "metronomo.interrompido": "The audio was interrupted by another app or a call and the metronome stopped.",
+  "metronomo.erro_servico": "Android did not allow the metronome to keep running with the screen locked, so it stopped. Try again with the app open.",
   "afinador.explica": "Play a reference note to tune by ear. The sound stops when you leave this tab.",
   "afinador.la": "A 440 Hz",
   "afinador.outra_nota": "Another note",
