@@ -245,7 +245,7 @@ async function principal() {
   const GANCHO_CONSOLE = `(() => { if (window.__avisos) return; window.__avisos = []; for (const nivel of ['warn', 'debug']) { const w = console[nivel].bind(console); console[nivel] = (...a) => { try { window.__avisos.push(nivel + ': ' + a.map((x) => { try { return String(x); } catch { return Object.prototype.toString.call(x); } }).join(' ').slice(0, 200)); if (window.__avisos.length > 400) window.__avisos.shift(); } catch {} w(...a); }; } })()`;
   // A SONDA: o app abre (e cria) o banco `bmccb-gravacoes` quando a tela inicial monta. A sonda NÃO abre banco nenhum (abrir esse com outra versão ou sem as tabelas estragaria o app): espera o
   // banco do APP aparecer em `indexedDB.databases()`, o que só acontece depois de a abertura dele terminar. Se não aparece em 10 s, esse Chrome é descartado e outro sobe.
-  const sondaDoBanco = (av) => av(`new Promise((r) => { const ini = Date.now(); const olhar = async () => { try { const lista = await indexedDB.databases(); if (lista.some((d) => d.name === 'bmccb-gravacoes')) return r(true); } catch {} if (Date.now() - ini > 10000) return r(false); setTimeout(olhar, 200); }; olhar(); })`);
+  const sondaDoBanco = (av) => av(`new Promise((r) => { const ini = Date.now(); let fim = false; const acabar = (v) => { if (!fim) { fim = true; r(v); } }; setTimeout(() => acabar(false), 10000); const olhar = async () => { if (fim) return; try { const lista = await Promise.race([indexedDB.databases(), new Promise((_, rej) => setTimeout(() => rej(new Error('sem resposta')), 2000))]); if (lista.some((d) => d.name === 'bmccb-gravacoes')) return acabar(true); } catch {} if (Date.now() - ini > 10000) return acabar(false); setTimeout(olhar, 200); }; olhar(); })`);
   let sessao = null;
   for (let tentativa = 1; tentativa <= 3; tentativa++) {
     sessao = await abrirChrome();
@@ -1085,7 +1085,7 @@ async function principal() {
       await dormir(200);
     }
     // O estouro da espera aparece como falha própria, para não ficar escondido atrás do "audio: false, itens: 0" da conferência seguinte.
-    const motivo = apareceu ? null : await av(`(async () => ({ avisos: (window.__avisos ?? []).slice(-30), texto: (document.getElementById('painel-gravador')?.innerText ?? '').replace(/\\s+/g, ' ').slice(0, 300), alertas: [...document.querySelectorAll('#painel-gravador [role="alert"], #painel-gravador .aviso')].map((e) => e.textContent.trim().slice(0, 120)), audios: document.querySelectorAll('#painel-gravador audio').length, bancos: await indexedDB.databases().then((l) => l.map((d) => d.name + '@' + d.version), (e) => 'databases() falhou: ' + e) }))()`);
+    const motivo = apareceu ? null : await av(`(async () => ({ avisos: (window.__avisos ?? []).slice(-30), texto: (document.getElementById('painel-gravador')?.innerText ?? '').replace(/\\s+/g, ' ').slice(0, 300), alertas: [...document.querySelectorAll('#painel-gravador [role="alert"], #painel-gravador .aviso')].map((e) => e.textContent.trim().slice(0, 120)), audios: document.querySelectorAll('#painel-gravador audio').length, bancos: await Promise.race([indexedDB.databases().then((l) => l.map((d) => d.name + '@' + d.version), (e) => 'databases() falhou: ' + e), new Promise((r) => setTimeout(() => r('databases() sem resposta em 2 s'), 2000))]) }))()`);
     confere(apareceu, `Gravador: a gravação apareceu na lista em até 10 s (esperava ${quantas})${motivo ? ` — a tela mostrava: ${JSON.stringify(motivo)}` : ""}`);
     await dormir(150); // deixa o resto da linha (tempo, tamanho, formato) terminar de ser desenhado
   };
