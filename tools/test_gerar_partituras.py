@@ -575,6 +575,16 @@ class MarcarNotas(unittest.TestCase):
         self.assertIn('<g id="s2" class="slur" data-t="0" data-f="2">', svg)
         self.assertIn('<g id="s3" class="slur" data-t="2" data-f="4">', svg)
 
+    def test_ligadura_de_prolongamento_e_de_expressao_sobre_as_mesmas_notas_nao_dividem_o_tempo(self):
+        svg = (
+            '<g id="m1" class="measure"><g id="a" class="note"></g><g id="t1" class="tie"></g><g id="s1" class="slur"></g></g>'
+            '<g id="m2" class="measure"><g id="b" class="note"></g></g>'
+        )
+        # a ligadura (a abre em 0 e dura 1,5) e a de expressão (de a até o começo de b, 1,5 depois) cobrem as MESMAS duas notas: cada uma leva o tempo inteiro
+        svg, _ = g.marcar_notas(svg, {"a": (0, 1.5), "b": (0, 1)}, [("t1", "a", "b"), ("s1", "a", "b", 1.5)])
+        self.assertIn('<g id="t1" class="tie" data-t="0" data-f="1.5">', svg)
+        self.assertIn('<g id="s1" class="slur" data-t="0" data-f="1.5">', svg)
+
     def test_ligadura_de_expressao_sem_duracao_conhecida_fica_sem_atributos(self):
         svg, _ = g.marcar_notas(self.SVG_EXPRESSAO, {"a": (1, 2), "b": (0, 1)}, [])
         self.assertIn('<g id="s1" class="slur">', svg)

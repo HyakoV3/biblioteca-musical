@@ -255,19 +255,22 @@ def marcar_notas(svg: str, tempos: dict, ligaduras: list) -> tuple:
     svg = ELEMENTO_COM_TEMPO.sub(troca, svg)
 
     # a curva da ligadura: o tempo da nota que abre, dividido entre os pedaços da mesma ligadura
+    # O pedaço de uma ligadura partida pelo fim da linha só se junta aos da MESMA espécie: uma ligadura de prolongamento e uma de expressão sobre as mesmas duas notas
+    # são curvas diferentes, e dividir o tempo entre elas daria meio tempo a cada uma.
     pedacos = {}
     duracoes = {}
     for item in ligaduras:
         gid, de, ate = item[:3]
-        pedacos.setdefault((de, ate), []).append(gid)
-        if len(item) > 3:
+        expressao = len(item) > 3
+        pedacos.setdefault((expressao, de, ate), []).append(gid)
+        if expressao:
             duracoes[(de, ate)] = item[3]
     tempo_da_curva = {}
-    for (de, ate), ids in pedacos.items():
+    for (expressao, de, ate), ids in pedacos.items():
         if de not in tempos:
             continue
         inicio, fim = tempos[de]
-        if (de, ate) in duracoes:
+        if expressao:
             fim = inicio + duracoes[(de, ate)]  # expressão: até o começo da nota que fecha
         if fim - inicio <= 1e-6:
             continue
