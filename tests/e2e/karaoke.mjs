@@ -199,43 +199,75 @@ async function principal() {
   filhos.push(vite);
   await esperarUrl(`http://127.0.0.1:${PORTA_VITE}/`, 60000);
 
-  // 2. Chrome mudo
-  perfil = mkdtempSync(join(tmpdir(), "bmccb-e2e-"));
-  const chrome = spawn(
-    acharChrome(),
-    ["--headless=new", "--no-sandbox", "--disable-gpu", "--mute-audio", "--autoplay-policy=no-user-gesture-required", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream",
-      "--window-size=412,915", `--user-data-dir=${perfil}`, `--remote-debugging-port=${PORTA_CHROME}`, "about:blank"],
-    { stdio: "ignore", detached: true },
-  );
-  filhos.push(chrome);
-  await esperarUrl(`http://127.0.0.1:${PORTA_CHROME}/json/version`, 30000);
-  try {
-    console.log(`Chrome: ${(await (await fetch(`http://127.0.0.1:${PORTA_CHROME}/json/version`)).json()).Browser}`); // para comparar o do CI com o da máquina
-  } catch {
-    /* só informativo */
-  }
+  // 2. Chrome mudo. No runner do CI o Chrome às vezes sobe COM O INDEXEDDB QUEBRADO (o `open()` nunca responde, o que derrubava o Gravador): o app já tolera isso, mas o teste não tem como
+  // provar nada sobre gravações num navegador assim. Por isso, antes de começar, uma SONDA abre um banco de teste; se não responde, esse Chrome é descartado (com o perfil) e outro sobe, até 3 vezes.
+  const abrirChrome = async () => {
+    perfil = mkdtempSync(join(tmpdir(), "bmccb-e2e-"));
+    const chrome = spawn(
+      acharChrome(),
+      ["--headless=new", "--no-sandbox", "--disable-gpu", "--mute-audio", "--autoplay-policy=no-user-gesture-required", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream",
+        "--window-size=412,915", `--user-data-dir=${perfil}`, `--remote-debugging-port=${PORTA_CHROME}`, "about:blank"],
+      { stdio: "ignore", detached: true },
+    );
+    filhos.push(chrome);
+    await esperarUrl(`http://127.0.0.1:${PORTA_CHROME}/json/version`, 30000);
+    try {
+      console.log(`Chrome: ${(await (await fetch(`http://127.0.0.1:${PORTA_CHROME}/json/version`)).json()).Browser}`); // para comparar o do CI com o da máquina
+    } catch {
+      /* só informativo */
+    }
 
-  // 3. protocolo de depuração do Chrome
-  const alvos = await (await fetch(`http://127.0.0.1:${PORTA_CHROME}/json`)).json();
-  const ws = new WebSocket(alvos.find((t) => t.type === "page").webSocketDebuggerUrl);
-  await new Promise((r) => (ws.onopen = r));
-  let n = 0;
-  const espera = new Map();
-  ws.onmessage = (ev) => {
-    const m = JSON.parse(ev.data);
-    if (m.id && espera.has(m.id)) espera.get(m.id)(m);
+    // 3. protocolo de depuração do Chrome
+    const alvos = await (await fetch(`http://127.0.0.1:${PORTA_CHROME}/json`)).json();
+    const ws = new WebSocket(alvos.find((t) => t.type === "page").webSocketDebuggerUrl);
+    await new Promise((r) => (ws.onopen = r));
+    let n = 0;
+    const espera = new Map();
+    ws.onmessage = (ev) => {
+      const m = JSON.parse(ev.data);
+      if (m.id && espera.has(m.id)) espera.get(m.id)(m);
+    };
+    const enviar = (method, params = {}) =>
+      new Promise((r) => {
+        const id = ++n;
+        espera.set(id, r);
+        ws.send(JSON.stringify({ id, method, params }));
+      });
+    const av = async (expressao) => {
+      const r = await enviar("Runtime.evaluate", { expression: expressao, returnByValue: true, awaitPromise: true });
+      if (r.result?.exceptionDetails) throw new Error(JSON.stringify(r.result.exceptionDetails).slice(0, 300));
+      return r.result?.result?.value;
+    };
+    return { chrome, ws, enviar, av, perfilDele: perfil };
   };
-  const enviar = (method, params = {}) =>
-    new Promise((r) => {
-      const id = ++n;
-      espera.set(id, r);
-      ws.send(JSON.stringify({ id, method, params }));
-    });
-  const av = async (expressao) => {
-    const r = await enviar("Runtime.evaluate", { expression: expressao, returnByValue: true, awaitPromise: true });
-    if (r.result?.exceptionDetails) throw new Error(JSON.stringify(r.result.exceptionDetails).slice(0, 300));
-    return r.result?.result?.value;
-  };
+  let sessao = null;
+  for (let tentativa = 1; tentativa <= 3; tentativa++) {
+    sessao = await abrirChrome();
+    await sessao.enviar("Page.enable");
+    await sessao.enviar("Runtime.enable");
+    await sessao.enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
+    await esperarUrl(`http://127.0.0.1:${PORTA_VITE}/`, 30000);
+    await dormir(1500);
+    const idbOk = await sessao.av(`new Promise((r) => { try { const q = indexedDB.open('__sonda_e2e'); q.onsuccess = () => { q.result.close(); r(true); }; q.onerror = () => r(false); q.onblocked = () => r(false); setTimeout(() => r(false), 4000); } catch { r(false); } })`);
+    // BMCCB_E2E_FORCAR_REINICIO=1 finge uma sonda sem resposta na 1ª tentativa: serve para conferir, na máquina, que o reinício do Chrome funciona.
+    const simulado = process.env.BMCCB_E2E_FORCAR_REINICIO === "1" && tentativa === 1;
+    if (idbOk && !simulado) {
+      if (tentativa > 1) console.log(`Chrome com IndexedDB funcionando na tentativa ${tentativa}`);
+      break;
+    }
+    console.log(`AVISO: este Chrome subiu com o IndexedDB sem resposta (tentativa ${tentativa} de 3): descartando-o e subindo outro`);
+    sessao.ws.close();
+    encerrar(sessao.chrome, "SIGTERM");
+    await aguardarGrupo(sessao.chrome, 4000);
+    if (grupoVivo(sessao.chrome)) encerrar(sessao.chrome, "SIGKILL");
+    await aguardarGrupo(sessao.chrome, 2000);
+    try {
+      rmSync(sessao.perfilDele, { recursive: true, force: true });
+    } catch {
+      /* o perfil é temporário: se não der para apagar agora, a limpeza final tenta */
+    }
+  }
+  const { ws, enviar, av } = sessao;
 
   await enviar("Page.enable");
   await enviar("Runtime.enable");

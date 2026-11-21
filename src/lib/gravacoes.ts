@@ -54,6 +54,11 @@ function transacao<T>(banco: IDBDatabase, lojas: string[], modo: IDBTransactionM
   });
 }
 
+/** Quanto se espera cada tentativa de abrir o banco (ms) e quantas se fazem: três vezes 3 s cabem folgadas no limite de 10 s para guardar. */
+export const ESPERA_AO_ABRIR_MS = 3000;
+export const TENTATIVAS_DE_ABRIR = 3;
+const MOTIVO_SEM_RESPOSTA = "o armazenamento não respondeu a esta tentativa de abrir";
+
 /** Quanto se espera o armazenamento guardar uma gravação antes de desistir e deixá-la na tela (ms). */
 export const LIMITE_PARA_GUARDAR_MS = 10000;
 
@@ -75,11 +80,9 @@ export class Gravacoes {
   /** `fabrica` devolve o IndexedDB (um falso nos testes). */
   constructor(private readonly fabrica: () => IDBFactory | undefined = () => (typeof indexedDB === "undefined" ? undefined : indexedDB)) {}
 
-  private banco(): Promise<IDBDatabase> {
-    if (this.abrindo) return this.abrindo;
-    const idb = this.fabrica();
-    if (!idb) return Promise.reject(new Error("armazenamento indisponível"));
-    const aberto = new Promise<IDBDatabase>((ok, falha) => {
+  /** Uma tentativa de abrir o banco. Se o navegador não responder (nem sucesso, nem erro, nem bloqueio), a promessa fica pendente: quem chama põe o limite. */
+  private abrirUma(idb: IDBFactory): Promise<IDBDatabase> {
+    return new Promise<IDBDatabase>((ok, falha) => {
       const r = idb.open(BANCO, VERSAO);
       r.onupgradeneeded = () => {
         rastro("armazenamento: criando o banco");
@@ -108,6 +111,28 @@ export class Gravacoes {
         falha(new Error("armazenamento bloqueado"));
       };
     });
+  }
+
+  private banco(): Promise<IDBDatabase> {
+    if (this.abrindo) return this.abrindo;
+    const idb = this.fabrica();
+    if (!idb) return Promise.reject(new Error("armazenamento indisponível"));
+    // No Chrome de um runner lento (CI) o `open()` às vezes NUNCA responde: sem sucesso, sem erro, sem bloqueio, e a tela ficava esperando para sempre. Cada tentativa tem um limite curto; se
+    // estoura, abandona aquela solicitação (se ela chegar depois, a conexão é fechada) e pede de novo. Depois de `TENTATIVAS_DE_ABRIR` sem resposta, falha com uma mensagem clara.
+    const aberto = (async () => {
+      for (let i = 1; i <= TENTATIVAS_DE_ABRIR; i++) {
+        const tentativa = this.abrirUma(idb);
+        try {
+          return await comLimite(tentativa, ESPERA_AO_ABRIR_MS, MOTIVO_SEM_RESPOSTA);
+        } catch (e) {
+          if (!(e instanceof Error && e.message === MOTIVO_SEM_RESPOSTA)) throw e;
+          tentativa.then((b) => b.close(), () => {}); // abandonada: se abrir tarde, não deixa a conexão pendurada
+          rastro(`armazenamento: sem resposta ao abrir (tentativa ${i} de ${TENTATIVAS_DE_ABRIR})`);
+          if (i === TENTATIVAS_DE_ABRIR) throw new Error("o armazenamento não respondeu ao abrir");
+        }
+      }
+      throw new Error("o armazenamento não respondeu ao abrir");
+    })();
     // Uma falha ao abrir não fica guardada: a próxima chamada tenta de novo.
     this.abrindo = aberto.catch((e) => {
       this.abrindo = null;
