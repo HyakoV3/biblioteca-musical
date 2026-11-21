@@ -18,8 +18,8 @@ mesmo caminho conferido das partituras, e o guarda no aparelho. Sem ele, o app m
 ```sh
 # 1. o hinario.json pronto (fora do Git), com um NÚMERO NOVO no nome:
 cp hinario.json ~/Development/auxiliar/pacotes/hinario-002.json
-# 2. subir para a pasta do servidor (a mesma das partituras):  /mnt/downloads/BibliotecaMusicalPartituras/hinario-002.json
-# 3. refazer o manifesto (endereço da pasta ou do arquivo) e gerar um APK novo:
+# 2. subir para a pasta PRÓPRIA do hinário no servidor:  /mnt/downloads/BibliotecaMusicalHinario/hinario-002.json
+# 3. refazer o manifesto (o link público da pasta do hinário) e gerar um APK novo:
 python3 tools/montar-manifesto-hinario.py "<link público>" ~/Development/auxiliar/pacotes/hinario-002.json
 ```
 
@@ -31,6 +31,18 @@ Separar o hinário do app o tira do APK e do Git, mas **não é controle de aces
 a distribuição é quem administra o servidor (apagar o arquivo ou trocar o link faz o download parar). Para restringir quem recebe, o desenho alternativo é a pessoa informar um código de
 acesso no primeiro uso, em vez de o endereço ir no manifesto (não implementado).
 
+## Onde fica no servidor
+
+Uma pasta **só do hinário**, com link público próprio (File Browser: pasta `BibliotecaMusicalHinario`, link público sem senha e sem prazo, como o das partituras):
+
+| | |
+|---|---|
+| Pasta no servidor | `/mnt/downloads/BibliotecaMusicalHinario/` |
+| Link do manifesto | `https://fb.hm.hv2.xyz/public/api/resources/download?hash=EMnR--vnLpImy8tW7COc2A` (a página de compartilhamento é `/public/share/EMnR--vnLpImy8tW7COc2A`) |
+
+Por que **não** na pasta das partituras: o link de uma pasta entrega a pasta inteira em zip, e o app tiraria o arquivo pelo nome; com as partituras na mesma pasta o download do hinário (4 MB) puxaria uns
+60 MB. E um link separado permite **desligar só o hinário** (apagar o arquivo ou o compartilhamento) sem derrubar as partituras.
+
 ## Estado
 
-- `hinario-001.json`: o hinário dos 480 hinos (Dó) do APK 059, 4.119.975 bytes. Se o manifesto aponta para um arquivo ainda **não publicado**, o download falha com "arquivo incompleto ou diferente".
+- `hinario-001.json`: o hinário dos 480 hinos (Dó) do APK 059, 4.119.975 bytes, SHA-256 `ee9b8cfb…`. Se o manifesto aponta para um arquivo ainda **não publicado** (pasta vazia: o link entrega um zip de 22 bytes), o download falha com "arquivo incompleto ou diferente".
