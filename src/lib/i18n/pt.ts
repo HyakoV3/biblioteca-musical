@@ -7,10 +7,6 @@ export const pt = {
   "lista.buscar": "Buscar por número ou título",
   "lista.buscar_aria": "Buscar hino",
 
-  "importar.botao": "Importar hinário",
-  "importar.remover": "Remover importação",
-  "importar.ok": "Importado: {total} de “{nome}”.",
-  "importar.erro": "Não foi possível importar: {erro}",
   "erro.rust.json_invalido": "O arquivo não é um JSON válido: {detalhe}",
   "erro.rust.versao": "Este hinário está na versão {versao}, e este app entende a versão {esperado}.",
   "erro.rust.vozes_final": "Hino {hino}: as vozes do final ({outras}) não correspondem às da passada normal ({normal}).",
@@ -290,7 +286,7 @@ export const pt = {
   "sobre.codigo_titulo": "Código e conteúdo",
   "sobre.codigo": "O código é livre, sob a licença MIT. Letras e partituras pertencem aos seus titulares e não fazem parte do código.",
   "ajustes.remover_titulo": "Remover conteúdo importado?",
-  "ajustes.remover_texto": "Os hinos importados serão apagados deste aparelho e o app voltará a mostrar só o pacote de exemplo. Você pode importar de novo depois.",
+  "ajustes.remover_texto": "O hinário será apagado deste aparelho e o app voltará a mostrar só o pacote de exemplo. Você pode baixar de novo depois.",
   "ajustes.cancelar": "Cancelar",
   "ajustes.confirmar_remocao": "Remover",
 

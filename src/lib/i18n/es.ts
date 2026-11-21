@@ -7,10 +7,6 @@ export const es: Dicionario = {
   "lista.buscar": "Buscar por número o título",
   "lista.buscar_aria": "Buscar himno",
 
-  "importar.botao": "Importar himnario",
-  "importar.remover": "Quitar importación",
-  "importar.ok": "Importado: {total} de “{nome}”.",
-  "importar.erro": "No se pudo importar: {erro}",
   "erro.rust.json_invalido": "El archivo no es un JSON válido: {detalhe}",
   "erro.rust.versao": "Este himnario está en la versión {versao}, y esta app entiende la versión {esperado}.",
   "erro.rust.vozes_final": "Himno {hino}: las voces del final ({outras}) no coinciden con las de la pasada normal ({normal}).",
@@ -290,7 +286,7 @@ export const es: Dicionario = {
   "sobre.codigo_titulo": "Código y contenido",
   "sobre.codigo": "El código es libre, bajo la licencia MIT. Las letras y partituras pertenecen a sus titulares y no forman parte del código.",
   "ajustes.remover_titulo": "¿Quitar el contenido importado?",
-  "ajustes.remover_texto": "Los himnos importados se borrarán de este dispositivo y la app volverá a mostrar solo el paquete de ejemplo. Puedes importar de nuevo más tarde.",
+  "ajustes.remover_texto": "El himnario se borrará de este dispositivo y la app volverá a mostrar solo el paquete de ejemplo. Puedes descargarlo de nuevo más tarde.",
   "ajustes.cancelar": "Cancelar",
   "ajustes.confirmar_remocao": "Quitar",
 

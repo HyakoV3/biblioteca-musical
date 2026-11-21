@@ -17,7 +17,7 @@
   import { ESTILOS, TEMAS, estilo, tema } from "$lib/tema.svelte";
   import { CREDITOS, semLicenca, textoDaLicenca } from "$lib/licencas";
   import { traduzirErro } from "$lib/erros";
-  import { LIMITE_JSON_BYTES, listaCurta } from "$lib/pacote";
+  import { listaCurta } from "$lib/pacote";
   import { hinario } from "$lib/hinario/hinario.svelte";
   import { instalando } from "$lib/instalando.svelte";
   import { partituras } from "$lib/partituras/partituras.svelte";
@@ -59,26 +59,6 @@
     : codigo === "armazenamento" ? "sons.erro_armazenamento"
     : codigo === "outro" ? "sons.erro_outro"
     : "sons.erro_arquivo";
-
-  async function importar(e: Event) {
-    const input = e.currentTarget as HTMLInputElement;
-    const arquivo = input.files?.[0];
-    input.value = ""; // permite escolher o mesmo arquivo de novo
-    if (!arquivo) return;
-    resultado = null;
-    try {
-      // O tamanho vem do arquivo, antes de lê-lo para a memória: um arquivo enorme não é nem aberto. (O Rust confere o mesmo limite.)
-      if (arquivo.size > LIMITE_JSON_BYTES) throw JSON.stringify(["grande_demais"]);
-      const p = await biblioteca.importar(await arquivo.text());
-      reproducao.limpar(); // o conteúdo mudou: para o som e esquece os ajustes dos hinos antigos
-      resultado = {
-        tipo: "sucesso",
-        texto: t("importar.ok", { total: i18n.tn("plural.hinos", p.hinario.hinos.length), nome: p.hinario.hinario.nome }),
-      };
-    } catch (err) {
-      resultado = { tipo: "erro", texto: t("importar.erro", { erro: traduzirErro(String(err), t) }) };
-    }
-  }
 
   // --- Hinário: baixar do servidor (o texto e a música dos hinos não vão dentro do app) e remover, no molde das partituras. ---
   const hinarioInstalado = $derived(biblioteca.pacote !== null && !biblioteca.pacote.exemplo);
@@ -232,12 +212,6 @@
       {#if hinario.andamento.fase === "erro"}
         <Aviso tipo="erro">{erroDoHinario}</Aviso>
       {/if}
-      <div class="acoes lado-a-lado">
-        <label class="botao" class:desabilitado={instalando.ocupado} aria-disabled={instalando.ocupado}>
-          {t("importar.botao")}
-          <input type="file" accept=".json,application/json" onchange={importar} disabled={instalando.ocupado} hidden />
-        </label>
-      </div>
       {#if confirmando}
         <div class="confirma" role="alertdialog" aria-labelledby="confirma-titulo" aria-describedby="confirma-texto">
           <h3 id="confirma-titulo">{t("ajustes.remover_titulo")}</h3>
@@ -366,8 +340,6 @@
 </main>
 
 <style>
-  /* O "Importar" de arquivo durante um download de conteúdo: desabilitado (o hinário baixado sobrescreveria a importação feita no meio). */
-  label.desabilitado { opacity: 0.5; pointer-events: none; cursor: not-allowed; }
   section { margin-bottom: 0.9rem; }
   .versao { margin: 0 0 1.5rem; text-align: center; }
   .sobre p, .sobre li { line-height: 1.5; }
@@ -410,8 +382,6 @@
   .segmentos input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
   .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0; }
   /* Os botões do hinário ficam sempre lado a lado, cada um com metade da linha; o texto quebra em duas linhas quando não cabe. */
-  .acoes.lado-a-lado { flex-wrap: nowrap; }
-  .acoes.lado-a-lado .botao { flex: 1 1 0; min-width: 0; padding: 0.4rem 0.5rem; text-align: center; line-height: 1.2; }
   .hinario-info { display: grid; gap: 0.15rem; margin: 0.2rem 0 0.4rem; }
   .confirma { margin: 0.8rem 0; padding: 1rem; border: 0.0625rem solid var(--perigo); border-radius: 0.75rem; background: var(--superficie); }
   .confirma h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }

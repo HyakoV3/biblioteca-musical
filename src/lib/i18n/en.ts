@@ -7,10 +7,6 @@ export const en: Dicionario = {
   "lista.buscar": "Search by number or title",
   "lista.buscar_aria": "Search hymn",
 
-  "importar.botao": "Import hymnal",
-  "importar.remover": "Remove import",
-  "importar.ok": "Imported: {total} from “{nome}”.",
-  "importar.erro": "Could not import: {erro}",
   "erro.rust.json_invalido": "The file is not valid JSON: {detalhe}",
   "erro.rust.versao": "This hymnal is version {versao}, and this app understands version {esperado}.",
   "erro.rust.vozes_final": "Hymn {hino}: the voices of the ending ({outras}) do not match those of the normal pass ({normal}).",
@@ -290,7 +286,7 @@ export const en: Dicionario = {
   "sobre.codigo_titulo": "Code and content",
   "sobre.codigo": "The code is free, under the MIT license. Lyrics and scores belong to their owners and are not part of the code.",
   "ajustes.remover_titulo": "Remove imported content?",
-  "ajustes.remover_texto": "The imported hymns will be deleted from this device and the app will show only the sample package again. You can import again later.",
+  "ajustes.remover_texto": "The hymnal will be deleted from this device and the app will show only the sample package again. You can download it again later.",
   "ajustes.cancelar": "Cancel",
   "ajustes.confirmar_remocao": "Remove",
 

@@ -5,7 +5,7 @@
 // desligar o botão apaga tudo. Depois confere a aba Partitura (I-08): quando aparece, o SVG embutido seguindo o tema, o zoom, a
 // fonte Leipzig e o aviso para Ajustes. Precisa de um Chrome ou Chromium instalado (variável CHROME para indicar o caminho).
 import { spawn, execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, truncateSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import process from "node:process";
@@ -899,30 +899,17 @@ async function principal() {
   confere(marca.logo.l === marca.botao.l && marca.logo.a === marca.botao.a, `a logo tem o tamanho do botão de Ajustes: ${JSON.stringify(marca)}`);
   confere(marca.carregou && marca.barraRem <= 3.6, `a imagem da logo carrega e a barra continua com ~3,5rem (${marca.barraRem}rem)`);
 
-  // Ajustes: "Importar hinário" aceita SÓ .json (o hinário vai deixar de ser importado; as partituras têm o card próprio).
+  // Ajustes: o hinário não se importa mais de arquivo (baixa-se do servidor, como as partituras): não há seletor de arquivo na tela.
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes` });
-  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('input[type="file"]')`)); ) await dormir(250);
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('conteudo')`)); ) await dormir(250);
   // Os blocos de Ajustes são cartões fechados de saída, com o estado na linha de cima (I-24): o Conteúdo mostra o hinário, as partituras e os sons.
   const resumoFechado = await av(`(() => { const d = document.getElementById('conteudo'); return { aberto: d.open, resumo: d.querySelector('summary').innerText.replace(/\\s+/g, ' ') }; })()`);
   confere(!resumoFechado.aberto && /\d+\s+(scores?|partituras?)/i.test(resumoFechado.resumo), `Ajustes: o cartão Conteúdo começa fechado e mostra o estado na linha de cima: ${JSON.stringify(resumoFechado)}`);
   // O texto de um cartão fechado não é renderizado: abre o Conteúdo antes de ler o que há dentro (hinário, partituras, sons).
   await av("document.getElementById('conteudo').open = true; 1");
   await dormir(400);
-  const aceita = await av(`document.querySelector('input[type="file"]').getAttribute('accept')`);
-  confere(/json/.test(aceita) && !/zip/i.test(aceita), `Importar hinário aceita só .json: accept="${aceita}"`);
-
-  // Arquivo acima de 20 MB: recusado pelo tamanho, sem ser lido. O arquivo é ESPARSO (só o tamanho conta, não ocupa disco).
-  const raiz = (await enviar("DOM.getDocument", {})).result.root.nodeId;
-  const entrada = (await enviar("DOM.querySelector", { nodeId: raiz, selector: 'input[type="file"]' })).result.nodeId;
-  confere(entrada > 0, "o seletor de arquivo de Ajustes foi encontrado");
-  const caminhoGrande = join(perfil, "hinario-enorme.json");
-  writeFileSync(caminhoGrande, "{");
-  truncateSync(caminhoGrande, 21 * 1024 * 1024);
-  await av("window.__leu = false; for (const m of ['text', 'arrayBuffer']) { const o = Blob.prototype[m]; Blob.prototype[m] = function () { window.__leu = true; return o.call(this); }; } 1");
-  await enviar("DOM.setFileInputFiles", { nodeId: entrada, files: [caminhoGrande] });
-  await dormir(1500);
-  const grande = await av(`({ leu: window.__leu, texto: document.body.innerText })`);
-  confere(!grande.leu && /20 MB/.test(grande.texto), `hinário de 21 MiB: recusado pelo tamanho, sem ser lido: ${JSON.stringify({ leu: grande.leu, tem20MB: /20 MB/.test(grande.texto) })}`);
+  const semArquivo = await av(`document.querySelectorAll('input[type="file"]').length`);
+  confere(semArquivo === 0, `Ajustes não tem mais o botão de importar hinário de arquivo: ${semArquivo} seletores`);
 
   // O card Partituras (no molde dos sons gravados): com partituras instaladas mostra "Instaladas" e Remover; remover chama só o comando
   // de remover partituras; depois, sem pacote publicado (manifesto vazio), não há botão Baixar nem importação manual.
