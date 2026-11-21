@@ -11,6 +11,7 @@
     rotuloVoltar = "",
     acao,
     lang,
+    quebra = false,
   }: {
     titulo: string;
     subtitulo?: string;
@@ -21,11 +22,13 @@
     acao?: Snippet;
     /** Idioma do título quando difere da interface (ex.: título de hino em outra língua). */
     lang?: string;
+    /** A ação (à direita) desce para uma 2ª linha, alinhada à direita, quando não cabe ao lado do título; o título não quebra no meio da palavra. Vale para qualquer fonte e tamanho de letra. */
+    quebra?: boolean;
   } = $props();
 </script>
 
 <header class="barra">
-  <div class="coluna linha">
+  <div class="coluna linha" class:quebra>
     {#if voltar}
       <button class="voltar" onclick={voltar} aria-label={rotuloVoltar}><Icone nome="voltar" tamanho={24} /></button>
     {/if}
@@ -59,6 +62,11 @@
     margin: 0; font-size: 1.2rem; line-height: 1.25; overflow-wrap: anywhere;
     display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
   }
-  p { margin: 0; font-size: 0.85rem; color: var(--suave); }
+  p { margin: 0; font-size: 0.78rem; color: var(--suave); }
   .acao { flex: none; }
+  /* Com `quebra`: o título fica numa linha só e a ação, se faltar espaço, desce para a linha de baixo (à direita) em vez de espremer o título. */
+  .linha.quebra { flex-wrap: wrap; row-gap: 0; }
+  .quebra .textos { flex: 1 1 auto; min-width: max-content; }
+  .quebra h1 { white-space: nowrap; }
+  .quebra .acao { flex: 0 1 auto; margin-inline-start: auto; padding-bottom: 0.25rem; }
 </style>

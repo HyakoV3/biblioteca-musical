@@ -45,4 +45,7 @@ Por que **não** na pasta das partituras: o link de uma pasta entrega a pasta in
 
 ## Estado
 
-- `hinario-001.json`: o hinário dos 480 hinos (Dó) do APK 059, 4.119.975 bytes, SHA-256 `ee9b8cfb…`. Se o manifesto aponta para um arquivo ainda **não publicado** (pasta vazia: o link entrega um zip de 22 bytes), o download falha com "arquivo incompleto ou diferente".
+- `hinario-002.json` (o do manifesto): os 480 hinos (Dó), 4.119.977 bytes, SHA-256 `a68de375…`. Muda só o hino 76 (estrofe 3: "podebalar" → "pode abalar", com as marcas do karaokê ajustadas). Está em `/mnt/downloads/BibliotecaMusicalHinario/`.
+- `hinario-001.json`: o anterior (4.119.975 bytes, SHA-256 `ee9b8cfb…`), que continua no servidor para os APKs até o 063, cujos manifestos apontam para ele. **Não apague.**
+- **Para pegar um hinário novo no aparelho:** Ajustes → Conteúdo → Hinário completo → Remover e Baixar. O Remover do hinário **apaga também as partituras** (as gravações ficam): baixe as partituras de novo depois. O app não compara versões sozinho.
+- Se o manifesto aponta para um arquivo ainda **não publicado** (pasta sem ele), o download falha com "arquivo incompleto ou diferente".

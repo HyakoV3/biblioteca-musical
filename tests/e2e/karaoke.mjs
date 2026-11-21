@@ -1592,6 +1592,21 @@ async function principal() {
     await dormir(500);
   };
   const estadoCartoes = () => av(`(() => { const a = (id) => document.getElementById(id)?.open; return { aparencia: a('cartao-aparencia'), idioma: a('cartao-idioma'), conteudo: a('conteudo'), salvo: localStorage.getItem('prefs.ajustes') }; })()`);
+  // "Em nome do Senhor Jesus" fica na barra de cima, ao lado do título Ajustes, numa linha só (e não numa caixa de aviso), em telas largas e estreitas.
+  await irParaAjustes(AJ);
+  for (const largura of [412, 360, 320]) {
+    await enviar("Emulation.setDeviceMetricsOverride", { width: largura, height: 915, deviceScaleFactor: 1, mobile: true });
+    await dormir(400);
+    const nome = await av(`(() => {
+      const n = document.querySelector('header .nome-senhor'); const h = document.querySelector('header h1'); if (!n || !h || n.offsetParent === null) return { semFrase: true };
+      const r = n.getBoundingClientRect(); const rh = h.getBoundingClientRect(); const lh = parseFloat(getComputedStyle(h).lineHeight);
+      return { texto: n.textContent.trim(), ao_lado: r.top < rh.bottom, tituloUmaLinha: rh.height <= lh * 1.2, tituloInteiro: h.scrollWidth <= h.clientWidth + 1 && rh.right <= window.innerWidth,
+        fraseCabe: n.scrollWidth <= n.clientWidth + 1 && r.right <= window.innerWidth && r.left >= 0, naCaixa: [...document.querySelectorAll('main .aviso')].some((e) => e.textContent.includes(n.textContent.trim())) };
+    })()`);
+    confere(nome && /Lord Jesus|Senhor Jesus|Señor Jesús/.test(nome.texto) && nome.tituloUmaLinha && nome.tituloInteiro && nome.fraseCabe && !nome.naCaixa, `Ajustes (${largura} px): "Em nome do Senhor Jesus" na barra de cima (${nome?.ao_lado ? "ao lado do título" : "na linha de baixo, em tela estreita"}), o título Ajustes numa linha só e a frase inteira na tela: ${JSON.stringify(nome)}`);
+  }
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
+  await dormir(300);
   await irParaAjustes(AJ);
   await av(`document.querySelector('#conteudo summary').click(); 1`);
   await dormir(300);
