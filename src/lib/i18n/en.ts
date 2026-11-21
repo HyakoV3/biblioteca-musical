@@ -129,6 +129,7 @@ export const en: Dicionario = {
   "partituras.titulo": "Scores",
   "partituras.pacote": "All scores",
   "partituras.explica": "Scores are optional. Once downloaded, they stay on this device and appear in the Score tab of each hymn.",
+  "partituras.precisa_hinario": "Download the full hymnal first (above): scores can only be added to an installed hymnal.",
   "partituras.instaladas": "Installed: {total}",
   "partituras.nao_instaladas": "Not installed",
   "partituras.indisponivel": "Not yet available to download",

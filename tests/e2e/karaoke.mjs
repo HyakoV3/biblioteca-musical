@@ -1640,6 +1640,26 @@ async function principal() {
   }
   await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
   await dormir(300);
+  // ---- Baixar partituras só depois do hinário completo: com só o pacote de exemplo o botão fica desabilitado e a tela explica o motivo ----
+  const semPartiturasAntes = await av(`sessionStorage.getItem('e2e-sem-partituras')`);
+  const botoesDeBaixar = () => av(`(() => { const linhas = [...document.querySelectorAll('#conteudo .pacote')]; const acha = (txt) => linhas.find((l) => new RegExp(txt, 'i').test(l.querySelector('strong')?.textContent ?? ''));
+    const bt = (l) => l ? [...l.querySelectorAll('button')].find((b) => /Download|Baixar|Descargar/i.test(b.textContent)) : null;
+    const h = bt(acha('hymnal|hinário|himnario')), p = bt(acha('scores|partituras'));
+    return { hinario: h ? !h.disabled : null, partituras: p ? !p.disabled : null, aviso: !!document.getElementById('partituras-precisa-hinario') }; })()`);
+  await av(`sessionStorage.setItem('e2e-sem-partituras', '1'); sessionStorage.setItem('e2e-exemplo', '1'); 1`);
+  await irParaAjustes(AJ);
+  await av(`document.querySelector('#conteudo summary').click(); 1`);
+  await dormir(400);
+  const semHinario = await botoesDeBaixar();
+  confere(semHinario.hinario === true && semHinario.partituras === false && semHinario.aviso, `só com o pacote de exemplo: o Baixar do hinário vale e o das partituras fica desabilitado, com o aviso do motivo: ${JSON.stringify(semHinario)}`);
+  await av(`sessionStorage.removeItem('e2e-exemplo'); 1`);
+  await irParaAjustes(AJ);
+  await av(`document.querySelector('#conteudo summary').click(); 1`);
+  await dormir(400);
+  const comHinario = await botoesDeBaixar();
+  confere(comHinario.partituras === true && !comHinario.aviso, `com o hinário instalado o Baixar das partituras vale e o aviso some: ${JSON.stringify(comHinario)}`);
+  await av(`${semPartiturasAntes === null ? "sessionStorage.removeItem('e2e-sem-partituras')" : `sessionStorage.setItem('e2e-sem-partituras', '${semPartiturasAntes}')`}; 1`);
+
   // ---- Nomes das notas (Ajustes) e o hino que toca na lista ----
   await irParaAjustes(AJ);
   await av(`document.querySelector('#cartao-idioma summary').click(); 1`);
