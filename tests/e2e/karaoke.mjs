@@ -1592,6 +1592,17 @@ async function principal() {
     await dormir(500);
   };
   const estadoCartoes = () => av(`(() => { const a = (id) => document.getElementById(id)?.open; return { aparencia: a('cartao-aparencia'), idioma: a('cartao-idioma'), conteudo: a('conteudo'), salvo: localStorage.getItem('prefs.ajustes') }; })()`);
+  // "Em nome do Senhor Jesus" fica na barra de cima, ao lado do título Ajustes, numa linha só (e não numa caixa de aviso), em telas largas e estreitas.
+  await irParaAjustes(AJ);
+  for (const largura of [412, 320]) {
+    await enviar("Emulation.setDeviceMetricsOverride", { width: largura, height: 915, deviceScaleFactor: 1, mobile: true });
+    await dormir(400);
+    const nome = await av(`(() => { const n = document.querySelector('header .nome-senhor'); const h = document.querySelector('header h1'); if (!n || !h) return null; const r = n.getBoundingClientRect(); const rh = h.getBoundingClientRect(); const lh = parseFloat(getComputedStyle(n).lineHeight) || parseFloat(getComputedStyle(n).fontSize) * 1.3;
+      return { texto: n.textContent.trim(), linhas: Math.round(r.height / lh), cabe: r.right <= window.innerWidth && r.left >= rh.right - 1, naCaixa: !!document.querySelector('main .aviso-info, main [role="status"]')?.textContent.includes(n.textContent.trim()) }; })()`);
+    confere(nome && /Lord Jesus/.test(nome.texto) && nome.linhas === 1 && nome.cabe && !nome.naCaixa, `Ajustes (${largura} px): "Em nome do Senhor Jesus" na barra de cima, ao lado do título, em uma linha só: ${JSON.stringify(nome)}`);
+  }
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
+  await dormir(300);
   await irParaAjustes(AJ);
   await av(`document.querySelector('#conteudo summary').click(); 1`);
   await dormir(300);

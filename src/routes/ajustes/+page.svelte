@@ -136,14 +136,11 @@
 
 <svelte:head><title>{t("ajustes.titulo")} · Biblioteca Musical</title></svelte:head>
 
-<Barra titulo={t("ajustes.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />
+<Barra titulo={t("ajustes.titulo")} {voltar} rotuloVoltar={t("nav.voltar")}>
+  {#snippet acao()}<span class="nome-senhor">{t("sobre.nome_titulo")}</span>{/snippet}
+</Barra>
 
 <main class="coluna conteudo">
-  <!-- Em nome do Senhor Jesus: vem antes do aviso de que o app não tem ligação com a CCB. -->
-  <section>
-    <Aviso tipo="info"><strong>{t("sobre.nome_titulo")}</strong></Aviso>
-  </section>
-
   <!-- Aviso: o app não tem ligação com a CCB. Vem antes do "Sobre", em destaque. -->
   <section>
     <Aviso tipo="info"><strong>{t("sobre.aviso_titulo")}</strong><br />{t("sobre.aviso")}</Aviso>
@@ -345,6 +342,8 @@
 </main>
 
 <style>
+  /* "Em nome do Senhor Jesus" ao lado do título, na linha de cima: o tamanho acompanha a largura da tela para nunca quebrar em duas linhas. */
+  .nome-senhor { display: block; white-space: nowrap; font-size: clamp(0.7rem, 3.4vw, 1rem); font-weight: 600; color: var(--suave); text-align: end; }
   section { margin-bottom: 0.9rem; }
   .versao { margin: 0 0 1.5rem; text-align: center; }
   .sobre p, .sobre li { line-height: 1.5; }
