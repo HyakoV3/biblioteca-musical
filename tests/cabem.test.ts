@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { quantosCabem } from "../src/lib/cabem";
 import { CHAVE_AFINADOR, RECENTES_MAX, adicionarNota, lerAfinador, normalizarPref, salvarAfinador } from "../src/lib/afinadorPrefs";
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("quantos itens cabem na tela", () => {
   it("arredonda para baixo: nunca mostra um item cortado, e pode sobrar espaço", () => {
@@ -39,11 +41,11 @@ describe("o que o afinador lembra", () => {
   });
   it("guarda e lê do aparelho, e ignora falha de armazenamento", () => {
     const m = new Map<string, string>();
-    (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) };
+    vi.stubGlobal("localStorage", { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) });
     salvarAfinador({ recentes: [{ classe: 9, oitava: 4 }] });
     expect(JSON.parse(m.get(CHAVE_AFINADOR)!)).toEqual({ recentes: [{ classe: 9, oitava: 4 }] });
     expect(lerAfinador().recentes).toEqual([{ classe: 9, oitava: 4 }]);
-    delete (globalThis as { localStorage?: unknown }).localStorage;
+    vi.stubGlobal("localStorage", undefined);
     expect(lerAfinador().recentes).toEqual([]);
     expect(() => salvarAfinador({ recentes: [] })).not.toThrow();
   });

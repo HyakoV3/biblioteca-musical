@@ -4,7 +4,9 @@
   import Cartao from "./Cartao.svelte";
   import Icone from "./Icone.svelte";
   import ListaRecentes from "./ListaRecentes.svelte";
-  import { LA_PADRAO, OITAVA_MAX, OITAVA_MIN, OITAVA_PADRAO, frequenciaDe, limitarOitava, midiDe, nomeDaNota, nomeDaNotaPorExtenso } from "./afinador";
+  import { LA_PADRAO, OITAVA_MAX, OITAVA_MIN, OITAVA_PADRAO, frequenciaDe, limitarOitava, midiDe } from "./afinador";
+  import { nomeDaNota, nomeDaNotaPorExtenso } from "./notacao";
+  import { notacao } from "./notacao.svelte";
   import { adicionarNota, lerAfinador, salvarAfinador, type NotaRecente } from "./afinadorPrefs";
   import { Contagem, LIMITES, fracaoFeita, type Limite } from "./contagem";
   import { i18n } from "./i18n/index.svelte";
@@ -59,7 +61,7 @@
     reproducao.parar();
     await soar("nota", frequenciaDe(midiDe(n.classe, n.oitava), LA_PADRAO));
   }
-  const rotuloRecente = (n: NotaRecente) => `${nomeDaNota(n.classe, i18n.idioma)}${n.oitava} · ${hz(frequenciaDe(midiDe(n.classe, n.oitava), LA_PADRAO))} Hz`;
+  const rotuloRecente = (n: NotaRecente) => `${nomeDaNota(n.classe, i18n.idioma, notacao.atual)}${n.oitava} · ${hz(frequenciaDe(midiDe(n.classe, n.oitava), LA_PADRAO))} Hz`;
 
   /** O áudio não pôde iniciar (indisponível ou bloqueado neste aparelho): a tela avisa, em vez de o botão voltar sem explicação. */
   let erroAudio = $state(false);
@@ -68,9 +70,9 @@
 
   const midi = $derived(midiDe(classe, oitava));
   const freqNota = $derived(frequenciaDe(midi, LA_PADRAO));
-  const nomeNota = $derived(`${nomeDaNota(classe, i18n.idioma)}${oitava}`);
+  const nomeNota = $derived(`${nomeDaNota(classe, i18n.idioma, notacao.atual)}${oitava}`);
   const hz = (f: number) => new Intl.NumberFormat(i18n.idioma, { maximumFractionDigits: f >= 100 ? 0 : 1 }).format(f);
-  const rotuloLa = $derived(t("afinador.la"));
+  const rotuloLa = $derived(`${nomeDaNota(9, i18n.idioma, notacao.atual)} ${hz(LA_PADRAO)} Hz`);
   const grave = $derived(oitava < 3);
 
   function parar() {
@@ -183,10 +185,10 @@
             name="nota"
             value={n}
             checked={classe === n}
-            aria-label={nomeDaNotaPorExtenso(n, i18n.idioma)}
+            aria-label={nomeDaNotaPorExtenso(n, i18n.idioma, notacao.atual)}
             onchange={() => escolherNota(n)}
           />
-          <span>{#if classe === n}<Icone nome="ok" tamanho={16} />{/if}{nomeDaNota(n, i18n.idioma)}</span>
+          <span>{#if classe === n}<Icone nome="ok" tamanho={16} />{/if}{nomeDaNota(n, i18n.idioma, notacao.atual)}</span>
         </label>
       {/each}
     </fieldset>
@@ -250,7 +252,7 @@
 
   <!-- Só para o leitor de tela: o que está soando (o texto muda ao ligar, desligar ou trocar de nota). -->
   <p class="so-leitor" role="status">
-    {#if tocando === "la"}{t("afinador.tocando", { nota: nomeDaNota(9, i18n.idioma) + "4", hz: hz(LA_PADRAO) })}{:else if tocando === "nota"}{t("afinador.tocando", { nota: nomeNota, hz: hz(freqNota) })}{:else if encerrou}{t("afinador.encerrou")}{/if}
+    {#if tocando === "la"}{t("afinador.tocando", { nota: nomeDaNota(9, i18n.idioma, notacao.atual) + "4", hz: hz(LA_PADRAO) })}{:else if tocando === "nota"}{t("afinador.tocando", { nota: nomeNota, hz: hz(freqNota) })}{:else if encerrou}{t("afinador.encerrou")}{/if}
   </p>
 </div>
 

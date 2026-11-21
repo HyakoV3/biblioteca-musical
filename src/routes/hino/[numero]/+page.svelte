@@ -1,5 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
+  import { nomeDaTonalidade } from "$lib/notacao";
+  import { notacao } from "$lib/notacao.svelte";
   import Abas from "$lib/Abas.svelte";
   import Aviso from "$lib/Aviso.svelte";
   import Barra from "$lib/Barra.svelte";
@@ -43,7 +45,7 @@
   const subtitulo = $derived.by(() => {
     if (!hino) return undefined;
     const partes = [
-      hino.tonalidade ? t("hino.tonalidade", { tom: hino.tonalidade }) : null,
+      hino.tonalidade ? t("hino.tonalidade", { tom: nomeDaTonalidade(hino.tonalidade, i18n.idioma, notacao.atual) }) : null,
       hino.autoria ? t("hino.autoria", { nome: hino.autoria }) : null,
     ].filter(Boolean);
     return partes.length ? partes.join(" · ") : undefined;

@@ -24,6 +24,7 @@ const hinario = {
     {
       numero: 999,
       titulo: "Hino fictício",
+      tonalidade: "Si♭ maior",
       andamento: 120,
       letra: ["1. do re mi", "fa sol", "", "2. la si do", "re mi"],
       vozes: ["Soprano", "Contralto", "Tenor", "Baixo"].map((nome, i) => ({
@@ -1347,6 +1348,24 @@ async function principal() {
   const contar = () => av(`({ itens: document.querySelectorAll('.gravacao-item').length, fim: !!document.getElementById('fim-lista'), resumo: document.getElementById('resumo-gravacoes')?.textContent.replace(/\\s+/g, ' ').trim() ?? null })`);
   const pag1 = await contar();
   confere(pag1.itens === 10 && pag1.fim === true && /^25 /.test(pag1.resumo ?? ""), `Gravador: a lista começa com 10 de 25 gravações e o resumo diz 25: ${JSON.stringify(pag1)}`);
+  // O interruptor ".webm | .weba" do Enviar: só aparece com a folha de compartilhar (a ponte do Android) e para áudio em WebM; o escolhido é lembrado e vale para todas as gravações.
+  // A ponte do Android é simulada em TODA página nova deste trecho (o app é recarregado em `abrirGravador`) e retirada no fim.
+  const ponteFalsa = (await enviar("Page.addScriptToEvaluateOnNewDocument", { source: "window.BmCompartilhar = { comecar: () => true, parte: () => true, enviar: () => true, cancelar() {} };" })).result.identifier;
+  await av(`localStorage.removeItem('prefs.compartilhar'); 1`);
+  await abrirGravador();
+  const fmt0 = await av(`(() => { const g = [...document.querySelectorAll('.gravacao-item .formato')]; return { n: g.length, padrao: g[0]?.querySelector('[aria-pressed="true"]')?.textContent.trim() ?? null }; })()`);
+  confere(fmt0.n >= 1 && fmt0.padrao === '.webm', `Gravador: cada gravação em WebM tem o interruptor .webm | .weba, com .webm de padrão: ${JSON.stringify(fmt0)}`);
+  await av(`[...document.querySelectorAll('.gravacao-item .formato button')].find((b) => b.textContent.trim() === '.weba').click(); 1`);
+  await dormir(300);
+  const fmt1 = await av(`({ salvo: localStorage.getItem('prefs.compartilhar'), escolhidas: [...document.querySelectorAll('.gravacao-item .formato [aria-pressed="true"]')].map((b) => b.textContent.trim()) })`);
+  confere(fmt1.salvo === '{"webm":"weba"}' && fmt1.escolhidas.length >= 1 && fmt1.escolhidas.every((x) => x === '.weba'), `Gravador: escolher .weba é lembrado e vale para todas as gravações: ${JSON.stringify(fmt1)}`);
+  await abrirGravador();
+  const fmt2 = await av(`[...document.querySelectorAll('.gravacao-item .formato [aria-pressed="true"]')].map((b) => b.textContent.trim())`);
+  confere(fmt2.length >= 1 && fmt2.every((x) => x === '.weba'), `Gravador: depois de reabrir o app a escolha continua .weba: ${JSON.stringify(fmt2.slice(0, 3))}`);
+  await av(`localStorage.removeItem('prefs.compartilhar'); 1`);
+  await enviar("Page.removeScriptToEvaluateOnNewDocument", { identifier: ponteFalsa });
+  await abrirGravador();
+
   const ordem = await av(`[...document.querySelectorAll('.gravacao-item')].map((e) => e.dataset.id).slice(0, 3)`);
   confere(JSON.stringify(ordem) === JSON.stringify(["semente-00", "semente-01", "semente-02"]), `Gravador: da mais nova para a mais antiga: ${JSON.stringify(ordem)}`);
   const rolarAteOFim = () => av(`window.scrollTo(0, document.documentElement.scrollHeight); 1`);
@@ -1607,6 +1626,49 @@ async function principal() {
   }
   await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
   await dormir(300);
+  // ---- Nomes das notas (Ajustes) e o hino que toca na lista ----
+  await irParaAjustes(AJ);
+  await av(`document.querySelector('#cartao-idioma summary').click(); 1`);
+  await dormir(300);
+  await av(`localStorage.removeItem('notacao'); 1`);
+  await av(`document.querySelector('input[name="notacao"][value="silabas"]').click(); 1`);
+  await dormir(300);
+  const not1 = await av(`({ salvo: localStorage.getItem('notacao'), marcada: document.querySelector('input[name="notacao"]:checked')?.value })`);
+  confere(not1.salvo === 'silabas' && not1.marcada === 'silabas', `Ajustes: a opção dos nomes das notas (sílabas) é lembrada: ${JSON.stringify(not1)}`);
+  await irParaInicio();
+  const lista1 = await av(`document.querySelector('li > a small')?.textContent.trim()`);
+  confere(lista1 === 'Si♭ major', `a tonalidade na lista segue a escolha (sílabas, mesmo com a interface em inglês): "${lista1}"`);
+  await av(`document.getElementById('aba-afinador').click(); 1`);
+  await dormir(500);
+  const rotulos = await av(`[...document.querySelectorAll('#painel-afinador .grande, #painel-afinador summary')].map((e) => e.innerText.replace(/\\s+/g, ' ').trim())`);
+  confere(rotulos.some((x) => /^Lá 440 Hz/.test(x)) && rotulos.some((x) => /Dó4/.test(x)), `Afinador com os nomes em sílabas: ${JSON.stringify(rotulos)}`);
+  await av(`localStorage.setItem('notacao', 'letras'); 1`);
+  await irParaInicio();
+  const lista2 = await av(`document.querySelector('li > a small')?.textContent.trim()`);
+  confere(lista2 === 'B♭ major', `com letras, a tonalidade vira B♭ major: "${lista2}"`);
+  await av(`localStorage.removeItem('notacao'); 1`);
+  await irParaInicio();
+  const lista3 = await av(`document.querySelector('li > a small')?.textContent.trim()`);
+  confere(lista3 === 'B♭ major', `automático com a interface em inglês usa letras: "${lista3}"`);
+
+  // O hino que toca (ou está pausado) leva a borda de destaque e um ícone na lista; os outros não.
+  const semMarca = await av(`({ tocando: document.querySelectorAll('li > a.tocando').length, pausado: document.querySelectorAll('li > a.pausado').length })`);
+  confere(semMarca.tocando === 0 && semMarca.pausado === 0, `sem nada tocando, nenhum hino da lista tem a borda de destaque: ${JSON.stringify(semMarca)}`);
+  await av(`document.querySelector('li > a').click(); 1`); // navegação do próprio app: a música não para ao voltar
+  for (let fim = Date.now() + 15000; Date.now() < fim && !(await av(`!!document.querySelector('#painel-ouvir')`)); ) await dormir(250);
+  await av(`[...document.querySelectorAll('#painel-ouvir button')].find((x) => /hino todo|whole|todo/i.test(x.textContent)).click(); 1`);
+  await dormir(1200);
+  await av(`history.back(); 1`);
+  for (let fim = Date.now() + 15000; Date.now() < fim && !(await av(`!!document.querySelector('li > a')`)); ) await dormir(250);
+  await dormir(500);
+  const toc = await av(`(() => { const a = document.querySelector('li > a.tocando'); if (!a) return null; return { icone: !!a.querySelector('.estado svg'), leitor: a.querySelector('.estado .so-leitor')?.textContent.trim(), borda: getComputedStyle(a).borderColor, acento: getComputedStyle(document.documentElement).getPropertyValue('--acento').trim() }; })()`);
+  confere(toc && toc.icone && /Playing/.test(toc.leitor ?? '') && toc.borda !== 'rgba(0, 0, 0, 0)', `o hino que toca leva a borda de destaque, o ícone e o aviso para o leitor de tela: ${JSON.stringify(toc)}`);
+  await av(`document.querySelector('.mini .acao')?.click(); 1`); // pausa pelo miniplayer
+  await dormir(500);
+  const paus = await av(`(() => { const a = document.querySelector('li > a.pausado'); return a ? { leitor: a.querySelector('.estado .so-leitor')?.textContent.trim(), tocando: !!document.querySelector('li > a.tocando') } : null; })()`);
+  confere(paus && /Paused/.test(paus.leitor ?? '') && !paus.tocando, `pausado, a lista mostra o hino com a marca de pausa (e não mais a de tocando): ${JSON.stringify(paus)}`);
+  await irParaInicio();
+
   await irParaAjustes(AJ);
   await av(`document.querySelector('#conteudo summary').click(); 1`);
   await dormir(300);

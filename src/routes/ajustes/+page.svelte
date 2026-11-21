@@ -19,6 +19,8 @@
   import { traduzirErro } from "$lib/erros";
   import { listaCurta } from "$lib/pacote";
   import { hinario } from "$lib/hinario/hinario.svelte";
+  import { NOTACOES } from "$lib/notacao";
+  import { notacao } from "$lib/notacao.svelte";
   import { instalando } from "$lib/instalando.svelte";
   import { partituras } from "$lib/partituras/partituras.svelte";
   import { lerAjustes, salvarAjustes } from "$lib/preferencias";
@@ -184,6 +186,16 @@
         <!-- Cada nome está na própria língua: o lang faz o leitor de tela pronunciar certo. -->
         {#each Object.entries(IDIOMAS) as [id, l]}<option value={id} lang={id}>{l.nome}</option>{/each}
       </select>
+      <!-- Os nomes das notas (Afinador e tonalidade dos hinos): em sílabas (Dó, Ré, Mi… e Si♭), em letras (C, D, E… e B♭) ou automático (segue o idioma). -->
+      <p class="rotulo-grupo" id="rotulo-notas">{t("ajustes.notas")}</p>
+      <fieldset class="segmentos" aria-labelledby="rotulo-notas">
+        {#each NOTACOES as id}
+          <label class:ativo={notacao.atual === id}>
+            <input type="radio" name="notacao" value={id} checked={notacao.atual === id} onchange={() => (notacao.atual = id)} />
+            <span class="opcao-tema">{#if notacao.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`notacao.${id}`)}</span>
+          </label>
+        {/each}
+      </fieldset>
     </Cartao>
   </section>
 
