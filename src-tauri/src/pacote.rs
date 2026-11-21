@@ -523,8 +523,8 @@ mod testes {
     #[test]
     #[ignore = "precisa dos arquivos reais (BM_HINARIO e BM_ZIP)"]
     fn conteudo_real() {
-        let json = std::fs::read_to_string(std::env::var("BM_HINARIO").expect("BM_HINARIO"))
-            .unwrap();
+        let json =
+            std::fs::read_to_string(std::env::var("BM_HINARIO").expect("BM_HINARIO")).unwrap();
         let zip = std::fs::read(std::env::var("BM_ZIP").expect("BM_ZIP")).unwrap();
         let d = dir_teste("real");
         let p = hinario::importar(&d, &json).unwrap();
@@ -1752,9 +1752,8 @@ mod testes {
     fn pacote_real_e_importado_e_lido_de_volta() {
         let caminho = std::env::var("BM_PACOTE_ZIP").expect("defina BM_PACOTE_ZIP");
         let bytes = std::fs::read(&caminho).unwrap();
-        let json =
-            std::fs::read_to_string(std::env::var("BM_HINARIO").expect("defina BM_HINARIO"))
-                .unwrap();
+        let json = std::fs::read_to_string(std::env::var("BM_HINARIO").expect("defina BM_HINARIO"))
+            .unwrap();
         let d = dir_teste("real");
         hinario::importar(&d, &json).unwrap();
         let inicio = std::time::Instant::now();
