@@ -44,7 +44,7 @@
 </script>
 
 <!-- O título do documento é o que leitores de tela anunciam a cada troca de tela. -->
-<svelte:head><title>{t("biblioteca.titulo")} · Biblioteca Musical CCB</title></svelte:head>
+<svelte:head><title>{t("biblioteca.titulo")} · Biblioteca Musical</title></svelte:head>
 
 <Barra titulo={t("app.nome_curto")} logo="/favicon.png">
   {#snippet acao()}

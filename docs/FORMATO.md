@@ -284,7 +284,7 @@ O Rust confere tudo antes de gravar:
   Conferido no Chrome nos 5 hinos de amostra: com esse CSS o desenho é o mesmo do SVG com o `<style>` original (4 hinos idênticos
   byte a byte e 1 com um pixel de diferença de 2/255, ruído de antialiasing); sem ele, difere (o `stroke` some). A cor segue o
   tema com `color` e `fill: currentColor` no `svg`.
-- **O SVG não alcança a página.** Os `id` (e os `href="#..."`) ganham o prefixo `bmccb-p-`, então um `id` igual ao de um elemento
+- **O SVG não alcança a página.** Os `id` (e os `href="#..."`) ganham o prefixo `bm-p-`, então um `id` igual ao de um elemento
   do app não o confunde. O `<svg>` raiz, que é o que o layout da página enxerga, não pode ter `class` (puxaria uma regra do app,
   como `position:fixed`) nem `transform`, e sai sempre com `overflow="hidden"` (o desenho não passa por cima da interface). Quem
   embute o SVG também deve recortá-lo (`overflow: hidden` no contêiner).
@@ -305,7 +305,7 @@ As partituras ficam em `content/partituras/`, com a marca `.hinario` (o `id` do 
 ## Onde o app lê
 
 O app procura `hinario.json` em `<pasta de dados do app>/content/` (no Linux:
-`~/.local/share/br.pro.bibliotecamusical.ccb/content/`). Se o arquivo não existir,
+`~/.local/share/br.pro.bibliotecamusical/content/`). Se o arquivo não existir,
 mostra o pacote de exemplo embutido (`src-tauri/exemplo/hinario.json`, dados fictícios).
 Se o arquivo existir mas estiver inválido, o app mostra o erro em vez de esconder com o exemplo.
 Apenas `versao: 1` é suportada.

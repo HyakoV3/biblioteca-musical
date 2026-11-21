@@ -11,7 +11,7 @@ SAIDA    pasta onde ficam, para cada hino, hino-<número>.svg (RETRATO) e hino-<
 É uma ferramenta de geração, fora do app: precisa do MuseScore 4 e do pacote Python "verovio" (pip install verovio). O
 resultado **não vai para o Git** (as partituras são do autor das transcrições, como as letras).
 
-O MuseScore é procurado, nesta ordem: --musescore, a variável BMCCB_MUSESCORE, os comandos mscore/musescore4/musescore
+O MuseScore é procurado, nesta ordem: --musescore, a variável BM_MUSESCORE, os comandos mscore/musescore4/musescore
 no PATH e o Flatpak org.musescore.MuseScore. Ele roda sem janela (QT_QPA_PLATFORM=offscreen), com limite de tempo por hino
 (--tempo, em segundos). Se um hino falha, o motivo é impresso e o lote continua; o código de saída é 1 se algum falhou.
 
@@ -100,7 +100,7 @@ def inteiro_positivo(texto: str) -> int:
 
 def achar_musescore(entrada: Path, trabalho: Path, escolhido: str | None):
     """Devolve o início do comando do MuseScore (lista) ou None se não achar nenhum."""
-    escolhido = escolhido or os.environ.get("BMCCB_MUSESCORE")
+    escolhido = escolhido or os.environ.get("BM_MUSESCORE")
     if escolhido:
         return shlex.split(escolhido)
     for comando in ("mscore", "musescore4", "musescore"):
@@ -372,7 +372,7 @@ def principal() -> int:
     tk = verovio.toolkit()
     versoes_ = versoes(a.largura, None if a.so_retrato else a.largura_paisagem)
 
-    with tempfile.TemporaryDirectory(prefix="bmccb-partitura-") as t:
+    with tempfile.TemporaryDirectory(prefix="bm-partitura-") as t:
         trabalho = Path(t)
         musescore = achar_musescore(entrada, trabalho, a.musescore)
         if musescore is None:

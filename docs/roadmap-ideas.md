@@ -225,7 +225,7 @@ com a fonte do sistema a 130% e 200%, e na barra lateral com o celular deitado),
   (30 cliques ≈ 7,5 s): (a) todo `when − agora > 0`; (b) intervalos = 60/bpm ± 1 ms e nenhum `when` repetido; (c) o mesmo com um laço ocupado de 150 ms; (d) acento a cada n cliques, conferido pelo `hz`
   (substitui o "audivelmente diferente"); (e) **escondido, o clique continua** (decisão A): com a página escondida os `start` seguem, a janela passa a ~2 s e os intervalos continuam em 60/bpm; e `context.state === "closed"` só ao **parar** (não ao esconder).
   O Chrome do e2e roda com `--autoplay-policy=no-user-gesture-required`, então o gesto não é provado por ele: contar as chamadas a `new AudioContext` antes do clique em Iniciar (devem ser 0).
-- Uma sonda `window.__bmccbMetronomo` só em desenvolvimento (como `__bmccbTom` em `tom.ts`), com estado, fila e um analisador. Também amostrar a bolinha acesa a cada 25 ms contra `currentTime − outputLatency`.
+- Uma sonda `window.__bmMetronomo` só em desenvolvimento (como `__bmTom` em `tom.ts`), com estado, fila e um analisador. Também amostrar a bolinha acesa a cada 25 ms contra `currentTime − outputLatency`.
 - **Serviço em primeiro plano (A):** ligar o metrônomo liga o serviço (`iniciarMetronomo`/`pararMetronomo` na ponte), a notificação "Metrônomo · Parar" aparece e o botão para o clique de verdade (como o "Parar" do hino e da gravação);
   o serviço só se encerra quando hino, gravação e metrônomo estão todos parados; o wake lock não expira com o metrônomo ligado; se o Android recusar o serviço, o JavaScript é avisado e o metrônomo para com um aviso na tela.
 - Para só quando a pessoa manda (botão na tela ou na notificação), quando o sistema tira o áudio (ligação, outro app: aviso na tela) ou quando um hino começa a tocar (sem fone, regra F). **Sair da aba não o para** (B: gravar com o clique no fone);
@@ -531,7 +531,7 @@ Na linha de versão, algo como **"0.3.0 · teste 026 (43449fe)"**, e uma linha d
 2. O `id` do hinário e a contagem de partituras podem aparecer? (Não são dados pessoais.)
 
 ### Impacto técnico (hipóteses)
-Uma variável de ambiente no build (por exemplo `BMCCB_TESTE=026`) lida pelo `vite.config.js`; a linha em Ajustes; o texto nos 3 idiomas; um teste.
+Uma variável de ambiente no build (por exemplo `BM_TESTE=026`) lida pelo `vite.config.js`; a linha em Ajustes; o texto nos 3 idiomas; um teste.
 
 ---
 
@@ -685,7 +685,7 @@ da linha 4 e "A Rocha" no fim da estrofe 2.
 4. Como acompanhar atualizações dele (clonar numa pasta de trabalho, ou submódulo)?
 
 ### Impacto técnico (hipóteses, a verificar)
-- **Direitos:** conteúdo de terceiros **nunca** entra no CI nem em *release* público (`BMCCB_PACOTE`, ver `docs/release-e-apk-no-github.md`); os `.mscx` ficam fora do repositório, numa pasta local, e só os zips/JSON gerados seguem o fluxo atual.
+- **Direitos:** conteúdo de terceiros **nunca** entra no CI nem em *release* público (`BM_PACOTE`, ver `docs/release-e-apk-no-github.md`); os `.mscx` ficam fora do repositório, numa pasta local, e só os zips/JSON gerados seguem o fluxo atual.
 - O pipeline já existe; o risco está nas **anomalias** dos hinos reais (a I-26 já listou pausas, enfeites e ligaduras).
 - Tamanho do pacote de partituras e do hinário completo (hoje 155 KB para 5 hinos).
 
@@ -779,7 +779,7 @@ Hoje cada coisa sai de um lugar: o APK de teste vai para o Nextcloud, na mão, c
 | Tipo | Onde | Tag (exemplo) | O que leva |
 |---|---|---|---|
 | **Release do app** | repositório do código | `v0.4.0` (pré-lançamento enquanto for `0.x`) | **APK assinado, sem hinos embutidos**, com o SHA-256; no futuro o **iOS** (build do CI para TestFlight) |
-| **Release de conteúdo** | **repositório público só dos pacotes** (nome a definir, por exemplo `biblioteca-musical-ccb-pacotes`), separado do código para o CI e o histórico do código ficarem sem conteúdo de terceiros | `partituras-006`, `sons-orgao-001`, `hinario-001` | o `.zip` do pacote, o manifesto e o SHA-256 |
+| **Release de conteúdo** | **repositório público só dos pacotes** (nome a definir, por exemplo `biblioteca-musical-pacotes`), separado do código para o CI e o histórico do código ficarem sem conteúdo de terceiros | `partituras-006`, `sons-orgao-001`, `hinario-001` | o `.zip` do pacote, o manifesto e o SHA-256 |
 
 - **URL estável por arquivo:** `github.com/<dono>/<repo>/releases/download/<tag>/<arquivo>`, sem zip de pasta (o app deixa de abrir o zip de fora). Até **2 GiB por arquivo**, sem cota de banda declarada: o hinário (~4 MB),
   as partituras (~19 MB) e os sons (~38 MB) cabem folgados.
@@ -792,7 +792,7 @@ Hoje cada coisa sai de um lugar: o APK de teste vai para o Nextcloud, na mão, c
 
 ### Nome dos arquivos: o fim do commit, e não um número (pedido do responsável, 2026-11-20)
 O responsável **não gosta da numeração sequencial** dos zips de teste (`...-teste-045.zip`) e prefere **terminar o nome com o final do commit que os gerou**. Proposta:
-- **APK:** `BibliotecaMusical-CCB-<versão>-<commit curto>.zip` (por exemplo `BibliotecaMusical-CCB-0.4.0-038df34.zip`), e o mesmo no release do GitHub. O nome diz de que commit o APK saiu, sem tabela de números.
+- **APK:** `BibliotecaMusical-<versão>-<commit curto>.zip` (por exemplo `BibliotecaMusical-0.4.0-038df34.zip`), e o mesmo no release do GitHub. O nome diz de que commit o APK saiu, sem tabela de números.
 - **Só com a árvore limpa:** um APK compilado com mudanças sem commit (hoje o commit sai com `+`, por exemplo `038df34+`) **não teria nome válido**; é uma vantagem: o que se entrega é sempre reproduzível a partir de um commit.
 - **Pacotes de conteúdo:** o conteúdo também depende das **fontes** (`.mscx`), que não estão no Git; então o nome leva o commit do **gerador** e, para ficar inequívoco, o início do SHA-256 do zip
   (por exemplo `partituras-<commit>-<sha8>.zip`). O manifesto continua guardando o SHA-256 inteiro.

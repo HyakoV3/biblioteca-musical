@@ -10,7 +10,7 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
 
 ## 1. Publicação no GitHub
 
-- [x] Repositório **público** criado em 2026-11-14: <https://github.com/HyakoV3/biblioteca-musical-ccb>. Um só e-mail de autor (o `noreply` do GitHub) e sem co-autoria.
+- [x] Repositório **público** criado em 2026-11-14: <https://github.com/HyakoV3/biblioteca-musical>. Um só e-mail de autor (o `noreply` do GitHub) e sem co-autoria.
 - [ ] Proteções: bloquear exclusão e *force-push* da `main`; ativar *secret scanning* e *push protection*;
       Dependabot (npm, cargo e GitHub Actions).
 - [ ] Arquivos da comunidade: `CONTRIBUTING.md`, `SECURITY.md`, modelos de *issue* e de *pull request*.
@@ -32,7 +32,7 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
       [`release-e-apk-no-github.md`](release-e-apk-no-github.md), para revisar antes de construir.
 - [ ] **APK de teste no GitHub** (Android): JDK 21, SDK e NDK, `npm run tauri android build -- --apk --target aarch64`,
       APK como artefato do *workflow*.
-      **Sem conteúdo embutido:** o `BMCCB_PACOTE` (hinos de terceiros) nunca entra no CI nem em *release* público. Só o
+      **Sem conteúdo embutido:** o `BM_PACOTE` (hinos de terceiros) nunca entra no CI nem em *release* público. Só o
       APK de teste fechado, gerado na máquina do responsável, leva conteúdo (`apk-de-teste.md`).
 - [ ] **Assinatura:** criar uma chave **própria** (a de depuração só serve para teste fechado) e guardá-la como segredo
       do GitHub (keystore em base64 e senhas). *Release* assinado só em tag `v*`, publicado em *GitHub Releases* com o

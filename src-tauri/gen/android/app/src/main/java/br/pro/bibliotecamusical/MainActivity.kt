@@ -1,4 +1,4 @@
-package br.pro.bibliotecamusical.ccb
+package br.pro.bibliotecamusical
 
 import android.os.Bundle
 import android.webkit.WebView
@@ -13,15 +13,15 @@ class MainActivity : TauriActivity() {
     super.onCreate(savedInstanceState)
   }
 
-  // A ponte do serviço de reprodução (I-22): `window.BmccbServico`, usada pelo JavaScript para ligar e desligar o serviço em primeiro plano.
+  // A ponte do serviço de reprodução (I-22): `window.BmServico`, usada pelo JavaScript para ligar e desligar o serviço em primeiro plano.
   override fun onWebViewCreate(webView: WebView) {
     val nova = PonteServico(this, webView)
     ponte = nova
-    webView.addJavascriptInterface(nova, "BmccbServico")
-    // A ponte de compartilhar uma gravação (Gravador): `window.BmccbCompartilhar`, abre a folha de compartilhamento do sistema.
+    webView.addJavascriptInterface(nova, "BmServico")
+    // A ponte de compartilhar uma gravação (Gravador): `window.BmCompartilhar`, abre a folha de compartilhamento do sistema.
     val outra = PonteCompartilhar(this)
     compartilhar = outra
-    webView.addJavascriptInterface(outra, "BmccbCompartilhar")
+    webView.addJavascriptInterface(outra, "BmCompartilhar")
   }
 
   override fun onDestroy() {

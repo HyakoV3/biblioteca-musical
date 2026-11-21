@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Biblioteca Musical CCB",
+  "productName": "Biblioteca Musical",
   "version": "0.3.0",
-  "identifier": "br.pro.bibliotecamusical.ccb",
+  "identifier": "br.pro.bibliotecamusical",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Biblioteca Musical CCB",
+        "title": "Biblioteca Musical",
         "width": 480,
         "height": 800,
         "minWidth": 320,

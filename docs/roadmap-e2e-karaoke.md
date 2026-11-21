@@ -37,7 +37,7 @@ Hora em UTC. "Exec." = id da execução; "Job" = id do job; "T" = tentativa. Chr
 
 | # | Data | Exec. | Job | T | Evento | Branch (PR) | Commit | Chrome | Mensagem curta | Cat. | Depois |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | 15/11 12:53 | 43716095635 | 132817845770 | 1 | pull_request | ci-inicial (#2) | 1ce7047 | – | testes OK; `ENOTEMPTY ... rmdir '/tmp/bmccb-e2e-*/Default'` em `limpar` | E | corrigido na #3 |
+| 1 | 15/11 12:53 | 43716095635 | 132817845770 | 1 | pull_request | ci-inicial (#2) | 1ce7047 | – | testes OK; `ENOTEMPTY ... rmdir '/tmp/bm-e2e-*/Default'` em `limpar` | E | corrigido na #3 |
 | 2 | 15/11 12:56 | 43716343753 | 132818601084 | 1 | push | main (#2) | bbda364 | – | idem | E | corrigido na #3 |
 | 3 | 15/11 17:21 | 43740612781 | 132892789898 | 1 | push | main (#10) | 1f6a270 | – | `FALHOU sílabas na ordem certa: re mi fa ...`, estrofe, `desvio 2000 ms` | B | corrigido na #63 |
 | 4 | 16/11 23:46 | 43982122692 | 133700949318 | 1 | push | main (#47) | d94c793 | – | idem | B | corrigido na #63 |
@@ -127,7 +127,7 @@ não roda nessas execuções.
 ### E. Infraestrutura do script: 2 falhas (erro nosso)
 
 - Falhas 1 e 2 (15/11 12:53 e 12:56). FATO: todos os testes deram `ok` e `E2E do karaokê: OK`, e depois
-  `Error: ENOTEMPTY: directory not empty, rmdir '/tmp/bmccb-e2e-.../Default'` em `limpar` (`karaoke.mjs:67`).
+  `Error: ENOTEMPTY: directory not empty, rmdir '/tmp/bm-e2e-.../Default'` em `limpar` (`karaoke.mjs:67`).
 - Causa (FATO, commit ff8e78f): o perfil era apagado enquanto processos filhos do Chrome ainda escreviam nele.
 - Correção: #3 (ff8e78f e 39d026b, merge 15/11 14:03): Chrome e Vite em grupo de processos próprio, encerrados juntos
   (SIGTERM e depois SIGKILL), espera o grupo esvaziar, e erro ao apagar a pasta só avisa. Resolveu: FATO, nenhum
@@ -146,7 +146,7 @@ O que é FATO:
 5. Com o rastro da #104 (falhas 31 a 34): `bytes lidos em 1 ms; abrindo o armazenamento` e depois nada; nunca aparece
    `armazenamento pronto`. O travamento é no `indexedDB.open()`.
 6. Com a #113 (falha 35, commit f6ba192): a lista já começa com erro (`começa parado ... erro:true`) e as **3 tentativas**
-   de abrir ficam mudas. O `open()` do banco do app (`bmccb-gravacoes`) fica sem resposta durante a execução inteira.
+   de abrir ficam mudas. O `open()` do banco do app (`bm-gravacoes`) fica sem resposta durante a execução inteira.
 7. Mesma versão do Chrome nas verdes e nas vermelhas: 157.0.8103.78 em todos os 30 logs que a imprimem.
 8. Distribuição por nuvem do runner (cabeçalho do log, `Cloud:`), jobs com o teste do Gravador:
 
@@ -171,13 +171,13 @@ O que é INFERÊNCIA (forte):
 - As novas tentativas da #113 não podiam funcionar: pela especificação do IndexedDB, cada `open()` do mesmo banco entra na
   **fila de conexões** daquele nome e espera os pedidos anteriores. Se o 1º está preso, os seguintes ficam atrás dele.
 - **A sonda da #113 pode não pegar o caso real**: ela abre `__sonda_e2e`, outro nome, que tem outra fila. Se o que trava é
-  a fila de `bmccb-gravacoes`, a sonda passa e o Gravador falha igual.
+  a fila de `bm-gravacoes`, a sonda passa e o Gravador falha igual.
 - O runner mais lento (Azure) aumenta a chance. Não é a versão do Chrome (a mesma nas verdes e vermelhas).
 
 O que é HIPÓTESE (causa raiz; ver seção 5):
 
 - **H1 (seria erro nosso, B):** o teste navega para outra página logo depois da 1ª visita a `/`. Em `/` o `Gravador.svelte`
-  monta e chama `carregarLista()` no `onMount`, o que faz o 1º `open()` de `bmccb-gravacoes`, com a criação do banco
+  monta e chama `carregarLista()` no `onMount`, o que faz o 1º `open()` de `bm-gravacoes`, com a criação do banco
   (`onupgradeneeded`). Se a página sai no meio dessa criação, e fica congelada no cache de voltar/avançar (bfcache) com a
   transação de versão em curso, os `open()` das páginas seguintes ficam na fila para sempre. Em `karaoke.mjs` isso
   acontece na tela inicial (logo do app) seguida de `/ajustes`; desde a #113, também na própria sonda (`/` e, ~1,5 s
@@ -216,11 +216,11 @@ nuvem (`Cloud:` no cabeçalho do log).
 
 | # | Hipótese / ação | Custo | Como testar | Como saber se funcionou |
 |---|---|---|---|---|
-| 1 | Diagnóstico melhor (não corrige nada) | baixo, só o e2e | gancho de `console.debug/warn` via `Page.addScriptToEvaluateOnNewDocument` (pega o 1º `open()`); na falha, despejar `indexedDB.databases()` e `IndexedDB.requestDatabaseNames` (CDP); Chrome com `--enable-logging=stderr --v=0` e o stderr salvo como artefato do job | a próxima falha mostra se o 1º `open()` de `bmccb-gravacoes` começou numa página que saiu antes de `banco aberto` |
-| 2 | Sonda no banco certo | baixo, só o e2e | a sonda passa a abrir `bmccb-gravacoes` (com a mesma versão do app) **depois** de uma ida e volta de navegação, não `__sonda_e2e` | se uma falha acontece, ela é pega pela sonda (`AVISO: ... tentativa N`), e não pelo teste do Gravador |
+| 1 | Diagnóstico melhor (não corrige nada) | baixo, só o e2e | gancho de `console.debug/warn` via `Page.addScriptToEvaluateOnNewDocument` (pega o 1º `open()`); na falha, despejar `indexedDB.databases()` e `IndexedDB.requestDatabaseNames` (CDP); Chrome com `--enable-logging=stderr --v=0` e o stderr salvo como artefato do job | a próxima falha mostra se o 1º `open()` de `bm-gravacoes` começou numa página que saiu antes de `banco aberto` |
+| 2 | Sonda no banco certo | baixo, só o e2e | a sonda passa a abrir `bm-gravacoes` (com a mesma versão do app) **depois** de uma ida e volta de navegação, não `__sonda_e2e` | se uma falha acontece, ela é pega pela sonda (`AVISO: ... tentativa N`), e não pelo teste do Gravador |
 | 3 | H1, bfcache | baixo, 1 opção do Chrome | rodar com `--disable-features=BackForwardCache`; pode ser em PR de teste com reexecuções | 20 jobs seguidos sem falha no Gravador, pelo menos 10 deles no Azure |
-| 4 | H1, corrida da 1ª abertura | baixo, só o e2e | antes de sair de `/` pela 1ª vez, esperar a lista do Gravador terminar de carregar (ou `indexedDB.databases()` listar `bmccb-gravacoes`) | igual ao 3; se o 3 e o 4 resolvem e o 1 mostra a página saindo no meio, a causa é nossa (B) |
-| 5 | H1 na máquina | médio, local | `Emulation.setCPUThrottlingRate` 4x a 6x e navegar para fora de `/` 50, 100, 200 ... ms depois da carga, 20 vezes cada; depois tentar abrir `bmccb-gravacoes` | reproduzir o `open()` mudo localmente fecha a questão |
+| 4 | H1, corrida da 1ª abertura | baixo, só o e2e | antes de sair de `/` pela 1ª vez, esperar a lista do Gravador terminar de carregar (ou `indexedDB.databases()` listar `bm-gravacoes`) | igual ao 3; se o 3 e o 4 resolvem e o 1 mostra a página saindo no meio, a causa é nossa (B) |
+| 5 | H1 na máquina | médio, local | `Emulation.setCPUThrottlingRate` 4x a 6x e navegar para fora de `/` 50, 100, 200 ... ms depois da carga, 20 vezes cada; depois tentar abrir `bm-gravacoes` | reproduzir o `open()` mudo localmente fecha a questão |
 | 6 | H2, perfil e memória | baixo | perfil em `$RUNNER_TEMP` ou dentro do repositório no lugar de `/tmp`; `--disable-dev-shm-usage` | igual ao 3 |
 | 7 | H3, versão do Chrome | médio | instalar Chrome for Testing 157.0.8103.38 no job (`CHROME=...`) | igual ao 3; se resolver só com a versão, é D |
 | 8 | H4, #77 | médio | rodar o e2e de 8e049c6~1 e de 8e049c6 várias vezes por `workflow_dispatch` (num ramo de teste) | diferença clara de taxa entre os dois |
@@ -230,7 +230,7 @@ nuvem (`Cloud:` no cabeçalho do log).
 
 `tests/e2e/karaoke.mjs`:
 
-1. **Sonda no banco do app** (`bmccb-gravacoes`, mesma versão), e não em `__sonda_e2e`. Motivo: a fila de `open()` é por
+1. **Sonda no banco do app** (`bm-gravacoes`, mesma versão), e não em `__sonda_e2e`. Motivo: a fila de `open()` é por
    nome; a sonda atual não vê a fila que trava.
 2. **Esperar a 1ª abertura terminar antes de navegar para fora de `/`** (na sonda e na tela inicial). Motivo: H1; e é a
    mesma regra que já resolveu a categoria B (ancorar no estado, não no tempo).
@@ -257,9 +257,9 @@ nuvem (`Cloud:` no cabeçalho do log).
 
 ## 7. Como ler uma falha nova
 
-1. Ache o job: `gh run view <exec> --json jobs` ou `gh api repos/HyakoV3/biblioteca-musical-ccb/actions/runs/<exec>/jobs?filter=all`
+1. Ache o job: `gh run view <exec> --json jobs` ou `gh api repos/HyakoV3/biblioteca-musical/actions/runs/<exec>/jobs?filter=all`
    (o `filter=all` mostra também as tentativas antigas).
-2. Baixe o log: `gh api repos/HyakoV3/biblioteca-musical-ccb/actions/jobs/<job>/logs` (o `--log-failed` vem vazio em
+2. Baixe o log: `gh api repos/HyakoV3/biblioteca-musical/actions/jobs/<job>/logs` (o `--log-failed` vem vazio em
    execuções antigas).
 3. No cabeçalho, anote `Cloud:` (AWS ou Azure) e a versão da imagem; mais abaixo, `Chrome: Chrome/...`.
 4. Procure `FALHOU`, `erro no teste`, `ENOTEMPTY`, `AVISO: este Chrome`:
@@ -284,8 +284,8 @@ Feitas no `tests/e2e/karaoke.mjs` na mesma PR deste documento; **ainda não prov
 | Item | O que mudou |
 |---|---|
 | 1. Diagnóstico | O gancho de `console.debug/warn` agora é instalado em **todo documento novo** (`Page.addScriptToEvaluateOnNewDocument`), então o rastro pega a 1ª abertura do banco (a que acontece quando a tela inicial monta). O despejo da falha do Gravador ganhou `indexedDB.databases()` (campo `bancos`). O aviso da sonda imprime os últimos 12 registros do rastro. |
-| 2. Sonda no banco certo | A sonda **não abre banco nenhum** (abrir `bmccb-gravacoes` com outra versão ou sem as tabelas estragaria o app): espera o banco do **app** aparecer em `indexedDB.databases()` (até 10 s), o que só acontece depois de a abertura dele terminar. Se não aparece, o Chrome é descartado e outro sobe (até 3). Isso também faz o teste **esperar a 1ª abertura terminar antes de sair da tela inicial** (item 4 da seção 5, no mesmo gesto). |
+| 2. Sonda no banco certo | A sonda **não abre banco nenhum** (abrir `bm-gravacoes` com outra versão ou sem as tabelas estragaria o app): espera o banco do **app** aparecer em `indexedDB.databases()` (até 10 s), o que só acontece depois de a abertura dele terminar. Se não aparece, o Chrome é descartado e outro sobe (até 3). Isso também faz o teste **esperar a 1ª abertura terminar antes de sair da tela inicial** (item 4 da seção 5, no mesmo gesto). |
 | 3. Sem cache de voltar/avançar | Chrome sobe com `--disable-features=BackForwardCache` (hipótese H1). |
 | Efeito colateral do `TypeError` | Os cliques e leituras em itens da lista (`.gravacao-item .ouvir` e `.apagar`) viraram `?.`: quando o Gravador falha, o teste seguinte falha com a própria mensagem em vez de derrubar o script, e o Metrônomo e os Ajustes continuam rodando. |
 
-Conferido na máquina: o e2e passa; com `BMCCB_E2E_FORCAR_REINICIO=1` a sonda falha na 1ª tentativa, o Chrome é descartado e o 2º sobe (o rastro do aviso mostra "criando o banco" e "banco aberto" desde o 1º documento).
+Conferido na máquina: o e2e passa; com `BM_E2E_FORCAR_REINICIO=1` a sonda falha na 1ª tentativa, o Chrome é descartado e o 2º sobe (o rastro do aviso mostra "criando o banco" e "banco aberto" desde o 1º documento).

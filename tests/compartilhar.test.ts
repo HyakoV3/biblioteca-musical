@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { BYTES_POR_PEDACO, compartilharGravacao, nomeDoArquivo, podeCompartilhar, tipoSemCodec } from "../src/lib/compartilhar";
 
 afterEach(() => {
-  delete (globalThis as Record<string, unknown>).BmccbCompartilhar;
+  delete (globalThis as Record<string, unknown>).BmCompartilhar;
   vi.restoreAllMocks();
 });
 
@@ -29,7 +29,7 @@ describe("ponte do Android", () => {
       cancelar: vi.fn(),
       ...sobrescrever,
     };
-    (globalThis as Record<string, unknown>).BmccbCompartilhar = p;
+    (globalThis as Record<string, unknown>).BmCompartilhar = p;
     return { p, partes };
   }
 

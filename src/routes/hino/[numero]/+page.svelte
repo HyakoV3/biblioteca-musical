@@ -173,7 +173,7 @@
 </script>
 
 <!-- O título do documento é o que leitores de tela anunciam a cada troca de tela. -->
-<svelte:head><title>{tituloPagina} · Biblioteca Musical CCB</title></svelte:head>
+<svelte:head><title>{tituloPagina} · Biblioteca Musical</title></svelte:head>
 
 <!-- Karaokê: botão só de ícone no cabeçalho (marca-texto vazado = desligado, cheio = ligado, e o ligado leva borda dourada,
      então o estado não depende só da cor; o microfone fica para o gravador e o afinador). O nome e a explicação vão no rótulo de acessibilidade e na dica; `aria-pressed` diz o estado ao leitor de tela. -->

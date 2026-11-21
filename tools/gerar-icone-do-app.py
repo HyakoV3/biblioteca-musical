@@ -171,7 +171,7 @@ def gerar(cabecalho: str, placa, simbolo) -> int:
     """Desenha as camadas, roda o `tauri icon` e acerta o iOS e o favicon. Levanta ErroIcone se algo falhar."""
     cor_placa = placa[1][0]
 
-    with tempfile.TemporaryDirectory(prefix="bmccb-icones-") as t:
+    with tempfile.TemporaryDirectory(prefix="bm-icones-") as t:
         pasta = Path(t)
         camadas = {"completo": placa + simbolo, "simbolo": simbolo}
         imagens = {}

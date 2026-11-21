@@ -1,10 +1,10 @@
 // Ponte com o serviço de reprodução do Android (I-22): enquanto um hino toca, um serviço em primeiro plano (com notificação) segura o app vivo
 // para o som não parar com a tela bloqueada ou o app em segundo plano. O lado Android é `ServicoAudio.kt` e a ponte `PonteServico.kt`, exposta à
-// WebView como `window.BmccbServico`. Fora do Android (navegador, computador, testes) a ponte não existe e tudo aqui não faz nada.
+// WebView como `window.BmServico`. Fora do Android (navegador, computador, testes) a ponte não existe e tudo aqui não faz nada.
 
 type Ponte = { iniciar(titulo: string): void; parar(): void; iniciarGravacao?(): void; pararGravacao?(): void; temFone?(): boolean; iniciarMetronomo?(): void; pararMetronomo?(): void };
 
-const ponte = (): Ponte | null => (globalThis as { BmccbServico?: Ponte }).BmccbServico ?? null;
+const ponte = (): Ponte | null => (globalThis as { BmServico?: Ponte }).BmServico ?? null;
 
 let ligadoCom: string | null = null;
 
@@ -28,7 +28,7 @@ export function sincronizarServico(tocando: boolean, titulo: string): void {
 
 /** O botão "Parar" da notificação chama isto (o Android avisa o JavaScript): `quando` deve parar o hino de verdade. */
 export function aoPararPelaNotificacao(quando: () => void): void {
-  (globalThis as { __bmccbParadoPelaNotificacao?: () => void }).__bmccbParadoPelaNotificacao = quando;
+  (globalThis as { __bmParadoPelaNotificacao?: () => void }).__bmParadoPelaNotificacao = quando;
 }
 
 /**
@@ -59,10 +59,10 @@ export function desligarServicoDeGravacao(): void {
 
 /** O botão "Parar" da notificação, durante uma gravação: `quando` deve parar a gravação de verdade. */
 export function aoPararGravacaoPelaNotificacao(quando: () => void): () => void {
-  const g = globalThis as { __bmccbGravacaoParadaPelaNotificacao?: () => void };
-  g.__bmccbGravacaoParadaPelaNotificacao = quando;
+  const g = globalThis as { __bmGravacaoParadaPelaNotificacao?: () => void };
+  g.__bmGravacaoParadaPelaNotificacao = quando;
   return () => {
-    if (g.__bmccbGravacaoParadaPelaNotificacao === quando) delete g.__bmccbGravacaoParadaPelaNotificacao;
+    if (g.__bmGravacaoParadaPelaNotificacao === quando) delete g.__bmGravacaoParadaPelaNotificacao;
   };
 }
 
@@ -84,10 +84,10 @@ export function foneConectado(): boolean {
  * (e, se o app está em segundo plano, pará-la, porque o microfone se foi). Devolve a função que remove o aviso.
  */
 export function aoFalharServicoDeGravacao(quando: () => void): () => void {
-  const g = globalThis as { __bmccbServicoDeGravacaoFalhou?: () => void };
-  g.__bmccbServicoDeGravacaoFalhou = quando;
+  const g = globalThis as { __bmServicoDeGravacaoFalhou?: () => void };
+  g.__bmServicoDeGravacaoFalhou = quando;
   return () => {
-    if (g.__bmccbServicoDeGravacaoFalhou === quando) delete g.__bmccbServicoDeGravacaoFalhou;
+    if (g.__bmServicoDeGravacaoFalhou === quando) delete g.__bmServicoDeGravacaoFalhou;
   };
 }
 
@@ -118,18 +118,18 @@ export function desligarServicoDoMetronomo(): void {
 
 /** O botão "Parar" da notificação com o metrônomo ligado: `quando` deve parar o clique de verdade. Devolve a função que remove o aviso. */
 export function aoPararMetronomoPelaNotificacao(quando: () => void): () => void {
-  const g = globalThis as { __bmccbMetronomoParadoPelaNotificacao?: () => void };
-  g.__bmccbMetronomoParadoPelaNotificacao = quando;
+  const g = globalThis as { __bmMetronomoParadoPelaNotificacao?: () => void };
+  g.__bmMetronomoParadoPelaNotificacao = quando;
   return () => {
-    if (g.__bmccbMetronomoParadoPelaNotificacao === quando) delete g.__bmccbMetronomoParadoPelaNotificacao;
+    if (g.__bmMetronomoParadoPelaNotificacao === quando) delete g.__bmMetronomoParadoPelaNotificacao;
   };
 }
 
 /** O Android recusou ou derrubou o serviço do metrônomo: `quando` deve parar o clique e avisar na tela. Devolve a função que remove o aviso. */
 export function aoFalharServicoDoMetronomo(quando: () => void): () => void {
-  const g = globalThis as { __bmccbServicoDoMetronomoFalhou?: () => void };
-  g.__bmccbServicoDoMetronomoFalhou = quando;
+  const g = globalThis as { __bmServicoDoMetronomoFalhou?: () => void };
+  g.__bmServicoDoMetronomoFalhou = quando;
   return () => {
-    if (g.__bmccbServicoDoMetronomoFalhou === quando) delete g.__bmccbServicoDoMetronomoFalhou;
+    if (g.__bmServicoDoMetronomoFalhou === quando) delete g.__bmServicoDoMetronomoFalhou;
   };
 }

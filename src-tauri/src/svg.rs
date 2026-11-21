@@ -16,7 +16,7 @@
 //! à partitura: ver docs/FORMATO.md) e o atributo `style` é recusado.
 //!
 //! **O que mais um SVG embutido poderia afetar da página**, e como é barrado:
-//!  - `id` e `href="#..."` ganham o prefixo `bmccb-p-` (um `id` igual ao de um elemento do app não o confunde);
+//!  - `id` e `href="#..."` ganham o prefixo `bm-p-` (um `id` igual ao de um elemento do app não o confunde);
 //!  - o `<svg>` raiz, que é o que o layout da página enxerga, não pode ter `class` (puxaria uma regra do app, por exemplo
 //!    `position:fixed`) nem `transform`, e sai sempre com `overflow="hidden"` (o desenho não passa por cima da interface).
 
@@ -109,7 +109,7 @@ const PROIBIDOS_NO_VALOR: &[&str] = &[
 ];
 
 /// Prefixo dos `id` (e dos `href="#..."`) do SVG, para não colidirem com os da página.
-const PREFIXO_ID: &str = "bmccb-p-";
+const PREFIXO_ID: &str = "bm-p-";
 
 /// Confere o SVG e devolve a versão reescrita, ou o motivo de recusar.
 pub fn limpar(texto: &str) -> Result<String, String> {
@@ -339,12 +339,12 @@ mod testes {
         // id e href ganham o prefixo do app
         assert!(
             s.contains(
-                r##"<use href="#bmccb-p-E050-1" x="1" y="2" height="720px" width="720px"></use>"##
+                r##"<use href="#bm-p-E050-1" x="1" y="2" height="720px" width="720px"></use>"##
             ),
             "{s}"
         );
         assert!(
-            s.contains(r#"<path id="bmccb-p-E050-1""#) && s.contains(r#"<g id="bmccb-p-x""#),
+            s.contains(r#"<path id="bm-p-E050-1""#) && s.contains(r#"<g id="bm-p-x""#),
             "{s}"
         );
         assert!(s.contains(r#"xml:lang="pt""#));
@@ -550,17 +550,17 @@ mod testes {
     #[test]
     fn id_e_href_ganham_o_prefixo_do_app_e_isso_e_idempotente() {
         let uma = limpar(&svg(r##"<defs><path id="app"/></defs><use href="#app"/>"##)).unwrap();
-        assert!(uma.contains(r#"<path id="bmccb-p-app">"#), "{uma}");
-        assert!(uma.contains(r##"<use href="#bmccb-p-app">"##), "{uma}");
+        assert!(uma.contains(r#"<path id="bm-p-app">"#), "{uma}");
+        assert!(uma.contains(r##"<use href="#bm-p-app">"##), "{uma}");
         assert_eq!(
             limpar(&uma).unwrap(),
             uma,
             "limpar de novo não prefixa outra vez"
         );
         // quem já escreve com o prefixo continua no espaço do app
-        let ja = limpar(&svg(r#"<g id="bmccb-p-x"/>"#)).unwrap();
+        let ja = limpar(&svg(r#"<g id="bm-p-x"/>"#)).unwrap();
         assert!(
-            ja.contains(r#"id="bmccb-p-x""#) && !ja.contains("bmccb-p-bmccb-p-"),
+            ja.contains(r#"id="bm-p-x""#) && !ja.contains("bm-p-bm-p-"),
             "{ja}"
         );
     }
@@ -693,12 +693,12 @@ mod testes {
         limpar_com(texto, limite).expect_err("devia recusar")
     }
 
-    /// Confere os SVG gerados de verdade: `BMCCB_SVGS=pasta cargo test -- --ignored svgs_gerados`. Não roda no CI (as partituras
+    /// Confere os SVG gerados de verdade: `BM_SVGS=pasta cargo test -- --ignored svgs_gerados`. Não roda no CI (as partituras
     /// ficam fora do Git); serve para ver se um lote novo passa na limpeza antes de empacotar.
     #[test]
-    #[ignore = "precisa de BMCCB_SVGS=pasta com hino-N.svg"]
+    #[ignore = "precisa de BM_SVGS=pasta com hino-N.svg"]
     fn svgs_gerados_passam_na_limpeza() {
-        let pasta = std::env::var("BMCCB_SVGS").expect("defina BMCCB_SVGS");
+        let pasta = std::env::var("BM_SVGS").expect("defina BM_SVGS");
         let mut total = 0;
         let mut recusados = Vec::new();
         for e in std::fs::read_dir(&pasta).unwrap() {
@@ -714,8 +714,8 @@ mod testes {
                             "{} não é estável",
                             p.display()
                         );
-                        // Opcional: grava a versão limpa para comparar o desenho com o original (BMCCB_SVGS_LIMPOS=pasta).
-                        if let Ok(destino) = std::env::var("BMCCB_SVGS_LIMPOS") {
+                        // Opcional: grava a versão limpa para comparar o desenho com o original (BM_SVGS_LIMPOS=pasta).
+                        if let Ok(destino) = std::env::var("BM_SVGS_LIMPOS") {
                             std::fs::create_dir_all(&destino).unwrap();
                             std::fs::write(
                                 std::path::Path::new(&destino).join(p.file_name().unwrap()),

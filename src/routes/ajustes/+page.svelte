@@ -134,11 +134,16 @@
   }
 </script>
 
-<svelte:head><title>{t("ajustes.titulo")} · Biblioteca Musical CCB</title></svelte:head>
+<svelte:head><title>{t("ajustes.titulo")} · Biblioteca Musical</title></svelte:head>
 
 <Barra titulo={t("ajustes.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} />
 
 <main class="coluna conteudo">
+  <!-- Em nome do Senhor Jesus: vem antes do aviso de que o app não tem ligação com a CCB. -->
+  <section>
+    <Aviso tipo="info"><strong>{t("sobre.nome_titulo")}</strong></Aviso>
+  </section>
+
   <!-- Aviso: o app não tem ligação com a CCB. Vem antes do "Sobre", em destaque. -->
   <section>
     <Aviso tipo="info"><strong>{t("sobre.aviso_titulo")}</strong><br />{t("sobre.aviso")}</Aviso>

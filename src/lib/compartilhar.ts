@@ -1,5 +1,5 @@
 // Compartilhar uma gravação pela folha de compartilhamento do sistema (a que mostra os apps mais usados: WhatsApp etc.). No Android a WebView não abre
-// essa folha sozinha, então o app tem uma ponte (`PonteCompartilhar.kt`, `window.BmccbCompartilhar`) que recebe o áudio em pedaços e abre a folha.
+// essa folha sozinha, então o app tem uma ponte (`PonteCompartilhar.kt`, `window.BmCompartilhar`) que recebe o áudio em pedaços e abre a folha.
 // Fora do Android usa a Web Share API quando o navegador compartilha arquivos; sem nenhuma das duas, `podeCompartilhar()` é falso e o botão nem aparece.
 
 type Ponte = {
@@ -12,7 +12,7 @@ type Ponte = {
 /** Múltiplo de 3 bytes (o base64 de cada pedaço não leva preenchimento no meio); 192 KiB por chamada à ponte. */
 export const BYTES_POR_PEDACO = 3 * 65536;
 
-const ponte = (): Ponte | null => (globalThis as { BmccbCompartilhar?: Ponte }).BmccbCompartilhar ?? null;
+const ponte = (): Ponte | null => (globalThis as { BmCompartilhar?: Ponte }).BmCompartilhar ?? null;
 
 /** "audio/webm;codecs=opus" → "audio/webm". */
 export function tipoSemCodec(tipo: string): string {
