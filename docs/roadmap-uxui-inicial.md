@@ -180,7 +180,7 @@ Detalhe do hino                ├─ Leitura: tamanho da letra
       sem validar.
 - [ ] iOS: exige Mac com Xcode (ou CI com macOS); distribuição exige Apple Developer Program.
       Alternativa a avaliar: versão web instalável (PWA).
-- [x] Publicar o código no GitHub: <https://github.com/HyakoV3/biblioteca-musical-ccb> (público).
+- [x] Publicar o código no GitHub: <https://github.com/HyakoV3/biblioteca-musical> (público).
 - [x] Mensagens de erro da importação traduzidas pela interface (códigos do Rust + `src/lib/erros.ts`; ver `docs/TRADUCOES.md`).
 
 ## 5. Melhorias de áudio (depois do redesenho)

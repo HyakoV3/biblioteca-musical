@@ -7,7 +7,7 @@ use std::sync::{Mutex, MutexGuard};
 
 const EXEMPLO: &str = include_str!("../exemplo/hinario.json");
 const VERSAO_SUPORTADA: u32 = 1;
-/// Conteúdo opcional levado dentro do binário por `BMCCB_PACOTE` na hora do build (ver build.rs). Vazio no
+/// Conteúdo opcional levado dentro do binário por `BM_PACOTE` na hora do build (ver build.rs). Vazio no
 /// build comum. Não vai para o Git: o repositório só traz o pacote de exemplo fictício.
 const INCLUSO: &str = include_str!(concat!(env!("OUT_DIR"), "/pacote_incluso.json"));
 
@@ -723,7 +723,7 @@ mod testes {
 
     #[test]
     fn arquivo_invalido_gera_erro_em_vez_de_exemplo() {
-        let dir = std::env::temp_dir().join("bmccb_teste_invalido");
+        let dir = std::env::temp_dir().join("bm_teste_invalido");
         std::fs::create_dir_all(&dir).unwrap();
         std::fs::write(dir.join("hinario.json"), "{ quebrado").unwrap();
         assert!(carregar(Some(&dir)).is_err());
@@ -731,7 +731,7 @@ mod testes {
     }
 
     fn dir_teste(nome: &str) -> std::path::PathBuf {
-        let d = std::env::temp_dir().join(format!("bmccb_{nome}_{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("bm_{nome}_{}", std::process::id()));
         std::fs::remove_dir_all(&d).ok();
         d
     }
@@ -849,11 +849,11 @@ mod testes {
         assert_eq!(h.hinos[0].vozes[0].notas[0], Nota(0.0, 1.0, 72));
     }
 
-    /// Valida um arquivo real (não versionado): BMCCB_AMOSTRA=caminho cargo test -- --ignored
+    /// Valida um arquivo real (não versionado): BM_AMOSTRA=caminho cargo test -- --ignored
     #[test]
-    #[ignore = "defina BMCCB_AMOSTRA=caminho/para/hinario.json"]
+    #[ignore = "defina BM_AMOSTRA=caminho/para/hinario.json"]
     fn arquivo_real_de_amostra_e_aceito() {
-        let caminho = std::env::var("BMCCB_AMOSTRA").expect("defina BMCCB_AMOSTRA");
+        let caminho = std::env::var("BM_AMOSTRA").expect("defina BM_AMOSTRA");
         let texto = std::fs::read_to_string(caminho).unwrap();
         let d = dir_teste("amostra");
         let p = importar(&d, &texto).unwrap();

@@ -105,17 +105,17 @@ class AcharMusescore(unittest.TestCase):
         self.trabalho = Path("/trab")
 
     def test_o_argumento_vence_a_variavel_de_ambiente(self):
-        with mock.patch.dict(os.environ, {"BMCCB_MUSESCORE": "do-ambiente"}):
+        with mock.patch.dict(os.environ, {"BM_MUSESCORE": "do-ambiente"}):
             self.assertEqual(g.achar_musescore(self.entrada, self.trabalho, "meu mscore --x"), ["meu", "mscore", "--x"])
 
     def test_a_variavel_de_ambiente_vale_sem_argumento(self):
-        with mock.patch.dict(os.environ, {"BMCCB_MUSESCORE": "do-ambiente"}):
+        with mock.patch.dict(os.environ, {"BM_MUSESCORE": "do-ambiente"}):
             self.assertEqual(g.achar_musescore(self.entrada, self.trabalho, None), ["do-ambiente"])
 
     def test_usa_o_primeiro_comando_do_path(self):
         com = {"musescore4": "/usr/bin/musescore4", "musescore": "/usr/bin/musescore"}
         with mock.patch.dict(os.environ, {}, clear=False), mock.patch.object(g.shutil, "which", lambda c: com.get(c)):
-            os.environ.pop("BMCCB_MUSESCORE", None)
+            os.environ.pop("BM_MUSESCORE", None)
             self.assertEqual(g.achar_musescore(self.entrada, self.trabalho, None), ["musescore4"])
 
     def test_flatpak_pede_acesso_as_duas_pastas(self):
@@ -124,13 +124,13 @@ class AcharMusescore(unittest.TestCase):
 
         with mock.patch.object(g.shutil, "which", lambda c: "/usr/bin/flatpak" if c == "flatpak" else None), \
                 mock.patch.object(g.subprocess, "run", lambda *a, **k: Ok()):
-            os.environ.pop("BMCCB_MUSESCORE", None)
+            os.environ.pop("BM_MUSESCORE", None)
             cmd = g.achar_musescore(self.entrada, self.trabalho, None)
         self.assertEqual(cmd, ["flatpak", "run", "--filesystem=/ent:ro", "--filesystem=/trab", "org.musescore.MuseScore"])
 
     def test_sem_nada_instalado_devolve_none(self):
         with mock.patch.object(g.shutil, "which", lambda c: None):
-            os.environ.pop("BMCCB_MUSESCORE", None)
+            os.environ.pop("BM_MUSESCORE", None)
             self.assertIsNone(g.achar_musescore(self.entrada, self.trabalho, None))
 
 

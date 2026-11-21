@@ -33,7 +33,7 @@ jobs:
       - rustup target add aarch64-linux-android
       - npm ci
       - se for tag: conferir que a tag bate com a versão (tauri.conf.json, package.json, Cargo.toml)
-      - npm run tauri android build -- --apk --target aarch64     # sem BMCCB_PACOTE: nenhum hino embutido
+      - npm run tauri android build -- --apk --target aarch64     # sem BM_PACOTE: nenhum hino embutido
       - zipalign -c -P 16 4, assinar com apksigner e conferir com apksigner verify
       - SHA-256 do APK
       - sob demanda: upload-artifact   |   tag: criar o release (rascunho) e anexar o APK e o SHA-256
@@ -64,7 +64,7 @@ O SDK e o NDK do Android já vêm na imagem do Ubuntu do GitHub (a confirmar a v
 
 ## Conteúdo
 
-Os APKs do GitHub saem **sem os hinos embutidos** (o `BMCCB_PACOTE` nunca entra no CI): o repositório é público e o
+Os APKs do GitHub saem **sem os hinos embutidos** (o `BM_PACOTE` nunca entra no CI): o repositório é público e o
 conteúdo é de terceiros. Depois de instalar, o hinário é importado pelo app. O APK de teste fechado, com os 5 hinos,
 continua sendo gerado na máquina do responsável (`docs/apk-de-teste.md`).
 
@@ -77,7 +77,7 @@ continua sendo gerado na máquina do responsável (`docs/apk-de-teste.md`).
 ## Perguntas em aberto
 
 1. **Só arm64** (quase todos os celulares; é o que os zips de teste já usam) **ou também x86_64** (para o emulador)?
-2. Nome do arquivo no *release*: `BibliotecaMusical-CCB-X.Y.Z.apk`?
+2. Nome do arquivo no *release*: `BibliotecaMusical-X.Y.Z.apk`?
 3. O iOS entra no mesmo fluxo? **Não**: depende da conta paga da Apple (ver `docs/roadmap-pendencias.md`, seção 2).
 
 ## Para ligar

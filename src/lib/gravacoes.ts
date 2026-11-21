@@ -13,7 +13,7 @@ export type Resumo = { quantidade: number; bytes: number };
 /** Quantas gravações a lista carrega por vez. */
 export const TAMANHO_DA_PAGINA = 10;
 
-export const BANCO = "bmccb-gravacoes";
+export const BANCO = "bm-gravacoes";
 const VERSAO = 1;
 
 /** "17/11 10:46" (dia e mês na ordem do idioma, mais hora e minuto). */

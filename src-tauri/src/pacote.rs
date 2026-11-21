@@ -463,7 +463,7 @@ mod testes {
     const JSON: &str = r#"{"versao":1,"hinario":{"id":"x","nome":"X"},"hinos":[{"numero":1,"titulo":"A"},{"numero":2,"titulo":"B"},{"numero":283,"titulo":"C"}]}"#;
 
     fn dir_teste(nome: &str) -> std::path::PathBuf {
-        let d = std::env::temp_dir().join(format!("bmccb_pacote_{nome}_{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("bm_pacote_{nome}_{}", std::process::id()));
         std::fs::remove_dir_all(&d).ok();
         d
     }
@@ -516,16 +516,16 @@ mod testes {
         ])
     }
 
-    /// Confere um hinário e um pacote REAIS (os do responsável, que não vão para o Git): `BMCCB_HINARIO` (o `.json`) e `BMCCB_ZIP`
+    /// Confere um hinário e um pacote REAIS (os do responsável, que não vão para o Git): `BM_HINARIO` (o `.json`) e `BM_ZIP`
     /// (o pacote de partituras). Passa o hinário pelo leitor e cada SVG pela limpeza do app, e falha se alguma partitura for recusada ou
     /// não puder ser lida de volta. Fora do `cargo test` normal:
-    /// `BMCCB_HINARIO=... BMCCB_ZIP=... cargo test --lib conteudo_real -- --ignored --nocapture`.
+    /// `BM_HINARIO=... BM_ZIP=... cargo test --lib conteudo_real -- --ignored --nocapture`.
     #[test]
-    #[ignore = "precisa dos arquivos reais (BMCCB_HINARIO e BMCCB_ZIP)"]
+    #[ignore = "precisa dos arquivos reais (BM_HINARIO e BM_ZIP)"]
     fn conteudo_real() {
-        let json = std::fs::read_to_string(std::env::var("BMCCB_HINARIO").expect("BMCCB_HINARIO"))
-            .unwrap();
-        let zip = std::fs::read(std::env::var("BMCCB_ZIP").expect("BMCCB_ZIP")).unwrap();
+        let json =
+            std::fs::read_to_string(std::env::var("BM_HINARIO").expect("BM_HINARIO")).unwrap();
+        let zip = std::fs::read(std::env::var("BM_ZIP").expect("BM_ZIP")).unwrap();
         let d = dir_teste("real");
         let p = hinario::importar(&d, &json).unwrap();
         println!("hinário lido: {} hinos", p.hinario.hinos.len());
@@ -1745,16 +1745,15 @@ mod testes {
     }
 
     /// Importa um pacote de partituras de verdade (não versionado), para o hinário real:
-    /// `BMCCB_HINARIO=hinario.json BMCCB_PACOTE_ZIP=partituras.zip cargo test pacote_real -- --ignored --nocapture`.
+    /// `BM_HINARIO=hinario.json BM_PACOTE_ZIP=partituras.zip cargo test pacote_real -- --ignored --nocapture`.
     /// Confere que nada foi recusado e que cada partitura importada pode ser lida de volta.
     #[test]
-    #[ignore = "defina BMCCB_HINARIO=hinario.json e BMCCB_PACOTE_ZIP=caminho/para/partituras.zip"]
+    #[ignore = "defina BM_HINARIO=hinario.json e BM_PACOTE_ZIP=caminho/para/partituras.zip"]
     fn pacote_real_e_importado_e_lido_de_volta() {
-        let caminho = std::env::var("BMCCB_PACOTE_ZIP").expect("defina BMCCB_PACOTE_ZIP");
+        let caminho = std::env::var("BM_PACOTE_ZIP").expect("defina BM_PACOTE_ZIP");
         let bytes = std::fs::read(&caminho).unwrap();
-        let json =
-            std::fs::read_to_string(std::env::var("BMCCB_HINARIO").expect("defina BMCCB_HINARIO"))
-                .unwrap();
+        let json = std::fs::read_to_string(std::env::var("BM_HINARIO").expect("defina BM_HINARIO"))
+            .unwrap();
         let d = dir_teste("real");
         hinario::importar(&d, &json).unwrap();
         let inicio = std::time::Instant::now();

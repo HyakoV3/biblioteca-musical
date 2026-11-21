@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">"Biblioteca Musical CCB"</string>
-    <string name="main_activity_title">"Biblioteca Musical CCB"</string>
+    <string name="app_name">"Biblioteca Musical"</string>
+    <string name="main_activity_title">"Biblioteca Musical"</string>
     <string name="canal_reproducao">Reprodução do hino</string>
     <string name="notificacao_tocando">Tocando</string>
     <string name="notificacao_parar">Parar</string>

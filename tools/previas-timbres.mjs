@@ -228,7 +228,7 @@ async function principal() {
   filhos.push(vite);
   await esperarUrl(`http://127.0.0.1:${PORTA_VITE}/`, 60000);
 
-  perfil = mkdtempSync(join(tmpdir(), "bmccb-previas-"));
+  perfil = mkdtempSync(join(tmpdir(), "bm-previas-"));
   const chrome = spawn(
     acharChrome(),
     ["--headless=new", "--no-sandbox", "--disable-gpu", "--mute-audio", `--user-data-dir=${perfil}`, `--remote-debugging-port=${PORTA_CHROME}`, "about:blank"],

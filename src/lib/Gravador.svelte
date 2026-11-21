@@ -426,10 +426,6 @@
 </script>
 
 <div class="gravador">
-  <p class="meta">{t("gravador.explica")}</p>
-  {#if erro}<Aviso tipo="erro">{t(textoErro[erro])}</Aviso>{/if}
-  {#if erroGuardar}<Aviso tipo="erro">{t("gravador.erro_guardar")}</Aviso>{/if}
-
   <button id="gravar" class="botao primario grande" aria-pressed={gravando} data-nivel={nivel.toFixed(2)} onclick={alternar}>
     <!-- O medidor: uma barra atrás do texto que cresce da esquerda para a direita com o som que entra no microfone (só a largura muda, sem animação,
          então já respeita "reduzir movimento"). Decorativa: o leitor de tela é avisado só de que o som chegou ou de que não há som. -->
@@ -442,6 +438,9 @@
       <span>{t("gravador.gravar")}</span>
     {/if}
   </button>
+
+  {#if erro}<Aviso tipo="erro">{t(textoErro[erro])}</Aviso>{/if}
+  {#if erroGuardar}<Aviso tipo="erro">{t("gravador.erro_guardar")}</Aviso>{/if}
 
   <!-- Só para o leitor de tela: começou e terminou (não anuncia o tempo segundo a segundo). -->
   {#if gravando && semSom}<Aviso tipo="info"><span id="sem-som">{t("gravador.sem_som")}</span></Aviso>{/if}

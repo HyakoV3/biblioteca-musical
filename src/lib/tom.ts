@@ -12,7 +12,7 @@ const GANHO = 0.3;
 /** Só no servidor de desenvolvimento (e, portanto, no teste de ponta a ponta): deixa o teste MEDIR o som que o app gera. */
 declare global {
   interface Window {
-    __bmccbTom?: { analisador: AnalyserNode; readonly tocando: boolean; readonly frequencia: number };
+    __bmTom?: { analisador: AnalyserNode; readonly tocando: boolean; readonly frequencia: number };
   }
 }
 
@@ -95,7 +95,7 @@ export class TomSustentado {
     analisador.fftSize = 8192;
     origem.connect(analisador);
     const tom = this;
-    window.__bmccbTom = {
+    window.__bmTom = {
       analisador,
       get tocando() {
         return tom.tocando;

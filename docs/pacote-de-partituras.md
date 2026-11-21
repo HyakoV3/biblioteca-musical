@@ -73,7 +73,7 @@ python3 tools/montar-manifesto-partituras.py <link público da pasta> partituras
 **Conferir um pacote real antes de publicar (sem celular):** o teste `conteudo_real` do `src-tauri/src/pacote.rs` passa o hinário e o zip **reais** pelo mesmo leitor e pela mesma limpeza de SVG do app, e falha se alguma partitura for recusada ou não puder ser lida de volta (retrato e paisagem):
 
 ```sh
-BMCCB_HINARIO=/caminho/hinario.json BMCCB_ZIP=/caminho/partituras-NNN.zip \
+BM_HINARIO=/caminho/hinario.json BM_ZIP=/caminho/partituras-NNN.zip \
   cargo test --manifest-path src-tauri/Cargo.toml --lib conteudo_real -- --ignored --nocapture
 ```
 

@@ -16,10 +16,10 @@ val tauriProperties = Properties().apply {
 
 android {
     compileSdk = 37
-    namespace = "br.pro.bibliotecamusical.ccb"
+    namespace = "br.pro.bibliotecamusical"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "br.pro.bibliotecamusical.ccb"
+        applicationId = "br.pro.bibliotecamusical"
         minSdk = 24
         targetSdk = 37
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()

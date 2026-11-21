@@ -1,4 +1,4 @@
-# Biblioteca Musical CCB
+# Biblioteca Musical
 
 Aplicativo gratuito e de código aberto para músicos em treino: estudar hinos ouvindo cada voz (soprano, contralto,
 tenor e baixo) e acompanhando a letra. Feito com **Rust + Tauri 2** e interface em **Svelte 5 (SvelteKit) +

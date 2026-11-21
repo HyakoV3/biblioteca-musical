@@ -1,4 +1,4 @@
-package br.pro.bibliotecamusical.ccb
+package br.pro.bibliotecamusical
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -14,7 +14,7 @@ import android.os.PowerManager
 
 /**
  * Serviço em primeiro plano (tipo mídia) que mantém o app vivo enquanto um hino toca, para o som não parar com a tela bloqueada ou o app em
- * segundo plano (I-22). Quem o liga e desliga é o JavaScript, pela ponte `BmccbServico` (ver `PonteServico.kt`): liga ao começar a tocar
+ * segundo plano (I-22). Quem o liga e desliga é o JavaScript, pela ponte `BmServico` (ver `PonteServico.kt`): liga ao começar a tocar
  * (o toque em "tocar" deixa o app visível, que é o que o Android 12 em diante exige para iniciar um serviço em primeiro plano) e desliga ao
  * pausar, parar ou terminar. O som em si continua sendo gerado na WebView; o serviço só segura o processo e a CPU (WAKE_LOCK parcial).
  * A notificação mostra o título do hino e o botão "Parar", que avisa o JavaScript (`aoParar`).
@@ -23,7 +23,7 @@ class ServicoAudio : Service() {
     companion object {
         const val CANAL = "reproducao"
         const val ID_NOTIFICACAO = 1
-        const val ACAO_PARAR = "br.pro.bibliotecamusical.ccb.PARAR"
+        const val ACAO_PARAR = "br.pro.bibliotecamusical.PARAR"
 
         /** O hino mais longo cabe folgado em uma hora; o limite evita um wake lock esquecido se o JavaScript nunca avisar que parou. */
         private const val LIMITE_WAKE_LOCK_MS = 60L * 60L * 1000L
@@ -106,7 +106,7 @@ class ServicoAudio : Service() {
         } catch (e: Exception) {
             // O Android recusou (ForegroundServiceStartNotAllowedException no 12+, SecurityException sem a permissão do tipo de mídia, restrição
             // do fabricante): o hino segue tocando como antes, só sem a proteção, e o app não cai.
-            android.util.Log.w("bmccb", "startForeground recusado; o hino segue sem o serviço", e)
+            android.util.Log.w("bm", "startForeground recusado; o hino segue sem o serviço", e)
             aguardandoPrimeiroPlano = false
             paradaPendente = false
             val eraGravacao = gravando
@@ -154,7 +154,7 @@ class ServicoAudio : Service() {
     private fun segurarCpu() {
         soltarCpu()
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "bmccb:reproducao").apply {
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "bm:reproducao").apply {
             setReferenceCounted(false)
             if (gravando || metronomo) acquire() else acquire(LIMITE_WAKE_LOCK_MS)
         }

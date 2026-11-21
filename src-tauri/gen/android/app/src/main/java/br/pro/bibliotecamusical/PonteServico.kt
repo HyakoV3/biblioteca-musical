@@ -1,4 +1,4 @@
-package br.pro.bibliotecamusical.ccb
+package br.pro.bibliotecamusical
 
 import android.Manifest
 import android.content.Context
@@ -12,7 +12,7 @@ import android.webkit.WebView
 import java.lang.ref.WeakReference
 
 /**
- * Ponte entre o JavaScript do app e o serviço de reprodução (I-22), exposta à WebView como `window.BmccbServico`. O app só carrega conteúdo
+ * Ponte entre o JavaScript do app e o serviço de reprodução (I-22), exposta à WebView como `window.BmServico`. O app só carrega conteúdo
  * local, e a ponte só aceita um título de hino (texto) e o pedido de ligar ou desligar o serviço; não lê nada do aparelho.
  * Os métodos chegam em uma thread da WebView, então tudo o que mexe no Android passa para a thread principal.
  */
@@ -25,27 +25,27 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
         val fraca = WeakReference(webView)
         ServicoAudio.aoPararGravacao = {
             fraca.get()?.let { wv ->
-                wv.post { wv.evaluateJavascript("window.__bmccbGravacaoParadaPelaNotificacao && window.__bmccbGravacaoParadaPelaNotificacao()", null) }
+                wv.post { wv.evaluateJavascript("window.__bmGravacaoParadaPelaNotificacao && window.__bmGravacaoParadaPelaNotificacao()", null) }
             }
         }
         ServicoAudio.aoPararMetronomo = {
             fraca.get()?.let { wv ->
-                wv.post { wv.evaluateJavascript("window.__bmccbMetronomoParadoPelaNotificacao && window.__bmccbMetronomoParadoPelaNotificacao()", null) }
+                wv.post { wv.evaluateJavascript("window.__bmMetronomoParadoPelaNotificacao && window.__bmMetronomoParadoPelaNotificacao()", null) }
             }
         }
         ServicoAudio.aoFalharMetronomo = {
             fraca.get()?.let { wv ->
-                wv.post { wv.evaluateJavascript("window.__bmccbServicoDoMetronomoFalhou && window.__bmccbServicoDoMetronomoFalhou()", null) }
+                wv.post { wv.evaluateJavascript("window.__bmServicoDoMetronomoFalhou && window.__bmServicoDoMetronomoFalhou()", null) }
             }
         }
         ServicoAudio.aoFalhar = {
             fraca.get()?.let { wv ->
-                wv.post { wv.evaluateJavascript("window.__bmccbServicoDeGravacaoFalhou && window.__bmccbServicoDeGravacaoFalhou()", null) }
+                wv.post { wv.evaluateJavascript("window.__bmServicoDeGravacaoFalhou && window.__bmServicoDeGravacaoFalhou()", null) }
             }
         }
         ServicoAudio.aoParar = {
             fraca.get()?.let { wv ->
-                wv.post { wv.evaluateJavascript("window.__bmccbParadoPelaNotificacao && window.__bmccbParadoPelaNotificacao()", null) }
+                wv.post { wv.evaluateJavascript("window.__bmParadoPelaNotificacao && window.__bmParadoPelaNotificacao()", null) }
             }
         }
     }
@@ -122,7 +122,7 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.w("bmccb", "não deu para saber se há fone", e)
+            android.util.Log.w("bm", "não deu para saber se há fone", e)
             false
         }
     }
@@ -136,7 +136,7 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
             try {
                 atividade.startService(intent)
             } catch (e: Exception) {
-                android.util.Log.w("bmccb", "não deu para atualizar o serviço", e)
+                android.util.Log.w("bm", "não deu para atualizar o serviço", e)
             }
             return
         }
@@ -148,7 +148,7 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
         } catch (e: Exception) {
             ServicoAudio.aguardandoPrimeiroPlano = false
             // O Android pode recusar (app fora da tela, restrição do fabricante): o hino segue tocando como antes, só sem a proteção.
-            android.util.Log.w("bmccb", "serviço de reprodução não iniciou", e)
+            android.util.Log.w("bm", "serviço de reprodução não iniciou", e)
             val eraGravacao = ServicoAudio.gravando
             val eraMetronomo = ServicoAudio.metronomo
             ServicoAudio.tocando = false

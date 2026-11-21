@@ -53,9 +53,9 @@ const NOTAS_DO_COMPASSO = [
   [["m1n0", 0, 4], ["m1n1", 0, 2]],
   [["m2p0", 0, 2, "rest"]],
 ];
-const SVG_PARTITURA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" overflow="hidden"><svg class="definition-scale" color="black" viewBox="0 0 400 120"><g id="bmccb-p-folha">${[20, 35, 50, 65, 80].map((y) => `<path d="M10 ${y} L390 ${y}"></path>`).join("")}<ellipse cx="60" cy="50" rx="10" ry="7"></ellipse><rect x="90" y="30" width="6" height="40"></rect><text x="120" y="110" font-family="Leipzig" font-size="30px">&#xE1D5; = 58</text>${[10, 130, 250].map((x, i) => `<g class="measure" id="bmccb-p-m${i}"><path d="M${x} 20 L${x} 80"></path><path d="M${x + 120} 20 L${x + 120} 80"></path>${NOTAS_DO_COMPASSO[i].map(([id, ini, fim, tipo], k) => tipo === "rest" ? `<g class="rest" id="bmccb-p-${id}" data-t="${ini}" data-f="${fim}"><rect x="${x + 20}" y="45" width="14" height="6"></rect></g>` : `<g class="note" id="bmccb-p-${id}" data-t="${ini}" data-f="${fim}"><g class="notehead"><ellipse cx="${x + 20 + 30 * k}" cy="${55 + 10 * k}" rx="8" ry="6"></ellipse></g><rect x="${x + 27 + 30 * k}" y="${25 + 10 * k}" width="2" height="30"></rect></g>`).join("")}${i === 0 ? '<g class="tie" id="bmccb-p-lig0" data-t="0" data-f="2"><path d="M28 70 C45 82 65 82 88 70 C65 88 45 88 28 70"></path></g>' : ""}</g>`).join("")}</g></svg></svg>`;
+const SVG_PARTITURA = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" overflow="hidden"><svg class="definition-scale" color="black" viewBox="0 0 400 120"><g id="bm-p-folha">${[20, 35, 50, 65, 80].map((y) => `<path d="M10 ${y} L390 ${y}"></path>`).join("")}<ellipse cx="60" cy="50" rx="10" ry="7"></ellipse><rect x="90" y="30" width="6" height="40"></rect><text x="120" y="110" font-family="Leipzig" font-size="30px">&#xE1D5; = 58</text>${[10, 130, 250].map((x, i) => `<g class="measure" id="bm-p-m${i}"><path d="M${x} 20 L${x} 80"></path><path d="M${x + 120} 20 L${x + 120} 80"></path>${NOTAS_DO_COMPASSO[i].map(([id, ini, fim, tipo], k) => tipo === "rest" ? `<g class="rest" id="bm-p-${id}" data-t="${ini}" data-f="${fim}"><rect x="${x + 20}" y="45" width="14" height="6"></rect></g>` : `<g class="note" id="bm-p-${id}" data-t="${ini}" data-f="${fim}"><g class="notehead"><ellipse cx="${x + 20 + 30 * k}" cy="${55 + 10 * k}" rx="8" ry="6"></ellipse></g><rect x="${x + 27 + 30 * k}" y="${25 + 10 * k}" width="2" height="30"></rect></g>`).join("")}${i === 0 ? '<g class="tie" id="bm-p-lig0" data-t="0" data-f="2"><path d="M28 70 C45 82 65 82 88 70 C65 88 45 88 28 70"></path></g>' : ""}</g>`).join("")}</g></svg></svg>`;
 // A versão de paisagem é outro desenho (marcado com data-largo, para saber qual foi entregue).
-const SVG_PARTITURA_PAISAGEM = SVG_PARTITURA.replace('id="bmccb-p-folha"', 'id="bmccb-p-folha" data-largo="1"');
+const SVG_PARTITURA_PAISAGEM = SVG_PARTITURA.replace('id="bm-p-folha"', 'id="bm-p-folha" data-largo="1"');
 // Sílabas esperadas na 1ª vez (estrofe 1) e na 2ª (estrofe 2), com o início de cada uma em batidas.
 const ESPERADO_VEZ1 = [["do", 0], ["re", 2], ["mi", 4], ["fa", 6], ["sol", 8]];
 const ESPERADO_VEZ2 = [["la", 0], ["si", 2], ["do", 4], ["re", 6], ["mi", 8]];
@@ -203,7 +203,7 @@ async function principal() {
   // 2. Chrome mudo. No runner do CI o Chrome às vezes sobe COM O INDEXEDDB QUEBRADO (o `open()` nunca responde, o que derrubava o Gravador): o app já tolera isso, mas o teste não tem como
   // provar nada sobre gravações num navegador assim. Por isso, antes de começar, uma SONDA abre um banco de teste; se não responde, esse Chrome é descartado (com o perfil) e outro sobe, até 3 vezes.
   const abrirChrome = async () => {
-    perfil = mkdtempSync(join(tmpdir(), "bmccb-e2e-"));
+    perfil = mkdtempSync(join(tmpdir(), "bm-e2e-"));
     const chrome = spawn(
       acharChrome(),
       ["--headless=new", "--no-sandbox", "--disable-gpu", "--disable-features=BackForwardCache", "--mute-audio", "--autoplay-policy=no-user-gesture-required", "--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream",
@@ -244,9 +244,9 @@ async function principal() {
   // O gancho do console (para o diagnóstico do Gravador) é instalado em TODO documento novo, logo na criação: assim o rastro pega a 1ª abertura do banco, que acontece quando a tela inicial monta,
   // bem antes de o teste entrar na aba Gravador.
   const GANCHO_CONSOLE = `(() => { if (window.__avisos) return; window.__avisos = []; for (const nivel of ['warn', 'debug']) { const w = console[nivel].bind(console); console[nivel] = (...a) => { try { window.__avisos.push(nivel + ': ' + a.map((x) => { try { return String(x); } catch { return Object.prototype.toString.call(x); } }).join(' ').slice(0, 200)); if (window.__avisos.length > 400) window.__avisos.shift(); } catch {} w(...a); }; } })()`;
-  // A SONDA: o app abre (e cria) o banco `bmccb-gravacoes` quando a tela inicial monta. A sonda NÃO abre banco nenhum (abrir esse com outra versão ou sem as tabelas estragaria o app): espera o
+  // A SONDA: o app abre (e cria) o banco `bm-gravacoes` quando a tela inicial monta. A sonda NÃO abre banco nenhum (abrir esse com outra versão ou sem as tabelas estragaria o app): espera o
   // banco do APP aparecer em `indexedDB.databases()`, o que só acontece depois de a abertura dele terminar. Se não aparece em 10 s, esse Chrome é descartado e outro sobe.
-  const sondaDoBanco = (av) => av(`new Promise((r) => { const ini = Date.now(); let fim = false; const acabar = (v) => { if (!fim) { fim = true; r(v); } }; setTimeout(() => acabar(false), 10000); const olhar = async () => { if (fim) return; try { const lista = await Promise.race([indexedDB.databases(), new Promise((_, rej) => setTimeout(() => rej(new Error('sem resposta')), 2000))]); if (lista.some((d) => d.name === 'bmccb-gravacoes')) return acabar(true); } catch {} if (Date.now() - ini > 10000) return acabar(false); setTimeout(olhar, 200); }; olhar(); })`);
+  const sondaDoBanco = (av) => av(`new Promise((r) => { const ini = Date.now(); let fim = false; const acabar = (v) => { if (!fim) { fim = true; r(v); } }; setTimeout(() => acabar(false), 10000); const olhar = async () => { if (fim) return; try { const lista = await Promise.race([indexedDB.databases(), new Promise((_, rej) => setTimeout(() => rej(new Error('sem resposta')), 2000))]); if (lista.some((d) => d.name === 'bm-gravacoes')) return acabar(true); } catch {} if (Date.now() - ini > 10000) return acabar(false); setTimeout(olhar, 200); }; olhar(); })`);
   let sessao = null;
   for (let tentativa = 1; tentativa <= 3; tentativa++) {
     sessao = await abrirChrome();
@@ -257,8 +257,8 @@ async function principal() {
     await esperarUrl(`http://127.0.0.1:${PORTA_VITE}/`, 30000);
     await dormir(1500);
     const idbOk = await sondaDoBanco(sessao.av);
-    // BMCCB_E2E_FORCAR_REINICIO=1 finge uma sonda sem resposta na 1ª tentativa: serve para conferir, na máquina, que o reinício do Chrome funciona.
-    const simulado = process.env.BMCCB_E2E_FORCAR_REINICIO === "1" && tentativa === 1;
+    // BM_E2E_FORCAR_REINICIO=1 finge uma sonda sem resposta na 1ª tentativa: serve para conferir, na máquina, que o reinício do Chrome funciona.
+    const simulado = process.env.BM_E2E_FORCAR_REINICIO === "1" && tentativa === 1;
     if (idbOk && !simulado) {
       if (tentativa > 1) console.log(`Chrome com o banco do app funcionando na tentativa ${tentativa}`);
       break;
@@ -580,7 +580,7 @@ async function principal() {
     };
   })()`);
   confere(p1.painelVisivel && p1.svg, `a partitura aparece no painel da aba: ${JSON.stringify({ painelVisivel: p1.painelVisivel, svg: p1.svg })}`);
-  confere(p1.overflow === "hidden" && (p1.id ?? "").startsWith("bmccb-p-"), `o SVG entregue tem overflow hidden e id com o prefixo do app: ${p1.overflow} / ${p1.id}`);
+  confere(p1.overflow === "hidden" && (p1.id ?? "").startsWith("bm-p-"), `o SVG entregue tem overflow hidden e id com o prefixo do app: ${p1.overflow} / ${p1.id}`);
   confere(p1.regiao === "region" && p1.foco === 0 && (p1.rotulo ?? "").includes("999"), `a região que rola é focável pelo teclado e tem nome: ${p1.regiao} / tabIndex ${p1.foco} / ${p1.rotulo}`);
   confere(p1.larguraDaFolha <= p1.larguraDaRegiao + 1 && !p1.paginaLargaDemais, `a 100% a partitura cabe na tela, sem rolar de lado (folha ${p1.larguraDaFolha}, região ${p1.larguraDaRegiao})`);
   // A fonte Leipzig (embarcada no app) é carregada quando o SVG pede o texto nela.
@@ -725,7 +725,7 @@ async function principal() {
   // acendem, a pausa também, e na pausa entre as partes nenhuma nota fica acesa (só o compasso).
   const halos = () => av(`(() => {
     const hs = [...document.querySelectorAll('#painel-partitura ellipse.destaque-nota')];
-    return { ids: hs.map((h) => h.parentElement.id.replace('bmccb-p-', '')).sort(), atras: hs.every((h) => h === h.parentElement.firstElementChild),
+    return { ids: hs.map((h) => h.parentElement.id.replace('bm-p-', '')).sort(), atras: hs.every((h) => h === h.parentElement.firstElementChild),
       semFundoDoCompasso: document.querySelectorAll('#painel-partitura rect.destaque-compasso').length === 0,
       semCor: hs.every((h) => !h.parentElement.getAttribute('fill') && !h.parentElement.getAttribute('style')) };
   })()`);
@@ -995,7 +995,7 @@ async function principal() {
 
   // Mede o SOM que o app gera, com o analisador que o app expõe só no servidor de desenvolvimento: autocorrelação com interpolação parabólica.
   const hzDoTom = `(() => {
-    const t = window.__bmccbTom;
+    const t = window.__bmTom;
     if (!t) return { erro: 'sem sonda' };
     const an = t.analisador, buf = new Float32Array(an.fftSize);
     an.getFloatTimeDomainData(buf);
@@ -1042,7 +1042,7 @@ async function principal() {
   // A pílula: o Play fica na linha do cartão, e fechar o cartão com a nota soando NÃO a para (o botão de parar está fora dele).
   await av(`document.querySelector('#painel-afinador details summary').click(); 1`);
   await dormir(900);
-  const aposFechar = await av(`({ tocando: window.__bmccbTom.tocando, aberto: document.querySelector('#painel-afinador details').open, pressionado: document.querySelector('#painel-afinador .tocar-pilula').getAttribute('aria-pressed') })`);
+  const aposFechar = await av(`({ tocando: window.__bmTom.tocando, aberto: document.querySelector('#painel-afinador details').open, pressionado: document.querySelector('#painel-afinador .tocar-pilula').getAttribute('aria-pressed') })`);
   confere(aposFechar.tocando !== false && aposFechar.aberto === false && aposFechar.pressionado === "true", `fechar o cartão "Outra nota" com a nota soando não para o som (o Play da pílula segue à vista): ${JSON.stringify(aposFechar)}`);
   await av(`document.querySelector('#painel-afinador details summary').click(); 1`); // reabre para o resto do teste
   await dormir(300);
@@ -1052,7 +1052,7 @@ async function principal() {
   // Sair da aba para o som (e o áudio é devolvido).
   await av(`document.getElementById('aba-hinos').click(); 1`);
   await dormir(900); // a soltura da nota (0,1 s) e o fechamento do contexto
-  const aposSair = await av(`({ tocando: window.__bmccbTom.tocando, pressionado: document.querySelectorAll('#painel-afinador :is(.grande, .tocar-pilula)')[1].getAttribute('aria-pressed'), contexto: window.__bmccbTom.analisador.context.state })`);
+  const aposSair = await av(`({ tocando: window.__bmTom.tocando, pressionado: document.querySelectorAll('#painel-afinador :is(.grande, .tocar-pilula)')[1].getAttribute('aria-pressed'), contexto: window.__bmTom.analisador.context.state })`);
   confere(aposSair.tocando === false && aposSair.pressionado === "false" && aposSair.contexto === "closed", `sair da aba Afinador para o som e devolve o áudio (contexto fechado): ${JSON.stringify(aposSair)}`);
   const buscaFicou = await av(`document.querySelector('#painel-hinos input[type="search"]').value`);
   confere(buscaFicou === "998", `a busca da lista sobrevive à troca de aba: "${buscaFicou}"`);
@@ -1189,14 +1189,14 @@ async function principal() {
   await dormir(300);
   // No Android o serviço em primeiro plano (microfone) assume a gravação: com a tela bloqueada (página escondida) ela SEGUE, e para pelo botão da
   // notificação. A ponte falsa registra as chamadas.
-  await av(`window.__ponte = []; window.BmccbServico = { iniciar() {}, parar() {}, iniciarGravacao() { window.__ponte.push('ligar'); }, pararGravacao() { window.__ponte.push('desligar'); } }; 1`);
+  await av(`window.__ponte = []; window.BmServico = { iniciar() {}, parar() {}, iniciarGravacao() { window.__ponte.push('ligar'); }, pararGravacao() { window.__ponte.push('desligar'); } }; 1`);
   await av(`document.getElementById('gravar').click(); 1`);
   await dormir(600);
   await esconder(true);
   await dormir(1500);
   const g7 = await estadoGravador();
   confere(g7.pressionado === "true" && g7.ativos === 1, `Gravador: com o serviço do Android, a página escondida NÃO para a gravação: ${JSON.stringify(g7)}`);
-  await av(`window.__bmccbGravacaoParadaPelaNotificacao && window.__bmccbGravacaoParadaPelaNotificacao(); 1`);
+  await av(`window.__bmGravacaoParadaPelaNotificacao && window.__bmGravacaoParadaPelaNotificacao(); 1`);
   await dormir(1200);
   await esconder(false);
   const g8 = await estadoGravador();
@@ -1204,7 +1204,7 @@ async function principal() {
   confere(g8.pressionado === "false" && g8.ativos === 0 && g8.audio === true && ponte8 === "ligar,desligar", `Gravador: o botão Parar da notificação para, guarda e solta o serviço: ${JSON.stringify(g8)} / ${ponte8}`);
   // Parte 4 (I-20): COM o serviço do Android assumindo a gravação ela SEGUE ao trocar de aba, e o aviso "Gravando · Parar" aparece nas outras abas. Com fone, o metrônomo e a gravação
   // andam juntos; sem fone, ligar o metrônomo para a gravação (o clique do alto-falante entraria nela), que é guardada.
-  await av(`window.__fone = true; window.BmccbServico.temFone = () => window.__fone; 1`);
+  await av(`window.__fone = true; window.BmServico.temFone = () => window.__fone; 1`);
   await av(`document.getElementById('gravar').click(); 1`);
   await dormir(700);
   await av(`document.getElementById('aba-metronomo').click(); 1`);
@@ -1246,13 +1246,13 @@ async function principal() {
   await dormir(300);
   await apagarPrimeira();
   await dormir(300);
-  await av(`delete window.BmccbServico; 1`);
+  await av(`delete window.BmServico; 1`);
   // O serviço do Android recusa DEPOIS de a ponte ter dito que assumiu: a proteção cai e, com a página escondida, a gravação para e é guardada.
   await av(`document.getElementById('gravar').click(); 1`);
   await dormir(600);
   await esconder(true);
   await dormir(500);
-  await av(`window.__bmccbServicoDeGravacaoFalhou && window.__bmccbServicoDeGravacaoFalhou(); 1`);
+  await av(`window.__bmServicoDeGravacaoFalhou && window.__bmServicoDeGravacaoFalhou(); 1`);
   await dormir(1200);
   await esconder(false);
   const g9 = await estadoGravador();
@@ -1331,7 +1331,7 @@ async function principal() {
 
   // Paginação: 25 gravações semeadas direto no armazenamento (o mesmo formato do app); a lista mostra 10, e mais 10 a cada vez que o fim chega perto da tela.
   await av(`new Promise((ok, falha) => {
-    const r = indexedDB.open('bmccb-gravacoes', 1);
+    const r = indexedDB.open('bm-gravacoes', 1);
     r.onupgradeneeded = () => { const b = r.result; b.createObjectStore('meta', { keyPath: 'id' }).createIndex('porData', ['criadaEm', 'id']); b.createObjectStore('blobs'); };
     r.onerror = () => falha(r.error);
     r.onsuccess = () => {
@@ -1340,6 +1340,9 @@ async function principal() {
       t.oncomplete = () => { b.close(); ok(1); }; t.onerror = () => falha(t.error);
     };
   })`);
+  // A paginação carrega mais quando o fim da lista chega a 600 px da tela. Numa tela baixa essa zona é pequena e o resultado não depende de quanto a aba tem de texto
+  // em cima (o CI, com outras fontes, chegou a carregar a 2ª página sozinho numa tela alta).
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 420, deviceScaleFactor: 1, mobile: true });
   await abrirGravador();
   const contar = () => av(`({ itens: document.querySelectorAll('.gravacao-item').length, fim: !!document.getElementById('fim-lista'), resumo: document.getElementById('resumo-gravacoes')?.textContent.replace(/\\s+/g, ' ').trim() ?? null })`);
   const pag1 = await contar();
@@ -1357,6 +1360,7 @@ async function principal() {
   confere(pag3.itens === 25 && pag3.fim === false, `Gravador: a última página traz as 5 que faltam (25) e o fim da lista some: ${JSON.stringify(pag3)}`);
   const unicas = await av(`new Set([...document.querySelectorAll('.gravacao-item')].map((e) => e.dataset.id)).size`);
   confere(unicas === 25, `Gravador: nenhuma gravação repetida nem pulada (25 únicas): ${unicas}`);
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
   // Um arquivo que não toca (os zeros semeados não decodificam): a tela explica e devolve o botão "Ouvir" para tentar de novo, em vez de deixar um player cinza.
   await av(`document.querySelectorAll('.gravacao-item .ouvir')[0].click(); 1`);
   await dormir(1200);
@@ -1389,7 +1393,7 @@ async function principal() {
   await dormir(500);
   await clicarGrande(0);
   await dormir(900);
-  const depoisDoTom = await av(`({ mini: !!document.querySelector('.mini'), tom: window.__bmccbTom?.tocando })`);
+  const depoisDoTom = await av(`({ mini: !!document.querySelector('.mini'), tom: window.__bmTom?.tocando })`);
   confere(miniAntes === true && depoisDoTom.mini === false && depoisDoTom.tom === true, `dar o tom para o hino que tocava (o miniplayer some e o tom soa): antes=${miniAntes}, depois=${JSON.stringify(depoisDoTom)}`);
   await clicarGrande(0); // desliga o tom
 
@@ -1409,7 +1413,7 @@ async function principal() {
   await av(`window.AudioContext = window.__ACOriginal; 1`);
   await clicarGrande(0);
   await dormir(900);
-  const recuperou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), tocando: window.__bmccbTom?.tocando })`);
+  const recuperou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), tocando: window.__bmTom?.tocando })`);
   confere(!recuperou.aviso && recuperou.tocando === true, `tentar de novo funciona e o aviso some: ${JSON.stringify(recuperou)}`);
   await clicarGrande(0); // desliga o Lá
   await av(`document.querySelector('#painel-afinador details summary').click(); 1`); // abre o cartão (a tela foi recarregada: volta fechado)
@@ -1419,7 +1423,7 @@ async function principal() {
   await av(`window.__resumeOriginal = AudioContext.prototype.resume; AudioContext.prototype.resume = () => Promise.reject(new Error('resume falhou')); 1`);
   await av(`[...document.querySelectorAll('#painel-afinador .botao-barra')].find((b) => /up|acima|arriba/i.test(b.getAttribute('aria-label'))).click(); 1`);
   await dormir(700);
-  const trocaFalhou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), pressionado: document.querySelectorAll('#painel-afinador :is(.grande, .tocar-pilula)')[1].getAttribute('aria-pressed'), soando: window.__bmccbTom.tocando, rejeicoes: window.__rejeicoes.length })`);
+  const trocaFalhou = await av(`({ aviso: !!document.querySelector('#painel-afinador .aviso.erro'), pressionado: document.querySelectorAll('#painel-afinador :is(.grande, .tocar-pilula)')[1].getAttribute('aria-pressed'), soando: window.__bmTom.tocando, rejeicoes: window.__rejeicoes.length })`);
   confere(trocaFalhou.aviso && trocaFalhou.pressionado === "false" && trocaFalhou.soando === false && trocaFalhou.rejeicoes === 0, `a troca de nota que falha para a nota antiga, avisa e não deixa rejeição solta: ${JSON.stringify(trocaFalhou)}`);
   await av(`AudioContext.prototype.resume = window.__resumeOriginal; 1`);
 
@@ -1431,7 +1435,7 @@ async function principal() {
   await dormir(600);
   const estadoTemporizador = () => av(`(() => { const d = document.getElementById('cartao-temporizador'); return { aberto: d.open, resumo: d.querySelector('summary').textContent.replace(/\\s+/g, ' ').trim() }; })()`);
   const faltam = () => av(`(() => { const s = document.querySelector('#painel-afinador :is(.grande, .tocar-pilula)[aria-pressed="true"] span[aria-hidden="true"]'); const m = s?.textContent.match(/\\d+/); return m ? Number(m[0]) : null; })()`);
-  const soando = () => av(`window.__bmccbTom?.tocando === true`);
+  const soando = () => av(`window.__bmTom?.tocando === true`);
   const tmp0 = await estadoTemporizador();
   confere(tmp0.aberto === false && /Until stopped|Até parar|Hasta parar/.test(tmp0.resumo), `Temporizador: o cartão começa fechado e em "até parar": ${JSON.stringify(tmp0)}`);
 
@@ -1476,7 +1480,7 @@ async function principal() {
 
   // Passados os 10 s, o tom para sozinho: o botão volta a "tocar" e o leitor de tela é avisado.
   await dormir(10500);
-  const fim10 = await av(`({ soando: window.__bmccbTom.tocando, pressionados: document.querySelectorAll('#painel-afinador :is(.grande, .tocar-pilula)[aria-pressed="true"]').length, aviso: document.querySelector('#painel-afinador [role="status"]').textContent.trim() })`);
+  const fim10 = await av(`({ soando: window.__bmTom.tocando, pressionados: document.querySelectorAll('#painel-afinador :is(.grande, .tocar-pilula)[aria-pressed="true"]').length, aviso: document.querySelector('#painel-afinador [role="status"]').textContent.trim() })`);
   confere(fim10.soando === false && fim10.pressionados === 0 && /timer|temporizador/i.test(fim10.aviso), `Temporizador: passado o tempo o tom para sozinho, os botões voltam a "tocar" e o leitor de tela é avisado: ${JSON.stringify(fim10)}`);
 
   // Mudar o tempo com o tom soando vale a partir de agora: 30 s recomeça a contagem de 30; "até parar" cancela a contagem.
@@ -1534,6 +1538,51 @@ async function principal() {
   await irParaInicio();
   const av3 = await estadoAviso();
   confere(!av3.aberto, `com o hinário de verdade instalado o aviso não aparece: ${JSON.stringify(av3)}`);
+
+  // ---- As abas Afinador, Gravador e Metrônomo: sem texto explicativo, com o botão principal no topo; as listas de recentes mostram só quantos itens CABEM na tela ----
+  const topoDaAba = (id) => av(`(() => { const p = document.getElementById('painel-${id}'); const b = p.querySelector('button.primario.grande'); const r = b.getBoundingClientRect(); const pr = p.getBoundingClientRect();
+    return { explica: [...p.querySelectorAll('p')].filter((e) => !e.classList.contains('so-leitor') && (e.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)).length, botaoNoTopo: Math.round(r.top - pr.top) <= 4, antes: [...p.querySelectorAll('button, input, select, summary')].indexOf(b) }; })()`);
+  await irParaInicio();
+  for (const id of ['afinador', 'gravador', 'metronomo']) {
+    await av(`document.getElementById('aba-${id}').click(); 1`);
+    await dormir(500);
+    const topo = await topoDaAba(id);
+    confere(topo.explica === 0 && topo.botaoNoTopo && topo.antes === 0, `aba ${id}: sem texto explicativo e o botão principal é o primeiro da aba, no topo: ${JSON.stringify(topo)}`);
+  }
+  const dezMetronomo = Array.from({ length: 10 }, (_, i) => ({ bpm: 60 + i * 10, compasso: 4 }));
+  await av(`localStorage.setItem('prefs.metronomo', JSON.stringify({ bpm: 120, compasso: 4, recentes: ${JSON.stringify(dezMetronomo)} })); localStorage.setItem('prefs.afinador', JSON.stringify({ recentes: ${JSON.stringify(Array.from({ length: 10 }, (_, i) => ({ classe: i, oitava: 4 })))} })); 1`);
+  await irParaInicio();
+  const cabem = async (id) => {
+    await av(`document.getElementById('aba-${id}').click(); 1`);
+    await dormir(700);
+    return av(`(() => { const bs = [...document.querySelectorAll('#painel-${id} .recentes button')]; const ult = bs.at(-1)?.getBoundingClientRect(); return { n: bs.length, fimUltimo: ult ? Math.round(ult.bottom + window.scrollY) : null, tela: Math.round(window.innerHeight - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--altura-navegacao')) || 0) - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--altura-miniplayer')) || 0)), rolagemMax: document.documentElement.scrollHeight - window.innerHeight }; })()`);
+  };
+  const metEmPe = await cabem('metronomo');
+  confere(metEmPe.n >= 1 && metEmPe.n <= 10 && metEmPe.fimUltimo <= metEmPe.tela, `Metrônomo (celular em pé): a lista dos últimos mostra só os ${metEmPe.n} que cabem na tela, sem cortar nenhum: ${JSON.stringify(metEmPe)}`);
+  const afiEmPe = await cabem('afinador');
+  confere(afiEmPe.n >= 1 && afiEmPe.n <= 10 && afiEmPe.fimUltimo <= afiEmPe.tela, `Afinador (celular em pé): a lista das notas recentes mostra só as ${afiEmPe.n} que cabem na tela: ${JSON.stringify(afiEmPe)}`);
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 915, height: 412, deviceScaleFactor: 1, mobile: true });
+  await dormir(700);
+  const metDeitado = await cabem('metronomo');
+  confere(metDeitado.n >= 1 && metDeitado.n <= metEmPe.n, `Metrônomo (deitado, tela mais baixa): a lista nunca cresce (${metDeitado.n} contra ${metEmPe.n} em pé): ${JSON.stringify(metDeitado)}`);
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
+  await dormir(700);
+  const metVoltou = await cabem('metronomo');
+  confere(metVoltou.n === metEmPe.n, `girar de volta devolve a mesma quantidade (${metVoltou.n}): ${JSON.stringify(metVoltou)}`);
+  // Dar uma nota em "Outra nota" a põe no topo da lista do afinador (sem repetir) e a lista a mostra.
+  await av(`localStorage.removeItem('prefs.afinador'); 1`);
+  await irParaInicio();
+  await av(`document.getElementById('aba-afinador').click(); 1`);
+  await dormir(500);
+  await av(`document.querySelector('#painel-afinador .tocar-pilula').click(); 1`);
+  await dormir(800);
+  await av(`const b = document.querySelectorAll('#painel-afinador .oitava button')[1]; b.click(); b.click(); 1`); // sobe duas oitavas COM o tom soando: não registra
+  await dormir(300);
+  await av(`document.querySelector('#painel-afinador .tocar-pilula').click(); 1`); // para
+  await dormir(300);
+  const afi1 = await av(`({ salvo: localStorage.getItem('prefs.afinador'), lista: [...document.querySelectorAll('#painel-afinador .recentes button')].map((b) => b.textContent.trim()) })`);
+  confere(/"recentes":\[\{"classe":0,"oitava":4\}\]/.test(afi1.salvo ?? '') && afi1.lista.length === 1 && /Hz/.test(afi1.lista[0]), `Afinador: a nota dada em Outra nota entra na lista dos recentes e é lembrada: ${JSON.stringify(afi1)}`);
+  await av(`localStorage.removeItem('prefs.afinador'); localStorage.removeItem('prefs.metronomo'); 1`);
 
   // ---- Ajustes: o que ficou aberto é lembrado, o valor ruim volta ao padrão e o link da aba Partitura abre o Conteúdo sem gravar (I-24, fatias 3 e 4) ----
   const AJ = `http://127.0.0.1:${PORTA_VITE}/ajustes`;

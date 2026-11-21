@@ -1,4 +1,4 @@
-package br.pro.bibliotecamusical.ccb
+package br.pro.bibliotecamusical
 
 import android.content.Intent
 import android.util.Base64
@@ -10,7 +10,7 @@ import java.util.concurrent.FutureTask
 import java.util.concurrent.TimeUnit
 
 /**
- * Ponte para compartilhar uma gravação do Gravador, exposta à WebView como `window.BmccbCompartilhar`. O JavaScript entrega o áudio em pedaços
+ * Ponte para compartilhar uma gravação do Gravador, exposta à WebView como `window.BmCompartilhar`. O JavaScript entrega o áudio em pedaços
  * (base64: `comecar`, `parte`..., `enviar`); aqui ele vira um arquivo no cache do app e abre a folha de compartilhamento do sistema, que mostra
  * os apps mais usados da pessoa (WhatsApp etc.). Só escreve dentro de `cache/compartilhar` (o nome é saneado) e não lê nada do aparelho.
  * Os métodos chegam em uma thread da WebView; só abrir a folha passa para a thread principal (e a ponte espera o resultado).
@@ -44,7 +44,7 @@ class PonteCompartilhar(private val atividade: MainActivity) {
             mime = if (tipo.matches(Regex("[a-z]+/[a-z0-9.+-]+"))) tipo else "audio/*"
             true
         } catch (e: Exception) {
-            android.util.Log.w("bmccb", "compartilhar: não criou o arquivo", e)
+            android.util.Log.w("bm", "compartilhar: não criou o arquivo", e)
             cancelar()
             false
         }
@@ -58,7 +58,7 @@ class PonteCompartilhar(private val atividade: MainActivity) {
             s.write(Base64.decode(base64, Base64.DEFAULT))
             true
         } catch (e: Exception) {
-            android.util.Log.w("bmccb", "compartilhar: falhou ao gravar um pedaço", e)
+            android.util.Log.w("bm", "compartilhar: falhou ao gravar um pedaço", e)
             cancelar()
             false
         }
@@ -94,7 +94,7 @@ class PonteCompartilhar(private val atividade: MainActivity) {
                     atividade.startActivity(folha)
                     true
                 } catch (e: Exception) {
-                    android.util.Log.w("bmccb", "compartilhar: não abriu a folha", e)
+                    android.util.Log.w("bm", "compartilhar: não abriu a folha", e)
                     false
                 }
             }
@@ -103,7 +103,7 @@ class PonteCompartilhar(private val atividade: MainActivity) {
             if (!abriu) cancelar() else arquivo = null // aberta: o arquivo fica para o app de destino ler
             abriu
         } catch (e: Exception) {
-            android.util.Log.w("bmccb", "compartilhar: não preparou o envio", e)
+            android.util.Log.w("bm", "compartilhar: não preparou o envio", e)
             false
         }
     }

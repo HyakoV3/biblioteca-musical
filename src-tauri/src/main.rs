@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    bibliotecamusical_ccb_lib::run()
+    bibliotecamusical_lib::run()
 }

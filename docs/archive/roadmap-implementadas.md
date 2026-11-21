@@ -8,7 +8,7 @@ descrito** (documentos, código, testes e PRs). Ele não repete esses detalhes.
 - O que **ficou pendente** dentro de cada ideia (ver no celular, perguntas que dependem do responsável) está na seção 7 de
   [`../roadmap-pendencias.md`](../roadmap-pendencias.md).
 - As ideias **ainda abertas** estão em [`../roadmap-ideas.md`](../roadmap-ideas.md).
-- Os números dos PRs são os de `HyakoV3/biblioteca-musical-ccb`. Onde não há PR numerado, a ideia veio antes dos PRs ou dentro do
+- Os números dos PRs são os de `HyakoV3/biblioteca-musical`. Onde não há PR numerado, a ideia veio antes dos PRs ou dentro do
   trabalho de outra.
 
 | Ideia | O que é | Situação | Onde está o implementado |

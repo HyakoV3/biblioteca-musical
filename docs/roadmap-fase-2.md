@@ -95,7 +95,7 @@ sem ir para o Git.
 ## Etapa 4 — Distribuição
 
 - [ ] **Chave de assinatura própria**, criada e guardada pelo responsável (a de depuração só serve para teste).
-- [x] Publicar o **código** no GitHub: <https://github.com/HyakoV3/biblioteca-musical-ccb> (público, 2026-11-14; o
+- [x] Publicar o **código** no GitHub: <https://github.com/HyakoV3/biblioteca-musical> (público, 2026-11-14; o
       conteúdo continua fora do Git). CI/CD, proteções e revisão de código: [`roadmap-pendencias.md`](roadmap-pendencias.md).
 - [ ] Avaliar **iOS** (o CI compila em máquina macOS do GitHub, mas instalar em iPhone ou publicar exige o Apple
       Developer Program) ou uma **versão web instalável (PWA)**.
