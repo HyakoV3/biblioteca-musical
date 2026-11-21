@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { BPM_MAX, BPM_MIN, Metronomo, agendar, compassoValido, limitarBpm, novoEstado, progressoNoCompasso, tempoAceso, type Clique, type EstadoAgenda } from "../src/lib/metronomo";
 
 /** Roda o agendador como o temporizador de 25 ms faria, até `fim` (s), e devolve todos os cliques. */
@@ -72,10 +72,10 @@ describe("agendar (função pura)", () => {
   });
 
   it("depois de 3 s sem o temporizador acordar, pula as batidas perdidas (sem rajada) e mantém a fase do compasso", () => {
-    const a = agendar(novoEstado(), { bpm: 120, compasso: 4, agora: 0, janela: 0.6 }); // cliques em 0.1, 0.6 (índices 0 e 1)... o 3º ainda não
+    const a = agendar(novoEstado(), { bpm: 120, compasso: 4, agora: 0, janela: 0.6 }); // cliques em 0.1 e 0.6 (índices 0 e 1): o de 1.1 ainda não
     const tarde = agendar(a.estado, { bpm: 120, compasso: 4, agora: 3.05, janela: 0.1 });
     for (const c of tarde.cliques) expect(c.tempo).toBeGreaterThanOrEqual(3.05); // nada no passado
-    expect(tarde.cliques.length).toBeLessThanOrEqual(1);
+    expect(tarde.cliques).toHaveLength(1); // a grade (0.1 + n * 0.5) tem exatamente um clique em [3.05, 3.15): 3.1, o índice 2
     // a fase: a grade segue t0 + n*0.5, e o índice é o n do compasso
     const t0 = a.cliques[0].tempo;
     for (const c of tarde.cliques) {
@@ -83,6 +83,22 @@ describe("agendar (função pura)", () => {
       expect(Math.abs(c.tempo - (t0 + n * 0.5))).toBeLessThan(1e-9);
       expect(c.indice).toBe(n % 4);
     }
+  });
+
+  it("entradas ruins não travam nem estouram: janela infinita, andamento enorme, atraso NaN, compasso fracionado, índice NaN", () => {
+    expect(agendar(novoEstado(), { bpm: 120, compasso: 4, agora: 0, janela: Infinity }).cliques).toEqual([]);
+    expect(agendar(novoEstado(), { bpm: 120, compasso: 4, agora: 0, janela: -1 }).cliques).toEqual([]);
+    const enorme = agendar(novoEstado(), { bpm: 1e300, compasso: 4, agora: 0, janela: 1 }); // limitado a 240: termina, com intervalos de 0,25 s
+    expect(enorme.cliques.length).toBeGreaterThan(0);
+    expect(enorme.cliques.length).toBeLessThanOrEqual(64);
+    const longa = agendar(novoEstado(), { bpm: 240, compasso: 4, agora: 0, janela: 1e9 });
+    expect(longa.cliques.length).toBeLessThanOrEqual(64); // teto por chamada
+    const nan = agendar(novoEstado(), { bpm: 120, compasso: 4, agora: 5, janela: 0.1, atrasoInicial: NaN });
+    expect(nan.cliques[0].tempo).toBeCloseTo(5.1, 9);
+    expect(agendar(novoEstado(), { bpm: 120, compasso: 2.5, agora: 0, janela: 1 }).cliques).toEqual([]);
+    const ruim = agendar({ ultimo: 1, indice: NaN }, { bpm: 120, compasso: 4, agora: 1, janela: 1 });
+    expect(ruim.cliques.every((c) => Number.isInteger(c.indice))).toBe(true);
+    expect(agendar({ ultimo: NaN, indice: 0 }, { bpm: 120, compasso: 4, agora: 1, janela: 0.2 }).cliques[0].tempo).toBeCloseTo(1.1, 9);
   });
 
   it("andamento e compasso inválidos não agendam nada", () => {
@@ -122,6 +138,13 @@ describe("bolinha", () => {
     expect(tempoAceso(fila, 1.49)).toBe(0);
     expect(tempoAceso(fila, 1.5)).toBe(1);
     expect(tempoAceso(fila, 2.6)).toBe(3);
+  });
+});
+
+describe("bolinha depois de trocar o andamento", () => {
+  it("usa o espaçamento até o próximo clique da fila, não o andamento novo (sem travar nem saltar)", () => {
+    const fila: Clique[] = [{ tempo: 10, indice: 0 }, { tempo: 12, indice: 1 }]; // soaram a 30 bpm (2 s); o andamento atual já é 240
+    expect(progressoNoCompasso(fila, 11, 240, 4)).toBeCloseTo(0.125, 9); // metade dos 2 s do 1º tempo
   });
 });
 
@@ -185,6 +208,8 @@ function contextoFalso() {
 }
 
 describe("Metronomo (casca)", () => {
+  afterEach(() => vi.useRealTimers());
+
   it("não cria o áudio antes de iniciar (o gesto da pessoa)", () => {
     const criar = vi.fn();
     new Metronomo({ contexto: criar as never });
@@ -203,7 +228,7 @@ describe("Metronomo (casca)", () => {
     m.parar();
     expect(m.ligado).toBe(false);
     expect(oscs.every((o) => o.fim === 0 && o.desconectado)).toBe(true); // nenhum clique agendado sobra
-    vi.useRealTimers();
+    m.fechar();
   });
 
   it("mudar o compasso ligado recomeça no 1º tempo e cancela os cliques com o acento antigo", async () => {
@@ -219,10 +244,10 @@ describe("Metronomo (casca)", () => {
     ctx.currentTime = 0.05;
     vi.advanceTimersByTime(25);
     const novo = oscs[oscs.length - 1];
-    expect(novo).not.toBe(oscs[antes - 1]);
+    expect(oscs.length).toBe(antes + 1);
+    expect(novo.frequency.value).toBe(1600); // recomeçou no 1º tempo (forte)
     expect(m.compasso).toBe(3);
     m.fechar();
-    vi.useRealTimers();
   });
 
   it("parar antes de o áudio acordar descarta o iniciar que esperava", async () => {
@@ -249,7 +274,7 @@ describe("Metronomo (casca)", () => {
     ctx.onstatechange?.();
     expect(m.ligado).toBe(false);
     expect(avisou).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
+    m.fechar();
   });
 
   it("fechar devolve o áudio (fecha o contexto)", async () => {
@@ -260,14 +285,30 @@ describe("Metronomo (casca)", () => {
     m.fechar();
     vi.advanceTimersByTime(200);
     expect(ctx.close).toHaveBeenCalled();
-    vi.useRealTimers();
   });
 
-  it("o andamento fica entre 30 e 240", () => {
+  it("se o resume() volta com o contexto ainda suspenso, não liga e avisa (WebKit)", async () => {
+    const { ctx, oscs } = contextoFalso();
+    ctx.resume = vi.fn(async () => {});
+    const m = new Metronomo({ contexto: () => ctx as never });
+    const avisou = vi.fn();
+    m.aoInterromper = avisou;
+    await m.iniciar();
+    expect(m.ligado).toBe(false);
+    expect(avisou).toHaveBeenCalledTimes(1);
+    expect(oscs).toHaveLength(0);
+  });
+
+  it("o andamento fica entre 30 e 240 e só avisa a tela quando muda", () => {
     const m = new Metronomo();
+    const mudou = vi.fn();
+    m.aoMudar = mudou;
+    m.definirBpm(240);
+    m.definirBpm(500);
+    m.definirBpm(240);
+    expect(mudou).toHaveBeenCalledTimes(1);
+    expect(m.bpm).toBe(240);
     m.definirBpm(5);
     expect(m.bpm).toBe(30);
-    m.definirBpm(500);
-    expect(m.bpm).toBe(240);
   });
 });
