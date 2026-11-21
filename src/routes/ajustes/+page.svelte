@@ -19,6 +19,7 @@
   import { traduzirErro } from "$lib/erros";
   import { LIMITE_JSON_BYTES, listaCurta } from "$lib/pacote";
   import { hinario } from "$lib/hinario/hinario.svelte";
+  import { instalando } from "$lib/instalando.svelte";
   import { partituras } from "$lib/partituras/partituras.svelte";
   import { lerAjustes, salvarAjustes } from "$lib/preferencias";
 
@@ -226,14 +227,15 @@
         aoRemover={() => (confirmando = true)}
         rotuloBaixar={hinario.disponivel ? t("hinario.baixar", { tamanho: formatarMB(hinario.bytes, i18n.idioma) }) : undefined}
         aoBaixar={() => hinario.baixar()}
+        desabilitarBaixar={instalando.ocupado}
       />
       {#if hinario.andamento.fase === "erro"}
         <Aviso tipo="erro">{erroDoHinario}</Aviso>
       {/if}
       <div class="acoes lado-a-lado">
-        <label class="botao">
+        <label class="botao" class:desabilitado={instalando.ocupado} aria-disabled={instalando.ocupado}>
           {t("importar.botao")}
-          <input type="file" accept=".json,application/json" onchange={importar} hidden />
+          <input type="file" accept=".json,application/json" onchange={importar} disabled={instalando.ocupado} hidden />
         </label>
       </div>
       {#if confirmando}
@@ -265,6 +267,7 @@
           aoRemover={() => partituras.remover()}
           rotuloBaixar={partituras.disponivel ? t("partituras.baixar", { tamanho: formatarMB(partituras.bytes, i18n.idioma) }) : undefined}
           aoBaixar={() => partituras.baixar()}
+          desabilitarBaixar={instalando.ocupado}
         />
         {#if partituras.andamento.fase === "erro"}
           <Aviso tipo="erro">{erroDasPartituras}</Aviso>
@@ -363,6 +366,8 @@
 </main>
 
 <style>
+  /* O "Importar" de arquivo durante um download de conteúdo: desabilitado (o hinário baixado sobrescreveria a importação feita no meio). */
+  label.desabilitado { opacity: 0.5; pointer-events: none; cursor: not-allowed; }
   section { margin-bottom: 0.9rem; }
   .versao { margin: 0 0 1.5rem; text-align: center; }
   .sobre p, .sobre li { line-height: 1.5; }

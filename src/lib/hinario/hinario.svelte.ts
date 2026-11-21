@@ -1,6 +1,8 @@
 // Estado do download do hinário (o texto e a música dos hinos, em um `hinario.json`): o andamento e o erro. O que está INSTALADO vem do Rust
 // (`biblioteca.pacote`). Usado pela tela Ajustes (cartão Conteúdo) e pelo aviso do primeiro acesso, no mesmo molde das partituras.
 import { biblioteca } from "../biblioteca.svelte";
+import { instalando } from "../instalando.svelte";
+import { reproducao } from "../reproducao.svelte";
 import { baixarEInstalar, extrairDaPastaReal, type Fase } from "../partituras/baixar";
 import { baixarZip } from "../sons/baixar";
 import { ErroPacote, sha256Hex, type CodigoErro } from "../sons/extrair";
@@ -21,23 +23,37 @@ let andamento = $state<Andamento>(OCIOSO);
 async function baixar() {
   const pacote = MANIFESTO_HINARIO.pacote;
   if (!pacote || !pacote.url) return;
-  if (andamento.fase === "baixando" || andamento.fase === "conferindo" || andamento.fase === "instalando") return;
+  // Um escritor do conteúdo por vez (outro download, ou o hinário já em curso): ver `instalando.svelte.ts`.
+  if (instalando.ocupado) return;
+  instalando.ocupar();
   andamento = { fase: "baixando", progresso: 0, erro: null };
   try {
     await baixarEInstalar(
       pacote,
-      { baixar: baixarZip, sha256: sha256Hex, extrairDaPasta: extrairDaPastaReal, instalar: (bytes) => biblioteca.importar(textoDoHinario(bytes)) },
+      {
+        baixar: baixarZip,
+        sha256: sha256Hex,
+        extrairDaPasta: extrairDaPastaReal,
+        instalar: async (bytes) => {
+          const instalado = await biblioteca.importar(textoDoHinario(bytes));
+          reproducao.limpar(); // o conteúdo mudou: para o som e esquece os ajustes dos hinos antigos (como no "Importar" de arquivo)
+          return instalado;
+        },
+      },
       (fase, progresso) => (andamento = { fase, progresso, erro: null }),
     );
     andamento = OCIOSO;
   } catch (e) {
     andamento = { fase: "erro", progresso: 0, erro: e instanceof ErroPacote ? { codigo: e.codigo } : { bruto: String(e) } };
+  } finally {
+    instalando.liberar();
   }
 }
 
 async function remover() {
   try {
     await biblioteca.remover();
+    reproducao.limpar();
     andamento = OCIOSO;
   } catch (e) {
     andamento = { fase: "erro", progresso: 0, erro: { bruto: String(e) } };

@@ -56,8 +56,15 @@ describe("o hinário baixável (o mesmo caminho conferido das partituras)", () =
     expect(instalado).toEqual([]);
   });
 
-  it("bytes que não são UTF-8 válido não viram texto (o Rust nunca recebe lixo)", () => {
-    expect(() => textoDoHinario(Uint8Array.from([0xff, 0xfe, 0xfd]))).toThrow();
+  it("bytes que não são UTF-8 válido não viram texto (o Rust nunca recebe lixo) e saem como erro do pacote, que a tela traduz", () => {
+    let erro: unknown = null;
+    try {
+      textoDoHinario(Uint8Array.from([0xff, 0xfe, 0xfd]));
+    } catch (e) {
+      erro = e;
+    }
+    expect(erro).toBeInstanceOf(ErroPacote);
+    expect((erro as ErroPacote).codigo).toBe("integridade");
   });
 });
 

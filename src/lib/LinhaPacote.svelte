@@ -16,6 +16,7 @@
     aoRemover,
     rotuloBaixar,
     aoBaixar,
+    desabilitarBaixar = false,
   }: {
     titulo: string;
     detalhe: string;
@@ -32,6 +33,8 @@
     /** Sem rótulo, não há botão de baixar (por exemplo, nenhum pacote publicado). */
     rotuloBaixar?: string;
     aoBaixar?: () => void;
+    /** Outro conteúdo está sendo instalado agora: o botão Baixar fica desabilitado até acabar. */
+    desabilitarBaixar?: boolean;
   } = $props();
 </script>
 
@@ -50,7 +53,7 @@
   {:else if instalado}
     <button class="botao" onclick={aoRemover}>{rotuloRemover}</button>
   {:else if rotuloBaixar}
-    <button class="botao primario" onclick={aoBaixar}>{rotuloBaixar}</button>
+    <button class="botao primario" disabled={desabilitarBaixar} onclick={aoBaixar}>{rotuloBaixar}</button>
   {/if}
 </div>
 

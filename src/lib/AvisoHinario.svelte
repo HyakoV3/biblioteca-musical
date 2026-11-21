@@ -3,6 +3,7 @@
   import { biblioteca } from "./biblioteca.svelte";
   import { avisoDispensado, deveAvisar, dispensarAviso } from "./hinario/aviso";
   import { hinario } from "./hinario/hinario.svelte";
+  import { instalando } from "./instalando.svelte";
   import { i18n } from "./i18n/index.svelte";
   import { traduzirErro } from "./erros";
   import { formatarMB } from "./sons/formato";
@@ -53,7 +54,7 @@
 
   <div class="acoes">
     <button class="botao" id="hinario-agora-nao" onclick={dispensar}>{t("hinario.aviso_agora_nao")}</button>
-    <button class="botao primario" id="hinario-baixar" disabled={baixando} onclick={() => hinario.baixar()}>
+    <button class="botao primario" id="hinario-baixar" disabled={baixando || instalando.ocupado} onclick={() => hinario.baixar()}>
       {t("hinario.baixar", { tamanho: formatarMB(hinario.bytes, i18n.idioma) })}
     </button>
   </div>
