@@ -1594,12 +1594,17 @@ async function principal() {
   const estadoCartoes = () => av(`(() => { const a = (id) => document.getElementById(id)?.open; return { aparencia: a('cartao-aparencia'), idioma: a('cartao-idioma'), conteudo: a('conteudo'), salvo: localStorage.getItem('prefs.ajustes') }; })()`);
   // "Em nome do Senhor Jesus" fica na barra de cima, ao lado do título Ajustes, numa linha só (e não numa caixa de aviso), em telas largas e estreitas.
   await irParaAjustes(AJ);
-  for (const largura of [412, 320]) {
+  for (const largura of [412, 360, 320]) {
     await enviar("Emulation.setDeviceMetricsOverride", { width: largura, height: 915, deviceScaleFactor: 1, mobile: true });
     await dormir(400);
-    const nome = await av(`(() => { const n = document.querySelector('header .nome-senhor'); const h = document.querySelector('header h1'); if (!n || !h) return null; const r = n.getBoundingClientRect(); const rh = h.getBoundingClientRect(); const lh = parseFloat(getComputedStyle(n).lineHeight) || parseFloat(getComputedStyle(n).fontSize) * 1.3;
-      return { texto: n.textContent.trim(), linhas: Math.round(r.height / lh), cabe: r.right <= window.innerWidth && r.left >= rh.right - 1, naCaixa: !!document.querySelector('main .aviso-info, main [role="status"]')?.textContent.includes(n.textContent.trim()) }; })()`);
-    confere(nome && /Lord Jesus/.test(nome.texto) && nome.linhas === 1 && nome.cabe && !nome.naCaixa, `Ajustes (${largura} px): "Em nome do Senhor Jesus" na barra de cima, ao lado do título, em uma linha só: ${JSON.stringify(nome)}`);
+    const nome = await av(`(() => {
+      const visivel = [document.querySelector('header .nome-senhor'), document.querySelector('header .textos p')].find((e) => e && e.offsetParent !== null);
+      const h = document.querySelector('header h1'); if (!visivel || !h) return { semVisivel: true, largura: window.innerWidth, estreita: matchMedia('(max-width: 22.4999em)').matches, larga: matchMedia('(min-width: 22.5em)').matches, nome: document.querySelector('header .nome-senhor') ? getComputedStyle(document.querySelector('header .nome-senhor')).display : null, sub: document.querySelector('header .textos p') ? getComputedStyle(document.querySelector('header .textos p')).display : null };
+      const r = visivel.getBoundingClientRect(); const rh = h.getBoundingClientRect(); const lh = parseFloat(getComputedStyle(h).lineHeight);
+      return { texto: visivel.textContent.trim(), ao_lado: visivel.matches('.nome-senhor'), tituloUmaLinha: rh.height <= lh * 1.2, fraseCabe: visivel.scrollWidth <= visivel.clientWidth + 1 && r.right <= window.innerWidth && r.left >= 0,
+        naCaixa: [...document.querySelectorAll('main .aviso')].some((e) => e.textContent.includes(visivel.textContent.trim())) };
+    })()`);
+    confere(nome && /Lord Jesus|Senhor Jesus|Señor Jesús/.test(nome.texto) && nome.tituloUmaLinha && nome.fraseCabe && !nome.naCaixa, `Ajustes (${largura} px): "Em nome do Senhor Jesus" na barra de cima (${nome?.ao_lado ? "ao lado do título" : "abaixo do título, em tela estreita"}), o título Ajustes numa linha só e a frase inteira na tela: ${JSON.stringify(nome)}`);
   }
   await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
   await dormir(300);
