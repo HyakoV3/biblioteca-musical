@@ -251,6 +251,13 @@ com a fonte do sistema a 130% e 200%, e na barra lateral com o celular deitado),
 - **Compassos (2026-11-21, decididos): 2, 3, 4 (simples) e 6, 9, 12 (compostos).** Fora: o **1** (não existe como fórmula de compasso: nenhuma fonte séria o confirma) e o **5 e o 7** (irregulares, não aparecem nos hinos). O levantamento das
   partituras do hinário (480 hinos) deu 4/4 em 235, 6/8 em 90, 3/4 em 84, 6/4 em 34, 9/8 em 18, 2/4 em 10, 2/2 em 10, 12/8 em 6, 9/4 em 4 e 3/2 em 1; 12 hinos mudam de compasso no meio (94, 296, 342, 346, 348, 350, 352, 359, 368,
   415: só importa na etapa 2). Em 6/8, 9/8 e 12/8 os músicos contam o pulso da semínima pontuada (2, 3 e 4 tempos); as opções 6, 9 e 12 servem para contar as colcheias. Valores antigos guardados (1, 5, 7) voltam ao padrão na leitura.
+- **Compassos irregulares (5 e 7), etapa futura (pesquisado em 2026-11-21):** o 5 e o 7 **existem** como compassos (quintuple e septuple meter) e ficaram **fora da etapa 1** por decisão do responsável. Só valem a pena **com os agrupamentos**, porque
+  sem acento interno soariam como 5 ou 7 batidas iguais, e a etapa 1 decidiu não ter apoio médio. Agrupamentos usuais: **5 = 3+2 ou 2+3**; **7 = 2+2+3** (o mais comum na música popular americana), 3+2+2 ou, mais raro, 2+3+2. Exemplos reais:
+  5/4 em "Take Five" (Brubeck, 3+2), no tema de *Missão Impossível* (Schifrin), em "Marte" (Holst) e no 2º movimento da *Pateticá* (Tchaikovsky, 2+3 que às vezes vira 3+2); 7/4 em *Unsquare Dance* (Brubeck). **Nenhum dos 480 hinos usa 5 ou 7**, e a pesquisa
+  não achou hino tradicional nesses compassos (só canções de louvor contemporâneas). Ao fazer: um acento **médio** (timbre e ganho entre o forte e o fraco) no início de cada grupo, e uma escolha do agrupamento (3+2 ou 2+3 no 5; 2+2+3, 3+2+2 ou 2+3+2 no 7). Em `agendar`
+  o acento viria de uma lista de inícios de grupo, no lugar de só o índice 0. Fontes: [Wikipedia, Septuple meter](https://en.wikipedia.org/wiki/Septuple_meter); [Baylor, cap. 16, Quintuple and Septuple Meters](https://openbooks.library.baylor.edu/rhythm/chapter/16/);
+  [Univ. of Iowa, Meter](https://pressbooks.uiowa.edu/twentieth-and-twenty-first-century-music/chapter/meter/); [Soundbrenner, 5/4](https://www.soundbrenner.com/blogs/articles/5-4); [NPR, cinco tempos por compasso](https://www.npr.org/2008/09/26/94723908/playing-five-beats-to-the-measure);
+  [John D. Cook, Music in 5/4 time](https://www.johndcook.com/blog/2009/02/27/music-in-54-time/); [BBC Music Magazine, It's good to be irregular](https://www.pressreader.com/uk/bbc-music-magazine/20210121/281904480817070).
 
 ### Perguntas em aberto
 1. **Compasso:** o formato do hino traz o `andamento` (bpm), mas **não o compasso** (2/4, 3/4, 4/4, 6/8). Para acentuar o 1º
