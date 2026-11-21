@@ -65,7 +65,12 @@
   }
 
   const marcas = $derived(Array.from({ length: metronomo.compasso }, (_, i) => i));
-  const rotuloCompasso = (n: number) => (n === 1 ? t("metronomo.compasso_um") : t("metronomo.compasso_n", { n }));
+  /** Simples: o tempo se divide em 2 (2, 3 e 4 tempos). Compostos: em 3 (6, 9 e 12). */
+  const GRUPOS = [
+    { id: "simples", rotulo: "metronomo.simples", itens: COMPASSOS.filter((n) => n <= 4) },
+    { id: "compostos", rotulo: "metronomo.compostos", itens: COMPASSOS.filter((n) => n >= 6) },
+  ] as const;
+  const rotuloCompasso = (n: number) => t("metronomo.compasso_n", { n });
 </script>
 
 <div class="metronomo">
@@ -77,13 +82,18 @@
 
   <div class="andamento"><ControleAndamento {cfg} editavel={true} min={BPM_MIN} max={BPM_MAX} /></div>
 
+  <!-- O compasso em dois grupos, como na teoria: simples (2, 3 e 4 tempos) e compostos (6, 9 e 12, de 3 em 3). Cada grupo tem 3 botões do mesmo tamanho; os dois dividem a largura. -->
   <div class="compasso" role="group" aria-label={t("metronomo.compasso")}>
-    <span class="rotulo" aria-hidden="true">{t("metronomo.compasso")}</span>
-    <div class="botoes">
-      {#each COMPASSOS as n (n)}
-        <button class="botao" aria-pressed={metronomo.compasso === n} aria-label={rotuloCompasso(n)} onclick={() => metronomo.mudarCompasso(n)}>{n}</button>
-      {/each}
-    </div>
+    {#each GRUPOS as g (g.id)}
+      <div class="grupo" role="group" aria-labelledby={`rotulo-${g.id}`}>
+        <span class="rotulo" id={`rotulo-${g.id}`}>{t(g.rotulo)}</span>
+        <div class="botoes">
+          {#each g.itens as n (n)}
+            <button class="botao" aria-pressed={metronomo.compasso === n} aria-label={rotuloCompasso(n)} onclick={() => metronomo.mudarCompasso(n)}>{n}</button>
+          {/each}
+        </div>
+      </div>
+    {/each}
   </div>
 
   <!-- O pêndulo: a bolinha vai e volta entre as duas pontas, e cada clique é uma ponta (como num metrônomo de verdade). Embaixo, uma bolinha por tempo do compasso: a do 1º tempo
@@ -112,7 +122,7 @@
   </button>
 
   <!-- Só para o leitor de tela: ligou e parou, com o andamento e o compasso. Nunca anuncia tempo a tempo (falaria por cima do clique). -->
-  <p class="so-leitor" role="status">{metronomo.ligado ? (metronomo.compasso === 1 ? t("metronomo.status_on_um", { bpm: metronomo.bpm }) : t("metronomo.status_on", { bpm: metronomo.bpm, n: metronomo.compasso })) : t("metronomo.status_off")}</p>
+  <p class="so-leitor" role="status">{metronomo.ligado ? t("metronomo.status_on", { bpm: metronomo.bpm, n: metronomo.compasso }) : t("metronomo.status_off")}</p>
 
   {#if metronomo.recentes.length > 0}
     <section class="recentes" aria-labelledby="titulo-recentes">
@@ -121,7 +131,7 @@
         {#each metronomo.recentes as r (`${r.bpm}-${r.compasso}`)}
           <li>
             <button class="botao" aria-current={r.bpm === metronomo.bpm && r.compasso === metronomo.compasso} onclick={() => metronomo.usar(r)}>
-              {r.compasso === 1 ? t("metronomo.recente_um", { bpm: r.bpm }) : t("metronomo.recente", { bpm: r.bpm, n: r.compasso })}
+              {t("metronomo.recente", { bpm: r.bpm, n: r.compasso })}
             </button>
           </li>
         {/each}
@@ -134,10 +144,11 @@
   .metronomo { display: flex; flex-direction: column; gap: 1rem; }
   .meta { margin: 0; color: var(--suave); }
   .andamento { display: flex; }
-  .compasso { display: flex; flex-direction: column; gap: 0.5rem; }
-  .compasso .rotulo { color: var(--suave); }
-  .compasso .botoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .compasso button { flex: 1 0 3rem; min-width: 3rem; min-height: 3rem; font-variant-numeric: tabular-nums; }
+  .compasso { display: flex; gap: 1rem; }
+  .grupo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.375rem; }
+  .compasso .rotulo { color: var(--suave); font-size: 0.9rem; }
+  .compasso .botoes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+  .compasso button { min-width: 0; min-height: 3rem; font-variant-numeric: tabular-nums; }
   .compasso button[aria-pressed="true"] { font-weight: 700; border-color: var(--ouro-linha); }
 
   /* O pêndulo: uma trilha com as duas pontas e a bolinha por cima. A posição vem do JavaScript (relógio de áudio); sem transição de CSS, e com movimento reduzido a bolinha só

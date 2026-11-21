@@ -214,10 +214,10 @@ describe("limites", () => {
     expect(limitarBpm(100.6)).toBe(101);
     expect(limitarBpm(NaN)).toBe(60);
   });
-  it("os compassos são 1, 2, 3, 4, 5, 6, 7, 9 e 12 tempos (os que o hinário usa, mais 1, 5 e 7 para estudar)", () => {
-    expect([...COMPASSOS]).toEqual([1, 2, 3, 4, 5, 6, 7, 9, 12]);
-    expect([1, 2, 3, 4, 5, 6, 7, 9, 12].every(compassoValido)).toBe(true);
-    expect([0, 8, 10, 11, 13, "4", null, undefined].some(compassoValido)).toBe(false);
+  it("os compassos são os simples (2, 3, 4) e os compostos (6, 9, 12): sem 1 (não existe) nem 5 e 7 (irregulares)", () => {
+    expect([...COMPASSOS]).toEqual([2, 3, 4, 6, 9, 12]);
+    expect([2, 3, 4, 6, 9, 12].every(compassoValido)).toBe(true);
+    expect([0, 1, 5, 7, 8, 10, 11, 13, "4", null, undefined].some(compassoValido)).toBe(false);
   });
 });
 

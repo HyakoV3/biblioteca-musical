@@ -23,7 +23,7 @@ describe("preferências do metrônomo", () => {
   });
 
   it("valida na leitura: andamento limitado, compasso inválido volta ao padrão, itens ruins são descartados", () => {
-    const p = normalizarPref({ bpm: 9999, compasso: 8, recentes: [{ bpm: 100, compasso: 4 }, { bpm: "x", compasso: 4 }, { bpm: 80, compasso: 10 }, null, 3] });
+    const p = normalizarPref({ bpm: 9999, compasso: 5, recentes: [{ bpm: 100, compasso: 4 }, { bpm: "x", compasso: 4 }, { bpm: 80, compasso: 7 }, { bpm: 70, compasso: 1 }, null, 3] });
     expect(p.bpm).toBe(240);
     expect(p.compasso).toBe(4);
     expect(p.recentes).toEqual([{ bpm: 100, compasso: 4 }]);
