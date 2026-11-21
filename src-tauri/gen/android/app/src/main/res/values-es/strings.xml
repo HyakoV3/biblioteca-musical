@@ -3,4 +3,6 @@
     <string name="notificacao_tocando">Reproduciendo</string>
     <string name="notificacao_parar">Detener</string>
     <string name="notificacao_gravando">Grabando</string>
+    <string name="notificacao_metronomo_titulo">Metrónomo</string>
+    <string name="notificacao_metronomo">Clic activado</string>
 </resources>

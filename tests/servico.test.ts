@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-type Global = { BmccbServico?: { iniciar: (t: string) => void; parar: () => void; iniciarGravacao?: () => void; pararGravacao?: () => void }; __bmccbParadoPelaNotificacao?: () => void; __bmccbGravacaoParadaPelaNotificacao?: () => void };
+type Global = { BmccbServico?: { iniciar: (t: string) => void; parar: () => void; iniciarGravacao?: () => void; pararGravacao?: () => void; iniciarMetronomo?: () => void; pararMetronomo?: () => void }; __bmccbParadoPelaNotificacao?: () => void; __bmccbGravacaoParadaPelaNotificacao?: () => void };
 const g = globalThis as Global;
 
 // O módulo guarda se o serviço está ligado: cada teste começa com um módulo novo.
@@ -148,6 +148,53 @@ describe("falha do serviço de gravação", () => {
     expect(falhou).toHaveBeenCalledTimes(1);
     soltar();
     expect(g2.__bmccbServicoDeGravacaoFalhou).toBeUndefined();
+  });
+});
+
+describe("serviço do metrônomo", () => {
+  afterEach(() => {
+    delete g.BmccbServico;
+    delete (globalThis as { __bmccbMetronomoParadoPelaNotificacao?: () => void }).__bmccbMetronomoParadoPelaNotificacao;
+    delete (globalThis as { __bmccbServicoDoMetronomoFalhou?: () => void }).__bmccbServicoDoMetronomoFalhou;
+    vi.restoreAllMocks();
+  });
+
+  it("liga e desliga pela ponte e diz se o Android assumiu", async () => {
+    const chamadas: string[] = [];
+    g.BmccbServico = { iniciar: () => {}, parar: () => {}, iniciarMetronomo: () => chamadas.push("ligar"), pararMetronomo: () => chamadas.push("desligar") };
+    const { ligarServicoDoMetronomo, desligarServicoDoMetronomo } = await carregar();
+    expect(ligarServicoDoMetronomo()).toBe(true);
+    desligarServicoDoMetronomo();
+    expect(chamadas).toEqual(["ligar", "desligar"]);
+  });
+
+  it("sem ponte, com ponte antiga ou com falha, devolve falso e não derruba", async () => {
+    const { ligarServicoDoMetronomo, desligarServicoDoMetronomo } = await carregar();
+    expect(ligarServicoDoMetronomo()).toBe(false);
+    g.BmccbServico = { iniciar: () => {}, parar: () => {} };
+    expect(ligarServicoDoMetronomo()).toBe(false);
+    expect(() => desligarServicoDoMetronomo()).not.toThrow();
+    const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
+    g.BmccbServico = { iniciar: () => {}, parar: () => {}, iniciarMetronomo: () => { throw new Error("x"); } };
+    expect(ligarServicoDoMetronomo()).toBe(false);
+    expect(aviso).toHaveBeenCalled();
+  });
+
+  it("os avisos do Android (Parar da notificação e falha do serviço) chamam o que o app registrou, e soltar remove", async () => {
+    const { aoPararMetronomoPelaNotificacao, aoFalharServicoDoMetronomo } = await carregar();
+    const g2 = globalThis as { __bmccbMetronomoParadoPelaNotificacao?: () => void; __bmccbServicoDoMetronomoFalhou?: () => void };
+    const parou = vi.fn();
+    const falhou = vi.fn();
+    const s1 = aoPararMetronomoPelaNotificacao(parou);
+    const s2 = aoFalharServicoDoMetronomo(falhou);
+    g2.__bmccbMetronomoParadoPelaNotificacao?.();
+    g2.__bmccbServicoDoMetronomoFalhou?.();
+    expect(parou).toHaveBeenCalledTimes(1);
+    expect(falhou).toHaveBeenCalledTimes(1);
+    s1();
+    s2();
+    expect(g2.__bmccbMetronomoParadoPelaNotificacao).toBeUndefined();
+    expect(g2.__bmccbServicoDoMetronomoFalhou).toBeUndefined();
   });
 });
 

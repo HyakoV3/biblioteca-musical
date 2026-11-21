@@ -2,7 +2,7 @@
 // para o som não parar com a tela bloqueada ou o app em segundo plano. O lado Android é `ServicoAudio.kt` e a ponte `PonteServico.kt`, exposta à
 // WebView como `window.BmccbServico`. Fora do Android (navegador, computador, testes) a ponte não existe e tudo aqui não faz nada.
 
-type Ponte = { iniciar(titulo: string): void; parar(): void; iniciarGravacao?(): void; pararGravacao?(): void; temFone?(): boolean };
+type Ponte = { iniciar(titulo: string): void; parar(): void; iniciarGravacao?(): void; pararGravacao?(): void; temFone?(): boolean; iniciarMetronomo?(): void; pararMetronomo?(): void };
 
 const ponte = (): Ponte | null => (globalThis as { BmccbServico?: Ponte }).BmccbServico ?? null;
 
@@ -88,5 +88,48 @@ export function aoFalharServicoDeGravacao(quando: () => void): () => void {
   g.__bmccbServicoDeGravacaoFalhou = quando;
   return () => {
     if (g.__bmccbServicoDeGravacaoFalhou === quando) delete g.__bmccbServicoDeGravacaoFalhou;
+  };
+}
+
+/**
+ * O metrônomo ligou: liga o serviço em primeiro plano (tipo mídia, wake lock sem limite) para o clique seguir com a tela bloqueada. Devolve `true` se o Android o assumiu;
+ * fora do Android, ou com uma ponte antiga, devolve `false` (o clique segue só enquanto a página tiver os temporizadores).
+ */
+export function ligarServicoDoMetronomo(): boolean {
+  try {
+    const p = ponte();
+    if (!p?.iniciarMetronomo) return false;
+    p.iniciarMetronomo();
+    return true;
+  } catch (e) {
+    console.warn("servico: a ponte do serviço do metrônomo falhou", e);
+    return false;
+  }
+}
+
+/** O metrônomo parou: solta o serviço (ele só se encerra se hino e gravação também estão parados). */
+export function desligarServicoDoMetronomo(): void {
+  try {
+    ponte()?.pararMetronomo?.();
+  } catch (e) {
+    console.warn("servico: a ponte do serviço do metrônomo falhou", e);
+  }
+}
+
+/** O botão "Parar" da notificação com o metrônomo ligado: `quando` deve parar o clique de verdade. Devolve a função que remove o aviso. */
+export function aoPararMetronomoPelaNotificacao(quando: () => void): () => void {
+  const g = globalThis as { __bmccbMetronomoParadoPelaNotificacao?: () => void };
+  g.__bmccbMetronomoParadoPelaNotificacao = quando;
+  return () => {
+    if (g.__bmccbMetronomoParadoPelaNotificacao === quando) delete g.__bmccbMetronomoParadoPelaNotificacao;
+  };
+}
+
+/** O Android recusou ou derrubou o serviço do metrônomo: `quando` deve parar o clique e avisar na tela. Devolve a função que remove o aviso. */
+export function aoFalharServicoDoMetronomo(quando: () => void): () => void {
+  const g = globalThis as { __bmccbServicoDoMetronomoFalhou?: () => void };
+  g.__bmccbServicoDoMetronomoFalhou = quando;
+  return () => {
+    if (g.__bmccbServicoDoMetronomoFalhou === quando) delete g.__bmccbServicoDoMetronomoFalhou;
   };
 }
