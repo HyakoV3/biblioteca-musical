@@ -4,9 +4,11 @@
   import ControleAndamento from "./ControleAndamento.svelte";
   import Icone from "./Icone.svelte";
   import { BPM_MAX, BPM_MIN, COMPASSOS } from "./metronomo";
+  import { emCurso } from "./gravacaoEmCurso.svelte";
   import { metronomo } from "./metronomo.svelte";
   import { i18n } from "./i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
+  import { foneConectado } from "./servico";
 
   // A aba Metrônomo (I-20): um clique regular, com o 1º tempo forte e os demais fracos. O clique NÃO para ao sair da aba nem ao abrir um hino: o estado vive em
   // `metronomo.svelte.ts` e só para quando a pessoa manda (aqui ou na notificação), quando o sistema tira o áudio ou quando um hino começa a tocar (um som de
@@ -57,6 +59,8 @@
       return;
     }
     reproducao.parar(); // um som de cada vez: o hino que tocava não toca junto do clique
+    // Sem fone, o clique do alto-falante entraria na gravação em curso: ela para. Com fone, os dois seguem (estudar gravando com o clique no ouvido).
+    if (emCurso.gravando && !foneConectado()) emCurso.parar?.();
     void metronomo.iniciar();
   }
 

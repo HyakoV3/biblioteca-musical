@@ -188,6 +188,7 @@ export const en: Dicionario = {
   "gravador.explica": "Record your voice or instrument and listen later. Recordings are saved in the app, only on this device. A recording in progress stops when you leave this tab.",
   "gravador.gravar": "Record",
   "gravador.parar": "Stop",
+  "gravador.em_curso": "Recording",
   "gravador.gravando": "Recording.",
   "gravador.recebendo": "Receiving sound.",
   "gravador.sem_som": "I can't hear any sound. Check that the microphone is not covered and that the device input volume is on.",

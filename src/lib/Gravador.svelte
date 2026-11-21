@@ -1,11 +1,13 @@
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, untrack } from "svelte";
   import Aviso from "./Aviso.svelte";
   import Icone from "./Icone.svelte";
   import ItemGravacao from "./ItemGravacao.svelte";
   import { DetectorDeSom, Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nivelParaBarra, nomeDoFormato, rastro, suavizarBarra, type Gravacao, type MotivoDoErro } from "./gravador";
   import { LIMITE_PARA_GUARDAR_MS, TAMANHO_DA_PAGINA, comLimite, gravacoes, type MetaGravacao, type Resumo } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
+  import { emCurso } from "./gravacaoEmCurso.svelte";
+  import { metronomo } from "./metronomo.svelte";
   import { reproducao } from "./reproducao.svelte";
   import { aoFalharServicoDeGravacao, aoPararGravacaoPelaNotificacao, desligarServicoDeGravacao, foneConectado, ligarServicoDeGravacao } from "./servico";
 
@@ -102,7 +104,10 @@
     erro = null;
     descartar();
     // Sem fone, um som de cada vez: o hino que tocava calaria dentro da gravação. Com fone, o hino segue e o microfone só ouve a pessoa.
-    if (!foneConectado()) reproducao.parar();
+    if (!foneConectado()) {
+      reproducao.parar();
+      metronomo.parar(); // o clique do alto-falante entraria na gravação
+    }
     tocandoId = null; // e uma gravação da lista que tocava também: o alto-falante entraria na nova
     try {
       await gravador.iniciar();
@@ -293,8 +298,23 @@
     }
   }
 
+  // Espelha a gravação para fora da aba (o aviso das outras abas).
+  $effect(() => {
+    emCurso.gravando = gravando;
+    emCurso.decorrido = decorrido;
+  });
+  // O metrônomo ligou com a gravação em curso: sem fone, o clique do alto-falante entraria nela, então a gravação para; com fone, os dois seguem.
+  $effect(() => {
+    if (metronomo.ligado && gravando && !foneConectado()) void parar();
+  });
+
   $effect(() => {
     if (!ativa) {
+      // Com o serviço do Android assumindo a gravação, ela SEGUE ao trocar de aba (gravar com o metrônomo no fone); o aviso das outras abas tem o Parar.
+      if (untrack(() => gravando && protegida)) {
+        tocandoId = null;
+        return;
+      }
       void sair();
       tocandoId = null; // a aba saiu de cena: nenhuma gravação da lista segue tocando
     }
@@ -329,6 +349,7 @@
     return () => document.removeEventListener("visibilitychange", aoEsconder);
   });
   onMount(() => {
+    emCurso.parar = () => void parar();
     const soltarAviso = aoPararGravacaoPelaNotificacao(() => {
       if (gravando) void parar();
     });
@@ -343,16 +364,37 @@
     return () => {
       soltarAviso();
       soltarFalha();
+      emCurso.parar = null;
     };
   });
+  /** A tela inicial se foi (a pessoa abriu um hino) com a gravação seguindo em outra aba: para, GUARDA o que foi gravado e devolve o microfone. */
+  async function pararEGuardarAoSair() {
+    try {
+      const nova = await gravador.parar();
+      if (nova) {
+        URL.revokeObjectURL(nova.url);
+        await gravacoes.salvar(nova.blob, nova.tipo, nova.segundos);
+      }
+    } catch (e) {
+      console.warn("gravador: não foi possível guardar a gravação ao sair da tela", e);
+    } finally {
+      gravador.soltar();
+    }
+  }
+
   onDestroy(() => {
+    const estavaGravando = gravando;
     destruido = true;
     protegida = false;
+    gravando = false;
+    emCurso.gravando = false;
+    emCurso.parar = null;
     desligarServicoDeGravacao();
     if (relogioTudo !== null) clearTimeout(relogioTudo);
     tentativa++; // um pedido de microfone que ainda espera é jogado fora quando chegar
     pararRelogio();
-    gravador.soltar();
+    if (estavaGravando) void pararEGuardarAoSair();
+    else gravador.soltar();
     descartar();
   });
 </script>

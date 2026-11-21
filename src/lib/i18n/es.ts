@@ -188,6 +188,7 @@ export const es: Dicionario = {
   "gravador.explica": "Grabe su voz o su instrumento y escúchelo después. Las grabaciones se guardan en la app, solo en este dispositivo. La grabación en curso se detiene al salir de esta pestaña.",
   "gravador.gravar": "Grabar",
   "gravador.parar": "Detener",
+  "gravador.em_curso": "Grabando",
   "gravador.gravando": "Grabando.",
   "gravador.recebendo": "Recibiendo sonido.",
   "gravador.sem_som": "No oigo ningún sonido. Compruebe que el micrófono no esté tapado y que el volumen de entrada del dispositivo esté activado.",
