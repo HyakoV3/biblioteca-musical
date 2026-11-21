@@ -1,9 +1,11 @@
 <script lang="ts">
-  import { untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
   import Aviso from "./Aviso.svelte";
   import Cartao from "./Cartao.svelte";
   import Icone from "./Icone.svelte";
+  import ListaRecentes from "./ListaRecentes.svelte";
   import { LA_PADRAO, OITAVA_MAX, OITAVA_MIN, OITAVA_PADRAO, frequenciaDe, limitarOitava, midiDe, nomeDaNota, nomeDaNotaPorExtenso } from "./afinador";
+  import { adicionarNota, lerAfinador, salvarAfinador, type NotaRecente } from "./afinadorPrefs";
   import { Contagem, LIMITES, fracaoFeita, type Limite } from "./contagem";
   import { i18n } from "./i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
@@ -40,6 +42,24 @@
   );
   /** O que está soando: o Lá 440, a nota escolhida, ou nada. */
   let tocando = $state<"la" | "nota" | null>(null);
+  /** As últimas notas dadas em "Outra nota" (a mais recente no topo), lembradas neste aparelho. */
+  let recentes = $state<NotaRecente[]>([]);
+  onMount(() => {
+    recentes = lerAfinador().recentes;
+  });
+  function registrarNota() {
+    recentes = adicionarNota(recentes, { classe, oitava });
+    salvarAfinador({ recentes });
+  }
+  /** Toca uma nota da lista de recentes: escolhe a nota e a oitava e liga o tom (um som de cada vez, como no botão da pílula). */
+  async function usarRecente(n: NotaRecente) {
+    classe = n.classe;
+    oitava = n.oitava;
+    reproducao.parar();
+    await soar("nota", frequenciaDe(midiDe(n.classe, n.oitava), LA_PADRAO));
+  }
+  const rotuloRecente = (n: NotaRecente) => `${nomeDaNota(n.classe, i18n.idioma)}${n.oitava} · ${hz(frequenciaDe(midiDe(n.classe, n.oitava), LA_PADRAO))} Hz`;
+
   /** O áudio não pôde iniciar (indisponível ou bloqueado neste aparelho): a tela avisa, em vez de o botão voltar sem explicação. */
   let erroAudio = $state(false);
   /** Numera os pedidos de som: uma falha só apaga o estado se nenhum pedido mais novo (nem uma parada) veio depois dela. */
@@ -74,6 +94,7 @@
     encerrou = false;
     contagem.cancelar(); // a contagem da nota anterior não pode terminar no meio da troca
     tocando = qual;
+    if (qual === "nota") registrarNota(); // a nota entra na lista de recentes quando é pedida (a de agora é a escolhida na tela)
     try {
       await tom.tocar(freq);
       if (minha === tentativa) contagem.iniciar(limite); // a contagem começa quando o tom começa de fato, e recomeça a cada nota nova
@@ -143,13 +164,11 @@
 {/snippet}
 
 <div class="afinador">
-  <p class="meta">{t("afinador.explica")}</p>
-  {#if erroAudio}<Aviso tipo="erro">{t("player.erro_audio")}</Aviso>{/if}
-
   <button class="botao primario grande" aria-pressed={tocando === "la"} onclick={() => alternar("la")}>
     <Icone nome={tocando === "la" ? "stop" : "play"} tamanho={24} />
     {#if tocando === "la"}{@render rotuloParar()}{:else}{rotuloLa}{/if}
   </button>
+  {#if erroAudio}<Aviso tipo="erro">{t("player.erro_audio")}</Aviso>{/if}
 
   <!-- A pílula: o cartão "Outra nota" (nota e frequência na linha de cima) e, na ponta dela, o Play da nota escolhida. O Play fica sempre à vista, com o
        cartão aberto ou fechado: quem usa muito uma nota que não é o Lá a deixa marcada aqui e toca com um toque. -->
@@ -218,6 +237,15 @@
     </fieldset>
     <p class="meta">{t("afinador.temporizador_vale")}</p>
   </Cartao>
+
+  <ListaRecentes
+    titulo={t("afinador.recentes")}
+    itens={recentes}
+    rotulo={rotuloRecente}
+    atual={(n) => n.classe === classe && n.oitava === oitava}
+    aoEscolher={usarRecente}
+    {ativa}
+  />
 
   <!-- Só para o leitor de tela: o que está soando (o texto muda ao ligar, desligar ou trocar de nota). -->
   <p class="so-leitor" role="status">

@@ -1535,6 +1535,49 @@ async function principal() {
   const av3 = await estadoAviso();
   confere(!av3.aberto, `com o hinário de verdade instalado o aviso não aparece: ${JSON.stringify(av3)}`);
 
+  // ---- As abas Afinador, Gravador e Metrônomo: sem texto explicativo, com o botão principal no topo; as listas de recentes mostram só quantos itens CABEM na tela ----
+  const topoDaAba = (id) => av(`(() => { const p = document.getElementById('painel-${id}'); const b = p.querySelector('button.primario.grande'); const r = b.getBoundingClientRect(); const pr = p.getBoundingClientRect();
+    return { explica: [...p.querySelectorAll('p')].filter((e) => !e.classList.contains('so-leitor') && (e.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)).length, botaoNoTopo: Math.round(r.top - pr.top) <= 4, antes: [...p.querySelectorAll('button, input, select, summary')].indexOf(b) }; })()`);
+  await irParaInicio();
+  for (const id of ['afinador', 'gravador', 'metronomo']) {
+    await av(`document.getElementById('aba-${id}').click(); 1`);
+    await dormir(500);
+    const topo = await topoDaAba(id);
+    confere(topo.explica === 0 && topo.botaoNoTopo && topo.antes === 0, `aba ${id}: sem texto explicativo e o botão principal é o primeiro da aba, no topo: ${JSON.stringify(topo)}`);
+  }
+  const dezMetronomo = Array.from({ length: 10 }, (_, i) => ({ bpm: 60 + i * 10, compasso: 4 }));
+  await av(`localStorage.setItem('prefs.metronomo', JSON.stringify({ bpm: 120, compasso: 4, recentes: ${JSON.stringify(dezMetronomo)} })); localStorage.setItem('prefs.afinador', JSON.stringify({ recentes: ${JSON.stringify(Array.from({ length: 10 }, (_, i) => ({ classe: i, oitava: 4 })))} })); 1`);
+  await irParaInicio();
+  const cabem = async (id) => {
+    await av(`document.getElementById('aba-${id}').click(); 1`);
+    await dormir(700);
+    return av(`(() => { const bs = [...document.querySelectorAll('#painel-${id} .recentes button')]; const ult = bs.at(-1)?.getBoundingClientRect(); return { n: bs.length, fimUltimo: ult ? Math.round(ult.bottom + window.scrollY) : null, tela: window.innerHeight, rolagemMax: document.documentElement.scrollHeight - window.innerHeight }; })()`);
+  };
+  const metEmPe = await cabem('metronomo');
+  confere(metEmPe.n >= 1 && metEmPe.n <= 10 && metEmPe.fimUltimo <= metEmPe.tela, `Metrônomo (celular em pé): a lista dos últimos mostra só os ${metEmPe.n} que cabem na tela, sem cortar nenhum: ${JSON.stringify(metEmPe)}`);
+  const afiEmPe = await cabem('afinador');
+  confere(afiEmPe.n >= 1 && afiEmPe.n <= 10 && afiEmPe.fimUltimo <= afiEmPe.tela, `Afinador (celular em pé): a lista das notas recentes mostra só as ${afiEmPe.n} que cabem na tela: ${JSON.stringify(afiEmPe)}`);
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 915, height: 412, deviceScaleFactor: 1, mobile: true });
+  await dormir(700);
+  const metDeitado = await cabem('metronomo');
+  confere(metDeitado.n >= 1 && metDeitado.n <= metEmPe.n, `Metrônomo (deitado, tela mais baixa): a lista nunca cresce (${metDeitado.n} contra ${metEmPe.n} em pé): ${JSON.stringify(metDeitado)}`);
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
+  await dormir(700);
+  const metVoltou = await cabem('metronomo');
+  confere(metVoltou.n === metEmPe.n, `girar de volta devolve a mesma quantidade (${metVoltou.n}): ${JSON.stringify(metVoltou)}`);
+  // Dar uma nota em "Outra nota" a põe no topo da lista do afinador (sem repetir) e a lista a mostra.
+  await av(`localStorage.removeItem('prefs.afinador'); 1`);
+  await irParaInicio();
+  await av(`document.getElementById('aba-afinador').click(); 1`);
+  await dormir(500);
+  await av(`document.querySelector('#painel-afinador .tocar-pilula').click(); 1`);
+  await dormir(800);
+  await av(`document.querySelector('#painel-afinador .tocar-pilula').click(); 1`); // para
+  await dormir(300);
+  const afi1 = await av(`({ salvo: localStorage.getItem('prefs.afinador'), lista: [...document.querySelectorAll('#painel-afinador .recentes button')].map((b) => b.textContent.trim()) })`);
+  confere(/"recentes":\[\{"classe":0,"oitava":4\}\]/.test(afi1.salvo ?? '') && afi1.lista.length === 1 && /Hz/.test(afi1.lista[0]), `Afinador: a nota dada em Outra nota entra na lista dos recentes e é lembrada: ${JSON.stringify(afi1)}`);
+  await av(`localStorage.removeItem('prefs.afinador'); localStorage.removeItem('prefs.metronomo'); 1`);
+
   // ---- Ajustes: o que ficou aberto é lembrado, o valor ruim volta ao padrão e o link da aba Partitura abre o Conteúdo sem gravar (I-24, fatias 3 e 4) ----
   const AJ = `http://127.0.0.1:${PORTA_VITE}/ajustes`;
   const irParaAjustes = async (url) => {

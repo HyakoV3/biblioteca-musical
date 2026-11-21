@@ -3,6 +3,7 @@
   import Aviso from "./Aviso.svelte";
   import ControleAndamento from "./ControleAndamento.svelte";
   import Icone from "./Icone.svelte";
+  import ListaRecentes from "./ListaRecentes.svelte";
   import { BPM_MAX, BPM_MIN, COMPASSOS } from "./metronomo";
   import { emCurso } from "./gravacaoEmCurso.svelte";
   import { metronomo } from "./metronomo.svelte";
@@ -74,7 +75,15 @@
 </script>
 
 <div class="metronomo">
-  <p class="meta">{t("metronomo.explica")}</p>
+  <button id="metronomo-iniciar" class="botao primario grande" aria-pressed={metronomo.ligado} onclick={alternar}>
+    {#if metronomo.ligado}
+      <Icone nome="stop" tamanho={24} />
+      <span>{t("metronomo.parar")}</span>
+    {:else}
+      <Icone nome="play" tamanho={24} />
+      <span>{t("metronomo.iniciar")}</span>
+    {/if}
+  </button>
 
   {#if metronomo.erroAudio}<Aviso tipo="erro">{t("metronomo.erro_audio")}</Aviso>{/if}
   {#if metronomo.erroServico}<Aviso tipo="erro">{t("metronomo.erro_servico")}</Aviso>{/if}
@@ -111,38 +120,21 @@
     </div>
   </div>
 
-  <button id="metronomo-iniciar" class="botao primario grande" aria-pressed={metronomo.ligado} onclick={alternar}>
-    {#if metronomo.ligado}
-      <Icone nome="stop" tamanho={24} />
-      <span>{t("metronomo.parar")}</span>
-    {:else}
-      <Icone nome="play" tamanho={24} />
-      <span>{t("metronomo.iniciar")}</span>
-    {/if}
-  </button>
-
   <!-- Só para o leitor de tela: ligou e parou, com o andamento e o compasso. Nunca anuncia tempo a tempo (falaria por cima do clique). -->
   <p class="so-leitor" role="status">{metronomo.ligado ? t("metronomo.status_on", { bpm: metronomo.bpm, n: metronomo.compasso }) : t("metronomo.status_off")}</p>
 
-  {#if metronomo.recentes.length > 0}
-    <section class="recentes" aria-labelledby="titulo-recentes">
-      <h2 id="titulo-recentes">{t("metronomo.recentes")}</h2>
-      <ul>
-        {#each metronomo.recentes as r (`${r.bpm}-${r.compasso}`)}
-          <li>
-            <button class="botao" aria-current={r.bpm === metronomo.bpm && r.compasso === metronomo.compasso} onclick={() => metronomo.usar(r)}>
-              {t("metronomo.recente", { bpm: r.bpm, n: r.compasso })}
-            </button>
-          </li>
-        {/each}
-      </ul>
-    </section>
-  {/if}
+  <ListaRecentes
+    titulo={t("metronomo.recentes")}
+    itens={metronomo.recentes}
+    rotulo={(r) => t("metronomo.recente", { bpm: r.bpm, n: r.compasso })}
+    atual={(r) => r.bpm === metronomo.bpm && r.compasso === metronomo.compasso}
+    aoEscolher={(r) => metronomo.usar(r)}
+    {ativa}
+  />
 </div>
 
 <style>
   .metronomo { display: flex; flex-direction: column; gap: 1rem; }
-  .meta { margin: 0; color: var(--suave); }
   .andamento { display: flex; }
   .compasso { display: flex; gap: 1rem; }
   .grupo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.375rem; }
@@ -166,9 +158,4 @@
   .tempo.aceso { background: var(--ouro-linha); border-color: var(--ouro-linha); }
 
   .grande { min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
-
-  .recentes h2 { font-size: 1rem; margin: 0 0 0.5rem; }
-  .recentes ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
-  .recentes button { width: 100%; min-height: 3rem; justify-content: flex-start; }
-  .recentes button[aria-current="true"] { font-weight: 700; border-color: var(--ouro-linha); }
 </style>
