@@ -1163,6 +1163,50 @@ async function principal() {
   const g8 = await estadoGravador();
   const ponte8 = await av(`window.__ponte.join(',')`);
   confere(g8.pressionado === "false" && g8.ativos === 0 && g8.audio === true && ponte8 === "ligar,desligar", `Gravador: o botão Parar da notificação para, guarda e solta o serviço: ${JSON.stringify(g8)} / ${ponte8}`);
+  // Parte 4 (I-20): COM o serviço do Android assumindo a gravação ela SEGUE ao trocar de aba, e o aviso "Gravando · Parar" aparece nas outras abas. Com fone, o metrônomo e a gravação
+  // andam juntos; sem fone, ligar o metrônomo para a gravação (o clique do alto-falante entraria nela), que é guardada.
+  await av(`window.__fone = true; window.BmccbServico.temFone = () => window.__fone; 1`);
+  await av(`document.getElementById('gravar').click(); 1`);
+  await dormir(700);
+  await av(`document.getElementById('aba-metronomo').click(); 1`);
+  await dormir(500);
+  const gA = await av(`({ pressionado: document.getElementById('gravar').getAttribute('aria-pressed'), ativos: window.__microfones.filter((t) => t.readyState === 'live').length, aviso: !!document.getElementById('gravando-aviso'), texto: document.getElementById('gravando-aviso')?.textContent.replace(/\\s+/g, ' ').trim() ?? null })`);
+  confere(gA.pressionado === 'true' && gA.ativos === 1 && gA.aviso, `Gravador: trocar para outra aba NÃO para a gravação protegida pelo serviço, e o aviso "Gravando · Parar" aparece: ${JSON.stringify(gA)}`);
+  await av(`document.getElementById('metronomo-iniciar').click(); 1`);
+  await dormir(900);
+  const gB = await av(`({ pressionado: document.getElementById('gravar').getAttribute('aria-pressed'), ativos: window.__microfones.filter((t) => t.readyState === 'live').length, metro: document.getElementById('metronomo-iniciar').getAttribute('aria-pressed') })`);
+  confere(gB.pressionado === 'true' && gB.ativos === 1 && gB.metro === 'true', `Com fone: o metrônomo e a gravação andam juntos: ${JSON.stringify(gB)}`);
+  await av(`document.querySelector('#gravando-aviso button').click(); 1`);
+  await dormir(1500);
+  await av(`document.getElementById('metronomo-iniciar').click(); 1`); // para o metrônomo
+  await dormir(200);
+  await av(`document.getElementById('aba-gravador').click(); 1`);
+  await dormir(500);
+  const gC = await estadoGravador();
+  const avisoSumiu = await av(`!document.getElementById('gravando-aviso')`);
+  confere(gC.pressionado === 'false' && gC.ativos === 0 && gC.audio === true && avisoSumiu, `O Parar do aviso para a gravação, guarda o gravado, devolve o microfone e o aviso some: ${JSON.stringify(gC)}`);
+  await apagarPrimeira();
+  await dormir(300);
+  // Sem fone: ligar o metrônomo para a gravação, que é guardada.
+  await av(`window.__fone = false; document.getElementById('gravar').click(); 1`);
+  await dormir(700);
+  await av(`document.getElementById('aba-metronomo').click(); 1`);
+  await dormir(400);
+  await av(`document.getElementById('metronomo-iniciar').click(); 1`);
+  await dormir(1500);
+  await av(`document.getElementById('aba-gravador').click(); 1`);
+  await dormir(500);
+  const gD = await estadoGravador();
+  const metroD = await av(`document.getElementById('metronomo-iniciar').getAttribute('aria-pressed')`);
+  confere(gD.pressionado === 'false' && gD.ativos === 0 && gD.audio === true && metroD === 'true', `Sem fone: ligar o metrônomo para a gravação (guardada) e o clique segue: ${JSON.stringify(gD)} metrônomo=${metroD}`);
+  await av(`document.getElementById('aba-metronomo').click(); 1`);
+  await dormir(200);
+  await av(`document.getElementById('metronomo-iniciar').click(); 1`);
+  await dormir(200);
+  await av(`document.getElementById('aba-gravador').click(); 1`);
+  await dormir(300);
+  await apagarPrimeira();
+  await dormir(300);
   await av(`delete window.BmccbServico; 1`);
   // O serviço do Android recusa DEPOIS de a ponte ter dito que assumiu: a proteção cai e, com a página escondida, a gravação para e é guardada.
   await av(`document.getElementById('gravar').click(); 1`);

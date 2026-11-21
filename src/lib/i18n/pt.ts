@@ -188,6 +188,7 @@ export const pt = {
   "gravador.explica": "Grave a sua voz ou o seu instrumento e ouça depois. As gravações ficam guardadas no app, só neste aparelho. A gravação em andamento para ao sair desta aba.",
   "gravador.gravar": "Gravar",
   "gravador.parar": "Parar",
+  "gravador.em_curso": "Gravando",
   "gravador.gravando": "Gravando.",
   "gravador.recebendo": "Recebendo som.",
   "gravador.sem_som": "Não estou ouvindo nenhum som. Confira se o microfone não está tapado e se o volume de entrada do aparelho está ligado.",
