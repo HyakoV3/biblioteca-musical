@@ -26,6 +26,20 @@ export function bytesParaBase64(bytes: Uint8Array): string {
   return saida;
 }
 
+/**
+ * A barra única dos pacotes baixáveis (hinário, partituras e sons): o download vale os primeiros 90% (0 a 90%) e o resto é a conferência e a
+ * instalação. Assim a barra não fica parada em 100% enquanto o app ainda trabalha. `progresso` é o andamento do download (0 a 1).
+ */
+export const PARTE_DO_DOWNLOAD = 0.9;
+export function progressoTotal(fase: "baixando" | "conferindo" | "instalando" | "ocioso" | "erro", progresso: number): number {
+  if (fase === "baixando") return Math.min(1, Math.max(0, progresso)) * PARTE_DO_DOWNLOAD;
+  if (fase === "conferindo") return 0.93;
+  if (fase === "instalando") return 0.96;
+  return 0;
+}
+/** O mesmo, em porcentagem inteira, para o texto "Baixando 45%". */
+export const porcentagemTotal = (fase: Parameters<typeof progressoTotal>[0], progresso: number): number => Math.round(progressoTotal(fase, progresso) * 100);
+
 /** "1, 5, 283" para os primeiros números e "…" se houver mais (a lista de partituras recusadas pode ter centenas). */
 export function listaCurta(numeros: number[], maximo = 8): string {
   const inicio = numeros.slice(0, maximo).join(", ");

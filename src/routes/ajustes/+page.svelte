@@ -17,7 +17,7 @@
   import { ESTILOS, TEMAS, estilo, tema } from "$lib/tema.svelte";
   import { CREDITOS, semLicenca, textoDaLicenca } from "$lib/licencas";
   import { traduzirErro } from "$lib/erros";
-  import { listaCurta } from "$lib/pacote";
+  import { listaCurta, porcentagemTotal } from "$lib/pacote";
   import { hinario } from "$lib/hinario/hinario.svelte";
   import { NOTACOES } from "$lib/notacao";
   import { notacao } from "$lib/notacao.svelte";
@@ -148,13 +148,13 @@
     if (partituras.andamento.fase === "erro" || sonsAndamento.some((a) => a.fase === "erro")) {
       return { texto: t("ajustes.resumo_erro"), alerta: true };
     }
-    const np = Math.round(partituras.andamento.progresso * 100);
+    const np = porcentagemTotal(partituras.andamento.fase, partituras.andamento.progresso);
     if (partituras.andamento.fase === "baixando") return { texto: `${t("partituras.titulo")}: ${t("partituras.baixando", { n: np })}`, alerta: false };
     if (partituras.andamento.fase === "conferindo") return { texto: `${t("partituras.titulo")}: ${t("partituras.conferindo")}`, alerta: false };
     if (partituras.andamento.fase === "instalando") return { texto: `${t("partituras.titulo")}: ${t("partituras.instalando")}`, alerta: false };
     const ativo = sonsAndamento.find((a) => a.fase === "baixando" || a.fase === "conferindo");
     if (ativo) {
-      const texto = ativo.fase === "baixando" ? t("sons.baixando", { n: Math.round(ativo.progresso * 100) }) : t("sons.conferindo");
+      const texto = ativo.fase === "baixando" ? t("sons.baixando", { n: porcentagemTotal(ativo.fase, ativo.progresso) }) : t("sons.conferindo");
       return { texto: `${t("sons.titulo")}: ${texto}`, alerta: false };
     }
     const hinario = !biblioteca.pacote ? "…" : biblioteca.pacote.exemplo ? t("ajustes.resumo_exemplo") : biblioteca.pacote.hinario.hinario.nome;
@@ -278,7 +278,7 @@
         detalhe={estadoHinario}
         fase={hinario.andamento.fase === "baixando" || hinario.andamento.fase === "conferindo" || hinario.andamento.fase === "instalando" ? hinario.andamento.fase : "ocioso"}
         progresso={hinario.andamento.progresso}
-        textoBaixando={t("hinario.baixando", { n: Math.round(hinario.andamento.progresso * 100) })}
+        textoBaixando={t("hinario.baixando", { n: porcentagemTotal(hinario.andamento.fase, hinario.andamento.progresso) })}
         textoConferindo={t("hinario.conferindo")}
         textoInstalando={t("hinario.instalando")}
         instalado={hinarioInstalado}
@@ -312,7 +312,7 @@
           detalhe={estadoPartituras}
           fase={partituras.andamento.fase === "baixando" || partituras.andamento.fase === "conferindo" || partituras.andamento.fase === "instalando" ? partituras.andamento.fase : "ocioso"}
           progresso={partituras.andamento.progresso}
-          textoBaixando={t("partituras.baixando", { n: Math.round(partituras.andamento.progresso * 100) })}
+          textoBaixando={t("partituras.baixando", { n: porcentagemTotal(partituras.andamento.fase, partituras.andamento.progresso) })}
           textoConferindo={t("partituras.conferindo")}
           textoInstalando={t("partituras.instalando")}
           instalado={instaladas > 0}
@@ -352,7 +352,7 @@
             detalhe={`${tamanho} · ${instalado ? t("sons.instalado") : t("sons.nao_instalado")}`}
             fase={and.fase === "baixando" || and.fase === "conferindo" ? and.fase : "ocioso"}
             progresso={and.progresso}
-            textoBaixando={t("sons.baixando", { n: Math.round(and.progresso * 100) })}
+            textoBaixando={t("sons.baixando", { n: porcentagemTotal(and.fase, and.progresso) })}
             textoConferindo={t("sons.conferindo")}
             {instalado}
             rotuloRemover={t("sons.remover")}
