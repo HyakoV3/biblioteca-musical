@@ -45,7 +45,8 @@ Por que **não** na pasta das partituras: o link de uma pasta entrega a pasta in
 
 ## Estado
 
-- `hinario-002.json` (o do manifesto): os 480 hinos (Dó), 4.119.977 bytes, SHA-256 `a68de375…`. Muda só o hino 76 (estrofe 3: "podebalar" → "pode abalar", com as marcas do karaokê ajustadas). Está em `/mnt/downloads/BibliotecaMusicalHinario/`.
+- `hinario-003.json` (o do manifesto): os 480 hinos (Dó), 4.119.994 bytes, SHA-256 `eca41c3f…`. É o lote 2 do português: 34 palavras que a partitura escrevia picadas ou coladas ("Con solador" → "Consolador", "osfiéis" → "os fiéis"), 17 letras faltando ou trocadas ("desos" → "dos", "Brevemenem" → "Brevemente em") e 14 trechos sem sentido que o responsável leu no hinário de papel ("sananção" → "santa unção", "Quanê e-levaó" → "Quanto é elevado, ó"). Nos hinos 148 e 372 duas linhas quebradas no meio da palavra viraram uma só. As marcas do karaokê seguem as sílabas (os tempos não mudam). Está em `/mnt/downloads/BibliotecaMusicalHinario/`.
+- `hinario-002.json`: o anterior (4.119.977 bytes, SHA-256 `a68de375…`; só o hino 76 "pode abalar"), que continua no servidor para os APKs 064 a 075. **Não apague.**
 - `hinario-001.json`: o anterior (4.119.975 bytes, SHA-256 `ee9b8cfb…`), que continua no servidor para os APKs até o 063, cujos manifestos apontam para ele. **Não apague.**
 - **Para pegar um hinário novo no aparelho:** Ajustes → Conteúdo → Hinário completo → Remover e Baixar. O Remover do hinário **apaga também as partituras** (as gravações ficam): baixe as partituras de novo depois. O app não compara versões sozinho.
 - Se o manifesto aponta para um arquivo ainda **não publicado** (pasta sem ele), o download falha com "arquivo incompleto ou diferente".
