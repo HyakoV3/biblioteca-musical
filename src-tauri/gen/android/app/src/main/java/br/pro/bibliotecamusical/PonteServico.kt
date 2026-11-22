@@ -127,6 +127,30 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
         }
     }
 
+    /**
+     * De onde o som sai agora: "usb" (fone ou cabo com conversor na USB-C), "fio" (3,5 mm), "bluetooth" ou "alto-falante". Com várias saídas
+     * ligadas vale a ordem do Android (USB, depois fio, depois Bluetooth). O app escolhe o modo de áudio POR rota (as rotas estalam diferente).
+     */
+    @JavascriptInterface
+    fun rotaDeSaida(): String {
+        return try {
+            val audio = atividade.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val tipos = audio.getDevices(AudioManager.GET_DEVICES_OUTPUTS).map { it.type }
+            when {
+                tipos.any { it == AudioDeviceInfo.TYPE_USB_HEADSET || it == AudioDeviceInfo.TYPE_USB_DEVICE } -> "usb"
+                tipos.any { it == AudioDeviceInfo.TYPE_WIRED_HEADPHONES || it == AudioDeviceInfo.TYPE_WIRED_HEADSET } -> "fio"
+                tipos.any {
+                    it == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || it == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+                        (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && it == AudioDeviceInfo.TYPE_BLE_HEADSET)
+                } -> "bluetooth"
+                else -> "alto-falante"
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("bm", "não deu para saber a rota de saída", e)
+            "alto-falante"
+        }
+    }
+
     private fun ligar(titulo: String) {
         if (titulo.isNotBlank()) ServicoAudio.tituloAtual = titulo.take(120)
         val intent = Intent(atividade, ServicoAudio::class.java)

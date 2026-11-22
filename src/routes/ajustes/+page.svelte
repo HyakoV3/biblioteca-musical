@@ -21,6 +21,7 @@
   import { hinario } from "$lib/hinario/hinario.svelte";
   import { NOTACOES } from "$lib/notacao";
   import { notacao } from "$lib/notacao.svelte";
+  import { MODOS, aoMedir, lerModo, rotaAtual, salvarModo, ultimaMedida, type Modo } from "$lib/saidaAudio";
   import { instalando } from "$lib/instalando.svelte";
   import { partituras } from "$lib/partituras/partituras.svelte";
   import { lerAjustes, salvarAjustes } from "$lib/preferencias";
@@ -50,6 +51,38 @@
     await tick();
     document.getElementById("partituras")?.scrollIntoView({ block: "start" });
   });
+  // --- Saída de áudio: o modo do AudioContext, guardado POR rota (alto-falante, fio, USB-C, Bluetooth). A rota é relida ao abrir o cartão e ao voltar ao app
+  // (a pessoa pode ligar o fone com o app aberto); as medidas vêm do último contexto criado (hino, metrônomo ou afinador). ---
+  let saidaAberta = $state(false);
+  const rotaInicial = rotaAtual();
+  let rotaDeSaida = $state(rotaInicial);
+  let modoDeSaida = $state<Modo>(lerModo(rotaInicial));
+  let medidaDeSaida = $state(ultimaMedida());
+  const reler = () => {
+    rotaDeSaida = rotaAtual();
+    modoDeSaida = lerModo(rotaDeSaida);
+    medidaDeSaida = ultimaMedida();
+  };
+  onMount(() => {
+    const cancelar = aoMedir(() => (medidaDeSaida = ultimaMedida()));
+    const aoVoltar = () => document.visibilityState === "visible" && reler();
+    document.addEventListener("visibilitychange", aoVoltar);
+    return () => {
+      cancelar();
+      document.removeEventListener("visibilitychange", aoVoltar);
+    };
+  });
+  const escolherModo = (m: Modo) => {
+    modoDeSaida = m;
+    salvarModo(rotaDeSaida, m);
+  };
+  const aviso = (v: number | null) => (v === null ? t("saida.nao_informa") : `${v} ms`);
+  const textoDaMedida = $derived(
+    medidaDeSaida
+      ? `${t("saida.medida_modo", { rota: t(`saida.rota_curta.${medidaDeSaida.rota}`), modo: t(`saida.${medidaDeSaida.modo}`) })} ${t("saida.medida", { taxa: medidaDeSaida.taxa, base: aviso(medidaDeSaida.base), saida: aviso(medidaDeSaida.saida) })}`
+      : t("saida.sem_medida"),
+  );
+
   // O texto do "Sobre o app" é longo: fica num card fechado, que a pessoa abre se quiser ler.
   let sobreAberto = $state(false);
   // Os créditos também ficam num card fechado: é informação de licença, que quase ninguém precisa ler no dia a dia.
@@ -196,6 +229,25 @@
           </label>
         {/each}
       </fieldset>
+    </Cartao>
+  </section>
+
+  <!-- Saída de áudio: de onde o som sai e o modo do AudioContext para essa saída (o fone USB-C estala diferente do alto-falante). -->
+  <section>
+    <Cartao id="cartao-saida" titulo={t("ajustes.saida")} resumo={t(`saida.rota_curta.${rotaDeSaida}`)} bind:aberto={saidaAberta} aoAlternar={(a) => a && reler()}>
+      <p class="meta">{t("saida.explica")}</p>
+      <p class="rotulo-grupo" id="rotulo-saida">{t("saida.agora", { rota: t(`saida.rota.${rotaDeSaida}`) })}</p>
+      <fieldset class="segmentos" aria-labelledby="rotulo-saida">
+        {#each MODOS as m}
+          <label class:ativo={modoDeSaida === m}>
+            <input type="radio" name="modo-saida" value={m} checked={modoDeSaida === m} onchange={() => escolherModo(m)} />
+            <span class="opcao-tema">{#if modoDeSaida === m}<Icone nome="ok" tamanho={18} />{/if}{t(`saida.${m}`)}</span>
+          </label>
+        {/each}
+      </fieldset>
+      <p class="meta" id="saida-descricao">{t(`saida.desc.${modoDeSaida}`)}</p>
+      <p class="meta">{t("saida.vale_so")}</p>
+      <p class="meta" id="saida-medida">{textoDaMedida}</p>
     </Cartao>
   </section>
 

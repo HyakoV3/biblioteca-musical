@@ -5,6 +5,8 @@
 // O padrão é o de "A Tale of Two Clocks" (Chris Wilson): um temporizador grosso só OLHA ADIANTE e agenda os cliques no relógio de áudio (`start(tempo)`); o relógio
 // de áudio é preciso, o JavaScript só precisa acordar a tempo, não na hora. O temporizador nunca soa o clique.
 
+import { criarContexto } from "./saidaAudio";
+
 export const BPM_MIN = 30;
 export const BPM_MAX = 240;
 export const BPM_PADRAO = 60;
@@ -206,7 +208,7 @@ export class Metronomo {
   /** Liga o metrônomo. Chamar a partir de um toque da pessoa: o áudio só inicia depois de um gesto. */
   async iniciar(): Promise<void> {
     const minha = ++this.geracao;
-    if (!this.ctx || this.ctx.state === "closed") this.ctx = (this.opcoes.contexto ?? (() => new AudioContext()))();
+    if (!this.ctx || this.ctx.state === "closed") this.ctx = (this.opcoes.contexto ?? criarContexto)();
     const ctx = this.ctx;
     await ctx.resume();
     // Enquanto o áudio iniciava, a pessoa pode ter parado, saído da aba (fechar) ou iniciado de novo: este já não vale.

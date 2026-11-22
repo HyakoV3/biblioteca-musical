@@ -1660,6 +1660,21 @@ async function principal() {
   await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
   await dormir(300);
 
+  // ---- Saída de áudio (Ajustes): o cartão mostra a rota, os três modos, guarda a escolha POR rota e explica quando ainda não há medida ----
+  await irParaAjustes(AJ);
+  await av(`(() => { const d = document.querySelector('#cartao-saida'); if (d && !d.open) d.querySelector('summary').click(); return 1; })()`);
+  await dormir(300);
+  const saida0 = await av(`(() => ({ modos: [...document.querySelectorAll('input[name="modo-saida"]')].map((i) => i.value + ':' + i.checked), medida: document.getElementById('saida-medida')?.textContent ?? '', desc: document.getElementById('saida-descricao')?.textContent ?? '' }))()`);
+  confere(saida0.modos.join() === 'automatico:true,estavel:false,atraso:false' && /medir|Measure|medir/i.test(saida0.medida) && saida0.desc.length > 10, `Saída de áudio: três modos com o automático marcado, a descrição e o aviso de que ainda não há medida: ${JSON.stringify(saida0)}`);
+  await av(`document.querySelector('input[name="modo-saida"][value="estavel"]').click(); 1`);
+  await dormir(200);
+  const saida1 = await av(`(() => ({ guardado: localStorage.getItem('prefs.saida-audio'), marcado: document.querySelector('input[name="modo-saida"]:checked')?.value }))()`);
+  confere(saida1.guardado === '{"alto-falante":"estavel"}' && saida1.marcado === 'estavel', `escolher "Mais estável" guarda o modo da rota atual (alto-falante no navegador): ${JSON.stringify(saida1)}`);
+  await av(`document.querySelector('input[name="modo-saida"][value="automatico"]').click(); 1`);
+  await dormir(200);
+  const saida2 = await av(`localStorage.getItem('prefs.saida-audio')`);
+  confere(saida2 === '{}', `voltar ao automático apaga a escolha guardada: ${saida2}`);
+
   // ---- Baixar partituras só depois do hinário completo: com só o pacote de exemplo o botão fica desabilitado e a tela explica o motivo ----
   const semPartiturasAntes = await av(`sessionStorage.getItem('e2e-sem-partituras')`);
   const botoesDeBaixar = () => av(`(() => { const linhas = [...document.querySelectorAll('#conteudo .pacote')]; const acha = (txt) => linhas.find((l) => new RegExp(txt, 'i').test(l.querySelector('strong')?.textContent ?? ''));

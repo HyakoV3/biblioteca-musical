@@ -3,6 +3,7 @@
 // pausa dele é `ctx.suspend()`: um tom no mesmo contexto calaria justamente ao pausar o hino. Aqui só se reaproveita o PERFIL do timbre
 // (harmônicos e tempos de entrada e saída), nunca o contexto.
 import { INSTRUMENTOS } from "./instrumentos";
+import { criarContexto } from "./saidaAudio";
 
 const PERFIL = INSTRUMENTOS.orgao_suave;
 /** Ganho fixo do tom (30% do fundo de escala: forte o bastante e sem estourar). Não há controle de volume na tela: quem ajusta é o volume de
@@ -37,7 +38,7 @@ export class TomSustentado {
   async tocar(frequencia: number): Promise<void> {
     const minha = ++this.geracao;
     if (!this.ctx || this.ctx.state === "closed") {
-      this.ctx = new AudioContext();
+      this.ctx = criarContexto();
       this.onda = null; // a onda pertence ao contexto
     }
     const ctx = this.ctx;

@@ -3,6 +3,7 @@
 // Pausar suspende o relógio do AudioContext: as notas já agendadas retomam do ponto certo.
 // Para mudar instrumento, andamento ou tom no meio do hino, `tocar` reagenda tudo a partir de uma posição em batidas.
 import { Soundfont } from "smplr";
+import { chaveAtual, criarContexto } from "./saidaAudio";
 import { INSTRUMENTOS, PADRAO, type InstrumentoId, type SinteticoId } from "./instrumentos";
 import { REALISTAS, ehRealista, urlDoRealista, type RealistaId } from "./realista";
 import { armazenamentoDoSmplr } from "./sons/armazenamento";
@@ -116,6 +117,8 @@ const ATRASO_INICIAL = 0.1;
 
 export class Sintetizador {
   private ctx: AudioContext | null = null;
+  /** A rota e o modo de áudio com que `ctx` nasceu: se a pessoa trocar de saída ou de modo, o contexto é refeito antes do próximo hino. */
+  private chaveDoCtx = "";
   private mestre: GainNode | null = null;
   private ganhos: GainNode[] = [];
   private fontes: AudioScheduledSourceNode[] = [];
@@ -156,9 +159,24 @@ export class Sintetizador {
    * Agenda e começa a tocar. Devolve a duração total do hino em segundos, no andamento pedido (contando também o
    * que ficou para trás quando `aPartirDe` não é 0, para o tempo decorrido e a duração continuarem na mesma régua).
    */
+  /** Fecha o contexto de uma saída que a pessoa deixou: as ondas e os instrumentos gravados nasceram nele e não servem a outro. */
+  private descartarContexto(): void {
+    const velho = this.ctx;
+    this.ctx = null;
+    this.ondas.clear();
+    this.reais.clear();
+    this.reaisAtivos = [];
+    if (velho && velho.state !== "closed") void velho.close().catch(() => {});
+  }
+
   async tocar(vozes: Voz[], opcoes: Opcoes, partida: Partida = {}): Promise<number> {
     this.parar();
-    this.ctx ??= new AudioContext();
+    const chave = chaveAtual();
+    if (this.ctx && chave !== this.chaveDoCtx) this.descartarContexto();
+    if (!this.ctx) {
+      this.ctx = criarContexto();
+      this.chaveDoCtx = chave;
+    }
     // Em iOS/WebView o áudio só inicia após um gesto do usuário (clique em "Tocar").
     if (!partida.pausado) await this.ctx.resume();
     const ctx = this.ctx;

@@ -20,6 +20,9 @@ class FakeCtx {
   async suspend() {
     reg.suspend++;
   }
+  async close() {
+    this.state = "closed";
+  }
   private no() {
     return { connect: (x: unknown) => x, disconnect() {} };
   }
@@ -97,6 +100,27 @@ describe("notasAPartirDe (função pura)", () => {
 });
 
 describe("Sintetizador", () => {
+  it("o contexto vale enquanto a saída e o modo são os mesmos, e é refeito (o velho fechado) quando a pessoa troca de saída", async () => {
+    const guardado = new Map<string, string>();
+    vi.stubGlobal("localStorage", { getItem: (k: string) => guardado.get(k) ?? null, setItem: (k: string, v: string) => void guardado.set(k, v) });
+    let rota = "alto-falante";
+    vi.stubGlobal("BmServico", { rotaDeSaida: () => rota });
+    const s = new Sintetizador();
+    await s.tocar(vozes, op(120));
+    await s.tocar(vozes, op(120));
+    expect(reg.ctxs.length).toBe(1);
+    rota = "usb";
+    await s.tocar(vozes, op(120));
+    expect(reg.ctxs.length).toBe(2);
+    expect((reg.ctxs[0] as unknown as { state: string }).state).toBe("closed");
+    await s.tocar(vozes, op(120));
+    expect(reg.ctxs.length).toBe(2);
+    guardado.set("prefs.saida-audio", JSON.stringify({ usb: "estavel" }));
+    await s.tocar(vozes, op(120));
+    expect(reg.ctxs.length).toBe(3);
+    s.parar();
+  });
+
   it("toca do começo: duração, retomada do relógio e notas agendadas", async () => {
     const s = new Sintetizador();
     const dur = await s.tocar(vozes, op(60));
