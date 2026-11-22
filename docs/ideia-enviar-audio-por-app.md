@@ -80,10 +80,10 @@ Alternativas descartadas:
 ## Plano em etapas pequenas
 
 1. **Prova manual (sem código no app; arquivos de teste prontos em 2026-11-22 na pasta `teste-envio-audio/` do Nextcloud: `gravacao-teste.ogg`, Opus mono 48 kHz, 9 s, 3 notas, e `gravacao-teste.m4a`, AAC, para comparar):** converter uma gravação real com `ffmpeg -i g.webm -c:a copy g.ogg`, copiar para o celular e compartilhar pelo gerenciador de arquivos para WhatsApp, Telegram, Signal e Messages. Anotar: áudio, nota de voz ou documento. Se o WhatsApp não aceitar Ogg como áudio, parar e reavaliar (plano B: `.m4a`).
-2. **Ler WebM em TS** (`src/lib/webm.ts`): extrair `OpusHead` e a lista de pacotes com tempo. Teste no Vitest com uma gravação pequena real como fixture (canais = 1, 48 kHz, contagem de pacotes).
-3. **Escrever Ogg em TS** (`src/lib/ogg.ts`): páginas, CRC, `OpusHead`/`OpusTags`, granule. Teste: CRC de página conhecido; e conferir a saída com `ffprobe`/`opusinfo` fora do app (duração certa, sem erro).
-4. **Ligar no envio:** `compartilharGravacao` converte quando o tipo for WebM/Opus; nome `.ogg`; se o remux falhar, envia o original (como hoje). Teste no Vitest do fluxo (com ponte falsa).
-5. **Ponte Kotlin:** aceitar `audio/ogg; codecs=opus` no `type` do Intent (regex com parâmetros) e manter a extensão `.ogg` (o `FileProvider` dá `audio/ogg`). Teste no aparelho: Telegram deve mostrar nota de voz.
+2. *(feito, aguardando PR)* **Ler WebM em TS** (`src/lib/webm.ts`): extrair `OpusHead` e a lista de pacotes com tempo. Teste no Vitest com uma gravação pequena real como fixture (canais = 1, 48 kHz, contagem de pacotes).
+3. *(feito)* **Escrever Ogg em TS** (`src/lib/ogg.ts`): páginas, CRC, `OpusHead`/`OpusTags`, granule. Teste: CRC de página conhecido; e conferir a saída com `ffprobe`/`opusinfo` fora do app (duração certa, sem erro).
+4. *(feito)* **Ligar no envio:** `compartilharGravacao` converte quando o tipo for WebM/Opus; nome `.ogg`; se o remux falhar, envia o original (como hoje). Teste no Vitest do fluxo (com ponte falsa).
+5. *(feito; falta testar no aparelho)* **Ponte Kotlin:** aceitar `audio/ogg; codecs=opus` no `type` do Intent (regex com parâmetros) e manter a extensão `.ogg` (o `FileProvider` dá `audio/ogg`). Teste no aparelho: Telegram deve mostrar nota de voz.
 6. **Teste no aparelho** com a lista de "Riscos" abaixo; depois **tirar o interruptor `.webm | .weba`** e o `compartilharPrefs.ts` (com a limpeza da chave antiga).
 7. **Opcional (só se a etapa 1 ou 6 mostrar recusa de Ogg em algum destino):** conversão para `.m4a`/AAC com `MediaCodec`, oferecida como "enviar como MP4 (compatível)".
 

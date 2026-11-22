@@ -187,8 +187,10 @@
   <!-- Some depois do "Concordo" (a escolha fica guardada no aparelho). -->
   {#if !ciente}
     <section id="aviso-independente">
-      <Aviso tipo="info"><strong>{t("sobre.aviso_titulo")}</strong><br />{t("sobre.aviso")}</Aviso>
-      <div class="acao-aviso"><button class="botao primario" id="aviso-concordo" onclick={concordar}>{t("sobre.aviso_concordo")}</button></div>
+      <Aviso tipo="info">
+        <strong>{t("sobre.aviso_titulo")}</strong><br />{t("sobre.aviso")}
+        {#snippet acao()}<button class="botao primario" id="aviso-concordo" onclick={concordar}>{t("sobre.aviso_concordo")}</button>{/snippet}
+      </Aviso>
     </section>
   {/if}
 
@@ -423,8 +425,7 @@
 
 <style>
   /* "Em nome do Senhor Jesus": numa linha só, com o tamanho acompanhando a largura da tela. Se não couber ao lado do título, a própria barra o põe na linha de baixo (`quebra`). */
-  .acao-aviso { display: flex; justify-content: flex-end; margin-top: 0.25rem; }
-  .acao-aviso .botao { min-height: 3rem; }
+  #aviso-concordo { min-height: 3rem; }
   .nome-senhor { display: block; white-space: nowrap; font-size: clamp(0.7rem, 3.4vw, 1rem); font-weight: 600; color: var(--suave); text-align: end; }
   section { margin-bottom: 0.9rem; }
   .versao { margin: 0 0 1.5rem; text-align: center; }

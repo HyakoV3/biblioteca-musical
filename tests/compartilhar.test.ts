@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { OPUS_WEBM_AO_VIVO, bytesDe } from "./fixtures/opus";
 import { BYTES_POR_PEDACO, compartilharGravacao, nomeDoArquivo, podeCompartilhar, tipoSemCodec } from "../src/lib/compartilhar";
 
 afterEach(() => {
@@ -33,6 +34,17 @@ describe("ponte do Android", () => {
     (globalThis as Record<string, unknown>).BmCompartilhar = p;
     return { p, partes };
   }
+
+  it("WebM/Opus vai como Ogg/Opus (.ogg, tipo com codec); WebM que não se entende segue como está", async () => {
+    const { p, partes } = ponteFalsa();
+    const webm = bytesDe(OPUS_WEBM_AO_VIVO);
+    expect(await compartilharGravacao(new Blob([webm], { type: "audio/webm;codecs=opus" }), "g.webm", "Enviar")).toBe("ok");
+    expect(p.comecar).toHaveBeenLastCalledWith("g.ogg", "audio/ogg; codecs=opus");
+    expect(atob(partes.join("")).startsWith("OggS")).toBe(true);
+    partes.length = 0;
+    expect(await compartilharGravacao(new Blob([new Uint8Array([1, 2, 3])], { type: "audio/webm" }), "h.weba", "Enviar")).toBe("ok");
+    expect(p.comecar).toHaveBeenLastCalledWith("h.weba", "audio/webm");
+  });
 
   it("só aparece quando há ponte ou Web Share", () => {
     expect(podeCompartilhar()).toBe(false);

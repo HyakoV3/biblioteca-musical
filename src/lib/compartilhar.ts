@@ -2,6 +2,8 @@
 // essa folha sozinha, então o app tem uma ponte (`PonteCompartilhar.kt`, `window.BmCompartilhar`) que recebe o áudio em pedaços e abre a folha.
 // Fora do Android usa a Web Share API quando o navegador compartilha arquivos; sem nenhuma das duas, `podeCompartilhar()` é falso e o botão nem aparece.
 
+import { webmParaOgg } from "./ogg";
+
 type Ponte = {
   comecar(nome: string, tipo: string): boolean;
   parte(base64: string): boolean;
@@ -52,8 +54,24 @@ export function compartilharGravacao(blob: Blob, nome: string, titulo: string): 
 
 let fila: Promise<void> = Promise.resolve();
 
-async function enviarAgora(blob: Blob, nome: string, titulo: string): Promise<"ok" | "cancelado" | "erro"> {
-  const tipo = tipoSemCodec(blob.type);
+/** Áudio WebM/Opus vira Ogg/Opus (sem recodificar): é o que o WhatsApp, o Telegram e os outros aceitam como áudio. Se não der, segue o original. */
+async function prepararOgg(blob: Blob, nome: string): Promise<{ blob: Blob; nome: string } | null> {
+  if (!tipoSemCodec(blob.type).includes("webm")) return null;
+  try {
+    const ogg = webmParaOgg(new Uint8Array(await blob.arrayBuffer()));
+    if (!ogg) return null;
+    return { blob: new Blob([ogg as BlobPart], { type: "audio/ogg; codecs=opus" }), nome: nome.replace(/\.(webm|weba)$/i, "") + ".ogg" };
+  } catch (e) {
+    console.warn("compartilhar: não foi possível converter para Ogg, enviando o original", e);
+    return null;
+  }
+}
+
+async function enviarAgora(blobOriginal: Blob, nomeOriginal: string, titulo: string): Promise<"ok" | "cancelado" | "erro"> {
+  const conv = await prepararOgg(blobOriginal, nomeOriginal);
+  const blob = conv?.blob ?? blobOriginal;
+  const nome = conv?.nome ?? nomeOriginal;
+  const tipo = conv ? "audio/ogg; codecs=opus" : tipoSemCodec(blob.type);
   try {
     const p = ponte();
     if (p) {
@@ -77,7 +95,7 @@ async function enviarAgora(blob: Blob, nome: string, titulo: string): Promise<"o
         throw e;
       }
     }
-    const arquivo = new File([blob], nome, { type: tipo });
+    const arquivo = new File([blob], nome, { type: tipoSemCodec(tipo) });
     if (!navigator.canShare?.({ files: [arquivo] })) return "erro";
     await navigator.share({ files: [arquivo], title: titulo });
     return "ok";
