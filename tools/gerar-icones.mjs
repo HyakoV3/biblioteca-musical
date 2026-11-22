@@ -42,6 +42,9 @@ const NOMES = {
   // fica livre para o gravador e o afinador (I-03, I-13). Vazado = desligado, cheio = ligado (e o ligado leva borda dourada).
   karaoke: "material-symbols:format-ink-highlighter-outline",
   karaoke_ligado: "material-symbols:format-ink-highlighter",
+  // Manter a tela ligada (tela do hino): o olho, aberto (contorno) = desligado, cheio = ligado.
+  tela: "outline-visibility",
+  tela_ligada: "baseline-visibility",
   alinhar_esquerda: "outline-format-align-left",
   alinhar_direita: "outline-format-align-right",
   justificar: "outline-format-align-justify",

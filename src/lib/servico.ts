@@ -2,7 +2,7 @@
 // para o som não parar com a tela bloqueada ou o app em segundo plano. O lado Android é `ServicoAudio.kt` e a ponte `PonteServico.kt`, exposta à
 // WebView como `window.BmServico`. Fora do Android (navegador, computador, testes) a ponte não existe e tudo aqui não faz nada.
 
-type Ponte = { iniciar(titulo: string): void; parar(): void; iniciarGravacao?(): void; pararGravacao?(): void; temFone?(): boolean; rotaDeSaida?(): string; iniciarMetronomo?(): void; pararMetronomo?(): void };
+type Ponte = { iniciar(titulo: string): void; parar(): void; iniciarGravacao?(): void; pararGravacao?(): void; temFone?(): boolean; rotaDeSaida?(): string; manterTela?(ligar: boolean): void; iniciarMetronomo?(): void; pararMetronomo?(): void };
 
 const ponte = (): Ponte | null => (globalThis as { BmServico?: Ponte }).BmServico ?? null;
 
@@ -144,5 +144,17 @@ export function rotaDeSaida(): string | null {
   } catch (e) {
     console.warn("servico: não deu para saber a rota de saída", e);
     return null;
+  }
+}
+
+/**
+ * Pede ao Android para não apagar a tela (`FLAG_KEEP_SCREEN_ON` da janela) enquanto `ligar` for verdadeiro; falso devolve a tela ao tempo do sistema.
+ * Fora do Android, ou com uma ponte antiga, não faz nada.
+ */
+export function manterTelaLigada(ligar: boolean): void {
+  try {
+    ponte()?.manterTela?.(ligar);
+  } catch (e) {
+    console.warn("servico: a ponte da tela ligada falhou", e);
   }
 }

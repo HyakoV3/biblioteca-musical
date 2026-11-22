@@ -6,7 +6,8 @@
   import { i18n } from "$lib/i18n/index.svelte";
   import Miniplayer from "$lib/Miniplayer.svelte";
   import { reproducao } from "$lib/reproducao.svelte";
-  import { aoPararPelaNotificacao, sincronizarServico } from "$lib/servico";
+  import { aoPararPelaNotificacao, manterTelaLigada, sincronizarServico } from "$lib/servico";
+  import { telaLigada } from "$lib/telaLigada.svelte";
   import { metronomo } from "$lib/metronomo.svelte";
   import { sons } from "$lib/sons/pacotes.svelte";
   import { aplicarEstilo, aplicarTema, estilo, tema } from "$lib/tema.svelte";
@@ -23,6 +24,11 @@
   // No Android, o serviço em primeiro plano segura o app vivo enquanto um hino toca (I-22); fora dele a ponte não existe e isto não faz nada.
   $effect(() => {
     sincronizarServico(reproducao.estado === "tocando", reproducao.atual?.titulo ?? "");
+  });
+
+  // Com "manter a tela ligada" escolhido, a tela não apaga enquanto o hino toca; ao parar (ou ao desligar a opção) volta ao tempo do sistema.
+  $effect(() => {
+    manterTelaLigada(telaLigada.manter && reproducao.estado === "tocando");
   });
 
   // Um hino que começa a tocar cala o metrônomo (um som de cada vez).

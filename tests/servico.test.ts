@@ -198,3 +198,35 @@ describe("serviço do metrônomo", () => {
   });
 });
 
+
+describe("manter a tela ligada", () => {
+  afterEach(() => {
+    delete (globalThis as { BmServico?: unknown }).BmServico;
+    vi.restoreAllMocks();
+  });
+
+  it("repassa o pedido à ponte (ligar e desligar)", async () => {
+    const chamadas: boolean[] = [];
+    (globalThis as { BmServico?: unknown }).BmServico = { iniciar() {}, parar() {}, manterTela: (l: boolean) => chamadas.push(l) };
+    const { manterTelaLigada } = await carregar();
+    manterTelaLigada(true);
+    manterTelaLigada(false);
+    expect(chamadas).toEqual([true, false]);
+  });
+
+  it("sem ponte, com ponte antiga ou com a ponte falhando, não faz nada nem derruba", async () => {
+    const { manterTelaLigada } = await carregar();
+    expect(() => manterTelaLigada(true)).not.toThrow(); // fora do Android
+    (globalThis as { BmServico?: unknown }).BmServico = { iniciar() {}, parar() {} }; // APK antigo
+    expect(() => manterTelaLigada(true)).not.toThrow();
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    (globalThis as { BmServico?: unknown }).BmServico = {
+      iniciar() {},
+      parar() {},
+      manterTela() {
+        throw new Error("falhou");
+      },
+    };
+    expect(() => manterTelaLigada(true)).not.toThrow();
+  });
+});

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ajustesPadrao, cartoesPadrao, lerAjustes, lerCartoes, lerKaraoke, salvarAjustes, salvarCartoes, salvarKaraoke } from "../src/lib/preferencias";
+import { ajustesPadrao, cartoesPadrao, lerAjustes, lerCartoes, lerKaraoke, lerManterTela, salvarAjustes, salvarCartoes, salvarKaraoke, salvarManterTela } from "../src/lib/preferencias";
 
 // localStorage simples, em memória.
 let mem: Record<string, string>;
@@ -40,6 +40,30 @@ describe("cards abertos do player", () => {
   it("salvar e ler", () => {
     salvarCartoes({ ajustes: true, vozes: false, instrumentos: false });
     expect(lerCartoes()).toEqual({ ajustes: true, vozes: false, instrumentos: false });
+  });
+});
+
+describe("manter a tela ligada", () => {
+  it("vem desligado por padrão, e salvar vale entre aberturas", () => {
+    expect(lerManterTela()).toBe(false);
+    salvarManterTela(true);
+    expect(lerManterTela()).toBe(true);
+    salvarManterTela(false);
+    expect(lerManterTela()).toBe(false);
+  });
+
+  it("sem armazenamento não quebra e vale o padrão (desligado)", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("bloqueado");
+      },
+      setItem: () => {
+        throw new Error("bloqueado");
+      },
+    });
+    expect(lerManterTela()).toBe(false);
+    expect(() => salvarManterTela(true)).not.toThrow();
+    vi.unstubAllGlobals();
   });
 });
 
