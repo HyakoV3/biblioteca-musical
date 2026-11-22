@@ -255,6 +255,9 @@ def marcar_notas(svg: str, tempos: dict, ligaduras: list) -> tuple:
     svg = ELEMENTO_COM_TEMPO.sub(troca, svg)
 
     # a curva da ligadura: o tempo da nota que abre, dividido entre os pedaços da mesma ligadura
+    # O desenho (`d`) de cada curva: duas curvas sobre as mesmas notas com o MESMO desenho são DUPLICATAS (o MuseScore guarda duas ligaduras iguais, uma por cima da outra) e cada
+    # uma leva o tempo inteiro; os PEDAÇOS de uma curva partida pelo fim da linha têm desenhos diferentes (um no fim de uma linha e outro no começo da seguinte) e dividem o tempo.
+    desenho = {m.group(1): m.group(2) for m in re.finditer(r'<g id="([^"]+)" class="(?:tie|slur)"[^>]*>\s*<path d="([^"]*)"', svg)}
     # O pedaço de uma ligadura partida pelo fim da linha só se junta aos da MESMA espécie: uma ligadura de prolongamento e uma de expressão sobre as mesmas duas notas
     # são curvas diferentes, e dividir o tempo entre elas daria meio tempo a cada uma.
     pedacos = {}
@@ -274,8 +277,15 @@ def marcar_notas(svg: str, tempos: dict, ligaduras: list) -> tuple:
             fim = inicio + duracoes[(de, ate)]  # expressão: até o começo da nota que fecha
         if fim - inicio <= 1e-6:
             continue
-        passo = (fim - inicio) / len(ids)
-        for k, gid in enumerate(ids):
+        # os pedaços são os desenhos DIFERENTES, na ordem do SVG; as duplicatas de um mesmo desenho (ou curvas sem desenho conhecido, cada uma por si) ficam no mesmo pedaço
+        lugares: list = []
+        for gid in ids:
+            chave = desenho.get(gid, gid)
+            if chave not in lugares:
+                lugares.append(chave)
+        passo = (fim - inicio) / len(lugares)
+        for gid in ids:
+            k = lugares.index(desenho.get(gid, gid))
             tempo_da_curva[gid] = (inicio + k * passo, inicio + (k + 1) * passo)
 
     def curva(m):
