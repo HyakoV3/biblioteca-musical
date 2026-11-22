@@ -89,8 +89,8 @@ responsável (quem perde a chave não consegue mais atualizar o app).
 O APK é entregue **dentro de um `.zip` com o commit no nome**, para o responsável distinguir um build do outro:
 
 ```sh
-cd "<pasta de entrega dos zips>"   # a pasta de entrega dos zips do responsável
-C=$(git rev-parse --short=7 HEAD)   # o commit do build (árvore limpa)
+C=$(git rev-parse --short=7 HEAD)   # o commit do build (árvore limpa), lido ANTES de sair da pasta do repositório
+cd "<pasta de entrega dos zips>"   # a pasta de entrega dos zips do responsável (não é o repositório)
 zip -j BibliotecaMusical-teste-$C.zip BibliotecaMusical-teste.apk
 sha256sum BibliotecaMusical-teste-$C.zip
 rm BibliotecaMusical-teste.apk BibliotecaMusical-teste.apk.idsig     # o apksigner deixa um .idsig ao lado
@@ -104,7 +104,7 @@ responsável (antes iam para `~/Downloads`, e ele os movia para lá).
 **`archive/`**. Ao entregar um zip novo, o mais antigo que sobrar passa para `archive/` (só se move, nada se apaga). Um arquivo
 de teste que acompanha o APK (por exemplo o pacote de partituras) fica ao lado dele e segue a mesma regra depois.
 
-**O identificador do build é o commit** (7 caracteres, o mesmo de **Ajustes, "Sobre"**), e não mais um número em sequência (até o 079 era numerado). Por isso o build sai de uma **árvore limpa e já commitada**: com alterações locais o rótulo leva "+" e o zip não teria nome certo. **Acrescente a linha a cada build** (a primeira coluna é o commit). A versão e o
+**O identificador do build é o commit** (7 caracteres, o mesmo de **Ajustes, "Sobre"**), e não mais um número em sequência (até o 071 era numerado; o 072 em diante já usa o commit). Por isso o build sai de uma **árvore limpa e já commitada**: com alterações locais o rótulo leva "+" e o zip não teria nome certo. **Acrescente a linha a cada build** (a primeira coluna é o commit). A versão e o
 commit são os que aparecem em **Ajustes, "Sobre"** (`Versão X.Y.Z (commit)`).
 
 ### Histórico dos zips
