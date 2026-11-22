@@ -307,6 +307,7 @@ export const en: Dicionario = {
   "sobre.nome_titulo": "In the name of the Lord Jesus",
   "sobre.aviso_titulo": "Independent app",
   "sobre.aviso": "This app is independent and unofficial. It has no connection with the Christian Congregation in Brazil.",
+  "sobre.aviso_concordo": "I agree",
   "sobre.intro": "Biblioteca Musical is a free app for musicians in training. It brings together the hymn list, the lyrics, the sheet music and a player that plays each voice, so you can study yours. It also has a tuner, a recorder and a metronome.",
   "sobre.fazer_titulo": "What you can do",
   "sobre.fazer_1": "Search hymns by number or title and read the lyrics by verse, with the karaoke lighting up each syllable.",

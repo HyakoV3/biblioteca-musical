@@ -99,6 +99,25 @@ export function salvarKaraoke(ligado: boolean) {
   }
 }
 
+const CHAVE_CIENTE = "prefs.aviso-independente";
+
+/** A pessoa já disse "Concordo" ao aviso de que o app é independente e não oficial (Ajustes)? */
+export function lerCiente(): boolean {
+  try {
+    return localStorage.getItem(CHAVE_CIENTE) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function salvarCiente() {
+  try {
+    localStorage.setItem(CHAVE_CIENTE, "1");
+  } catch {
+    /* sem armazenamento: o aviso volta na próxima abertura */
+  }
+}
+
 const CHAVE_TELA = "prefs.manter-tela";
 
 /** Manter a tela ligada enquanto o hino toca? Padrão: desligado (gasta bateria). */

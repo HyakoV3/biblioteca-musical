@@ -1574,6 +1574,9 @@ async function principal() {
   await irParaInicio();
   const av0 = await estadoAviso();
   confere(av0.aberto && av0.agoraNao && /\d/.test(av0.baixar ?? "") && av0.lembrado === null, `Primeiro acesso: com só o pacote de exemplo, o aviso para baixar o hinário abre, com Baixar (e o tamanho) e Agora não: ${JSON.stringify(av0)}`);
+  // A janela tem margem nas laterais (em retrato, numa tela estreita): sobra pelo menos 1 rem de margem de cada lado.
+  const folga = await av(`(() => { const r = document.querySelector('dialog.aviso-hinario[open]').getBoundingClientRect(); return { esq: Math.round(r.left), dir: Math.round(innerWidth - r.right), largura: innerWidth }; })()`);
+  confere(folga.esq >= 16 && folga.dir >= 16, `o aviso do hinário tem margem nas laterais: ${JSON.stringify(folga)}`);
   await av(`document.getElementById('hinario-agora-nao').click(); 1`);
   await dormir(400);
   const av1 = await estadoAviso();
@@ -1676,6 +1679,15 @@ async function principal() {
 
   // ---- Saída de áudio (Ajustes): o cartão mostra a rota, os três modos, guarda a escolha POR rota e explica quando ainda não há medida ----
   await irParaAjustes(AJ);
+  // O aviso "app independente" em Ajustes fica até o "Concordo"; depois some e a escolha fica guardada.
+  await av(`localStorage.removeItem('prefs.aviso-independente'); 1`);
+  await irParaAjustes(AJ);
+  const ci0 = await av(`({ aviso: !!document.getElementById('aviso-independente'), botao: !!document.getElementById('aviso-concordo') })`);
+  confere(ci0.aviso && ci0.botao, `Ajustes mostra o aviso do app independente com o botão Concordo: ${JSON.stringify(ci0)}`);
+  await av(`document.getElementById('aviso-concordo').click(); 1`);
+  await dormir(300);
+  const ci1 = await av(`({ aviso: !!document.getElementById('aviso-independente'), guardado: localStorage.getItem('prefs.aviso-independente') })`);
+  confere(!ci1.aviso && ci1.guardado === '1', `depois do Concordo o aviso some e a escolha é guardada: ${JSON.stringify(ci1)}`);
   await av(`(() => { const d = document.querySelector('#cartao-saida'); if (d && !d.open) d.querySelector('summary').click(); return 1; })()`);
   await dormir(300);
   const saida0 = await av(`(() => ({ modos: [...document.querySelectorAll('input[name="modo-saida"]')].map((i) => i.value + ':' + i.checked), medida: document.getElementById('saida-medida')?.textContent ?? '', desc: document.getElementById('saida-descricao')?.textContent ?? '' }))()`);

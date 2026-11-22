@@ -62,7 +62,7 @@
 
 <style>
   .aviso-hinario {
-    max-width: min(32rem, calc(100vw - 2rem)); padding: 1.25rem; border: 0.0625rem solid var(--borda-controle); border-radius: 1rem;
+    box-sizing: border-box; width: min(32rem, calc(100% - 2rem)); margin: auto; /* margem lateral de 1rem em tela estreita */ padding: 1.25rem; border: 0.0625rem solid var(--borda-controle); border-radius: 1rem;
     background: var(--fundo); color: var(--texto);
   }
   .aviso-hinario::backdrop { background: rgb(0 0 0 / 0.55); }
