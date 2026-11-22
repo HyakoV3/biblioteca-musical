@@ -68,6 +68,10 @@ describe("a barra única dos pacotes (90% de download, o resto é conferir e ins
     expect(progressoTotal("instalando", 1)).toBeGreaterThan(progressoTotal("conferindo", 1));
     expect(progressoTotal("instalando", 1)).toBeLessThan(1);
     expect(progressoTotal("ocioso", 1)).toBe(0);
+    expect(progressoTotal("baixando", NaN)).toBe(0); // total desconhecido: não vira "NaN%"
+    expect(progressoTotal("baixando", Infinity)).toBeCloseTo(0.9);
+    expect(progressoTotal("conferindo", 1)).toBeCloseTo(0.93);
+    expect(progressoTotal("instalando", 1)).toBeCloseTo(0.96);
     expect(porcentagemTotal("baixando", 1)).toBe(90);
   });
 });

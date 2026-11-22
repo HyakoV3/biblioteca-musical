@@ -152,9 +152,9 @@
     if (partituras.andamento.fase === "baixando") return { texto: `${t("partituras.titulo")}: ${t("partituras.baixando", { n: np })}`, alerta: false };
     if (partituras.andamento.fase === "conferindo") return { texto: `${t("partituras.titulo")}: ${t("partituras.conferindo")}`, alerta: false };
     if (partituras.andamento.fase === "instalando") return { texto: `${t("partituras.titulo")}: ${t("partituras.instalando")}`, alerta: false };
-    const ativo = sonsAndamento.find((a) => a.fase === "baixando" || a.fase === "conferindo");
+    const ativo = sonsAndamento.find((a) => a.fase === "baixando" || a.fase === "conferindo" || a.fase === "instalando");
     if (ativo) {
-      const texto = ativo.fase === "baixando" ? t("sons.baixando", { n: porcentagemTotal(ativo.fase, ativo.progresso) }) : t("sons.conferindo");
+      const texto = ativo.fase === "baixando" ? t("sons.baixando", { n: porcentagemTotal(ativo.fase, ativo.progresso) }) : ativo.fase === "conferindo" ? t("sons.conferindo") : t("sons.instalando");
       return { texto: `${t("sons.titulo")}: ${texto}`, alerta: false };
     }
     const hinario = !biblioteca.pacote ? "…" : biblioteca.pacote.exemplo ? t("ajustes.resumo_exemplo") : biblioteca.pacote.hinario.hinario.nome;
@@ -350,10 +350,11 @@
           <LinhaPacote
             titulo={t(`sons.pacote_${p.id}` as Chave)}
             detalhe={`${tamanho} · ${instalado ? t("sons.instalado") : t("sons.nao_instalado")}`}
-            fase={and.fase === "baixando" || and.fase === "conferindo" ? and.fase : "ocioso"}
+            fase={and.fase === "baixando" || and.fase === "conferindo" || and.fase === "instalando" ? and.fase : "ocioso"}
             progresso={and.progresso}
             textoBaixando={t("sons.baixando", { n: porcentagemTotal(and.fase, and.progresso) })}
             textoConferindo={t("sons.conferindo")}
+            textoInstalando={t("sons.instalando")}
             {instalado}
             rotuloRemover={t("sons.remover")}
             aoRemover={() => sons.remover(p.id)}

@@ -32,9 +32,11 @@ export function bytesParaBase64(bytes: Uint8Array): string {
  */
 export const PARTE_DO_DOWNLOAD = 0.9;
 export function progressoTotal(fase: "baixando" | "conferindo" | "instalando" | "ocioso" | "erro", progresso: number): number {
-  if (fase === "baixando") return Math.min(1, Math.max(0, progresso)) * PARTE_DO_DOWNLOAD;
-  if (fase === "conferindo") return 0.93;
-  if (fase === "instalando") return 0.96;
+  // Os marcos de depois do download saem do que sobra da barra (30% e 60% do resto), para seguirem `PARTE_DO_DOWNLOAD` se ela mudar.
+  const resto = 1 - PARTE_DO_DOWNLOAD;
+  if (fase === "baixando") return (Number.isNaN(progresso) ? 0 : Math.min(1, Math.max(0, progresso))) * PARTE_DO_DOWNLOAD; // NaN (total desconhecido) vira 0
+  if (fase === "conferindo") return PARTE_DO_DOWNLOAD + resto * 0.3;
+  if (fase === "instalando") return PARTE_DO_DOWNLOAD + resto * 0.6;
   return 0;
 }
 /** O mesmo, em porcentagem inteira, para o texto "Baixando 45%". */

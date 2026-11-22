@@ -42,7 +42,7 @@
   <p class="meta">{t("hinario.aviso_depois")}</p>
 
   {#if baixando}
-    <progress value={progressoTotal(hinario.andamento.fase, hinario.andamento.progresso)} max="1" aria-label={t("hinario.baixando", { n: porcentagemTotal(hinario.andamento.fase, hinario.andamento.progresso) })}></progress>
+    <progress value={progressoTotal(hinario.andamento.fase, hinario.andamento.progresso)} max="1" aria-label={hinario.andamento.fase === "baixando" ? t("hinario.baixando", { n: porcentagemTotal(hinario.andamento.fase, hinario.andamento.progresso) }) : hinario.andamento.fase === "conferindo" ? t("hinario.conferindo") : t("hinario.instalando")}></progress>
     <p class="meta" role="status">
       {hinario.andamento.fase === "baixando"
         ? t("hinario.baixando", { n: porcentagemTotal(hinario.andamento.fase, hinario.andamento.progresso) })

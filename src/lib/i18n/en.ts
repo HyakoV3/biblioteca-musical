@@ -136,6 +136,7 @@ export const en: Dicionario = {
   "partituras.baixar": "Download ({tamanho})",
   "partituras.baixando": "Downloading… {n}%",
   "partituras.conferindo": "Checking the file…",
+  "sons.instalando": "Saving on the device…",
   "partituras.instalando": "Installing…",
   "partituras.remover": "Remove",
   "partituras.recusadas": "Scores that were not installed: {total} (hymns {lista}). First reason: {motivo}",
