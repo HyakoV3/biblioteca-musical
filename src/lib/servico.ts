@@ -2,7 +2,7 @@
 // para o som não parar com a tela bloqueada ou o app em segundo plano. O lado Android é `ServicoAudio.kt` e a ponte `PonteServico.kt`, exposta à
 // WebView como `window.BmServico`. Fora do Android (navegador, computador, testes) a ponte não existe e tudo aqui não faz nada.
 
-type Ponte = { iniciar(titulo: string): void; parar(): void; iniciarGravacao?(): void; pararGravacao?(): void; temFone?(): boolean; iniciarMetronomo?(): void; pararMetronomo?(): void };
+type Ponte = { iniciar(titulo: string): void; parar(): void; iniciarGravacao?(): void; pararGravacao?(): void; temFone?(): boolean; rotaDeSaida?(): string; iniciarMetronomo?(): void; pararMetronomo?(): void };
 
 const ponte = (): Ponte | null => (globalThis as { BmServico?: Ponte }).BmServico ?? null;
 
@@ -132,4 +132,17 @@ export function aoFalharServicoDoMetronomo(quando: () => void): () => void {
   return () => {
     if (g.__bmServicoDoMetronomoFalhou === quando) delete g.__bmServicoDoMetronomoFalhou;
   };
+}
+
+/**
+ * De onde o som sai agora: "usb", "fio" (3,5 mm), "bluetooth" ou "alto-falante". Fora do Android, sem a ponte (um APK antigo) ou se ela falhar,
+ * devolve `null` (quem chama trata como alto-falante).
+ */
+export function rotaDeSaida(): string | null {
+  try {
+    return ponte()?.rotaDeSaida?.() ?? null;
+  } catch (e) {
+    console.warn("servico: não deu para saber a rota de saída", e);
+    return null;
+  }
 }
