@@ -46,11 +46,22 @@ class ServicoAudio : Service() {
          * nenhum dos dois precisa dele (ver `PonteServico`). Gravar com a tela bloqueada exige o tipo `microphone`: sem ele o Android corta o
          * microfone do app que sai da tela (a gravação parava em cerca de 30 s).
          */
+        @Volatile
         var tocando = false
+
+        @Volatile
         var gravando = false
 
         /** O metrônomo está ligado (I-20): o clique segue com a tela bloqueada até a pessoa parar. Tipo `mediaPlayback`, wake lock sem limite. */
+        @Volatile
         var metronomo = false
+
+        /**
+         * Chamado quando o serviço é destruído (o hino acabou, a gravação ou o metrônomo pararam, ou a pessoa tocou em "Parar"): a `MainActivity` o usa para
+         * pausar de novo a WebView que ela manteve acordada, se o app ainda estiver em segundo plano.
+         */
+        @Volatile
+        var aoOcioso: (() -> Unit)? = null
 
         /** Título do hino que toca (a notificação o mostra enquanto `tocando`); o da gravação é o nome do app. */
         var tituloAtual = ""
@@ -137,6 +148,11 @@ class ServicoAudio : Service() {
         gravando = false
         metronomo = false
         soltarCpu()
+        try {
+            aoOcioso?.invoke()
+        } catch (e: Exception) {
+            android.util.Log.w("bm", "não deu para pausar a WebView ao fim do serviço", e)
+        }
         super.onDestroy()
     }
 
