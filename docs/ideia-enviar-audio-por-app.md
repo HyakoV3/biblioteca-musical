@@ -1,6 +1,6 @@
 # Ideia: enviar a gravação no formato que o app de destino aceita (rascunho)
 
-**Status:** rascunho (2026-11-22), revisado com pesquisa no mesmo dia. Nada disto está implementado.
+**Status:** implementado na PR #133 e **funcionou no aparelho do responsável** (2026-11-22): a gravação sai como `.ogg` (Ogg/Opus) e o WhatsApp aceita como áudio. Falta só a limpeza (ver "Pendências"). O texto abaixo é o rascunho original, mantido pelo raciocínio.
 
 ## O problema (teste no aparelho do responsável, WhatsApp)
 
@@ -79,11 +79,11 @@ Alternativas descartadas:
 
 ## Plano em etapas pequenas
 
-1. **Prova manual (sem código no app; arquivos de teste prontos em 2026-11-22 na pasta `teste-envio-audio/` do Nextcloud: `gravacao-teste.ogg`, Opus mono 48 kHz, 9 s, 3 notas, e `gravacao-teste.m4a`, AAC, para comparar):** converter uma gravação real com `ffmpeg -i g.webm -c:a copy g.ogg`, copiar para o celular e compartilhar pelo gerenciador de arquivos para WhatsApp, Telegram, Signal e Messages. Anotar: áudio, nota de voz ou documento. Se o WhatsApp não aceitar Ogg como áudio, parar e reavaliar (plano B: `.m4a`).
-2. *(feito, aguardando PR)* **Ler WebM em TS** (`src/lib/webm.ts`): extrair `OpusHead` e a lista de pacotes com tempo. Teste no Vitest com uma gravação pequena real como fixture (canais = 1, 48 kHz, contagem de pacotes).
-3. *(feito)* **Escrever Ogg em TS** (`src/lib/ogg.ts`): páginas, CRC, `OpusHead`/`OpusTags`, granule. Teste: CRC de página conhecido; e conferir a saída com `ffprobe`/`opusinfo` fora do app (duração certa, sem erro).
-4. *(feito)* **Ligar no envio:** `compartilharGravacao` converte quando o tipo for WebM/Opus; nome `.ogg`; se o remux falhar, envia o original (como hoje). Teste no Vitest do fluxo (com ponte falsa).
-5. *(feito; falta testar no aparelho)* **Ponte Kotlin:** aceitar `audio/ogg; codecs=opus` no `type` do Intent (regex com parâmetros) e manter a extensão `.ogg` (o `FileProvider` dá `audio/ogg`). Teste no aparelho: Telegram deve mostrar nota de voz.
+1. *(dispensada: o teste foi direto com o APK 077)* **Prova manual (sem código no app; arquivos de teste prontos em 2026-11-22 na pasta `teste-envio-audio/` do Nextcloud: `gravacao-teste.ogg`, Opus mono 48 kHz, 9 s, 3 notas, e `gravacao-teste.m4a`, AAC, para comparar):** converter uma gravação real com `ffmpeg -i g.webm -c:a copy g.ogg`, copiar para o celular e compartilhar pelo gerenciador de arquivos para WhatsApp, Telegram, Signal e Messages. Anotar: áudio, nota de voz ou documento. Se o WhatsApp não aceitar Ogg como áudio, parar e reavaliar (plano B: `.m4a`).
+2. *(feito na PR #133)* **Ler WebM em TS** (`src/lib/webm.ts`): extrair `OpusHead` e a lista de pacotes com tempo. Teste no Vitest com uma gravação pequena real como fixture (canais = 1, 48 kHz, contagem de pacotes).
+3. *(feito na PR #133)* **Escrever Ogg em TS** (`src/lib/ogg.ts`): páginas, CRC, `OpusHead`/`OpusTags`, granule. Teste: CRC de página conhecido; e conferir a saída com `ffprobe`/`opusinfo` fora do app (duração certa, sem erro).
+4. *(feito na PR #133)* **Ligar no envio:** `compartilharGravacao` converte quando o tipo for WebM/Opus; nome `.ogg`; se o remux falhar, envia o original (como hoje). Teste no Vitest do fluxo (com ponte falsa).
+5. *(feito; testado no aparelho)* **Ponte Kotlin:** o `type` do Intent fica `audio/ogg` **sem parâmetros** (decisão da revisão: o Android compara o tipo por igualdade com o que os apps declaram; o `;codecs=opus` faria apps que declaram `audio/ogg` não aparecerem). Mantém a extensão `.ogg` (o `FileProvider` dá `audio/ogg`). Teste no aparelho: Telegram deve mostrar nota de voz.
 6. **Teste no aparelho** com a lista de "Riscos" abaixo; depois **tirar o interruptor `.webm | .weba`** e o `compartilharPrefs.ts` (com a limpeza da chave antiga).
 7. **Opcional (só se a etapa 1 ou 6 mostrar recusa de Ogg em algum destino):** conversão para `.m4a`/AAC com `MediaCodec`, oferecida como "enviar como MP4 (compatível)".
 
@@ -96,3 +96,20 @@ Alternativas descartadas:
 - **MIME no aparelho do responsável:** conferir que `.ogg` dá `audio/ogg` nesse Android (as tabelas citadas são do ramo atual).
 - **Destinos sem Ogg:** Messages por MMS e e-mail aberto em iPhone podem não tocar. Aceitável no início; plano B `.m4a`.
 - **Fora do escopo, mas visto:** `file_paths.xml` expõe `external-path "."` (todo o armazenamento externo) pelo `FileProvider`; o envio só precisa de `cache-path`. Vale apertar numa PR à parte.
+
+## Pendências (2026-11-22)
+
+**Do lado do código (Claude):**
+- Tirar o interruptor `.webm | .weba` da tela de gravações (`ItemGravacao.svelte`), o `compartilharPrefs.ts`, o `compartilharFormato.svelte.ts`, as chaves de tradução e limpar a chave antiga `prefs.compartilhar` do `localStorage` (etapa 6). Só depois de confirmar que o `.ogg` serve em todos os destinos de interesse.
+- Gerar o APK 078 com o código final da PR #133 (o 077 foi feito antes das correções da revisão: tipo sem `codecs`, `DiscardPadding`, paginação por segmentos).
+- Apertar o `file_paths.xml` do `FileProvider` (hoje `external-path "."`; o envio só precisa de `cache-path`), em PR à parte.
+- Opcional: `.m4a`/AAC com `MediaCodec` (etapa 7), só se algum destino recusar Ogg.
+
+**Do lado do responsável:**
+- Testar o `.ogg` nos outros destinos (Telegram: deve virar nota de voz; Signal; Messages) e no WhatsApp Business; anotar áudio, nota de voz ou documento.
+- Testar gravações longas (10, 30 e 60 min): tamanho, tempo da conversão e memória. Acima de uns 34 min o arquivo passa de 16 MB.
+- Fazer o merge da PR #133 depois do CI.
+
+## Como levar isto para outro projeto
+
+Os arquivos a copiar são `src/lib/webm.ts` (leitor de WebM/Opus), `src/lib/ogg.ts` (escritor de Ogg, CRC e a função `webmParaOgg`), `tests/ogg.test.ts` com `tests/fixtures/opus.ts` (duas gravações de 0,5 s em base64) e o trecho `prepararOgg` de `src/lib/compartilhar.ts`. Lições da revisão: fechar a página Ogg por 255 valores de lacing (não só por contagem de pacotes); validar `OpusHead` e o TOC; descontar o `DiscardPadding`; mandar o tipo `audio/ogg` sem parâmetros ao Intent; se a conversão falhar, enviar o original.
