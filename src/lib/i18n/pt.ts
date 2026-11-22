@@ -136,6 +136,7 @@ export const pt = {
   "partituras.baixar": "Baixar ({tamanho})",
   "partituras.baixando": "Baixando… {n}%",
   "partituras.conferindo": "Conferindo o arquivo…",
+  "sons.instalando": "Gravando no aparelho…",
   "partituras.instalando": "Instalando…",
   "partituras.remover": "Remover",
   "partituras.recusadas": "Partituras que não entraram: {total} (hinos {lista}). Primeiro motivo: {motivo}",

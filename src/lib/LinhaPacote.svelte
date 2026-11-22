@@ -2,6 +2,7 @@
   // Uma linha de conteúdo que se instala e se remove (partituras, sons gravados e, em Ajustes, o hinário): o título, um detalhe (tamanho e
   // estado) e a ação do momento. A LÓGICA de baixar, conferir e instalar não é daqui: fica nas lojas de estado (`sons/pacotes.svelte.ts`,
   // `partituras/partituras.svelte.ts`); esta linha só desenha o que elas informam.
+  import { progressoTotal } from "./pacote";
   type Fase = "baixando" | "conferindo" | "instalando" | "ocioso";
   let {
     titulo,
@@ -43,13 +44,10 @@
     <strong>{titulo}</strong>
     <span class="meta">{detalhe}</span>
   </div>
-  {#if fase === "baixando"}
-    <progress value={progresso} max="1" aria-label={textoBaixando}></progress>
-    <span class="meta">{textoBaixando}</span>
-  {:else if fase === "conferindo"}
-    <span class="meta" role="status">{textoConferindo}</span>
-  {:else if fase === "instalando"}
-    <span class="meta" role="status">{textoInstalando}</span>
+  {#if fase === "baixando" || fase === "conferindo" || fase === "instalando"}
+    <!-- Uma barra só: o download é 90% dela, a conferência e a instalação o resto (progressoTotal). -->
+    <progress value={progressoTotal(fase, progresso)} max="1" aria-label={fase === "baixando" ? textoBaixando : fase === "conferindo" ? textoConferindo : textoInstalando}></progress>
+    <span class="meta" role={fase === "baixando" ? undefined : "status"}>{fase === "baixando" ? textoBaixando : fase === "conferindo" ? textoConferindo : textoInstalando}</span>
   {:else if instalado}
     <button class="botao" onclick={aoRemover}>{rotuloRemover}</button>
   {:else if rotuloBaixar}

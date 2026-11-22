@@ -136,6 +136,7 @@ export const es: Dicionario = {
   "partituras.baixar": "Descargar ({tamanho})",
   "partituras.baixando": "Descargando… {n}%",
   "partituras.conferindo": "Comprobando el archivo…",
+  "sons.instalando": "Guardando en el dispositivo…",
   "partituras.instalando": "Instalando…",
   "partituras.remover": "Quitar",
   "partituras.recusadas": "Partituras que no entraron: {total} (himnos {lista}). Primer motivo: {motivo}",

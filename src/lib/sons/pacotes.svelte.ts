@@ -8,7 +8,7 @@ import { MANIFESTO } from "./manifesto";
 import { bytesDoPacote, type PacoteSom } from "./tipos";
 
 export type Andamento = {
-  fase: "ocioso" | "baixando" | "conferindo" | "erro";
+  fase: "ocioso" | "baixando" | "conferindo" | "instalando" | "erro";
   /** 0 a 1, só durante o download. */
   progresso: number;
   /** Código do erro (para a tela traduzir), quando `fase` é "erro". */
@@ -39,7 +39,7 @@ const achar = (id: string): PacoteSom => {
 
 async function baixar(id: string) {
   const pacote = achar(id);
-  if (andamentos[id]?.fase === "baixando" || andamentos[id]?.fase === "conferindo") return;
+  if (andamentos[id]?.fase === "baixando" || andamentos[id]?.fase === "conferindo" || andamentos[id]?.fase === "instalando") return;
   andamentos[id] = { fase: "baixando", progresso: 0, erro: "" };
   const gravados: string[] = [];
   try {
@@ -48,6 +48,7 @@ async function baixar(id: string) {
     const zip = await baixarZip(pacote.url, bytesDoPacote(pacote), (f) => (andamentos[id] = { fase: "baixando", progresso: f, erro: "" }));
     andamentos[id] = { fase: "conferindo", progresso: 1, erro: "" };
     const arquivos = await extrairEConferir(zip, pacote);
+    andamentos[id] = { fase: "instalando", progresso: 1, erro: "" }; // gravar no Cache API pode demorar em pacote grande
     try {
       for (const [nome, dados] of arquivos) {
         await armazenamento.guardar(nome, dados);

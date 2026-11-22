@@ -4,6 +4,7 @@
   import { avisoDispensado, deveAvisar, dispensarAviso } from "./hinario/aviso";
   import { hinario } from "./hinario/hinario.svelte";
   import { instalando } from "./instalando.svelte";
+  import { porcentagemTotal, progressoTotal } from "./pacote";
   import { i18n } from "./i18n/index.svelte";
   import { traduzirErro } from "./erros";
   import { formatarMB } from "./sons/formato";
@@ -41,10 +42,10 @@
   <p class="meta">{t("hinario.aviso_depois")}</p>
 
   {#if baixando}
-    <progress value={hinario.andamento.progresso} max="1" aria-label={t("hinario.baixando", { n: Math.round(hinario.andamento.progresso * 100) })}></progress>
+    <progress value={progressoTotal(hinario.andamento.fase, hinario.andamento.progresso)} max="1" aria-label={hinario.andamento.fase === "baixando" ? t("hinario.baixando", { n: porcentagemTotal(hinario.andamento.fase, hinario.andamento.progresso) }) : hinario.andamento.fase === "conferindo" ? t("hinario.conferindo") : t("hinario.instalando")}></progress>
     <p class="meta" role="status">
       {hinario.andamento.fase === "baixando"
-        ? t("hinario.baixando", { n: Math.round(hinario.andamento.progresso * 100) })
+        ? t("hinario.baixando", { n: porcentagemTotal(hinario.andamento.fase, hinario.andamento.progresso) })
         : hinario.andamento.fase === "conferindo"
           ? t("hinario.conferindo")
           : t("hinario.instalando")}

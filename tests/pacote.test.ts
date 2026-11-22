@@ -56,3 +56,22 @@ describe("bytesParaBase64 (o zip vai ao Rust como texto: no Android não há cor
     expect(LIMITE_JSON_BYTES).toBe(20 * 1024 * 1024);
   });
 });
+
+describe("a barra única dos pacotes (90% de download, o resto é conferir e instalar)", () => {
+  it("o download vai de 0 a 90%; conferir e instalar ficam depois, sem passar de 100%", async () => {
+    const { progressoTotal, porcentagemTotal } = await import("../src/lib/pacote");
+    expect(progressoTotal("baixando", 0)).toBe(0);
+    expect(progressoTotal("baixando", 0.5)).toBeCloseTo(0.45);
+    expect(progressoTotal("baixando", 1)).toBeCloseTo(0.9);
+    expect(progressoTotal("baixando", 7)).toBeCloseTo(0.9); // valor fora da faixa é cortado
+    expect(progressoTotal("conferindo", 1)).toBeGreaterThan(0.9);
+    expect(progressoTotal("instalando", 1)).toBeGreaterThan(progressoTotal("conferindo", 1));
+    expect(progressoTotal("instalando", 1)).toBeLessThan(1);
+    expect(progressoTotal("ocioso", 1)).toBe(0);
+    expect(progressoTotal("baixando", NaN)).toBe(0); // total desconhecido: não vira "NaN%"
+    expect(progressoTotal("baixando", Infinity)).toBeCloseTo(0.9);
+    expect(progressoTotal("conferindo", 1)).toBeCloseTo(0.93);
+    expect(progressoTotal("instalando", 1)).toBeCloseTo(0.96);
+    expect(porcentagemTotal("baixando", 1)).toBe(90);
+  });
+});
