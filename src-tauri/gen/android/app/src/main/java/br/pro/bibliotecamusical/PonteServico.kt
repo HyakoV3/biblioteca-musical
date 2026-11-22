@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
+import android.view.WindowManager
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import java.lang.ref.WeakReference
@@ -124,6 +125,22 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
         } catch (e: Exception) {
             android.util.Log.w("bm", "não deu para saber se há fone", e)
             false
+        }
+    }
+
+    /**
+     * Mantém a tela acesa (`FLAG_KEEP_SCREEN_ON` da janela) enquanto `ligar` for verdadeiro; falso devolve a tela ao tempo do sistema.
+     * A janela só aceita a mudança na thread principal.
+     */
+    @JavascriptInterface
+    fun manterTela(ligar: Boolean) {
+        atividade.runOnUiThread {
+            try {
+                if (ligar) atividade.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                else atividade.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            } catch (e: Exception) {
+                android.util.Log.w("bm", "não deu para mexer na tela ligada", e)
+            }
         }
     }
 

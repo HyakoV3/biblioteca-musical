@@ -19,6 +19,7 @@
   import Player from "$lib/Player.svelte";
   import { ESCALAS_LETRA, PASSO_PADRAO, escalaDoPasso, limitarPasso, type Alinhamento } from "$lib/leitura";
   import ControleDeTamanho from "$lib/ControleDeTamanho.svelte";
+  import { telaLigada } from "$lib/telaLigada.svelte";
   import { lerKaraoke, lerLeitura, salvarKaraoke, salvarLeitura } from "$lib/preferencias";
   import { reproducao } from "$lib/reproducao.svelte";
   import { untrack } from "svelte";
@@ -41,14 +42,14 @@
   const ROTULOS = { ouvir: "hino.aba_ouvir", letra: "hino.aba_letra", partitura: "hino.aba_partitura" } as const;
   // Idioma do conteúdo (título e letra), quando o hinário o declara; a interface pode estar em outra língua.
   const idiomaConteudo = $derived(biblioteca.pacote?.hinario.hinario.idioma ?? undefined);
-  // Linha de apoio sob o título: tonalidade e autoria, quando existirem.
+  // Linhas de apoio sob o título: tonalidade e autoria, cada uma na sua linha, quando existirem.
   const subtitulo = $derived.by(() => {
     if (!hino) return undefined;
     const partes = [
       hino.tonalidade ? t("hino.tonalidade", { tom: nomeDaTonalidade(hino.tonalidade, i18n.idioma, notacao.atual) }) : null,
       hino.autoria ? t("hino.autoria", { nome: hino.autoria }) : null,
     ].filter(Boolean);
-    return partes.length ? partes.join(" · ") : undefined;
+    return partes.length ? (partes as string[]) : undefined;
   });
   const tituloPagina = $derived(hino ? `${hino.numero} · ${hino.titulo}` : t("biblioteca.titulo"));
 
@@ -191,11 +192,26 @@
   </button>
 {/snippet}
 
+<!-- Manter a tela ligada: o olho (vazado = desligado, cheio = ligado, com borda dourada). Vale para o hino que toca, em qualquer aba; ao pausar, parar ou terminar a tela volta ao tempo do sistema. -->
+{#snippet botaoTela()}
+  <button
+    class="botao botao-icone chave-tela"
+    id="manter-tela"
+    aria-pressed={telaLigada.manter}
+    aria-label={t("hino.tela")}
+    title={`${t("hino.tela")}: ${telaLigada.manter ? t("hino.tela_ligada") : t("hino.tela_desligada")}. ${t("hino.tela_ajuda")}`}
+    onclick={() => telaLigada.alternar()}
+  >
+    <Icone nome={telaLigada.manter ? "tela_ligada" : "tela"} tamanho={26} />
+  </button>
+{/snippet}
+
 <!-- O topo das abas Letra e Partitura: o andamento (o mesmo controle da aba Ouvir) e o karaokê. -->
 {#snippet acoesDoTopo()}
   <span class="acoes-do-topo">
     {#if mostrarAndamento && hino}{#key hino.numero}<AndamentoDoTopo {hino} />{/key}{/if}
     {#if mostrarKaraoke}{@render botaoKaraoke()}{/if}
+    {#if temAudio}{@render botaoTela()}{/if}
   </span>
 {/snippet}
 
@@ -219,7 +235,7 @@
     lang={idiomaConteudo}
     {voltar}
     rotuloVoltar={t("nav.voltar")}
-    acao={mostrarAndamento || mostrarKaraoke ? acoesDoTopo : undefined}
+    acao={mostrarAndamento || mostrarKaraoke || temAudio ? acoesDoTopo : undefined}
   />
 
   <!-- Na aba Partitura a coluna perde o limite de 40rem (até 64rem): numa tela larga (celular deitado, tablet) a partitura de paisagem usa a
@@ -308,7 +324,7 @@
   main.partitura-larga { max-width: 64rem; }
   .botao-icone { min-width: 3rem; padding: 0; }
   .acoes-do-topo { display: inline-flex; align-items: center; gap: 0.25rem; }
-  .chave-karaoke[aria-pressed="true"] { border: 0.125rem solid var(--ouro-linha); }
+  .chave-karaoke[aria-pressed="true"], .chave-tela[aria-pressed="true"] { border: 0.125rem solid var(--ouro-linha); }
   /* A estrofe que soa leva uma barra dourada na borda (o recuo negativo mantém o texto no mesmo lugar). */
   .estrofe { margin-bottom: 1.4rem; margin-left: -1rem; padding-left: calc(1rem - 0.25rem); border-left: 0.25rem solid transparent; }
   .estrofe.da-vez { border-left-color: var(--ouro-linha); }

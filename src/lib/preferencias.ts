@@ -99,6 +99,25 @@ export function salvarKaraoke(ligado: boolean) {
   }
 }
 
+const CHAVE_TELA = "prefs.manter-tela";
+
+/** Manter a tela ligada enquanto o hino toca? Padrão: desligado (gasta bateria). */
+export function lerManterTela(): boolean {
+  try {
+    return localStorage.getItem(CHAVE_TELA) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function salvarManterTela(ligado: boolean) {
+  try {
+    localStorage.setItem(CHAVE_TELA, ligado ? "1" : "0");
+  } catch {
+    /* sem armazenamento: vale só nesta sessão */
+  }
+}
+
 const CHAVE_LEITURA = "prefs.letra";
 
 /** Tamanho e alinhamento da letra (valem para todos os hinos). O que estiver inválido no armazenamento volta ao padrão. */

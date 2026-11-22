@@ -14,7 +14,8 @@
     quebra = false,
   }: {
     titulo: string;
-    subtitulo?: string;
+    /** Uma linha de apoio sob o título, ou várias (uma por item, cada uma no seu parágrafo). */
+    subtitulo?: string | string[];
     /** Endereço de uma imagem de marca, mostrada antes do título (tela inicial). Decorativa: o nome fica no título. */
     logo?: string;
     voltar?: () => void;
@@ -25,6 +26,7 @@
     /** A ação (à direita) desce para uma 2ª linha, alinhada à direita, quando não cabe ao lado do título; o título não quebra no meio da palavra. Vale para qualquer fonte e tamanho de letra. */
     quebra?: boolean;
   } = $props();
+  const linhas = $derived(subtitulo === undefined ? [] : Array.isArray(subtitulo) ? subtitulo : [subtitulo]);
 </script>
 
 <header class="barra">
@@ -35,7 +37,7 @@
     {#if logo}<img class="logo" src={logo} alt="" />{/if}
     <div class="textos">
       <h1 title={titulo} {lang}>{titulo}</h1>
-      {#if subtitulo}<p>{subtitulo}</p>{/if}
+      {#each linhas as linha, i (i)}<p>{linha}</p>{/each}
     </div>
     {#if acao}<div class="acao">{@render acao()}</div>{/if}
   </div>

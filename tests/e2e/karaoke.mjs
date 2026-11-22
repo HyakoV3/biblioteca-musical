@@ -322,6 +322,20 @@ async function principal() {
   await av("document.getElementById('aba-ouvir').click(); 1");
   await dormir(300);
 
+  // 4b. Manter a tela ligada: o botão (olho) está no topo em qualquer aba do hino com som, liga e desliga (e guarda), e com o hino parado a ponte recebe sempre "falso".
+  await av(`window.__tela = []; window.BmServico = { iniciar() {}, parar() {}, manterTela(l) { window.__tela.push(l); } }; 1`);
+  const tela0 = await av(`(() => { const b = document.getElementById('manter-tela'); return { achou: !!b, ligado: b?.getAttribute('aria-pressed') ?? null }; })()`);
+  confere(tela0.achou && tela0.ligado === "false", `o botão de manter a tela ligada aparece na aba Ouvir, desligado: ${JSON.stringify(tela0)}`);
+  await av("document.getElementById('manter-tela').click(); 1");
+  await dormir(300);
+  const tela1 = await av(`({ ligado: document.getElementById('manter-tela').getAttribute('aria-pressed'), guardado: localStorage.getItem('prefs.manter-tela'), ponte: window.__tela })`);
+  confere(tela1.ligado === "true" && tela1.guardado === "1" && !tela1.ponte.includes(true), `ligar o botão guarda a escolha e, com o hino parado, não segura a tela: ${JSON.stringify(tela1)}`);
+  await av("document.getElementById('manter-tela').click(); 1");
+  await dormir(300);
+  const tela2 = await av(`({ ligado: document.getElementById('manter-tela').getAttribute('aria-pressed'), guardado: localStorage.getItem('prefs.manter-tela') })`);
+  confere(tela2.ligado === "false" && tela2.guardado === "0", `desligar o botão guarda a escolha: ${JSON.stringify(tela2)}`);
+  await av(`delete window.BmServico; delete window.__tela; 1`);
+
   // 5. Amostra o destaque a cada 25 ms ANTES de a música começar, e só então toca e abre a aba Letra, no mesmo instante. Assim a 1ª sílaba ("do",
   // que dura 1 s) é vista por inteiro mesmo num servidor lento: antes, o teste tocava, esperava 0,8 s e só depois começava a amostrar, e com
   // mais de ~0,3 s de atraso (CI carregado) perdia o "do" e falhava a ordem das sílabas, sem nada ter quebrado no app.
