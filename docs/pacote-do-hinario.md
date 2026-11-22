@@ -16,14 +16,17 @@ mesmo caminho conferido das partituras, e o guarda no aparelho. Sem ele, o app m
 ## Publicar um hinário novo
 
 ```sh
-# 1. o hinario.json pronto (fora do Git), com um NÚMERO NOVO no nome:
-cp hinario.json ~/Development/auxiliar/pacotes/hinario-002.json
-# 2. subir para a pasta PRÓPRIA do hinário no servidor:  /mnt/downloads/BibliotecaMusicalHinario/hinario-002.json
+# 1. o hinario.json pronto (fora do Git); o NOME leva os 8 primeiros caracteres do SHA-256 do conteúdo (hinario-<sha8>.json):
+N=hinario-$(sha256sum hinario.json | cut -c1-8).json
+cp hinario.json ~/Development/auxiliar/pacotes/$N
+# 2. subir para a pasta PRÓPRIA do hinário no servidor:  /mnt/downloads/BibliotecaMusicalHinario/$N
 # 3. refazer o manifesto (o link público da pasta do hinário) e gerar um APK novo:
-python3 tools/montar-manifesto-hinario.py "<link público>" ~/Development/auxiliar/pacotes/hinario-002.json
+python3 tools/montar-manifesto-hinario.py "<link público>" ~/Development/auxiliar/pacotes/$N
 ```
 
-Regras: **não troque o conteúdo de um arquivo que já está publicado** (o manifesto dos APKs antigos recusaria o arquivo novo); suba com número novo e refaça o manifesto.
+Regras: **não troque o conteúdo de um arquivo que já está publicado** (o manifesto dos APKs antigos recusaria o arquivo novo); suba com nome novo (o SHA-256 no nome já garante que muda com o conteúdo) e refaça o manifesto.
+
+**Nome do pacote = SHA-256 do conteúdo (a partir de 2026-11-22).** Antes era um número em sequência (`hinario-001.json` a `-003.json`); agora o nome leva os 8 primeiros caracteres do SHA-256 do arquivo, que identificam o conteúdo sem depender de contador e batem com o `sha256` do manifesto. Os numerados continuam no servidor para os APKs antigos.
 
 ## O que isto NÃO é
 
@@ -45,7 +48,7 @@ Por que **não** na pasta das partituras: o link de uma pasta entrega a pasta in
 
 ## Estado
 
-- `hinario-003.json` (o do manifesto): os 480 hinos (Dó), 4.119.994 bytes, SHA-256 `eca41c3f…`. É o lote 2 do português: 34 palavras que a partitura escrevia picadas ou coladas ("Con solador" → "Consolador", "osfiéis" → "os fiéis"), 17 letras faltando ou trocadas ("desos" → "dos", "Brevemenem" → "Brevemente em") e 14 trechos sem sentido que o responsável leu no hinário de papel ("sananção" → "santa unção", "Quanê e-levaó" → "Quanto é elevado, ó"). Nos hinos 148 e 372 duas linhas quebradas no meio da palavra viraram uma só. As marcas do karaokê seguem as sílabas (os tempos não mudam). Está em `/mnt/downloads/BibliotecaMusicalHinario/`.
+- `hinario-eca41c3f.json` (o do manifesto; é a cópia do antigo `hinario-003.json`, mesmos bytes): os 480 hinos (Dó), 4.119.994 bytes, SHA-256 `eca41c3f…`. É o lote 2 do português: 34 palavras que a partitura escrevia picadas ou coladas ("Con solador" → "Consolador", "osfiéis" → "os fiéis"), 17 letras faltando ou trocadas ("desos" → "dos", "Brevemenem" → "Brevemente em") e 14 trechos sem sentido que o responsável leu no hinário de papel ("sananção" → "santa unção", "Quanê e-levaó" → "Quanto é elevado, ó"). Nos hinos 148 e 372 duas linhas quebradas no meio da palavra viraram uma só. As marcas do karaokê seguem as sílabas (os tempos não mudam). Está em `/mnt/downloads/BibliotecaMusicalHinario/`.
 - `hinario-002.json`: o anterior (4.119.977 bytes, SHA-256 `a68de375…`; só o hino 76 "pode abalar"), que continua no servidor para os APKs 064 a 075. **Não apague.**
 - `hinario-001.json`: o anterior (4.119.975 bytes, SHA-256 `ee9b8cfb…`), que continua no servidor para os APKs até o 063, cujos manifestos apontam para ele. **Não apague.**
 - **Para pegar um hinário novo no aparelho:** Ajustes → Conteúdo → Hinário completo → Remover e Baixar. O Remover do hinário **apaga também as partituras** (as gravações ficam): baixe as partituras de novo depois. O app não compara versões sozinho.

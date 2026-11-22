@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Escreve o manifesto do hinário baixável (src/lib/hinario/manifesto.json), como o `montar-manifesto-partituras.py` faz para as partituras.
 
-Uso:  python3 tools/montar-manifesto-hinario.py LINK hinario-NNN.json [--saida src/lib/hinario/manifesto.json]
+Uso:  python3 tools/montar-manifesto-hinario.py LINK hinario-<sha8>.json [--saida src/lib/hinario/manifesto.json]
 
 LINK              o endereço público de download (https, no servidor que o app pode acessar: src-tauri/capabilities/default.json). Pode ser o link da
                   PASTA compartilhada que contém o arquivo (o File Browser devolve a pasta inteira em zip, e o app acha o arquivo pelo nome) ou o do arquivo.
-hinario-NNN.json  o `hinario.json` (docs/FORMATO.md), o MESMO arquivo que está no servidor. O NOME dele vai para o manifesto (`arquivo`).
+hinario-<sha8>.json  o `hinario.json` (docs/FORMATO.md), o MESMO arquivo que está no servidor. O NOME dele vai para o manifesto (`arquivo`).
 
 O hinário (texto e música dos hinos) NÃO entra no Git nem no app: só este manifesto (endereço, tamanho e SHA-256). O app só instala um arquivo com EXATAMENTE o
-tamanho e o SHA-256 daqui; mudou o hinário no servidor, suba um arquivo com NÚMERO NOVO (hinario-002.json...), refaça o manifesto e gere um APK novo.
+tamanho e o SHA-256 daqui; mudou o hinário no servidor, suba um arquivo com NOME NOVO (hinario-<sha8>.json: os 8 primeiros caracteres do SHA-256 do conteúdo), refaça o manifesto e gere um APK novo.
 """
 import argparse
 import hashlib

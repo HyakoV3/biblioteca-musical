@@ -136,6 +136,7 @@ describe("manifesto de partituras", () => {
     if (p === null) return;
     expect(p.url).toMatch(/^https:\/\/fb\.hm\.hv2\.xyz\//); // o único servidor que o app pode acessar (capabilities/default.json)
     expect(p.arquivo).toMatch(/^[\w.-]+\.zip$/);
+    expect(p.arquivo).toBe(`partituras-${p.sha256.slice(0, 8)}.zip`); // o nome leva os 8 primeiros caracteres do SHA-256
     expect(p.bytes).toBeGreaterThan(0);
     expect(p.sha256).toMatch(/^[0-9a-f]{64}$/);
   });

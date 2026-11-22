@@ -11,7 +11,7 @@ O pacote é um `.zip` só com `partituras/hino-<número>.svg` e, opcional, `part
 
 ## Estado publicado (2026-11-22)
 
-- **`partituras-008.zip`** (19.436.728 bytes, **18,5 MiB**, SHA-256 `fcb6ca0f…c13a`): o 007 com **uma correção no tempo das curvas duplicadas**. O MuseScore guarda, em 79 hinos (158 arquivos), duas ligaduras **iguais, uma por cima da outra, sobre as mesmas notas**
+- **`partituras-fcb6ca0f.zip`** (antes `partituras-008.zip`; mesmos bytes, o nome agora leva os 8 primeiros caracteres do SHA-256; 19.436.728 bytes, **18,5 MiB**, SHA-256 `fcb6ca0f…c13a`): o 007 com **uma correção no tempo das curvas duplicadas**. O MuseScore guarda, em 79 hinos (158 arquivos), duas ligaduras **iguais, uma por cima da outra, sobre as mesmas notas**
   (o 55 tem uma dessas). O gerador as tratava como os dois pedaços de uma curva partida pelo fim da linha e **dividia o tempo entre elas**: no aparelho a luz corria na primeira metade do tempo e **repetia** na segunda, no mesmo lugar.
   Agora só curvas de **desenho diferente** (o fim de uma linha e o começo da seguinte) são pedaços e dividem o tempo; duplicatas do mesmo desenho levam o tempo inteiro, cada uma. Conferido hino a hino contra o 006: notas, pausas e compassos **iguais** nos 960 arquivos,
   ligaduras de prolongamento diferentes **só** onde havia duplicata, duplicatas com o mesmo tempo, 1.460 curvas de expressão com tempo; 960 SVG aceitos pela limpeza do app; a montagem reproduz o mesmo SHA-256; subido ao servidor e baixado pelo link público com o mesmo SHA-256.
@@ -79,17 +79,18 @@ nos sons, desligar o visualizador. O `config.yaml` do contêiner já dá aos usu
 python3 tools/gerar-partituras.py <pasta dos hino-N.mscx> <pasta dos svg>
 
 # 2. o zip (só partituras/hino-N.svg e hino-N-paisagem.svg, reproduzível; os timemap não entram)
-python3 tools/montar-pacote.py <pasta dos svg> partituras-NNN.zip
+python3 tools/montar-pacote.py <pasta dos svg> partituras.zip
+mv partituras.zip partituras-$(sha256sum partituras.zip | cut -c1-8).zip   # o nome leva os 8 primeiros caracteres do SHA-256
 
 # 3. no servidor de arquivos (o mesmo dos sons): uma pasta PRÓPRIA, fora de BibliotecaMusicalSons/, com o zip dentro, e o link público só dela;
 #    depois o manifesto do app, com o nome, o tamanho e o SHA-256 do zip
-python3 tools/montar-manifesto-partituras.py <link público da pasta> partituras-NNN.zip
+python3 tools/montar-manifesto-partituras.py <link público da pasta> partituras-<sha8>.zip
 ```
 
 **Conferir um pacote real antes de publicar (sem celular):** o teste `conteudo_real` do `src-tauri/src/pacote.rs` passa o hinário e o zip **reais** pelo mesmo leitor e pela mesma limpeza de SVG do app, e falha se alguma partitura for recusada ou não puder ser lida de volta (retrato e paisagem):
 
 ```sh
-BM_HINARIO=/caminho/hinario.json BM_ZIP=/caminho/partituras-NNN.zip \
+BM_HINARIO=/caminho/hinario.json BM_ZIP=/caminho/partituras-<sha8>.zip \
   cargo test --manifest-path src-tauri/Cargo.toml --lib conteudo_real -- --ignored --nocapture
 ```
 

@@ -724,7 +724,7 @@ Dá para hospedar os pacotes **sem servidor**, em um **repositório público só
 2. **Acesso:** público, ou atrás de alguma proteção? O app não sabe pedir senha; o conteúdo é de terceiros (I-30), então a **autorização do Enéias** decide se pode ser público.
 3. **Onde vive o proxy reverso e o TLS** no Vidar (já há um, ou o compose traz o seu)?
 4. **Cache e ETag:** o nginx entrega `ETag`/`Last-Modified`, o que ajuda a atualização automática de pacotes (I-25).
-5. **Estrutura de pastas e nomes** estáveis (`/partituras/partituras-NNN.zip`, `/sons/`, `/hinario/`), em vez do zip de pasta do File Browser; o app hoje acha o zip de dentro pelo nome.
+5. **Estrutura de pastas e nomes** estáveis (`/partituras/partituras-<sha8>.zip`, `/sons/`, `/hinario/`), em vez do zip de pasta do File Browser; o app hoje acha o zip de dentro pelo nome.
 
 ### Impacto técnico (hipóteses, a verificar)
 - `src-tauri/capabilities/default.json` hoje só libera `https://fb.hm.hv2.xyz/*`: o endereço novo entra ali e nos manifestos (`src/lib/partituras/manifesto.json`, `src/lib/sons/manifesto.json`), o que pede **APK novo**.
