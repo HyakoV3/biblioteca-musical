@@ -585,6 +585,19 @@ class MarcarNotas(unittest.TestCase):
         self.assertIn('<g id="t1" class="tie" data-t="0" data-f="1.5">', svg)
         self.assertIn('<g id="s1" class="slur" data-t="0" data-f="1.5">', svg)
 
+    def test_curvas_duplicadas_com_o_mesmo_desenho_levam_o_tempo_inteiro_e_pedacos_diferentes_dividem(self):
+        base = '<g id="m1" class="measure"><g id="a" class="note"></g>'
+        dup = base + '<g id="s1" class="slur"><path d="M1,1 C2,2 3,3 4,4"/></g><g id="s2" class="slur"><path d="M1,1 C2,2 3,3 4,4"/></g></g><g id="m2" class="measure"><g id="b" class="note"></g></g>'
+        # duas curvas IGUAIS, uma por cima da outra (duplicata): cada uma leva o tempo inteiro, sem dividir
+        svg, _ = g.marcar_notas(dup, {"a": (0, 1), "b": (0, 1)}, [("s1", "a", "b", 1.5), ("s2", "a", "b", 1.5)])
+        self.assertIn('<g id="s1" class="slur" data-t="0" data-f="1.5">', svg)
+        self.assertIn('<g id="s2" class="slur" data-t="0" data-f="1.5">', svg)
+        # dois desenhos DIFERENTES (o pedaço do fim da linha e o do começo da seguinte): dividem o tempo
+        partida = dup.replace('d="M1,1 C2,2 3,3 4,4"/></g></g><g id="m2"', 'd="M9,9 C8,8 7,7 6,6"/></g></g><g id="m2"', 1)
+        svg, _ = g.marcar_notas(partida, {"a": (0, 1), "b": (0, 1)}, [("s1", "a", "b", 1.5), ("s2", "a", "b", 1.5)])
+        self.assertIn('<g id="s1" class="slur" data-t="0" data-f="0.75">', svg)
+        self.assertIn('<g id="s2" class="slur" data-t="0.75" data-f="1.5">', svg)
+
     def test_ligadura_de_expressao_sem_duracao_conhecida_fica_sem_atributos(self):
         svg, _ = g.marcar_notas(self.SVG_EXPRESSAO, {"a": (1, 2), "b": (0, 1)}, [])
         self.assertIn('<g id="s1" class="slur">', svg)
