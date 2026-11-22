@@ -231,7 +231,7 @@ qualquer). Todos os campos além de `numero` e `titulo` são opcionais.
 
 ## Importar
 
-**Hinário.** Não há importação manual: o hinário é um **pacote baixado** (`hinario-NNN.json`), como as partituras e os sons. Em **Ajustes → Conteúdo → Hinário completo**
+**Hinário.** Não há importação manual: o hinário é um **pacote baixado** (`hinario-<sha8>.json`), como as partituras e os sons. Em **Ajustes → Conteúdo → Hinário completo**
 há **Baixar (tamanho)**, progresso e **Remover** (o primeiro acesso, com só o pacote de exemplo, oferece o mesmo download). O app confere o **tamanho e o SHA-256 contra o manifesto**
 (`src/lib/hinario/manifesto.json`, gerado por `tools/montar-manifesto-hinario.py`) e o UTF-8, e só então o Rust valida (versão, ao menos um hino, números de hino sem repetição,
 limite de 20 MB) e grava em `content/hinario.json`, de forma atômica: um arquivo inválido nunca substitui o conteúdo atual. As partituras já instaladas só ficam se o novo JSON

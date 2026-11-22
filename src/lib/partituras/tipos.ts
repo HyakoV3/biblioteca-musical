@@ -6,7 +6,7 @@ export type PacotePartituras = {
   /** Endereço de download (link público do File Browser). Para uma PASTA compartilhada, o servidor devolve a pasta inteira em zip, com o
    *  zip das partituras dentro; se o link for do próprio arquivo, devolve o zip das partituras direto. O app aceita os dois. */
   url: string;
-  /** Nome do zip das partituras (o que `tools/montar-pacote.py` gera), por exemplo "partituras-001.zip". */
+  /** Nome do zip das partituras (o que `tools/montar-pacote.py` gera), por exemplo "partituras-fcb6ca0f.zip" (o nome leva os 8 primeiros caracteres do SHA-256). */
   arquivo: string;
   /** Tamanho exato desse zip, em bytes. */
   bytes: number;
