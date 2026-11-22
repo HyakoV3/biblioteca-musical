@@ -93,6 +93,13 @@ export function criarContexto(): AudioContext {
     ctx = new AudioContext();
   }
   ultima = { rota, modo, taxa: ctx.sampleRate, base: ms(ctx.baseLatency), saida: ms(ctx.outputLatency) };
-  for (const fn of ouvintes) fn();
+  // Quem escuta é só a tela de Ajustes: o erro dele fica de fora, para o contexto criado ser devolvido e o som tocar.
+  for (const fn of ouvintes) {
+    try {
+      fn();
+    } catch (e) {
+      console.warn("saidaAudio: um ouvinte das medidas falhou", e);
+    }
+  }
   return ctx;
 }

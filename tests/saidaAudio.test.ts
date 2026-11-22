@@ -90,6 +90,23 @@ describe("criarContexto", () => {
     criarContexto();
     expect(avisos).toHaveBeenCalledTimes(1);
   });
+  it("um ouvinte que falha não impede o contexto de ser devolvido, e os outros ouvintes ainda são avisados", () => {
+    ponte("usb");
+    const aviso = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const bom = vi.fn();
+    const c1 = aoMedir(() => {
+      throw new Error("ouvinte quebrado");
+    });
+    const c2 = aoMedir(bom);
+    let ctx: unknown;
+    expect(() => (ctx = criarContexto())).not.toThrow();
+    expect(ctx).toBeInstanceOf(FakeCtx);
+    expect(bom).toHaveBeenCalledTimes(1);
+    expect(aviso).toHaveBeenCalled();
+    c1();
+    c2();
+    aviso.mockRestore();
+  });
   it("o aparelho que não informa outputLatency fica com `saida` nulo", () => {
     vi.stubGlobal("AudioContext", class { sampleRate = 44100; baseLatency = 0.01; });
     ponte("fio");
