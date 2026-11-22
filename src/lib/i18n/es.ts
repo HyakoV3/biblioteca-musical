@@ -307,6 +307,7 @@ export const es: Dicionario = {
   "sobre.nome_titulo": "En el nombre del Señor Jesús",
   "sobre.aviso_titulo": "Aplicación independiente",
   "sobre.aviso": "Esta aplicación es independiente y no oficial. No tiene ningún vínculo con la Congregación Cristiana en Brasil.",
+  "sobre.aviso_concordo": "De acuerdo",
   "sobre.intro": "Biblioteca Musical es una aplicación gratuita para músicos en formación. Reúne la lista de himnos, la letra, la partitura y un reproductor que toca cada voz, para que estudies la tuya. También trae un afinador, una grabadora y un metrónomo.",
   "sobre.fazer_titulo": "Qué se puede hacer",
   "sobre.fazer_1": "Buscar himnos por número o título y leer la letra por estrofa, con el karaoke iluminando cada sílaba.",

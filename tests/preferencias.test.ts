@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ajustesPadrao, cartoesPadrao, lerAjustes, lerCartoes, lerKaraoke, lerManterTela, salvarAjustes, salvarCartoes, salvarKaraoke, salvarManterTela } from "../src/lib/preferencias";
+import { ajustesPadrao, cartoesPadrao, lerAjustes, lerCartoes, lerKaraoke, lerCiente, lerManterTela, salvarAjustes, salvarCartoes, salvarCiente, salvarKaraoke, salvarManterTela } from "../src/lib/preferencias";
 
 // localStorage simples, em memória.
 let mem: Record<string, string>;
@@ -40,6 +40,28 @@ describe("cards abertos do player", () => {
   it("salvar e ler", () => {
     salvarCartoes({ ajustes: true, vozes: false, instrumentos: false });
     expect(lerCartoes()).toEqual({ ajustes: true, vozes: false, instrumentos: false });
+  });
+});
+
+describe("aviso de app independente (Concordo)", () => {
+  it("começa sem ciência e guarda o Concordo", () => {
+    expect(lerCiente()).toBe(false);
+    salvarCiente();
+    expect(lerCiente()).toBe(true);
+  });
+
+  it("sem armazenamento não quebra e o aviso segue à vista", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("bloqueado");
+      },
+      setItem: () => {
+        throw new Error("bloqueado");
+      },
+    });
+    expect(lerCiente()).toBe(false);
+    expect(() => salvarCiente()).not.toThrow();
+    vi.unstubAllGlobals();
   });
 });
 

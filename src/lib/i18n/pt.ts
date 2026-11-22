@@ -307,6 +307,7 @@ export const pt = {
   "sobre.nome_titulo": "Em nome do Senhor Jesus",
   "sobre.aviso_titulo": "Aplicativo independente",
   "sobre.aviso": "Este aplicativo é independente e não oficial. Não tem ligação com a Congregação Cristã no Brasil.",
+  "sobre.aviso_concordo": "Concordo",
   "sobre.intro": "Biblioteca Musical é um aplicativo gratuito para músicos em treino. Ele reúne a lista de hinos, a letra, a partitura e um player que toca cada voz, para você estudar a sua. Traz também um afinador, um gravador e um metrônomo.",
   "sobre.fazer_titulo": "O que dá para fazer",
   "sobre.fazer_1": "Buscar hinos por número ou título e ler a letra por estrofe, com o karaokê acendendo cada sílaba.",

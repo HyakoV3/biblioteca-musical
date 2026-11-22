@@ -24,7 +24,13 @@
   import { MODOS, aoMedir, lerModo, rotaAtual, salvarModo, ultimaMedida, type Modo } from "$lib/saidaAudio";
   import { instalando } from "$lib/instalando.svelte";
   import { partituras } from "$lib/partituras/partituras.svelte";
-  import { lerAjustes, salvarAjustes } from "$lib/preferencias";
+  import { lerAjustes, lerCiente, salvarAjustes, salvarCiente } from "$lib/preferencias";
+  // O aviso "app independente e não oficial": fica na tela até a pessoa dizer "Concordo"; aí some e a escolha é guardada.
+  let ciente = $state(lerCiente());
+  function concordar() {
+    salvarCiente();
+    ciente = true;
+  }
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const voltar = usarVoltar();
@@ -178,9 +184,13 @@
 
 <main class="coluna conteudo">
   <!-- Aviso: o app não tem ligação com a CCB. Vem antes do "Sobre", em destaque. -->
-  <section>
-    <Aviso tipo="info"><strong>{t("sobre.aviso_titulo")}</strong><br />{t("sobre.aviso")}</Aviso>
-  </section>
+  <!-- Some depois do "Concordo" (a escolha fica guardada no aparelho). -->
+  {#if !ciente}
+    <section id="aviso-independente">
+      <Aviso tipo="info"><strong>{t("sobre.aviso_titulo")}</strong><br />{t("sobre.aviso")}</Aviso>
+      <div class="acao-aviso"><button class="botao primario" id="aviso-concordo" onclick={concordar}>{t("sobre.aviso_concordo")}</button></div>
+    </section>
+  {/if}
 
   <section>
     <Cartao id="cartao-aparencia" titulo={t("ajustes.aparencia")} resumo={resumoAparencia} bind:aberto={aparenciaAberta} aoAlternar={lembrar("aparencia")}>
@@ -413,6 +423,8 @@
 
 <style>
   /* "Em nome do Senhor Jesus": numa linha só, com o tamanho acompanhando a largura da tela. Se não couber ao lado do título, a própria barra o põe na linha de baixo (`quebra`). */
+  .acao-aviso { display: flex; justify-content: flex-end; margin-top: 0.25rem; }
+  .acao-aviso .botao { min-height: 3rem; }
   .nome-senhor { display: block; white-space: nowrap; font-size: clamp(0.7rem, 3.4vw, 1rem); font-weight: 600; color: var(--suave); text-align: end; }
   section { margin-bottom: 0.9rem; }
   .versao { margin: 0 0 1.5rem; text-align: center; }
