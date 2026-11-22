@@ -1,6 +1,6 @@
 // Escreve um arquivo Ogg/Opus (RFC 7845) a partir dos pacotes Opus: é um "remux", o áudio não é recodificado. Páginas com CRC (RFC 3533),
 // `OpusHead` e `OpusTags` cada um na sua página, granule position em amostras a 48 kHz contando o pre-skip.
-import { lerOpusDoWebm } from "./webm";
+import { lerOpusDoWebm, opusHeadValido } from "./webm";
 
 const TABELA_CRC = (() => {
   const t = new Uint32Array(256);
@@ -27,10 +27,13 @@ export function amostrasDoPacote(p: Uint8Array): number {
   const quadro = cfg < 12 ? [480, 960, 1920, 2880][cfg % 4]! : cfg < 16 ? [480, 960][cfg % 2]! : [120, 240, 480, 960][cfg % 4]!;
   const c = toc & 3;
   const n = c === 0 ? 1 : c < 3 ? 2 : p.length > 1 ? p[1]! & 0x3f : 0;
-  return n * quadro;
+  return n === 0 || n * quadro > 5760 ? 0 : n * quadro; // até 120 ms por pacote (RFC 6716 §3.2.5)
 }
 
 const PACOTES_POR_PAGINA = 50;
+const SEGMENTOS_POR_PAGINA = 255;
+/** Quantos valores de lacing o pacote usa. */
+const segmentosDe = (p: Uint8Array) => Math.floor(p.length / 255) + 1;
 
 function pagina(tipo: number, granule: number, serie: number, seq: number, pacotes: Uint8Array[]): Uint8Array {
   const segs: number[] = [];
@@ -69,16 +72,27 @@ function opusTags(): Uint8Array {
 }
 
 /** Monta o Ogg/Opus com o cabeçalho `OpusHead` e os pacotes. `serie` é o número do fluxo (qualquer um serve). */
-export function escreverOgg(cabecalho: Uint8Array, pacotes: Uint8Array[], serie = 0x42494d55): Uint8Array {
+export function escreverOgg(cabecalho: Uint8Array, pacotes: Uint8Array[], descarte = 0, serie = 0x42494d55): Uint8Array {
+  if (!opusHeadValido(cabecalho)) throw new Error("OpusHead inválido");
+  if (pacotes.length === 0) throw new Error("sem pacotes");
+  const duracoes = pacotes.map(amostrasDoPacote);
+  if (duracoes.includes(0)) throw new Error("pacote Opus inválido");
   const preSkip = new DataView(cabecalho.buffer, cabecalho.byteOffset, cabecalho.byteLength).getUint16(10, true);
   const partes: Uint8Array[] = [pagina(0x02, 0, serie, 0, [cabecalho]), pagina(0, 0, serie, 1, [opusTags()])];
   let seq = 2;
   let amostras = preSkip;
-  for (let i = 0; i < pacotes.length; i += PACOTES_POR_PAGINA) {
-    const grupo = pacotes.slice(i, i + PACOTES_POR_PAGINA);
-    for (const p of grupo) amostras += amostrasDoPacote(p);
-    const ultima = i + PACOTES_POR_PAGINA >= pacotes.length;
-    partes.push(pagina(ultima ? 0x04 : 0, amostras, serie, seq++, grupo));
+  let i = 0;
+  while (i < pacotes.length) {
+    // Uma página leva até 50 pacotes e 255 valores de lacing; um pacote grande (alto bitrate) enche a página com menos.
+    let segs = 0;
+    let fim = i;
+    while (fim < pacotes.length && fim - i < PACOTES_POR_PAGINA && segs + segmentosDe(pacotes[fim]!) <= SEGMENTOS_POR_PAGINA) segs += segmentosDe(pacotes[fim++]!);
+    if (fim === i) throw new Error("pacote grande demais para uma página");
+    for (let k = i; k < fim; k++) amostras += duracoes[k]!;
+    const ultima = fim >= pacotes.length;
+    // O fim da última página desconta o DiscardPadding do WebM (o resto do último quadro, que não é áudio).
+    partes.push(pagina(ultima ? 0x04 : 0, ultima ? Math.max(preSkip, amostras - descarte) : amostras, serie, seq++, pacotes.slice(i, fim)));
+    i = fim;
   }
   const total = partes.reduce((s, p) => s + p.length, 0);
   const out = new Uint8Array(total);
@@ -94,8 +108,9 @@ export function escreverOgg(cabecalho: Uint8Array, pacotes: Uint8Array[], serie 
 export function webmParaOgg(webm: Uint8Array): Uint8Array | null {
   try {
     const o = lerOpusDoWebm(webm);
-    return o ? escreverOgg(o.cabecalho, o.pacotes) : null;
-  } catch {
+    return o ? escreverOgg(o.cabecalho, o.pacotes, o.descarte) : null;
+  } catch (e) {
+    console.warn("ogg: o remux falhou", e);
     return null;
   }
 }

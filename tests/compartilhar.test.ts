@@ -39,7 +39,7 @@ describe("ponte do Android", () => {
     const { p, partes } = ponteFalsa();
     const webm = bytesDe(OPUS_WEBM_AO_VIVO);
     expect(await compartilharGravacao(new Blob([webm], { type: "audio/webm;codecs=opus" }), "g.webm", "Enviar")).toBe("ok");
-    expect(p.comecar).toHaveBeenLastCalledWith("g.ogg", "audio/ogg; codecs=opus");
+    expect(p.comecar).toHaveBeenLastCalledWith("g.ogg", "audio/ogg");
     expect(atob(partes.join("")).startsWith("OggS")).toBe(true);
     partes.length = 0;
     expect(await compartilharGravacao(new Blob([new Uint8Array([1, 2, 3])], { type: "audio/webm" }), "h.weba", "Enviar")).toBe("ok");

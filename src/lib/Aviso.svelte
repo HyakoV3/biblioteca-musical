@@ -7,9 +7,9 @@
   const letras = { erro: "!", info: "i" } as const;
 </script>
 
-<div class={`aviso ${tipo}`} role={tipo === "erro" ? "alert" : "status"}>
+<div class={`aviso ${tipo}`}>
   <span class="icone" aria-hidden="true">{#if tipo === "sucesso"}<Icone nome="ok" tamanho={16} />{:else}{letras[tipo]}{/if}</span>
-  <div class="texto">{@render children()}{#if acao}<div class="acao">{@render acao()}</div>{/if}</div>
+  <div class="texto"><div role={tipo === "erro" ? "alert" : "status"}>{@render children()}</div>{#if acao}<div class="acao">{@render acao()}</div>{/if}</div>
 </div>
 
 <style>

@@ -2,10 +2,11 @@
 // Os elementos "mestre" (Segment, Tracks, TrackEntry, Cluster, BlockGroup) são percorridos por dentro, sem usar o tamanho: assim o tamanho desconhecido
 // (que o MediaRecorder do Chrome escreve ao gravar ao vivo) não atrapalha. Os demais são pulados pelo tamanho. Arquivo cortado no fim: usa o que deu para ler.
 
-export type OpusEmWebm = { cabecalho: Uint8Array; pacotes: Uint8Array[] };
+/** `descarte`: amostras (48 kHz) do fim do último bloco que não são áudio (DiscardPadding). */
+export type OpusEmWebm = { cabecalho: Uint8Array; pacotes: Uint8Array[]; descarte: number };
 
 const MESTRES = new Set([0x18538067, 0x1654ae6b, 0xae, 0x1f43b675, 0xa0]);
-const ID = { codec: 0x86, privado: 0x63a2, numero: 0xd7, bloco: 0xa3, blocoGrupo: 0xa1 };
+const ID = { codec: 0x86, privado: 0x63a2, numero: 0xd7, bloco: 0xa3, blocoGrupo: 0xa1, descarte: 0x75a2 };
 
 /** Lê um ID (1 a 4 bytes, com os bits de tamanho mantidos). */
 function lerId(b: Uint8Array, i: number): { v: number; n: number } | null {
@@ -34,7 +35,8 @@ function lerTamanho(b: Uint8Array, i: number): { v: number; n: number } | null {
   return { v: tudoUm ? -1 : v, n };
 }
 
-const texto = (b: Uint8Array) => String.fromCharCode(...b);
+/** Texto curto (CodecID, "OpusHead"): sem o preenchimento de zeros do fim e sem passar dos 64 bytes (um elemento enorme não estoura a pilha). */
+const texto = (b: Uint8Array) => String.fromCharCode(...b.subarray(0, 64)).replace(/\0+$/, "");
 
 /** Devolve o Opus do WebM, ou `null` se não for WebM com áudio Opus (ou se usar "lacing", que o Chrome não usa). */
 export function lerOpusDoWebm(b: Uint8Array): OpusEmWebm | null {
@@ -44,6 +46,7 @@ export function lerOpusDoWebm(b: Uint8Array): OpusEmWebm | null {
   let codecAtual = "";
   let privado: Uint8Array | null = null;
   const pacotes: Uint8Array[] = [];
+  let descarte = 0;
   let cabecalho: Uint8Array | null = null;
 
   const fechaFaixa = () => {
@@ -72,7 +75,12 @@ export function lerOpusDoWebm(b: Uint8Array): OpusEmWebm | null {
     const dados = b.subarray(ini, fim);
     if (id.v === ID.codec) codecAtual = texto(dados);
     else if (id.v === ID.privado) privado = dados;
-    else if (id.v === ID.numero) {
+    else if (id.v === ID.descarte && dados.length > 0 && dados.length <= 6) {
+      // inteiro com sinal, em nanossegundos: o fim do último bloco que o player deve ignorar
+      let n = dados[0]! & 0x80 ? -1 : 0;
+      for (const c of dados) n = n * 256 + c;
+      descarte = Math.max(0, Math.round((n * 48) / 1000000));
+    } else if (id.v === ID.numero) {
       let n = 0;
       for (const c of dados) n = n * 256 + c;
       faixaAtual = n;
@@ -81,14 +89,25 @@ export function lerOpusDoWebm(b: Uint8Array): OpusEmWebm | null {
       if (faixaOpus < 0) return null;
       const num = lerTamanho(dados, 0);
       if (!num || dados.length < num.n + 3) return null;
-      if (dados[num.n + 2]! & 0x06) return null; // lacing: não tratado
-      if (num.v === faixaOpus && fim - ini === tam.v) pacotes.push(dados.subarray(num.n + 3));
+      if (num.v !== faixaOpus) {
+        i = fim;
+        continue;
+      }
+      if (dados[num.n + 2]! & 0x06) return null; // lacing na faixa Opus: não tratado
+      if (fim - ini === tam.v) pacotes.push(dados.subarray(num.n + 3));
     }
     i = fim;
   }
   fechaFaixa();
   if (!cabecalho || pacotes.length === 0) return null;
   const c: Uint8Array = cabecalho;
-  if (c.length < 19 || texto(c.subarray(0, 8)) !== "OpusHead") return null;
-  return { cabecalho: c, pacotes };
+  if (!opusHeadValido(c)) return null;
+  return { cabecalho: c, pacotes, descarte };
+}
+
+/** `OpusHead` (RFC 7845 §5.1): versão 0, ao menos 1 canal e, se o mapeamento não for o 0, a tabela de canais inteira. */
+export function opusHeadValido(c: Uint8Array): boolean {
+  if (c.length < 19 || String.fromCharCode(...c.subarray(0, 8)) !== "OpusHead") return false;
+  if ((c[8]! >> 4) !== 0 || c[9] === 0) return false;
+  return c[18] === 0 || c.length >= 21 + c[9]!;
 }

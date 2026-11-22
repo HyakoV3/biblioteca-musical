@@ -41,7 +41,7 @@ class PonteCompartilhar(private val atividade: MainActivity) {
             val f = File(dir, limpo)
             saida = FileOutputStream(f)
             arquivo = f
-            mime = if (tipo.matches(Regex("[a-z]+/[a-z0-9.+-]+(; codecs=[a-z0-9.]+)?"))) tipo else "audio/*"
+            mime = if (tipo.matches(Regex("[a-z]+/[a-z0-9.+-]+"))) tipo else "audio/*"
             true
         } catch (e: Exception) {
             android.util.Log.w("bm", "compartilhar: não criou o arquivo", e)

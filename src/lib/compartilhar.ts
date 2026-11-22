@@ -60,7 +60,7 @@ async function prepararOgg(blob: Blob, nome: string): Promise<{ blob: Blob; nome
   try {
     const ogg = webmParaOgg(new Uint8Array(await blob.arrayBuffer()));
     if (!ogg) return null;
-    return { blob: new Blob([ogg as BlobPart], { type: "audio/ogg; codecs=opus" }), nome: nome.replace(/\.(webm|weba)$/i, "") + ".ogg" };
+    return { blob: new Blob([ogg as BlobPart], { type: "audio/ogg" }), nome: nome.replace(/\.(webm|weba)$/i, "") + ".ogg" };
   } catch (e) {
     console.warn("compartilhar: não foi possível converter para Ogg, enviando o original", e);
     return null;
@@ -71,7 +71,7 @@ async function enviarAgora(blobOriginal: Blob, nomeOriginal: string, titulo: str
   const conv = await prepararOgg(blobOriginal, nomeOriginal);
   const blob = conv?.blob ?? blobOriginal;
   const nome = conv?.nome ?? nomeOriginal;
-  const tipo = conv ? "audio/ogg; codecs=opus" : tipoSemCodec(blob.type);
+  const tipo = tipoSemCodec(blob.type); // sem parâmetros: o Intent do Android compara o tipo por igualdade com o que os apps declaram
   try {
     const p = ponte();
     if (p) {
@@ -95,7 +95,9 @@ async function enviarAgora(blobOriginal: Blob, nomeOriginal: string, titulo: str
         throw e;
       }
     }
-    const arquivo = new File([blob], nome, { type: tipoSemCodec(tipo) });
+    let arquivo = new File([blob], nome, { type: tipo });
+    // Se o navegador não aceita o Ogg convertido, tenta o original.
+    if (!navigator.canShare?.({ files: [arquivo] }) && conv) arquivo = new File([blobOriginal], nomeOriginal, { type: tipoSemCodec(blobOriginal.type) });
     if (!navigator.canShare?.({ files: [arquivo] })) return "erro";
     await navigator.share({ files: [arquivo], title: titulo });
     return "ok";

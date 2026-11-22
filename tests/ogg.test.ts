@@ -60,9 +60,37 @@ describe.each(["opus-0.webm", "opus-ao-vivo.webm"])("WebM → Ogg (%s)", (nome) 
     expect(texto(ogg.subarray(28, 36))).toBe("OpusHead");
     const preSkip = new DataView(o.cabecalho.buffer, o.cabecalho.byteOffset).getUint16(10, true);
     const amostras = o.pacotes.reduce((s, x) => s + amostrasDoPacote(x), 0);
-    expect(p[p.length - 1]!.granule).toBe(preSkip + amostras);
+    expect(p[p.length - 1]!.granule).toBe(preSkip + amostras - o.descarte);
     // todos os pacotes estão lá (2 páginas de cabeçalho + os de áudio)
     expect(p.slice(2).reduce((s, x) => s + x.pacotes, 0)).toBe(o.pacotes.length);
+  });
+});
+
+describe("páginas e validações", () => {
+  const cab = () => lerOpusDoWebm(fixture("opus-0.webm"))!.cabecalho;
+  const pacote = (n: number) => {
+    const p = new Uint8Array(n);
+    p[0] = 0b01111000; // CELT 20 ms
+    return p;
+  };
+  it("pacotes grandes: a página fecha antes de passar de 255 valores de lacing", () => {
+    const grandes = Array.from({ length: 120 }, () => pacote(1275)); // 5 valores cada: 50 por página passariam de 255
+    const p = paginas(escreverOgg(cab(), grandes));
+    expect(p.every((x) => x.crcOk)).toBe(true);
+    expect(p.slice(2).reduce((s, x) => s + x.pacotes, 0)).toBe(120);
+  });
+  it("o DiscardPadding tira do fim o que não é áudio", () => {
+    const o = lerOpusDoWebm(fixture("opus-0.webm"))!;
+    const a = paginas(escreverOgg(o.cabecalho, o.pacotes, 0));
+    const b = paginas(escreverOgg(o.cabecalho, o.pacotes, 500));
+    expect(a[a.length - 1]!.granule - b[b.length - 1]!.granule).toBe(500);
+  });
+  it("recusa OpusHead inválido, sem pacotes e pacote code-3 com 0 ou quadros demais", () => {
+    expect(() => escreverOgg(new Uint8Array(5), [pacote(10)])).toThrow();
+    expect(() => escreverOgg(cab(), [])).toThrow();
+    expect(() => escreverOgg(cab(), [new Uint8Array([0b01111011, 0])])).toThrow(); // 0 quadros
+    expect(() => escreverOgg(cab(), [new Uint8Array([0b01111011, 7])])).toThrow(); // 7 x 20 ms > 120 ms
+    expect(amostrasDoPacote(new Uint8Array([0b01111011, 6]))).toBe(5760);
   });
 });
 
