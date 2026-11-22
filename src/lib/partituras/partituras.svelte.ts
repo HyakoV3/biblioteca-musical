@@ -25,6 +25,8 @@ async function baixar() {
   const pacote = MANIFESTO.pacote;
   if (!pacote || !pacote.url) return;
   if (andamento.fase === "baixando" || andamento.fase === "conferindo" || andamento.fase === "instalando") return;
+  // As partituras só entram em um hinário JÁ instalado (o Rust recusa com `partituras_sem_hinario`): com só o pacote de exemplo, o botão fica desabilitado e esta chamada não faz nada.
+  if (!biblioteca.pacote || biblioteca.pacote.exemplo) return;
   if (instalando.ocupado) return; // o hinário está sendo baixado: as partituras seriam instaladas contra o pacote de exemplo
   instalando.ocupar();
   recusadas = [];

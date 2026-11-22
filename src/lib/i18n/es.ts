@@ -129,6 +129,7 @@ export const es: Dicionario = {
   "partituras.titulo": "Partituras",
   "partituras.pacote": "Todas las partituras",
   "partituras.explica": "Las partituras son opcionales. Una vez descargadas, quedan en este dispositivo y aparecen en la pestaña Partitura de cada himno.",
+  "partituras.precisa_hinario": "Descargue primero el himnario completo (arriba): las partituras solo entran en un himnario ya instalado.",
   "partituras.instaladas": "Instaladas: {total}",
   "partituras.nao_instaladas": "No instaladas",
   "partituras.indisponivel": "Aún no disponibles para descargar",

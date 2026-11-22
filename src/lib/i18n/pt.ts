@@ -129,6 +129,7 @@ export const pt = {
   "partituras.titulo": "Partituras",
   "partituras.pacote": "Todas as partituras",
   "partituras.explica": "As partituras são opcionais. Depois de baixadas, ficam neste aparelho e aparecem na aba Partitura de cada hino.",
+  "partituras.precisa_hinario": "Baixe primeiro o hinário completo (acima): as partituras só entram em um hinário já instalado.",
   "partituras.instaladas": "Instaladas: {total}",
   "partituras.nao_instaladas": "Não instaladas",
   "partituras.indisponivel": "Ainda não disponíveis para baixar",

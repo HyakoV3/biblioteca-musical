@@ -256,8 +256,12 @@
           aoRemover={() => partituras.remover()}
           rotuloBaixar={partituras.disponivel ? t("partituras.baixar", { tamanho: formatarMB(partituras.bytes, i18n.idioma) }) : undefined}
           aoBaixar={() => partituras.baixar()}
-          desabilitarBaixar={instalando.ocupado}
+          desabilitarBaixar={instalando.ocupado || !hinarioInstalado}
         />
+        {#if !hinarioInstalado && instaladas === 0 && partituras.disponivel}
+          <!-- Sem o hinário completo as partituras não têm onde entrar: o botão Baixar fica desabilitado até o hinário ser baixado. -->
+          <p class="meta" id="partituras-precisa-hinario">{t("partituras.precisa_hinario")}</p>
+        {/if}
         {#if partituras.andamento.fase === "erro"}
           <Aviso tipo="erro">{erroDasPartituras}</Aviso>
         {/if}
