@@ -64,6 +64,7 @@ describe("modo de áudio por rota", () => {
   it("cada modo pede o seu latencyHint (o automático não pede nada)", () => {
     expect(opcoesDoModo("automatico")).toEqual({});
     expect(opcoesDoModo("estavel")).toEqual({ latencyHint: "playback" });
+    expect(opcoesDoModo("medio")).toEqual({ latencyHint: "balanced" });
     expect(opcoesDoModo("atraso")).toEqual({ latencyHint: "interactive" });
   });
   it("a chave junta rota e modo, e muda quando um dos dois muda", () => {

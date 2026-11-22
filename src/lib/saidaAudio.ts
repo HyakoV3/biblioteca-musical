@@ -4,14 +4,15 @@
 // seu buffer, e o que estala numa não estala na outra (um buffer maior estalou MAIS no fone USB do autor, então não há regra segura): por isso a escolha
 // é da pessoa, GUARDADA POR ROTA, e as medidas do contexto aparecem em Ajustes para comparar com números.
 //
-// Modos: "automatico" (o padrão do navegador, igual ao que o app sempre fez), "estavel" (`latencyHint: "playback"`, buffer maior) e "atraso"
-// (`latencyHint: "interactive"`, buffer pequeno). O navegador pode tratar o `latencyHint` como um simples pedido; as medidas mostram o que valeu.
+// Modos: "automatico" (o padrão do navegador, igual ao que o app sempre fez), "estavel" (`latencyHint: "playback"`, buffer alto), "medio"
+// (`latencyHint: "balanced"`, buffer médio) e "atraso" (`latencyHint: "interactive"`, buffer baixo). Os nomes guardados (`estavel`, `atraso`) são os de antes, para não perder a escolha de quem já tinha uma. O navegador pode tratar o `latencyHint` como um simples pedido; as medidas mostram o que valeu.
 import { rotaDeSaida as rotaDoAndroid } from "./servico";
 
 export type Rota = "alto-falante" | "fio" | "usb" | "bluetooth";
-export type Modo = "automatico" | "estavel" | "atraso";
+export type Modo = "automatico" | "estavel" | "medio" | "atraso";
 export const ROTAS: readonly Rota[] = ["alto-falante", "fio", "usb", "bluetooth"];
-export const MODOS: readonly Modo[] = ["automatico", "estavel", "atraso"];
+/** Na ordem da tela: Automático, buffer alto, médio e baixo. */
+export const MODOS: readonly Modo[] = ["automatico", "estavel", "medio", "atraso"];
 export const MODO_PADRAO: Modo = "automatico";
 export const CHAVE_SAIDA_AUDIO = "prefs.saida-audio";
 
@@ -50,7 +51,7 @@ export function salvarModo(rota: Rota, modo: Modo): void {
 
 /** O que o modo pede ao `AudioContext`. O automático não pede nada: é o comportamento de sempre. */
 export function opcoesDoModo(modo: Modo): AudioContextOptions {
-  return modo === "estavel" ? { latencyHint: "playback" } : modo === "atraso" ? { latencyHint: "interactive" } : {};
+  return modo === "estavel" ? { latencyHint: "playback" } : modo === "medio" ? { latencyHint: "balanced" } : modo === "atraso" ? { latencyHint: "interactive" } : {};
 }
 
 /** A rota de saída agora. Fora do Android (ou sem a ponte), o alto-falante. */
