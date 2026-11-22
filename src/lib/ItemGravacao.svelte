@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { compartilharGravacao, nomeDoArquivo, podeCompartilhar, tipoSemCodec } from "./compartilhar";
-  import { formatoEnviado } from "./compartilharFormato.svelte";
   import { corrigirDuracao, formatarTamanho, formatarTempo, nomeDoFormato } from "./gravador";
   import { formatarData, gravacoes, type MetaGravacao } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
@@ -52,9 +51,6 @@
   let enviando = $state(false);
   let falhouEnvio = $state(false);
   const sePodeEnviar = podeCompartilhar();
-  /** O interruptor ".webm ⇄ .weba" só faz sentido para áudio em WebM (os outros formatos têm a extensão própria). */
-  const ehWebm = $derived(tipoSemCodec(meta.tipo).includes("webm"));
-
   /** Abre a folha de compartilhamento do sistema com o arquivo desta gravação (lido do armazenamento só agora). */
   async function enviar() {
     if (enviando) return;
@@ -63,7 +59,7 @@
     try {
       const blob = await gravacoes.blob(meta.id);
       if (!blob) throw new Error("sem arquivo");
-      const r = await compartilharGravacao(blob, nomeDoArquivo(meta.criadaEm, meta.tipo, formatoEnviado.atual), t("gravador.enviar_titulo"));
+      const r = await compartilharGravacao(blob, nomeDoArquivo(meta.criadaEm, meta.tipo), t("gravador.enviar_titulo"));
       if (!destruido) falhouEnvio = r === "erro";
     } catch (e) {
       console.warn("gravador: não foi possível enviar a gravação", e);
@@ -142,13 +138,6 @@
     {/if}
     {#if sePodeEnviar}
       <button class="botao enviar" onclick={enviar} disabled={enviando} aria-label={`${t("gravador.enviar")}: ${nome}`}>{t("gravador.enviar")}</button>
-      {#if ehWebm}
-        <!-- O formato do arquivo enviado: um interruptor de duas posições, lembrado no aparelho. O conteúdo é o mesmo; só muda a extensão (".webm" é aceito em mais lugares). -->
-        <div class="formato" role="group" aria-label={t("gravador.formato")}>
-          <button class="botao" aria-pressed={formatoEnviado.atual === "webm"} title={t("gravador.formato_webm")} aria-label={t("gravador.formato_webm")} onclick={() => formatoEnviado.mudar("webm")}>.webm</button>
-          <button class="botao" aria-pressed={formatoEnviado.atual === "weba"} title={t("gravador.formato_weba")} aria-label={t("gravador.formato_weba")} onclick={() => formatoEnviado.mudar("weba")}>.weba</button>
-        </div>
-      {/if}
     {/if}
     <button class="botao apagar" class:perigo={confirmando} onclick={apagar} aria-label={`${confirmando ? t("gravador.apagar_mesmo") : t("gravador.apagar")}: ${nome}`}>
       {confirmando ? t("gravador.apagar_mesmo") : t("gravador.apagar")}
@@ -164,12 +153,6 @@
   audio { width: 100%; }
   .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .acoes .botao { flex: 1 1 5.5rem; min-height: 2.75rem; }
-  /* O interruptor ".webm | .weba": dois botões colados, o escolhido com borda de destaque e negrito (não só cor). */
-  .formato { display: flex; flex: 1 1 8rem; }
-  .formato .botao { flex: 1 1 0; min-width: 3rem; font-variant-numeric: tabular-nums; }
-  .formato .botao:first-child { border-start-end-radius: 0; border-end-end-radius: 0; }
-  .formato .botao:last-child { border-start-start-radius: 0; border-end-start-radius: 0; margin-inline-start: -0.0625rem; }
-  .formato .botao[aria-pressed="true"] { border: 0.125rem solid var(--acento); font-weight: 700; position: relative; }
   /* Confirmando: borda e texto em destaque (não só a cor: o texto do botão muda para "Apagar mesmo?"). */
   .perigo { border-width: 0.125rem; border-color: var(--perigo); font-weight: 700; }
 </style>

@@ -21,12 +21,12 @@ export function tipoSemCodec(tipo: string): string {
   return tipo.split(";")[0]!.trim().toLowerCase() || "audio/*";
 }
 
-/** Nome do arquivo enviado: "gravacao-AAAA-MM-DD-HHMM.ext", com a extensão do formato. `webm` escolhe ".webm" ou ".weba" para o áudio em WebM (o mesmo conteúdo; só muda o nome). */
-export function nomeDoArquivo(criadaEm: number, tipo: string, webm: "webm" | "weba" = "webm"): string {
+/** Nome do arquivo enviado: "gravacao-AAAA-MM-DD-HHMM.ext", com a extensão do formato. O áudio em WebM sai como ".ogg" (convertido em `prepararOgg`); o ".webm" só vale quando a conversão falha. */
+export function nomeDoArquivo(criadaEm: number, tipo: string): string {
   const d = new Date(criadaEm);
   const dois = (n: number) => String(n).padStart(2, "0");
   const t = tipoSemCodec(tipo);
-  const ext = t.includes("webm") ? webm : t.includes("mp4") || t.includes("aac") ? "m4a" : t.includes("ogg") ? "ogg" : "audio";
+  const ext = t.includes("webm") ? "webm" : t.includes("mp4") || t.includes("aac") ? "m4a" : t.includes("ogg") ? "ogg" : "audio";
   return `gravacao-${d.getFullYear()}-${dois(d.getMonth() + 1)}-${dois(d.getDate())}-${dois(d.getHours())}${dois(d.getMinutes())}.${ext}`;
 }
 

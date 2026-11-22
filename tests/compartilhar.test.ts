@@ -106,32 +106,14 @@ describe("ponte do Android", () => {
   });
 });
 
-describe("o formato do arquivo enviado (.webm ou .weba)", async () => {
-  const { CHAVE_COMPARTILHAR, FORMATO_PADRAO, formatoValido, lerFormatoWebm, salvarFormatoWebm } = await import("../src/lib/compartilharPrefs");
-  const t = new Date(2026, 10, 7, 9, 5).getTime();
-
-  it("só o áudio em WebM muda de extensão; o padrão é .webm e os outros formatos não mudam", () => {
-    expect(nomeDoArquivo(t, "audio/webm;codecs=opus")).toBe("gravacao-2026-11-07-0905.webm");
-    expect(nomeDoArquivo(t, "audio/webm;codecs=opus", "weba")).toBe("gravacao-2026-11-07-0905.weba");
-    expect(nomeDoArquivo(t, "audio/webm", "weba")).toBe("gravacao-2026-11-07-0905.weba");
-    expect(nomeDoArquivo(t, "audio/mp4", "weba")).toBe("gravacao-2026-11-07-0905.m4a");
-    expect(nomeDoArquivo(t, "audio/ogg;codecs=opus", "weba")).toBe("gravacao-2026-11-07-0905.ogg");
-  });
-
-  it("a escolha é lembrada, o valor ruim volta ao padrão e uma falha de armazenamento é ignorada", () => {
-    const m = new Map<string, string>();
-    vi.stubGlobal("localStorage", { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) });
-    expect(lerFormatoWebm()).toBe(FORMATO_PADRAO);
-    salvarFormatoWebm("weba");
-    expect(JSON.parse(m.get(CHAVE_COMPARTILHAR)!)).toEqual({ webm: "weba" });
-    expect(lerFormatoWebm()).toBe("weba");
-    m.set(CHAVE_COMPARTILHAR, JSON.stringify({ webm: "mp3" }));
-    expect(lerFormatoWebm()).toBe("webm");
-    m.set(CHAVE_COMPARTILHAR, "isto não é json");
-    expect(lerFormatoWebm()).toBe("webm");
-    expect(formatoValido("weba") && formatoValido("webm") && !formatoValido("m4a") && !formatoValido(null)).toBe(true);
+describe("limpeza da escolha antiga (.webm | .weba)", () => {
+  it("apaga a chave que o interruptor guardava e ignora falha de armazenamento", async () => {
+    const { limparEscolhaAntigaDoFormato } = await import("../src/lib/preferencias");
+    const m = new Map<string, string>([["prefs.compartilhar", '{"webm":"weba"}'], ["outra", "1"]]);
+    vi.stubGlobal("localStorage", { removeItem: (k: string) => void m.delete(k) });
+    limparEscolhaAntigaDoFormato();
+    expect([...m.keys()]).toEqual(["outra"]);
     vi.stubGlobal("localStorage", undefined);
-    expect(lerFormatoWebm()).toBe("webm");
-    expect(() => salvarFormatoWebm("weba")).not.toThrow();
+    expect(() => limparEscolhaAntigaDoFormato()).not.toThrow();
   });
 });

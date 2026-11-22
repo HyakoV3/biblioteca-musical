@@ -149,3 +149,10 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
 - [ ] **I-22 (tela bloqueada):** MediaSession (controles na tela de bloqueio); o teste longo e o "hino todo" com as pausas de 2 s não foram registrados.
 - [ ] **I-24 (Ajustes em cartões):** nada de função.
 - [ ] **I-28 (abas da tela inicial):** a rolagem de cada aba não tem teste de ponta a ponta; confirmar a ordem das abas (Hinos primeiro).
+
+- [ ] **Envio da gravação em Ogg (PR #133, ver [`ideia-enviar-audio-por-app.md`](ideia-enviar-audio-por-app.md)):** testar o `.ogg` em Telegram (deve virar
+      nota de voz), Signal, Messages e WhatsApp Business, e com gravações longas (10, 30 e 60 min; acima de ~34 min o arquivo passa de 16 MB).
+      Opcional: **`.m4a`/AAC com `MediaCodec`** ("enviar como MP4"), só se algum destino recusar Ogg. **(depende do responsável)**
+- [ ] **Outras ideias soltas:** botão **"Atualizar"** do hinário (hoje troca-se de pacote removendo e baixando de novo); **estalo do som no
+      fone USB-C (KZ AM01)**: o APK 074 (sem religar a WebView ao pausar) espera o teste do responsável; **hino 86**: falta o
+      responsável descrever o compasso.

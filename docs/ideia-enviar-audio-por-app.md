@@ -100,10 +100,10 @@ Alternativas descartadas:
 ## Pendências (2026-11-22)
 
 **Do lado do código (Claude):**
-- Tirar o interruptor `.webm | .weba` da tela de gravações (`ItemGravacao.svelte`), o `compartilharPrefs.ts`, o `compartilharFormato.svelte.ts`, as chaves de tradução e limpar a chave antiga `prefs.compartilhar` do `localStorage` (etapa 6). Só depois de confirmar que o `.ogg` serve em todos os destinos de interesse.
-- Gerar o APK 078 com o código final da PR #133 (o 077 foi feito antes das correções da revisão: tipo sem `codecs`, `DiscardPadding`, paginação por segmentos).
-- Apertar o `file_paths.xml` do `FileProvider` (hoje `external-path "."`; o envio só precisa de `cache-path`), em PR à parte.
-- Opcional: `.m4a`/AAC com `MediaCodec` (etapa 7), só se algum destino recusar Ogg.
+- [x] Interruptor `.webm | .weba` removido na PR #133 (com `compartilharPrefs.ts`, `compartilharFormato.svelte.ts`, as traduções e a limpeza da chave antiga `prefs.compartilhar` ao abrir o app).
+- [x] APK 078 com o código final da PR #133.
+- [x] `file_paths.xml` apertado (só `cache-path`), em PR à parte.
+- Opcional: `.m4a`/AAC com `MediaCodec` (etapa 7), só se algum destino recusar Ogg (anotado em `roadmap-pendencias.md`).
 
 **Do lado do responsável:**
 - Testar o `.ogg` nos outros destinos (Telegram: deve virar nota de voz; Signal; Messages) e no WhatsApp Business; anotar áudio, nota de voz ou documento.

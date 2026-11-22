@@ -1376,23 +1376,8 @@ async function principal() {
   const contar = () => av(`({ itens: document.querySelectorAll('.gravacao-item').length, fim: !!document.getElementById('fim-lista'), resumo: document.getElementById('resumo-gravacoes')?.textContent.replace(/\\s+/g, ' ').trim() ?? null })`);
   const pag1 = await contar();
   confere(pag1.itens === 10 && pag1.fim === true && /^25 /.test(pag1.resumo ?? ""), `Gravador: a lista começa com 10 de 25 gravações e o resumo diz 25: ${JSON.stringify(pag1)}`);
-  // O interruptor ".webm | .weba" do Enviar: só aparece com a folha de compartilhar (a ponte do Android) e para áudio em WebM; o escolhido é lembrado e vale para todas as gravações.
-  // A ponte do Android é simulada em TODA página nova deste trecho (o app é recarregado em `abrirGravador`) e retirada no fim.
-  const ponteFalsa = (await enviar("Page.addScriptToEvaluateOnNewDocument", { source: "window.BmCompartilhar = { comecar: () => true, parte: () => true, enviar: () => true, cancelar() {} };" })).result.identifier;
-  await av(`localStorage.removeItem('prefs.compartilhar'); 1`);
-  await abrirGravador();
-  const fmt0 = await av(`(() => { const g = [...document.querySelectorAll('.gravacao-item .formato')]; return { n: g.length, padrao: g[0]?.querySelector('[aria-pressed="true"]')?.textContent.trim() ?? null }; })()`);
-  confere(fmt0.n >= 1 && fmt0.padrao === '.webm', `Gravador: cada gravação em WebM tem o interruptor .webm | .weba, com .webm de padrão: ${JSON.stringify(fmt0)}`);
-  await av(`[...document.querySelectorAll('.gravacao-item .formato button')].find((b) => b.textContent.trim() === '.weba').click(); 1`);
-  await dormir(300);
-  const fmt1 = await av(`({ salvo: localStorage.getItem('prefs.compartilhar'), escolhidas: [...document.querySelectorAll('.gravacao-item .formato [aria-pressed="true"]')].map((b) => b.textContent.trim()) })`);
-  confere(fmt1.salvo === '{"webm":"weba"}' && fmt1.escolhidas.length >= 1 && fmt1.escolhidas.every((x) => x === '.weba'), `Gravador: escolher .weba é lembrado e vale para todas as gravações: ${JSON.stringify(fmt1)}`);
-  await abrirGravador();
-  const fmt2 = await av(`[...document.querySelectorAll('.gravacao-item .formato [aria-pressed="true"]')].map((b) => b.textContent.trim())`);
-  confere(fmt2.length >= 1 && fmt2.every((x) => x === '.weba'), `Gravador: depois de reabrir o app a escolha continua .weba: ${JSON.stringify(fmt2.slice(0, 3))}`);
-  await av(`localStorage.removeItem('prefs.compartilhar'); 1`);
-  await enviar("Page.removeScriptToEvaluateOnNewDocument", { identifier: ponteFalsa });
-  await abrirGravador();
+  // Não há mais o interruptor ".webm | .weba": o áudio em WebM é convertido para Ogg ao enviar.
+  confere((await av(`document.querySelectorAll('.gravacao-item .formato').length`)) === 0, "Gravador: a gravação não tem mais o interruptor .webm | .weba");
 
   const ordem = await av(`[...document.querySelectorAll('.gravacao-item')].map((e) => e.dataset.id).slice(0, 3)`);
   confere(JSON.stringify(ordem) === JSON.stringify(["semente-00", "semente-01", "semente-02"]), `Gravador: da mais nova para a mais antiga: ${JSON.stringify(ordem)}`);
