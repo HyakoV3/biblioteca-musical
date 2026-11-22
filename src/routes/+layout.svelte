@@ -7,6 +7,7 @@
   import Miniplayer from "$lib/Miniplayer.svelte";
   import { reproducao } from "$lib/reproducao.svelte";
   import { aoPararPelaNotificacao, manterTelaLigada, sincronizarServico } from "$lib/servico";
+  import { limparEscolhaAntigaDoFormato } from "$lib/preferencias";
   import { telaLigada } from "$lib/telaLigada.svelte";
   import { metronomo } from "$lib/metronomo.svelte";
   import { sons } from "$lib/sons/pacotes.svelte";
@@ -17,6 +18,7 @@
   // O conteúdo é carregado uma vez, para todas as telas.
   onMount(() => {
     biblioteca.carregar();
+    limparEscolhaAntigaDoFormato(); // o interruptor .webm | .weba saiu
     sons.atualizar(); // quais sons gravados já estão instalados
     aoPararPelaNotificacao(() => reproducao.parar()); // o botão "Parar" da notificação do Android (I-22)
   });

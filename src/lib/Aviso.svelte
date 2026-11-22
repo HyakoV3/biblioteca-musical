@@ -3,13 +3,13 @@
   import Icone from "./Icone.svelte";
 
   // Aviso de sucesso, erro ou informação. O tipo aparece por ícone e posição, nunca só por cor.
-  let { tipo = "info", children }: { tipo?: "sucesso" | "erro" | "info"; children: Snippet } = $props();
+  let { tipo = "info", children, acao }: { tipo?: "sucesso" | "erro" | "info"; children: Snippet; acao?: Snippet } = $props();
   const letras = { erro: "!", info: "i" } as const;
 </script>
 
-<div class={`aviso ${tipo}`} role={tipo === "erro" ? "alert" : "status"}>
+<div class={`aviso ${tipo}`}>
   <span class="icone" aria-hidden="true">{#if tipo === "sucesso"}<Icone nome="ok" tamanho={16} />{:else}{letras[tipo]}{/if}</span>
-  <div class="texto">{@render children()}</div>
+  <div class="texto"><div role={tipo === "erro" ? "alert" : "status"}>{@render children()}</div>{#if acao}<div class="acao">{@render acao()}</div>{/if}</div>
 </div>
 
 <style>
@@ -23,6 +23,7 @@
     font-weight: 700; font-size: 0.9rem; line-height: 1;
   }
   .texto { flex: 1; min-width: 0; line-height: 1.45; overflow-wrap: anywhere; }
+  .acao { display: flex; justify-content: flex-end; margin-top: 0.6rem; }
   .sucesso { border-left-color: var(--sucesso); }
   .sucesso .icone { background: var(--sucesso); color: var(--superficie); }
   .erro { border-left-color: var(--perigo); }

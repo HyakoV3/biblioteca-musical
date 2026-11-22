@@ -216,3 +216,12 @@ export function salvarAjustes(a: AjustesAbertos) {
     /* sem armazenamento: vale só nesta sessão */
   }
 }
+
+/** O interruptor ".webm | .weba" do Enviar saiu (a gravação em WebM agora vai como Ogg): apaga a escolha que ele guardava. */
+export function limparEscolhaAntigaDoFormato(): void {
+  try {
+    localStorage.removeItem("prefs.compartilhar");
+  } catch {
+    // sem armazenamento: nada a limpar
+  }
+}
