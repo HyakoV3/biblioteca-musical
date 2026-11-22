@@ -1640,6 +1640,26 @@ async function principal() {
   }
   await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
   await dormir(300);
+  // ---- A pílula do Afinador: o botão Play encosta na borda de cima e na da direita do cartão, aberto e fechado, em densidades de tela de celular (sem faixa clara por arredondamento) ----
+  await irParaInicio();
+  await av(`document.getElementById('aba-afinador').click(); 1`);
+  await dormir(500);
+  const encosta = () => av(`(() => { const p = document.querySelector('#painel-afinador .pilula'); const d = p.querySelector('details'); const b = p.querySelector('.tocar-pilula'); const rd = d.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    return { topo: Math.abs(rb.top - rd.top) < 0.01, direita: Math.abs(rb.right - rd.right) < 0.01, baixo: Math.abs(rb.bottom - rd.bottom) < 0.01, aberto: d.open, altBotao: Math.round(rb.height * 100) / 100, altCartao: Math.round(rd.height * 100) / 100 }; })()`);
+  for (const dpr of [1, 2, 2.625, 2.75, 3, 3.5]) {
+    await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: dpr, mobile: true });
+    await dormir(300);
+    const fechada = await encosta();
+    await av(`document.querySelector('#painel-afinador .pilula summary').click(); 1`);
+    await dormir(300);
+    const aberta = await encosta();
+    await av(`document.querySelector('#painel-afinador .pilula summary').click(); 1`); // fecha de novo
+    await dormir(200);
+    confere(fechada.topo && fechada.direita && fechada.baixo && aberta.topo && aberta.direita && aberta.aberto, `pílula do Afinador a ${dpr}x: o botão encosta no topo e na direita do cartão (fechado também em baixo): ${JSON.stringify({ fechada, aberta })}`);
+  }
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
+  await dormir(300);
+
   // ---- Baixar partituras só depois do hinário completo: com só o pacote de exemplo o botão fica desabilitado e a tela explica o motivo ----
   const semPartiturasAntes = await av(`sessionStorage.getItem('e2e-sem-partituras')`);
   const botoesDeBaixar = () => av(`(() => { const linhas = [...document.querySelectorAll('#conteudo .pacote')]; const acha = (txt) => linhas.find((l) => new RegExp(txt, 'i').test(l.querySelector('strong')?.textContent ?? ''));
