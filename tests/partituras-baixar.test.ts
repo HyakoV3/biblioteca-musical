@@ -53,7 +53,7 @@ describe("baixar e instalar o pacote de partituras: link de um ARQUIVO (o servid
     const r = await baixarEInstalar(await pacoteDe(ZIP), dep, (f, p) => fases.push([f, p]));
     expect(r).toBe("instalado");
     expect(chamadas).toEqual([`baixar https://fb.hm.hv2.xyz/p ${ZIP.length}`, "sha256", `instalar ${ZIP.length}`]);
-    expect(fases).toEqual([["baixando", 0], ["baixando", 0.5], ["baixando", 1], ["conferindo", 1], ["instalando", 1]]);
+    expect(fases).toEqual([["baixando", 0], ["baixando", 0.5], ["baixando", 1], ["conferindo", 1], ["instalando", 0]]);
   });
 
   it("o SHA-256 do manifesto vale em maiúsculas também", async () => {

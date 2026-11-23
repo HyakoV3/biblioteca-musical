@@ -48,7 +48,7 @@ async function baixar(id: string) {
     const zip = await baixarZip(pacote.url, bytesDoPacote(pacote), (f) => (andamentos[id] = { fase: "baixando", progresso: f, erro: "" }));
     andamentos[id] = { fase: "conferindo", progresso: 1, erro: "" };
     const arquivos = await extrairEConferir(zip, pacote);
-    andamentos[id] = { fase: "instalando", progresso: 1, erro: "" }; // gravar no Cache API pode demorar em pacote grande
+    andamentos[id] = { fase: "instalando", progresso: 0, erro: "" }; // gravar no Cache API pode demorar em pacote grande
     try {
       for (const [nome, dados] of arquivos) {
         await armazenamento.guardar(nome, dados);

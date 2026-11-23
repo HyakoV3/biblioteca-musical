@@ -28,15 +28,17 @@ export function bytesParaBase64(bytes: Uint8Array): string {
 
 /**
  * A barra única dos pacotes baixáveis (hinário, partituras e sons): o download vale os primeiros 90% (0 a 90%) e o resto é a conferência e a
- * instalação. Assim a barra não fica parada em 100% enquanto o app ainda trabalha. `progresso` é o andamento do download (0 a 1).
+ * instalação. Assim a barra não fica parada em 100% enquanto o app ainda trabalha. `progresso` é o andamento da FASE atual (0 a 1): do download
+ * em "baixando" e da instalação em "instalando" (real nas partituras, em que o Rust conta as partituras tratadas; nos demais pacotes fica em 0).
  */
 export const PARTE_DO_DOWNLOAD = 0.9;
 export function progressoTotal(fase: "baixando" | "conferindo" | "instalando" | "ocioso" | "erro", progresso: number): number {
   // Os marcos de depois do download saem do que sobra da barra (30% e 60% do resto), para seguirem `PARTE_DO_DOWNLOAD` se ela mudar.
   const resto = 1 - PARTE_DO_DOWNLOAD;
   if (fase === "baixando") return (Number.isNaN(progresso) ? 0 : Math.min(1, Math.max(0, progresso))) * PARTE_DO_DOWNLOAD; // NaN (total desconhecido) vira 0
-  if (fase === "conferindo") return PARTE_DO_DOWNLOAD + resto * 0.3;
-  if (fase === "instalando") return PARTE_DO_DOWNLOAD + resto * 0.6;
+  if (fase === "conferindo") return PARTE_DO_DOWNLOAD + resto * 0.2;
+  // A instalação ocupa o resto da barra (de 40% a 100% dele): com o andamento real, a barra chega a 100% só quando acaba.
+  if (fase === "instalando") return PARTE_DO_DOWNLOAD + resto * (0.4 + 0.6 * (Number.isNaN(progresso) ? 0 : Math.min(1, Math.max(0, progresso))));
   return 0;
 }
 /** O mesmo, em porcentagem inteira, para o texto "Baixando 45%". */
