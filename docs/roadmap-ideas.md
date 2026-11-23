@@ -332,7 +332,7 @@ Uma variável de ambiente no build (por exemplo `BM_TESTE=026`) lida pelo `vite.
 
 - **Status:** anotada, rascunho (2026-11-19). Nada implementado.
 - **Origem:** pedido do responsável, 2026-11-19: "um filtro de som tipo Krisp; ele é de graça? dá uma verificada".
-- **Prioridade:** a definir (depois de o Gravador estar estável no aparelho: ver a **I-03**).
+- **Prioridade:** a definir (depois de o Gravador estar estável no aparelho: ver a **I-03**, já implementada, em `archive/roadmap-implementadas.md`).
 
 ### O problema
 Quem grava em casa ou no ensaio capta ventilador, trânsito, conversa ao fundo e chiado de microfone. Para mandar o áudio ao instrutor (botão **Enviar**), um fundo mais limpo ajuda a ouvir a voz ou o instrumento.
