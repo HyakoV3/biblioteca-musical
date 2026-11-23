@@ -39,3 +39,7 @@ Por isso o cartão mostra o que **valeu**: taxa de amostragem, `baseLatency` e `
 3. Troque o modo, toque de novo e compare o estalo e os números. Cada rota guarda o seu modo.
 
 Ideia ainda não feita: fixar a taxa em 48 kHz (a do mixer do Android), caso a conversão de taxa seja a causa; só vale se os modos não resolverem.
+
+## Estalo ao bloquear e desbloquear a tela (2026-11-23)
+
+O `MainActivity.onPause` chamava `webView.onResume()` com o áudio ligado, para a WebView não ser pausada. Esse "pausa e volta" a cada bloqueio ou desbloqueio da tela estalava o som. Sem o religamento (APK `2952dc6`, de diagnóstico) o estalo **diminuiu bastante** no aparelho do responsável, e a mudança foi para a `main`. O som com a tela bloqueada fica por conta do serviço em primeiro plano (`ServicoAudio`) e da prioridade "importante" do renderizador. **A conferir no aparelho:** o hino, o metrônomo e a gravação seguem por vários minutos com a tela bloqueada (se o som cair, o religamento volta, de outro jeito).
