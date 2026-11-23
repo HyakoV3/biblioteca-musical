@@ -99,7 +99,7 @@ rm BibliotecaMusical-teste.apk BibliotecaMusical-teste.apk.idsig     # o apksign
 Os zips (e os pacotes de sons, `docs/pacote-de-sons.md`) vão **direto para a pasta de entrega**, a pedido do
 responsável (antes iam para `~/Downloads`, e ele os movia para lá).
 
-**Arrumação da pasta (pedido do responsável, 2026-11-16):** ficam **fora** só os **10 zips de APK mais recentes**; todo o resto
+**Arrumação da pasta (pedido do responsável, 2026-11-16; de 10 para 5 zips em 2026-11-22):** ficam **fora** só os **5 zips de APK mais recentes**; todo o resto
 (zips de APK mais antigos e materiais soltos, como as comparações de bancos e as prévias de timbres) vai para a subpasta
 **`archive/`**. Ao entregar um zip novo, o mais antigo que sobrar passa para `archive/` (só se move, nada se apaga). Um arquivo
 de teste que acompanha o APK (por exemplo o pacote de partituras) fica ao lado dele e segue a mesma regra depois.

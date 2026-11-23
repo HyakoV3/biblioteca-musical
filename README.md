@@ -14,7 +14,7 @@ TypeScript**. O alvo principal é o **Android**; o desktop funciona para desenvo
 Este repositório contém **somente código**. Nenhum hino real está aqui: letras, partituras e áudios **não fazem parte
 do repositório** (ficam fora do Git, na pasta `content/`, que é ignorada) e só devem ser distribuídos com autorização de
 quem detém os direitos. **O hinário e as partituras também não vêm dentro do app**: a pessoa os baixa uma vez em Ajustes
-(o primeiro acesso oferece o download do hinário) e eles ficam no aparelho, conferidos por tamanho e SHA-256
+(o primeiro acesso oferece o download do hinário) e eles ficam no aparelho, conferidos por tamanho e SHA-256, com uma barra de andamento (90% o download, o resto a conferência e a instalação). Os pacotes levam o SHA-256 no nome (`hinario-<sha8>.json`, `partituras-<sha8>.zip`)
 ([`docs/pacote-do-hinario.md`](docs/pacote-do-hinario.md) e [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md)). Os arquivos de teste (`src-tauri/exemplo/` e `tools/mscx2json/tests/fixtures/`) são
 **fictícios**. O formato dos dados está em [`docs/FORMATO.md`](docs/FORMATO.md).
 
@@ -33,8 +33,10 @@ O código foi escrito do zero: nenhum código ou arquivo de outros aplicativos f
 - **Letra** com as estrofes, em abas na parte de baixo da tela (ao lado, com o celular deitado), com o **karaokê** acendendo cada sílaba.
 - **Partitura** de cada hino (opcional, baixada em Ajustes), com o compasso e a nota que está soando em destaque.
 - **Afinador:** dá o tom (Lá 440 ou outra nota, com temporizador) e lembra as últimas notas usadas.
-- **Gravador:** grava a sua voz ou o seu instrumento (segue gravando com a tela bloqueada), guarda no aparelho e compartilha. Com fone, dá para gravar ouvindo um hino.
+- **Gravador:** grava a sua voz ou o seu instrumento (segue gravando com a tela bloqueada), guarda no aparelho e compartilha pela folha do sistema. A gravação sai como **Ogg/Opus (`.ogg`)**, que o WhatsApp e o Telegram aceitam como áudio ([`docs/ideia-enviar-audio-por-app.md`](docs/ideia-enviar-audio-por-app.md)). Com fone, dá para gravar ouvindo um hino.
 - **Metrônomo:** de 30 a 240 bpm, compassos simples (2, 3, 4) e compostos (6, 9, 12), pêndulo que vai e volta; segue com a tela bloqueada e lembra os últimos usados.
+- **Saída de áudio:** em Ajustes, a saída em uso (alto-falante, fone com fio, USB-C ou Bluetooth) e quatro modos, **Automático e buffer alto, médio e baixo**, guardados por saída, com as medidas do que valeu, para quem ouve estalos no fone ([`docs/saida-de-audio.md`](docs/saida-de-audio.md)).
+- **Tela ligada:** um botão na tela do hino (o olho) mantém a tela acesa enquanto o hino toca.
 - **Aparência:** modo automático, claro ou escuro, combinado com três estilos de cor (Normal, Pergaminho e Marinho e
   ouro), com contraste conferido ([`docs/design-tokens.md`](docs/design-tokens.md)).
 - Interface em português, espanhol e inglês, pronta para novos idiomas ([`docs/TRADUCOES.md`](docs/TRADUCOES.md)).

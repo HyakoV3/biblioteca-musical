@@ -71,20 +71,20 @@ mesmo conjunto de fluxos que o responsável já usa em outros projetos.
 
 ## 4. Testes automatizados
 
-- [x] **Testes do app no repositório** (`tests/`, executor Vitest): `npm test`. 95 testes em 12 arquivos, só com dados
+- [x] **Testes do app no repositório** (`tests/`, executor Vitest): `npm test`. **395 testes em 32 arquivos** (2026-11-22), só com dados
       **fictícios** (`tests/amostras.ts`; nenhum hino real entra no Git): partes e vezes do hino (introdução, final,
       pausas), sintetizador (reagendar na pausa, tempo audível, filtro de abertura dos metais, uma onda por altura),
       timbres por altura (interpolação das medidas, volume preservado; `tests/timbres.test.ts`), karaokê (validação e escolha da sílaba), pacote de
       sons (zips sintéticos adulterados, truncados e "bomba"), catálogo de sons gravados x manifesto, número do hino e
-      preferências, créditos e licenças, tamanho e alinhamento da letra e a tradução dos erros do Rust. Os tipos dos testes
+      preferências, créditos e licenças, tamanho e alinhamento da letra e a tradução dos erros do Rust, o envio da gravação (conversão WebM para Ogg: `tests/ogg.test.ts`), a saída de áudio e a barra dos pacotes. Os tipos dos testes
       passam por `npm run check`.
 - [x] Regressão do `smplr`: `parar()` tem de esvaziar a fila do agendador (`tests/sintetizador.test.ts`). Conferido: sem
       a correção, o teste falha.
 - [x] **Ponta a ponta do karaokê** (`npm run test:e2e`, `tests/e2e/karaoke.mjs`): sobe o Vite e um Chrome mudo, entrega
       um hino fictício por um `invoke` simulado do Tauri e confere sílaba, estrofe, tempo, pausa e o botão. Precisa de
       Chrome ou Chromium (variável `CHROME` indica o executável) e não sobra processo nem pasta temporária.
-- [x] O conversor `tools/mscx2json` tem testes em Rust, dentro do repositório (`cargo test`), e o leitor do app também
-      (`cargo test --lib` em `src-tauri`).
+- [x] O conversor `tools/mscx2json` tem testes em Rust, dentro do repositório (`cargo test`: 126), e o leitor do app também
+      (`cargo test --lib` em `src-tauri`: 105, mais 4 que só rodam sob pedido, com conteúdo real). As ferramentas em Python têm os seus (`pytest tools`).
 - [x] Tudo isso roda no **CI** (seção 2), inclusive o teste de ponta a ponta.
 - [ ] Testes de componentes Svelte e do store (`reproducao.svelte.ts`), que dependem do compilador do Svelte no
       Vitest: ficam de fora por enquanto (a lógica pura já está coberta).

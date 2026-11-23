@@ -40,6 +40,9 @@ Para cada uma anote: **conseguiu?** (sim / com dificuldade / não), **tempo apro
 | 15 | "Ligue um metrônomo a 90 bpm, em 3 tempos." | Acha a aba **Metrônomo**? Entende o andamento e o compasso? |
 | 16 | "Bloqueie a tela com o metrônomo ou a gravação ligados." | O som continua? Entende a notificação e o botão Parar? |
 | 17 | "Abra a partitura do hino e acompanhe a música." | Acha a aba **Partitura**? Entende o destaque da nota? |
+| 18 | "Mande a gravação que você fez para alguém, pelo WhatsApp." | Acha **Enviar**? Chega como áudio tocável (e não como arquivo)? |
+| 19 | "O som estala no seu fone. Tente melhorar." | Acha **Ajustes → Saída de áudio**? Entende buffer alto, médio e baixo? |
+| 20 | "Deixe a tela acesa enquanto o hino toca." | Acha o botão do olho na tela do hino? |
 
 ## Perguntas ao final (uma por vez, sem sugerir a resposta)
 
