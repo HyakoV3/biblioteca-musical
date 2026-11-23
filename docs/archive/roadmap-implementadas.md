@@ -182,3 +182,14 @@ descrito** (documentos, código, testes e PRs). Ele não repete esses detalhes.
 ## Tela ligada no hino e aviso "Concordo"
 - **O que virou:** o botão do olho na tela do hino mantém a tela acesa (`prefs.manter-tela`); o aviso "app independente e não oficial" em Ajustes tem o botão **Concordo** dentro da caixa e some depois (`prefs.aviso-independente`); o modal de baixar o hinário tem margem lateral.
 - **Onde:** `src/lib/telaLigada.svelte.ts`, `src/lib/AvisoHinario.svelte`, `src/lib/Aviso.svelte`, `src/routes/ajustes/+page.svelte`. **PRs #129 e #131.**
+
+## I-03 — Gravador de áudio para estudo e envio
+- **O que virou:** a aba **Gravador** (microfone; Opus a 64 kbps; permissão só ao gravar; medidor e aviso de "sem som"; gravações guardadas sem limite, em lista paginada, com Ouvir, Enviar, Apagar e Apagar todas); **gravar com a tela bloqueada** (serviço em primeiro plano com o tipo microfone) e **com o hino no fone**; **envio pela folha do sistema**, hoje como **Ogg/Opus** (ver "Envio da gravação em Ogg/Opus" acima). Testado no aparelho do responsável (gravação, medidor, envio no WhatsApp e em mais um destino).
+- **Onde:** `src/lib/Gravador.svelte`, `src/lib/gravador.ts`, `src/lib/gravacoes.ts`, `src/lib/compartilhar.ts`, `ServicoAudio.kt`, `PonteCompartilhar.kt`. **PRs #77 e seguintes.** Texto original em [`ideias-implementadas.md`](ideias-implementadas.md).
+- **Pendente:** renomear a gravação e ligá-la a um hino; o fone Bluetooth (atraso); confirmar no aparelho a gravação em segundo plano e com o hino no fone. Ver [`../roadmap-pendencias.md`](../roadmap-pendencias.md), seção 7.
+
+## I-20 — Metrônomo embutido
+- **O que virou:** aba própria, serviço Kotlin que segue com a tela bloqueada, Gravador em segundo plano, pêndulo que vai e volta, compassos simples (2, 3, 4) e compostos (6, 9, 12) e a lista dos últimos usados. Implementada em 2026-11-21.
+- **Onde:** `src/lib/metronomo.ts`, `src/lib/metronomo.svelte.ts`, `src/lib/Metronomo.svelte`, `tests/metronomo.test.ts`. **PRs #103 a #112.** Texto original em [`ideias-implementadas.md`](ideias-implementadas.md).
+- **Pendente (futuro):** o gauge de ponteiro e os compassos irregulares 5 e 7, com agrupamentos. Ver [`../roadmap-pendencias.md`](../roadmap-pendencias.md), seção 7.
+

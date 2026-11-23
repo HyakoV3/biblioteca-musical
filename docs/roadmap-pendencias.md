@@ -153,6 +153,8 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
 - [ ] **Envio da gravação em Ogg (PR #133; funcionou nos dois destinos testados pelo responsável, o WhatsApp e mais um, em 2026-11-22/23; ver [`ideia-enviar-audio-por-app.md`](ideia-enviar-audio-por-app.md)):** testar o `.ogg` em Telegram (deve virar
       nota de voz), Signal, Messages e WhatsApp Business, e com gravações longas (10, 30 e 60 min; acima de ~34 min o arquivo passa de 16 MB).
       Opcional: **`.m4a`/AAC com `MediaCodec`** ("enviar como MP4"), só se algum destino recusar Ogg. **(depende do responsável)**
+- [ ] **I-03 (Gravador):** renomear a gravação e ligá-la a um hino; o fone Bluetooth (atraso); confirmar no aparelho a gravação em segundo plano e com o hino no fone.
+- [ ] **I-20 (Metrônomo), como futuro:** o gauge de ponteiro e os compassos irregulares 5 e 7, com agrupamentos.
 - [ ] **Outras ideias soltas:** botão **"Atualizar"** do hinário (hoje troca-se de pacote removendo e baixando de novo); **estalo do som ao
-      bloquear e desbloquear a tela**: diminuiu bastante sem religar a WebView em `onPause` (PR #142, a mesclar); falta conferir que o som segue por vários minutos com a tela
+      bloquear e desbloquear a tela**: diminuiu bastante sem religar a WebView em `onPause` (PR #142, mesclada); falta conferir que o som segue por vários minutos com a tela
       bloqueada (hino, metrônomo e gravação); **hino 86**: falta o responsável dizer em qual compasso, depois da introdução, o destaque segue notas sem som.
