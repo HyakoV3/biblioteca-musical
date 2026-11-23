@@ -33,7 +33,7 @@ struct ProgressoInstalacao {
 
 /// Importa o pacote de partituras (`.zip` só com `partituras/hino-N.svg`, que o app baixou) que a interface manda em **base64**
 /// (`zip`), para o hinário já instalado. Não pode ser corpo binário: no Android o Tauri não entrega `InvokeBody::Raw` (ver
-/// `pacote::importar_base64`). É `async` para rodar fora da thread da interface.
+/// `pacote::importar_base64_progresso`). É `async` para rodar fora da thread da interface.
 #[tauri::command]
 async fn importar_partituras(
     app: tauri::AppHandle,

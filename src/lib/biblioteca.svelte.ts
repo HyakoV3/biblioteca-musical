@@ -89,8 +89,18 @@ export const biblioteca = {
     if (bytes.length > LIMITE_ZIP_BYTES) throw JSON.stringify(["zip_grande_demais"]); // o mesmo erro do Rust, sem montar o texto
     // O Rust avisa quantas partituras já foram tratadas (o canal é o jeito do Tauri de mandar eventos durante um comando).
     const canal = new Channel<{ feito: number; total: number }>();
-    canal.onmessage = (m) => aoProgredir?.(m.total > 0 ? m.feito / m.total : 0);
-    const r = await invoke<Importacao>("importar_partituras", { zip: bytesParaBase64(bytes), aoProgresso: canal });
+    // As mensagens do canal e o retorno do `invoke` seguem caminhos diferentes: uma mensagem pode chegar DEPOIS de a chamada terminar. Passado o fim,
+    // elas são ignoradas, para não religar a fase "instalando" depois de o chamador já ter voltado ao ocioso ou ao erro.
+    let ativo = true;
+    canal.onmessage = (m) => {
+      if (ativo) aoProgredir?.(m.total > 0 ? m.feito / m.total : 0);
+    };
+    let r: Importacao;
+    try {
+      r = await invoke<Importacao>("importar_partituras", { zip: bytesParaBase64(bytes), aoProgresso: canal });
+    } finally {
+      ativo = false;
+    }
     pacote = r.pacote;
     return r;
   },

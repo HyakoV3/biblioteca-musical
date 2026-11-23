@@ -199,7 +199,7 @@ fn importar_base64_com_progresso(
     importar_zip_com_progresso(dir, &bytes, lim, progresso)
 }
 
-/// Só os testes entram por aqui (com os bytes já prontos); o app entra por `importar_base64`.
+/// Só os testes entram por aqui (com os bytes já prontos); o app entra por `importar_base64_progresso`.
 #[cfg(test)]
 pub fn importar_zip(dir: &Path, bytes: &[u8]) -> Result<Importacao, String> {
     importar_zip_com(dir, bytes, &Limites::default())
@@ -296,6 +296,9 @@ fn importar_zip_com_progresso(
             return Err(e);
         }
     }
+    // O 100% só sai agora: a limpeza, a gravação da marca e a troca da pasta já terminaram. Nos caminhos de erro nenhum 100% é enviado.
+    let tratadas = svgs.len() as u32;
+    progresso(tratadas, tratadas);
 
     aceitas.sort_unstable();
     // Depois da troca, o que está instalado é EXATAMENTE o que foi aceito: não se relê o disco (uma falha de leitura aqui devolveria erro
@@ -394,7 +397,6 @@ fn preparar(
             Err(motivo) => recusadas.push(recusa(motivo)),
         }
     }
-    progresso(total, total);
     if !aceitas.is_empty() {
         std::fs::write(novo.join(".hinario"), marca).map_err(gravar)?;
     }
