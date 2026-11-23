@@ -163,3 +163,22 @@ descrito** (documentos, código, testes e PRs). Ele não repete esses detalhes.
 - **O que virou:** a barra **Hinos | Afinador | Gravador** na tela inicial (o mesmo `Abas.svelte` do hino), painéis montados, busca preservada ao trocar de aba e aba reaberta ao voltar de um hino.
 - **Onde:** `src/lib/Abas.svelte`, `src/routes/+page.svelte`, `tests/e2e/karaoke.mjs`.
 - **Pendente:** a rolagem de cada aba é guardada mas sem teste de ponta a ponta; a ordem das abas (Hinos primeiro) espera a confirmação do responsável.
+
+## Envio da gravação em Ogg/Opus
+- **O que virou:** ao enviar, a gravação em WebM/Opus é convertida (sem recodificar) para **Ogg/Opus** (`.ogg`, tipo `audio/ogg`), que o WhatsApp e o Telegram aceitam como áudio; o interruptor `.webm | .weba` saiu. **Funcionou no aparelho do responsável (2026-11-22).**
+- **Onde:** [`../ideia-enviar-audio-por-app.md`](../ideia-enviar-audio-por-app.md), `src/lib/webm.ts`, `src/lib/ogg.ts`, `src/lib/compartilhar.ts`, `tests/ogg.test.ts`. **PR #133.**
+- **Pendente:** Signal, Messages e WhatsApp Business; gravações longas (10, 30 e 60 min). Ver [`../roadmap-pendencias.md`](../roadmap-pendencias.md).
+
+## Saída de áudio e buffer
+- **O que virou:** **Ajustes → Saída de áudio**: a saída em uso e quatro modos (Automático, **Buffer alto, médio e baixo**), guardados por saída, com as medidas do contexto de áudio. O médio (`latencyHint: "balanced"`) entrou em 2026-11-22 depois de o alto e o baixo terem melhorado o estalo no fone USB-C.
+- **Onde:** [`../saida-de-audio.md`](../saida-de-audio.md), `src/lib/saidaAudio.ts`, `tests/saidaAudio.test.ts`. **PRs #127 e #139.**
+- **Pendente:** o estalo ao bloquear e desbloquear a tela (APK de diagnóstico `2952dc6`); testar o médio no aparelho.
+
+## Pacotes: nome por SHA-256 e barra única
+- **O que virou:** os pacotes baixáveis levam os 8 primeiros caracteres do **SHA-256** no nome (`hinario-eca41c3f.json`, `partituras-fcb6ca0f.zip`) e os zips de APK, o **commit**; a barra de hinário, partituras e sons é uma só (90% o download, o resto conferir e instalar). Os pacotes antigos ficam em pastas `*-archive/` do servidor, fora do link (o link entrega a pasta inteira em zip e o app recusa acima de 100 MiB).
+- **Onde:** [`../pacote-do-hinario.md`](../pacote-do-hinario.md), [`../pacote-de-partituras.md`](../pacote-de-partituras.md), [`../apk-de-teste.md`](../apk-de-teste.md), `src/lib/pacote.ts`, `src/lib/LinhaPacote.svelte`. **PRs #135 e #137.**
+- **Pendente:** progresso real da instalação (hoje são marcos fixos de 93% e 96%).
+
+## Tela ligada no hino e aviso "Concordo"
+- **O que virou:** o botão do olho na tela do hino mantém a tela acesa (`prefs.manter-tela`); o aviso "app independente e não oficial" em Ajustes tem o botão **Concordo** dentro da caixa e some depois (`prefs.aviso-independente`); o modal de baixar o hinário tem margem lateral.
+- **Onde:** `src/lib/telaLigada.svelte.ts`, `src/lib/AvisoHinario.svelte`, `src/lib/Aviso.svelte`, `src/routes/ajustes/+page.svelte`. **PRs #129 e #131.**
