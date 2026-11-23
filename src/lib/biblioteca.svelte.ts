@@ -1,6 +1,6 @@
 // Estado compartilhado da biblioteca: o conteúdo carregado e a busca sobrevivem à navegação entre
 // telas (assim voltar do hino devolve a lista como estava) e o Rust é chamado uma vez só.
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 import type { Sincronia } from "./karaoke";
 import { LIMITE_ZIP_BYTES, bytesParaBase64 } from "./pacote";
 import type { Voz } from "./sintetizador";
@@ -85,9 +85,22 @@ export const biblioteca = {
 
   /** Instala o pacote de partituras (zip só com os SVG, já baixado e conferido). Os bytes vão em **base64** (texto): corpo binário não chega
    *  ao Rust no Android. Lança erro (texto do Rust) se o pacote for recusado; o conteúdo atual não muda. */
-  async importarPartituras(bytes: Uint8Array) {
+  async importarPartituras(bytes: Uint8Array, aoProgredir?: (fracao: number) => void) {
     if (bytes.length > LIMITE_ZIP_BYTES) throw JSON.stringify(["zip_grande_demais"]); // o mesmo erro do Rust, sem montar o texto
-    const r = await invoke<Importacao>("importar_partituras", { zip: bytesParaBase64(bytes) });
+    // O Rust avisa quantas partituras já foram tratadas (o canal é o jeito do Tauri de mandar eventos durante um comando).
+    const canal = new Channel<{ feito: number; total: number }>();
+    // As mensagens do canal e o retorno do `invoke` seguem caminhos diferentes: uma mensagem pode chegar DEPOIS de a chamada terminar. Passado o fim,
+    // elas são ignoradas, para não religar a fase "instalando" depois de o chamador já ter voltado ao ocioso ou ao erro.
+    let ativo = true;
+    canal.onmessage = (m) => {
+      if (ativo) aoProgredir?.(m.total > 0 ? m.feito / m.total : 0);
+    };
+    let r: Importacao;
+    try {
+      r = await invoke<Importacao>("importar_partituras", { zip: bytesParaBase64(bytes), aoProgresso: canal });
+    } finally {
+      ativo = false;
+    }
     pacote = r.pacote;
     return r;
   },

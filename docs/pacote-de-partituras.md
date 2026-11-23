@@ -120,3 +120,7 @@ números de hino aceitos vêm dele.
 ## Remover
 
 **Ajustes → Partituras → Remover** apaga só as partituras; o hinário fica.
+
+## Andamento da instalação (2026-11-23)
+
+Depois do download, o app confere o pacote e o Rust limpa e grava cada SVG (~960): a parte lenta no celular. O Rust avisa a interface por um **canal** do Tauri (`importar_partituras` recebe `ao_progresso`, e a interface cria um `Channel` em `biblioteca.importarPartituras`) a cada 10 partituras tratadas (`feito` de `total`). A barra única (`progressoTotal`, `src/lib/pacote.ts`) mostra o download de 0 a 90%, a conferência em ~92% e a instalação de ~94% a 100%, chegando a 100% só quando a instalação acaba. O hinário e os sons gravados não têm andamento real da instalação: a barra fica em ~94% nessa fase.

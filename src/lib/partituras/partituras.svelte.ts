@@ -34,7 +34,7 @@ async function baixar() {
   try {
     const r = await baixarEInstalar(
       pacote,
-      { baixar: baixarZip, sha256: sha256Hex, extrairDaPasta: extrairDaPastaReal, instalar: (zip) => biblioteca.importarPartituras(zip) },
+      { baixar: baixarZip, sha256: sha256Hex, extrairDaPasta: extrairDaPastaReal, instalar: (zip, aoProgredir) => biblioteca.importarPartituras(zip, aoProgredir) },
       (fase, progresso) => (andamento = { fase, progresso, erro: null }),
     );
     recusadas = r.recusadas;

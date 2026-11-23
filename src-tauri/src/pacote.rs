@@ -164,11 +164,31 @@ fn marca(id: &str) -> String {
 /// `InvokeBody::Raw` **não existe** (o WebView não entrega o corpo de uma requisição ao protocolo customizado, e o Tauri usa só o
 /// `postMessage`, que é texto), e o comando recebia sempre "a chamada não trouxe os bytes do arquivo". Texto base64 vale em todas as
 /// plataformas, e é a forma que a própria documentação do Tauri indica para bytes no Android.
+#[cfg(test)]
 pub fn importar_base64(dir: &Path, texto: &str) -> Result<Importacao, String> {
     importar_base64_com(dir, texto, &Limites::default())
 }
 
+#[cfg(test)]
 pub fn importar_base64_com(dir: &Path, texto: &str, lim: &Limites) -> Result<Importacao, String> {
+    importar_base64_com_progresso(dir, texto, lim, &mut |_, _| {})
+}
+
+/// Como `importar_base64`, avisando o andamento: `progresso(feito, total)` conta as partituras já tratadas (a limpeza de cada SVG é a parte lenta).
+pub fn importar_base64_progresso(
+    dir: &Path,
+    texto: &str,
+    progresso: &mut dyn FnMut(u32, u32),
+) -> Result<Importacao, String> {
+    importar_base64_com_progresso(dir, texto, &Limites::default(), progresso)
+}
+
+fn importar_base64_com_progresso(
+    dir: &Path,
+    texto: &str,
+    lim: &Limites,
+    progresso: &mut dyn FnMut(u32, u32),
+) -> Result<Importacao, String> {
     // A cada 3 bytes, 4 caracteres: o tamanho do texto já diz se o zip passaria do limite, antes de alocar os bytes.
     if texto.len() > lim.zip.div_ceil(3) * 4 + 4 {
         return Err(erro("zip_grande_demais", &[]));
@@ -176,16 +196,26 @@ pub fn importar_base64_com(dir: &Path, texto: &str, lim: &Limites) -> Result<Imp
     let bytes = STANDARD
         .decode(texto.trim())
         .map_err(|e| invalido(format!("base64: {e}")))?;
-    importar_zip_com(dir, &bytes, lim)
+    importar_zip_com_progresso(dir, &bytes, lim, progresso)
 }
 
-/// Só os testes entram por aqui (com os bytes já prontos); o app entra por `importar_base64`.
+/// Só os testes entram por aqui (com os bytes já prontos); o app entra por `importar_base64_progresso`.
 #[cfg(test)]
 pub fn importar_zip(dir: &Path, bytes: &[u8]) -> Result<Importacao, String> {
     importar_zip_com(dir, bytes, &Limites::default())
 }
 
+#[cfg(test)]
 pub fn importar_zip_com(dir: &Path, bytes: &[u8], lim: &Limites) -> Result<Importacao, String> {
+    importar_zip_com_progresso(dir, bytes, lim, &mut |_, _| {})
+}
+
+fn importar_zip_com_progresso(
+    dir: &Path,
+    bytes: &[u8],
+    lim: &Limites,
+    progresso: &mut dyn FnMut(u32, u32),
+) -> Result<Importacao, String> {
     let _tranca = hinario::trancar();
     if bytes.len() > lim.zip {
         return Err(erro("zip_grande_demais", &[]));
@@ -240,8 +270,8 @@ pub fn importar_zip_com(dir: &Path, bytes: &[u8], lim: &Limites) -> Result<Impor
         &hinos,
         &novo,
         &marca(&hinario.hinario.id),
-        0,
         lim,
+        progresso,
     );
     let (mut aceitas, recusadas) = match preparo {
         Ok(r) => r,
@@ -266,6 +296,9 @@ pub fn importar_zip_com(dir: &Path, bytes: &[u8], lim: &Limites) -> Result<Impor
             return Err(e);
         }
     }
+    // O 100% só sai agora: a limpeza, a gravação da marca e a troca da pasta já terminaram. Nos caminhos de erro nenhum 100% é enviado.
+    let tratadas = svgs.len() as u32;
+    progresso(tratadas, tratadas);
 
     aceitas.sort_unstable();
     // Depois da troca, o que está instalado é EXATAMENTE o que foi aceito: não se relê o disco (uma falha de leitura aqui devolveria erro
@@ -294,17 +327,22 @@ fn preparar(
     hinos: &HashSet<u32>,
     novo: &Path,
     marca: &str,
-    ja_lido: u64,
     lim: &Limites,
+    progresso: &mut dyn FnMut(u32, u32),
 ) -> Result<(Vec<u32>, Vec<Recusada>), String> {
     sem_erro_se_nao_existe(std::fs::remove_dir_all(novo)).map_err(gravar)?; // sobra de uma importação interrompida
     std::fs::create_dir(novo).map_err(gravar)?;
     let mut aceitas = Vec::new(); // os hinos cujo RETRATO entrou (é o que conta como "partitura instalada")
     let mut recusadas = Vec::new();
-    let mut lido = ja_lido;
+    let mut lido: u64 = 0;
     let mut ordem: Vec<(u32, Variante, usize)> = svgs.to_vec();
     ordem.sort_unstable(); // por hino e, dentro dele, o retrato antes da paisagem
-    for (n, variante, i) in ordem {
+    let total = ordem.len() as u32;
+    for (pos, (n, variante, i)) in ordem.into_iter().enumerate() {
+        // Avisa a cada 10 partituras (são ~960: perto de cem avisos, sem encher o canal).
+        if pos % 10 == 0 {
+            progresso(pos as u32, total);
+        }
         // A recusa da paisagem diz que é a paisagem (o mesmo número de hino pode aparecer duas vezes na lista).
         let recusa = |motivo: String| Recusada {
             numero: n,
@@ -692,6 +730,23 @@ mod testes {
                 .unwrap()
                 .starts_with("<svg xmlns=")
         );
+        std::fs::remove_dir_all(&d).ok();
+    }
+
+    #[test]
+    fn importar_avisa_o_andamento_da_primeira_a_ultima_partitura() {
+        let d = dir_com_hinario("andamento");
+        // 25 arquivos: o aviso sai a cada 10 (posições 0, 10 e 20) e fecha com (total, total).
+        let nomes: Vec<String> = (1..=25)
+            .map(|n| format!("partituras/hino-{n}.svg"))
+            .collect();
+        let arquivos: Vec<(&str, &str)> = nomes.iter().map(|n| (n.as_str(), SVG)).collect();
+        let z = zip_de(&arquivos);
+        let texto = STANDARD.encode(&z);
+        let mut avisos: Vec<(u32, u32)> = Vec::new();
+        importar_base64_progresso(&d, &texto, &mut |feito, total| avisos.push((feito, total)))
+            .unwrap();
+        assert_eq!(avisos, vec![(0, 25), (10, 25), (20, 25), (25, 25)]);
         std::fs::remove_dir_all(&d).ok();
     }
 

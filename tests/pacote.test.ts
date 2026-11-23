@@ -65,13 +65,16 @@ describe("a barra única dos pacotes (90% de download, o resto é conferir e ins
     expect(progressoTotal("baixando", 1)).toBeCloseTo(0.9);
     expect(progressoTotal("baixando", 7)).toBeCloseTo(0.9); // valor fora da faixa é cortado
     expect(progressoTotal("conferindo", 1)).toBeGreaterThan(0.9);
-    expect(progressoTotal("instalando", 1)).toBeGreaterThan(progressoTotal("conferindo", 1));
-    expect(progressoTotal("instalando", 1)).toBeLessThan(1);
+    expect(progressoTotal("instalando", 0)).toBeGreaterThan(progressoTotal("conferindo", 1));
     expect(progressoTotal("ocioso", 1)).toBe(0);
     expect(progressoTotal("baixando", NaN)).toBe(0); // total desconhecido: não vira "NaN%"
     expect(progressoTotal("baixando", Infinity)).toBeCloseTo(0.9);
-    expect(progressoTotal("conferindo", 1)).toBeCloseTo(0.93);
-    expect(progressoTotal("instalando", 1)).toBeCloseTo(0.96);
+    expect(progressoTotal("conferindo", 1)).toBeCloseTo(0.92);
+    // A instalação ocupa o resto da barra e só chega a 100% quando o andamento chega a 1.
+    expect(progressoTotal("instalando", 0)).toBeCloseTo(0.94);
+    expect(progressoTotal("instalando", 0.5)).toBeCloseTo(0.97);
+    expect(progressoTotal("instalando", 1)).toBeCloseTo(1);
+    expect(progressoTotal("instalando", NaN)).toBeCloseTo(0.94);
     expect(porcentagemTotal("baixando", 1)).toBe(90);
   });
 });

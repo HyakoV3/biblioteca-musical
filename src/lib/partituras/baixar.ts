@@ -12,8 +12,8 @@ export type Dependencias<T> = {
   sha256: (dados: Uint8Array) => Promise<string>;
   /** De uma PASTA em zip (o que o link de uma pasta compartilhada entrega), tira o zip das partituras conferido (tamanho e SHA-256). */
   extrairDaPasta: (pasta: Uint8Array, pacote: PacotePartituras) => Promise<Uint8Array>;
-  /** Entrega o zip conferido ao Rust. */
-  instalar: (zip: Uint8Array) => Promise<T>;
+  /** Entrega o zip conferido ao Rust, avisando o andamento da instalação (0 a 1) quando ele sabe dizer. */
+  instalar: (zip: Uint8Array, aoProgredir: (fracao: number) => void) => Promise<T>;
 };
 
 /**
@@ -49,6 +49,6 @@ export async function baixarEInstalar<T>(
   const baixado = await dep.baixar(pacote.url, pacote.bytes, (f) => aoMudar("baixando", f));
   aoMudar("conferindo", 1);
   const zip = await zipConferido(baixado, pacote, dep);
-  aoMudar("instalando", 1);
-  return dep.instalar(zip);
+  aoMudar("instalando", 0);
+  return dep.instalar(zip, (f) => aoMudar("instalando", f));
 }

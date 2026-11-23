@@ -24,15 +24,26 @@ fn importar_hinario(app: tauri::AppHandle, json: String) -> Result<hinario::Paco
     hinario::importar(&pasta_conteudo(&app)?, &json)
 }
 
+/// O andamento da instalação das partituras, que o Rust manda à interface por um canal: `feito` de `total` partituras tratadas.
+#[derive(Clone, serde::Serialize)]
+struct ProgressoInstalacao {
+    feito: u32,
+    total: u32,
+}
+
 /// Importa o pacote de partituras (`.zip` só com `partituras/hino-N.svg`, que o app baixou) que a interface manda em **base64**
 /// (`zip`), para o hinário já instalado. Não pode ser corpo binário: no Android o Tauri não entrega `InvokeBody::Raw` (ver
-/// `pacote::importar_base64`). É `async` para rodar fora da thread da interface.
+/// `pacote::importar_base64_progresso`). É `async` para rodar fora da thread da interface.
 #[tauri::command]
 async fn importar_partituras(
     app: tauri::AppHandle,
     zip: String,
+    ao_progresso: tauri::ipc::Channel<ProgressoInstalacao>,
 ) -> Result<pacote::Importacao, String> {
-    pacote::importar_base64(&pasta_conteudo(&app)?, &zip)
+    pacote::importar_base64_progresso(&pasta_conteudo(&app)?, &zip, &mut |feito, total| {
+        // Se a interface já não escuta, o aviso se perde sem problema: a importação segue.
+        let _ = ao_progresso.send(ProgressoInstalacao { feito, total });
+    })
 }
 
 /// Apaga só as partituras importadas (o hinário fica).
