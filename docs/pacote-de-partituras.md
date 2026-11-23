@@ -11,6 +11,7 @@ O pacote é um `.zip` só com `partituras/hino-<número>.svg` e, opcional, `part
 
 ## Estado publicado (2026-11-22)
 
+- **Servidor (2026-11-22):** só `partituras-008.zip` e `partituras-fcb6ca0f.zip` ficam na pasta compartilhada; os antigos (003 a 007) estão em `/mnt/downloads/BibliotecaMusicalPartituras-archive/`, fora do link. Motivo: o link entrega a **pasta inteira em zip** e o app recusa zip acima de 100 MiB; com 7 pacotes ela chegou a 117 MB e o download das partituras falhou.
 - **`partituras-fcb6ca0f.zip`** (antes `partituras-008.zip`; mesmos bytes, o nome agora leva os 8 primeiros caracteres do SHA-256; 19.436.728 bytes, **18,5 MiB**, SHA-256 `fcb6ca0f…c13a`): o 007 com **uma correção no tempo das curvas duplicadas**. O MuseScore guarda, em 79 hinos (158 arquivos), duas ligaduras **iguais, uma por cima da outra, sobre as mesmas notas**
   (o 55 tem uma dessas). O gerador as tratava como os dois pedaços de uma curva partida pelo fim da linha e **dividia o tempo entre elas**: no aparelho a luz corria na primeira metade do tempo e **repetia** na segunda, no mesmo lugar.
   Agora só curvas de **desenho diferente** (o fim de uma linha e o começo da seguinte) são pedaços e dividem o tempo; duplicatas do mesmo desenho levam o tempo inteiro, cada uma. Conferido hino a hino contra o 006: notas, pausas e compassos **iguais** nos 960 arquivos,

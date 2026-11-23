@@ -14,8 +14,9 @@ segura para todos: a escolha é da pessoa e é **guardada por rota** (`prefs.sai
 | Modo | `AudioContext` | Para quê |
 |---|---|---|
 | Automático (padrão) | sem opções | o que o app sempre fez |
-| Mais estável | `latencyHint: "playback"` | buffer maior: menos chance de estalar, um pouco mais de atraso |
-| Menor atraso | `latencyHint: "interactive"` | buffer menor: responde mais rápido, mais chance de estalar |
+| Buffer alto (`estavel`) | `latencyHint: "playback"` | buffer maior: menos chance de estalar, um pouco mais de atraso |
+| Buffer médio (`medio`) | `latencyHint: "balanced"` | meio-termo entre os dois (acrescentado em 2026-11-22 a pedido do responsável, depois de o buffer alto e o baixo terem melhorado o estalo no fone USB-C) |
+| Buffer baixo (`atraso`) | `latencyHint: "interactive"` | buffer menor: responde mais rápido, mais chance de estalar |
 
 O navegador pode tratar o `latencyHint` como um simples pedido (no Chrome do Android a latência base já ficou parada em cerca de 87 ms qualquer que fosse a dica).
 Por isso o cartão mostra o que **valeu**: taxa de amostragem, `baseLatency` e `outputLatency` (alguns aparelhos não informam o segundo: aparece "não informado") do
