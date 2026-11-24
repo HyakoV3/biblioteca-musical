@@ -1,5 +1,7 @@
 # Pacote do hinário (baixável)
 
+> **Hospedagem (2026-11-24):** o hinário (e as partituras) passaram para o repositório público **separado** `HyakoV3/biblioteca-musical-pacotes` (Release `hinario-<sha8>`, arquivo `.json` direto), para que uma eventual reclamação sobre o conteúdo não alcance o repositório do app. O manifesto do app aponta para esse asset; o link do servidor, abaixo, vale só para APKs antigos. Para trocar: gerar o `hinario-<sha8>.json`, criar o Release no repositório de pacotes e refazer o manifesto com `python3 tools/montar-manifesto-hinario.py <url do asset> <arquivo>`.
+
 O **texto e a música dos hinos não vão dentro do app nem do Git**: são conteúdo de terceiros (ver `docs/licencas-de-terceiros.md`). O app baixa o hinário **uma vez**, pelo
 mesmo caminho conferido das partituras, e o guarda no aparelho. Sem ele, o app mostra só o pacote de exemplo fictício e, no primeiro acesso, um aviso oferece o download
 (o botão segue em **Ajustes → Conteúdo → Hinário completo**, com Baixar e Remover, no desenho dos outros pacotes).

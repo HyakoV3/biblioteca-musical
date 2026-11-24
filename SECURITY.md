@@ -9,7 +9,7 @@ sem descrever a falha.
 ## O que o app faz com a rede e com os dados
 
 - Não tem conta nem login, e não envia dados de uso.
-- Pela rede, o app só acessa **dois endereços**, ambos de pacotes opcionais: o servidor do responsável (**hinário** e **partituras**) e o repositório público de pacotes no GitHub (**sons gravados**). Essa
+- Pela rede, o app só acessa **dois endereços**, ambos de pacotes opcionais: o servidor do responsável (só para APKs antigos) e o repositório público de pacotes no GitHub (**hinário, partituras e sons gravados**). Essa
   permissão é restrita, em `src-tauri/capabilities/default.json`, ao servidor e a um caminho do GitHub (`.../biblioteca-musical-pacotes/releases/download/*`). O GitHub redireciona o download para o seu armazenamento de assets, e o plugin não restringe esse destino (só a URL inicial); o conteúdo continua protegido pelo SHA-256 de cada arquivo, conferido contra o manifesto embutido no app.
 - Cada pacote baixado é conferido por **tamanho e SHA-256** contra o manifesto que vai dentro do app
   (`src/lib/hinario/manifesto.json`, `src/lib/partituras/manifesto.json` e `src/lib/sons/manifesto.json`) antes de ser guardado. Pacote

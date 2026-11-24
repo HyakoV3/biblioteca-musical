@@ -64,7 +64,7 @@ código. Eles **não bloqueiam o *merge***: só as 4 verificações do CI bloque
 
 ## Commits
 
-Mensagens curtas e no imperativo ou no passado, em português, dizendo o **porquê** quando não for óbvio. Commits pequenos e coerentes valem
+Seguimos **Conventional Commits** a partir de 2026-11-24 (a versão continua 0.3.0): `tipo(escopo): resumo`, em português, com `feat`, `fix`, `docs`, `chore`, `ci`, `build`, `refactor`, `test` ou `perf`, e `!` depois do tipo numa mudança incompatível (ex.: `feat(sons): baixar do GitHub Release`, `ci(release): conferir permissões do APK`). O título da PR segue o mesmo formato (o merge é *squash*, então ele vira o commit). Dizer o **porquê** quando não for óbvio. Commits pequenos e coerentes valem
 mais que um grande. Sem atribuição automática de ferramentas nos commits e nas PRs deste repositório.
 
 ## Relatar problemas

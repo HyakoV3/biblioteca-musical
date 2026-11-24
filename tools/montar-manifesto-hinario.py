@@ -19,18 +19,22 @@ from urllib.parse import urlsplit
 
 RAIZ = Path(__file__).resolve().parent.parent
 PADRAO = RAIZ / "src" / "lib" / "hinario" / "manifesto.json"
-# O que o app aceita: o limite do hinário (`LIMITE_JSON_BYTES` em src/lib/pacote.ts e `LIMITE_BYTES` em src-tauri/src/hinario.rs) e o único servidor que ele pode acessar
+# O que o app aceita: o limite do hinário (`LIMITE_JSON_BYTES` em src/lib/pacote.ts e `LIMITE_BYTES` em src-tauri/src/hinario.rs) e os únicos endereços que ele pode acessar
 # (src-tauri/capabilities/default.json).
 LIMITE_BYTES = 20 * 1024 * 1024
 HOST_PERMITIDO = "fb.hm.hv2.xyz"
+PREFIXO_GITHUB = "/HyakoV3/biblioteca-musical-pacotes/releases/download/"
 
 
 def montar(link: str, arquivo: Path) -> dict:
     """O manifesto do hinário. Levanta ValueError se o link ou o arquivo não servem."""
     if not link.startswith("https://") or len(link) <= len("https://") or any(c.isspace() for c in link):
         raise ValueError("o link precisa ser um endereço https:// sem espaços")
-    if urlsplit(link).hostname != HOST_PERMITIDO:
-        raise ValueError(f"o app só pode baixar de https://{HOST_PERMITIDO}/ (src-tauri/capabilities/default.json); este link é de outro endereço")
+    partes = urlsplit(link)
+    do_servidor = partes.hostname == HOST_PERMITIDO
+    do_github = partes.hostname == "github.com" and partes.path.startswith(PREFIXO_GITHUB)
+    if not (do_servidor or do_github):
+        raise ValueError(f"o app só pode baixar de https://{HOST_PERMITIDO}/ ou de https://github.com{PREFIXO_GITHUB}* (src-tauri/capabilities/default.json); este link é de outro endereço")
     if not arquivo.name.endswith(".json"):
         raise ValueError(f"{arquivo.name}: o hinário é um arquivo .json")
     dados = arquivo.read_bytes()

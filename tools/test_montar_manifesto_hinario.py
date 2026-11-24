@@ -25,7 +25,7 @@ def test_monta_o_manifesto_com_nome_tamanho_e_sha(tmp_path):
     assert len(m["pacote"]["sha256"]) == 64
 
 
-@pytest.mark.parametrize("link", ["http://fb.hm.hv2.xyz/x", "https://exemplo.com/x", "https://fb.hm.hv2.xyz.mau.com/x", "https://", "https://fb.hm.hv2.xyz/a b"])
+@pytest.mark.parametrize("link", ["http://fb.hm.hv2.xyz/x", "https://exemplo.com/x", "https://fb.hm.hv2.xyz.mau.com/x", "https://", "https://fb.hm.hv2.xyz/a b", "https://github.com/outro/repo/releases/download/x/y.json", "https://github.com/HyakoV3/biblioteca-musical-pacotes/raw/main/y.json"])
 def test_recusa_link_fora_do_servidor_permitido_ou_malformado(tmp_path, link):
     with pytest.raises(ValueError):
         mod.montar(link, _hinario(tmp_path))
@@ -47,3 +47,8 @@ def test_recusa_hinario_acima_do_limite_do_app(tmp_path):
     grande.write_text(json.dumps({"hinario": {}, "hinos": [], "x": "a" * (mod.LIMITE_BYTES + 10)}), encoding="utf-8")
     with pytest.raises(ValueError, match="20 MiB"):
         mod.montar(LINK, grande)
+
+
+def test_aceita_o_release_do_repositorio_de_pacotes(tmp_path):
+    link = "https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/hinario-x/hinario-x.json"
+    assert mod.montar(link, _hinario(tmp_path))["pacote"]["url"] == link
