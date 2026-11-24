@@ -530,7 +530,7 @@ Dá para hospedar os pacotes **sem servidor**, em um **repositório público só
 
 ## I-34 — Distribuição pelo GitHub: APK, iOS (futuro), sons gravados, partituras e hinário
 
-- **Status:** anotada, **rascunho** (2026-11-20). Junta o que estava espalhado: a **I-31** (servir hinário e partituras pelo GitHub Releases, com o nginx no Vidar como reserva),
+- **Status:** anotada, **rascunho** (2026-11-20). **Em andamento (2026-11-24):** o **workflow de release do app** está escrito ([`release-e-apk-no-github.md`](release-e-apk-no-github.md)) e falta ligar a chave e os segredos; os pacotes seguem o plano **dividido**: **sons gravados** num repositório público de pacotes (a licença do banco permite), **hinário e partituras no servidor** até haver autorização do Enéias (um repositório público seria distribuição pública de conteúdo de terceiros). Junta o que estava espalhado: a **I-31** (servir hinário e partituras pelo GitHub Releases, com o nginx no Vidar como reserva),
   [`release-e-apk-no-github.md`](release-e-apk-no-github.md) (o APK por tag), a nota "Depois: GitHub Releases" de [`pacote-de-sons.md`](pacote-de-sons.md) e o iOS de
   [`roadmap-pendencias.md`](roadmap-pendencias.md) (seção 2). Do que está aqui, **só os nomes dos arquivos foram feitos** (ver "Nome dos arquivos" abaixo); o resto não roda ainda.
 - **Origem:** o responsável, 2026-11-19 (servir pelo GitHub, "melhor que o servidor próprio") e 2026-11-20 ("fazer release também, vários dias sem release"; "disponibilizar os pacotes no GitHub:

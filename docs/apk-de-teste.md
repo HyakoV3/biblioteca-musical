@@ -84,6 +84,8 @@ $BT/apksigner verify --verbose BibliotecaMusical-teste.apk
 **Esta assinatura não serve para loja.** Para publicar é preciso uma chave **própria**, criada e guardada pelo
 responsável (quem perde a chave não consegue mais atualizar o app).
 
+> **Entrega pelo GitHub (a ligar):** o workflow `release.yml` ([`release-e-apk-no-github.md`](release-e-apk-no-github.md)) compila e assina o APK no GitHub e o publica numa página de pré-lançamento (`v0.3.1-rc1`), com o SHA-256. Quando a chave e os segredos estiverem cadastrados e o fluxo testado, ele **substitui** o zip no Nextcloud; até lá, este fluxo manual segue valendo.
+
 ## Entregar em zip com o commit no nome
 
 O APK é entregue **dentro de um `.zip` com o commit no nome**, para o responsável distinguir um build do outro:

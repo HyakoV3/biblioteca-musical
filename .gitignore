@@ -19,6 +19,12 @@ vite.config.ts.timestamp-*
 /sons-fonte/
 /dist-sons*/
 
+# Chaves de assinatura do Android: nunca versionar (docs/release-e-apk-no-github.md)
+*.jks
+*.keystore
+keystore.properties
+*.idsig
+
 # Notas locais: nunca versionar
 /docs/privado/
 
