@@ -2,7 +2,7 @@
   import Aviso from "./Aviso.svelte";
   import Busca from "./Busca.svelte";
   import type { Hino } from "./biblioteca.svelte";
-  import { i18n } from "$lib/i18n/index.svelte";
+  import { i18n } from "#lib/i18n/index.svelte";
   import { ORGAOS, PADRAO, instrumentosDaVoz, tipoDaVoz, type TipoVoz } from "./instrumentos";
   import { lerCartoes, padrao, salvarCartoes, salvarVozes } from "./preferencias";
   import Cartao from "./Cartao.svelte";

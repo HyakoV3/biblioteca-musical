@@ -5,11 +5,7 @@ updates:
     schedule:
       interval: weekly
     ignore:
-      # SvelteKit 3 e o adapter-static 4 andam juntos, e o TypeScript 7 conflita com o svelte-check: migrações planejadas, não automáticas
-      - dependency-name: "@sveltejs/kit"
-        update-types: [version-update:semver-major]
-      - dependency-name: "@sveltejs/adapter-static"
-        update-types: [version-update:semver-major]
+      # O TypeScript 7 conflita com o svelte-check: migração planejada, não automática (SvelteKit 3 e adapter-static 4 já foram migrados)
       - dependency-name: typescript
         update-types: [version-update:semver-major]
     groups:

@@ -1,7 +1,7 @@
 <script lang="ts">
   import ControleAndamento from "./ControleAndamento.svelte";
   import type { Hino } from "./biblioteca.svelte";
-  import { i18n } from "$lib/i18n/index.svelte";
+  import { i18n } from "#lib/i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
 
   // O andamento no topo das abas Letra e Partitura: um botão com o valor de agora que abre um painelzinho com o mesmo controle da aba Ouvir.

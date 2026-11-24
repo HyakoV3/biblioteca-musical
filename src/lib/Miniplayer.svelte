@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { i18n } from "$lib/i18n/index.svelte";
+  import { i18n } from "#lib/i18n/index.svelte";
   import Busca from "./Busca.svelte";
   import Icone from "./Icone.svelte";
   import { reproducao } from "./reproducao.svelte";
