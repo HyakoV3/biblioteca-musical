@@ -32,6 +32,8 @@ jobs:
         run: npm run check
       - name: Testes (Vitest)
         run: npm test
+      - name: Auditoria das dependências de produção (falha em alta ou crítica)
+        run: npm audit --omit=dev --audit-level=high
       - name: Traduções, movimento, contraste e ferramentas de partitura e de ícone
         run: |
           python3 tools/verificar-traducoes.py
@@ -87,6 +89,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+      # binário pronto (compilar o cargo-audit do zero passa de 30 minutos)
+      - uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2.90.8
+        with:
+          tool: cargo-audit
+      - name: cargo audit (falha em vulnerabilidade; avisos de manutenção não derrubam)
+        run: cargo audit --file src-tauri/Cargo.lock
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
       - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
       - run: cargo test --lib --manifest-path src-tauri/Cargo.toml
