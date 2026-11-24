@@ -37,30 +37,43 @@ A I-13 (etapa 2) **já era** um afinador cromático que descobre a nota: mostra 
 
 ## A tela
 
+O medidor é um **pêndulo de vizinhas** (pedido do responsável, 2026-11-24): uma trilha com a bola, como o pêndulo do Metrônomo, com **três pontos**: **à esquerda a nota logo abaixo** (um semitom), **no centro a nota que está soando** e **à direita a nota logo acima**. A bola mostra a **afinação em cents**: no centro, afinada; para a esquerda, baixa (indo em direção à de baixo); para a direita, alta.
+
 ```
 ┌──────────────────────────────────────────────┐
 │ Afinador            [ Dar o tom | Ouvir ]    │
 ├──────────────────────────────────────────────┤
-│                                              │
 │                  Lá♭ 4                       │   ← nome da nota (grande), em concerto
 │                  (Sol♯)                      │   ← o outro nome, pequeno
-│   Si♭: Si♭   Mi♭: Fá   Fá: Mi♭               │   ← como se ESCREVE em cada instrumento
-│                  412 Hz                      │   ← a frequência medida
-│       baixo ◄─────── ▲ ───────► alto         │
-│                  −14 cents                   │
+│                                              │
+│   Sol                                  Lá    │   ← as vizinhas: a de baixo e a de cima
+│   ┣━━━━━━━━━●━━━━━━━━━┃━━━━━━━━━━━━━━━━━━┫   │   ← trilha: ● = os cents; ┃ = faixa "afinado"
+│                                              │
+│          −14 cents · baixo · 412 Hz          │   ← cents, a palavra e a frequência medida
+│   Si♭: Si♭    Mi♭: Fá    Fá: Mi♭             │   ← como se ESCREVE em cada instrumento
 │                                              │
 │   Toque ou cante uma nota.                   │   ← quando não há som
-│                                              │
 │   ▸ Fixar o meu instrumento      Concerto    │   ← cartão FECHADO (opcional)
 └──────────────────────────────────────────────┘
 ```
 
 (Os números do esboço são coerentes: Lá♭4 a 440 Hz é 415,3 Hz; 412 Hz medidos dão cerca de −14 cents, e a linha das transposições é a de uma nota que soa Lá♭: Si♭ lê Si♭, Mi♭ lê Fá, Fá lê Mi♭.)
 
+### O pêndulo de vizinhas: o que decidir
+
+1. **Escala da trilha.** Duas escolhas: as pontas valem **±50 cents** (onde a vizinha passa a ser a nota mais próxima) ou **±100** (a vizinha de verdade, a um semitom). **Recomendo ±50**: com ±100 a bola quase nunca passa do meio da trilha, porque o nome do centro troca aos ±50. Com ±50 a bola usa a trilha toda e a ponta diz **qual nota vem em seguida**.
+2. **Troca do centro.** Quando a leitura passa de ~60 cents da nota do centro (a histerese do nome, ver "Comportamento"), a vizinha **vira o centro** e a trilha se **recentra**: a bola pula para perto do centro, do outro lado. É o mesmo gesto da bola do Metrônomo, que vai de ponta a ponta; o nome só muda pela regra da histerese, e a bola não deve "voltar" sozinha.
+3. **Faixa "afinado" (±5 cents).** Uma **faixa mais grossa no centro da trilha** (a forma diz "aqui", e não só a cor) mais a palavra "afinado". Fora dela, a palavra é "baixo" ou "alto".
+4. **Movimento.** Reaproveitar o desenho do pêndulo do Metrônomo (`.pendulo`, `.trilha`, `.bola` em `src/lib/Metronomo.svelte`), **sem transição de CSS** e, com "reduzir movimento", **sem deslizar** (a bola pula, como já faz no metrônomo). O número de cents é **suavizado**. Se os dois ficarem iguais, vale extrair um componente comum (`Trilha.svelte`) em vez de copiar o CSS.
+5. **Acessibilidade.** O pêndulo do Metrônomo é **`aria-hidden`** (decorativo, o aviso de status basta). O do afinador **não pode ser**: usar `role="meter"` (mínimo −50, máximo 50, `aria-valuenow` em cents e `aria-valuetext`, por exemplo "14 cents abaixo de Lá bemol"), com o anúncio **limitado a uma vez por segundo** e só quando muda a nota ou a palavra (a regra da I-13).
+6. **Sem som.** A bola **some** e as vizinhas ficam esmaecidas, com o texto "Toque ou cante uma nota" (não inventa leitura).
+7. **Pontas da faixa.** Na nota mais grave ou mais aguda que o detector aceita, a ponta sem vizinha fica **sem nome**.
+8. **Instrumento fixado.** Se a pessoa fixou o seu instrumento (por exemplo Si♭), o **nome grande e os das pontas** devem estar na **nota que ela lê** (a escrita), e o nome em concerto vai para a linha pequena. Sem instrumento fixado, tudo em concerto. **Pergunta ao responsável** (a 8, abaixo).
+
 - **Zero configuração para começar:** abre, pede o microfone **no toque** de "Ouvir" e só então, e já mostra. O Hz exibido é o **medido** (como nos afinadores), e não o nominal da nota.
 - **Uma grafia só no nome grande**, a **mesma do "dar o tom" e dos hinos** (`src/lib/notacao.ts`: Dó♯, Mi♭, Fá♯, Lá♭, Si♭), nos três idiomas e nas notações Dó Ré Mi ou C D E que o app já tem, com a **oitava**. O enarmônico (Sol♯ no lugar de Lá♭) vai **pequeno** ao lado, sem dobrar o peso visual. Para o leitor de tela, o nome por extenso que o app já tem (`nomeDaNotaPorExtenso`), **só do nome grande**.
 - **A linha de transposições:** o nome da nota **como se escreve** em Si♭, Mi♭ e Fá (a nota que o músico lê na partitura dele). **Fixar o meu instrumento** (cartão fechado, lembrado) destaca a linha dele e a põe em cima.
-- **Sem som ou som fraco:** "Toque ou cante uma nota" e o ponteiro descansa; não inventa nota.
+- **Sem som ou som fraco:** "Toque ou cante uma nota", a bola some e as vizinhas esmaecem; não inventa nota.
 
 ### Transposição: o que está certo e o que o rótulo precisa dizer
 
@@ -129,6 +142,28 @@ O "spike do microfone" da I-13 **já está feito, na prática**, pelo Gravador (
 - O microfone só abre no toque em "Ouvir", fecha ao sair da aba, e a tela mostra que está ligado.
 - Funciona com letra ampliada e no Alto contraste; o leitor de tela anuncia o nome por extenso.
 
+## O que falta para fechar a I-35 (revisão de 2026-11-24)
+
+**Decisões do responsável** (as sete perguntas abaixo, mais as três do pêndulo): a escala da trilha (±50 ou ±100 cents), o instrumento fixado mudar os nomes do centro e das pontas, e a bola sumir sem som.
+
+**Pesquisa que falta**
+- Afinadores de **Android** de uso comum e apps com um medidor de "vizinhas" (a nota de baixo, a atual e a de cima): só conheço os nomes, não verifiquei recursos.
+- Apps de ensino que mostram a nota numa pauta enquanto se toca (para a etapa da pauta).
+
+**Código, na ordem**
+1. **Funções puras e testes** (`src/lib/afinador.ts`): nome da nota, oitava, vizinhas (abaixo e acima), cents com sinal, **histerese do nome**, transposição com oitava.
+2. **Dependência `pitchy`:** ainda **não está no `package.json`**. Conferir de novo a licença no npm (MIT; o repositório diz 0BSD) e o tamanho (~2,8 KB) antes de adicionar.
+3. **Calibração:** gravar no Gravador trompete, trombone (com o pedal), tuba, voz e órgão; os arquivos viram fixtures de um teste do detector (clareza, volume, mediana de ~200 ms, regra de oitava).
+4. **O componente da trilha**, compartilhado com o Metrônomo se o desenho ficar igual, e a tela na aba Afinador, com o `role="meter"` e o `aria-live` limitado.
+5. **Textos nos três idiomas** (nome da nota, vizinhas, "baixo", "alto", "afinado", "toque ou cante uma nota", o aviso de privacidade, o cartão "Fixar o meu instrumento" e os rótulos por instrumento).
+6. **Teste de ponta a ponta com um tom conhecido:** o Chrome do e2e já roda com `--use-fake-device-for-media-stream`; a opção `--use-file-for-fake-audio-capture=tom.wav` do Chrome alimenta o microfone falso com um arquivo, o que permitiria conferir **o nome, os cents e a bola** com uma onda de 440 Hz (e a de 415,3 Hz). **A confirmar** que a opção funciona no Chrome do CI.
+7. **Documentação:** `README.md` (recursos), `docs/teste-de-uso.md` (tarefas novas), `SECURITY.md` (o Afinador passa a usar o microfone) e mover a I-32 e a I-35 para as implementadas quando entregues.
+
+**Teste no aparelho do responsável (não substituível)**
+- Os valores de `track.getSettings()` (os filtros saem mesmo desligados?), o AGC em nota longa, a precisão do `pitchy` com os instrumentos reais, a tuba, o Bluetooth e a leitura com a igreja ou sala de ensaio ao fundo.
+
+**Não será feito na v1 (decidido por enquanto):** pauta, reconhecimento de várias notas (acorde), afinação de referência diferente de 440 Hz e comparação com a nota da partitura (a futura I-36).
+
 ## Perguntas ao responsável
 
 1. O **Dó central** é Dó3 ou Dó4 para vocês (convenção da oitava)?
@@ -138,6 +173,9 @@ O "spike do microfone" da I-13 **já está feito, na prática**, pelo Gravador (
 5. A escuta e o "dar o tom" podem ser **ao mesmo tempo com fone**, agora que a ponte `temFone` existe?
 6. A **tuba** entra na v1 (janela de 4096 no grave) ou fica para depois?
 7. A escuta é uma **terceira área** na aba Afinador ou **substitui** a escolha de nota?
+8. **Instrumento fixado:** o nome grande e as pontas do pêndulo passam para a **nota que a pessoa lê** (a escrita)? Recomendo sim; o concerto vai para a linha pequena.
+9. **Escala do pêndulo:** pontas em **±50 cents** (recomendado) ou **±100**?
+10. **Sem som:** a bola **some** (recomendado) ou fica parada no centro esmaecida?
 
 ## Fontes (pesquisa de 2026-11-24)
 
