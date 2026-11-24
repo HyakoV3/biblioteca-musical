@@ -611,6 +611,7 @@ pasta deixa de existir. **Ideia ligada:** baixar **o arquivo** e não a pasta, m
 - **Status:** anotada, **rascunho revisado** (2026-11-24). Nada implementado. Expande a **I-32**: o centro da tela passa a ser o **nome da nota**, com a transposição (Si♭, Mi♭, Fá) já na primeira versão, mostrada **sem a pessoa escolher** (como o Band Toolbox).
 - **Origem:** pedido do responsável, 2026-11-24.
 - **Prioridade:** a definir
+- **Medidor (pedido do responsável, 2026-11-24):** um **pêndulo de vizinhas**, como o do Metrônomo: no centro a nota que soa, à esquerda a nota logo abaixo, à direita a logo acima, e a bola mostra os cents.
 - **Onde está o desenho:** [`ideia-detectar-nota-tocada.md`](ideia-detectar-nota-tocada.md) (outros apps, a tela, a transposição, faixa e janela, comportamento, etapas e perguntas). A conta da janela de 2048 amostras da I-13 estava errada para baixo: dois períodos cabem até ~47 Hz, e não ~65 Hz.
 
 ---
