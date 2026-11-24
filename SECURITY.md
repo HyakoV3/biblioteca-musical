@@ -9,11 +9,16 @@ sem descrever a falha.
 ## O que o app faz com a rede e com os dados
 
 - Não tem conta nem login, e não envia dados de uso.
-- Pela rede, o app só acessa o endereço do pacote opcional de **sons gravados**. Essa permissão é restrita a esse
-  endereço em `src-tauri/capabilities/default.json`.
-- Cada arquivo do pacote baixado é conferido por **tamanho e SHA-256** contra o manifesto que vai dentro do app
-  (`src/lib/sons/manifesto.json`) antes de ser guardado. Pacote adulterado, incompleto ou com tamanho absurdo (zip
-  "bomba") é recusado inteiro. Detalhes em [`docs/pacote-de-sons.md`](docs/pacote-de-sons.md).
+- Pela rede, o app só acessa **um servidor**, o dos pacotes opcionais: o **hinário**, as **partituras** e os **sons gravados**. Essa
+  permissão é restrita a esse endereço em `src-tauri/capabilities/default.json`.
+- Cada pacote baixado é conferido por **tamanho e SHA-256** contra o manifesto que vai dentro do app
+  (`src/lib/hinario/manifesto.json`, `src/lib/partituras/manifesto.json` e `src/lib/sons/manifesto.json`) antes de ser guardado. Pacote
+  adulterado, incompleto ou com tamanho absurdo (zip "bomba": o download tem teto de 100 MiB) é recusado inteiro; no Rust, cada partitura
+  ainda passa por uma limpeza do SVG (lista de elementos permitidos). Detalhes em [`docs/pacote-do-hinario.md`](docs/pacote-do-hinario.md),
+  [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md) e [`docs/pacote-de-sons.md`](docs/pacote-de-sons.md).
+- **Microfone:** só o Gravador (e o Afinador, no futuro) o usa, com a permissão pedida só ao gravar; a gravação fica no aparelho e só sai
+  quando a pessoa toca em **Enviar** (folha de compartilhamento do sistema). O `FileProvider` que entrega a gravação ao outro app expõe só a
+  pasta de cache e a pasta do próprio app.
 - O conteúdo de hinários (letras e partituras) **não fica neste repositório**: só código e dados de teste fictícios.
 
 ## Versões

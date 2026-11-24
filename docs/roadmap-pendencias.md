@@ -13,7 +13,8 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
 - [x] Repositório **público** criado em 2026-11-14: <https://github.com/HyakoV3/biblioteca-musical>. Um só e-mail de autor (o `noreply` do GitHub) e sem co-autoria.
 - [ ] Proteções: bloquear exclusão e *force-push* da `main`; ativar *secret scanning* e *push protection*;
       Dependabot (npm, cargo e GitHub Actions).
-- [ ] Arquivos da comunidade: `CONTRIBUTING.md`, `SECURITY.md`, modelos de *issue* e de *pull request*.
+- [x] Arquivos da comunidade: `CONTRIBUTING.md` e `SECURITY.md` (2026-11-23).
+- [ ] Modelos de *issue* e de *pull request* (`.github/`).
 - [ ] Descrição, tópicos e imagem de pré-visualização do repositório.
 - [ ] **Regra de ouro:** nada sensível no Git. Conteúdo de hinários e notas locais ficam fora do Git (`content/` e `docs/privado/`, no `.gitignore`).
 
@@ -158,3 +159,26 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
 - [ ] **Outras ideias soltas:** botão **"Atualizar"** do hinário (hoje troca-se de pacote removendo e baixando de novo); **estalo do som ao
       bloquear e desbloquear a tela**: diminuiu bastante sem religar a WebView em `onPause` (PR #142, mesclada); falta conferir que o som segue por vários minutos com a tela
       bloqueada (hino, metrônomo e gravação); **hino 86**: falta o responsável dizer em qual compasso, depois da introdução, o destaque segue notas sem som.
+
+## 8. Operação: servidor dos pacotes, entrega do APK e testes no aparelho
+
+Itens de rotina que não são ideias de produto e que só a conversa tinha (conferidos em 2026-11-23).
+
+- [ ] **Limite de 100 MiB do link das partituras (frágil).** O link público entrega a **pasta inteira em zip** e o app recusa zip acima de 100 MiB
+      (`LIMITE_ZIP`, `src/lib/sons/extrair.ts`). Cada pacote novo de partituras (~19 MB) aproxima do teto, e a falha só aparece no aparelho: em
+      2026-11-22 a pasta chegou a 117 MB e o download quebrou. Hoje ela tem ~39 MB (os antigos estão em `BibliotecaMusicalPartituras-archive/`).
+      **Regra até haver guarda:** antes de copiar um arquivo para uma pasta de link, conferir `curl -sI <link>` (a pasta tem de ficar abaixo de
+      ~80 MB, com folga). Possível guarda: um passo em `tools/montar-manifesto-*.py` que avise quando o zip da pasta passar de 80% do teto.
+- [ ] **Destino dos zips de APK.** O Nextcloud está fora do ar (2026-11-23): os zips vão para `~/Downloads/BibliotecaMusical/`. Definir onde
+      passam a ficar quando ele voltar e ajustar `docs/apk-de-teste.md`, que ainda descreve o Nextcloud e a pasta com `archive/`.
+- [ ] **Barra de instalação das partituras no Android (PR #144):** o andamento real vem por um canal do Tauri, nunca testado no aparelho. Confirmar
+      que a barra sobe de ~94% a 100% e que o botão Baixar volta ao normal; anotar quanto tempo leva a instalação. Hinário e sons gravados seguem
+      **sem andamento real** (a barra fica em ~94% nessa fase).
+- [ ] **Estalo ao bloquear e desbloquear a tela (PR #142):** sem o religamento da WebView o estalo diminuiu; falta conferir que o hino, o metrônomo e a
+      gravação seguem por vários minutos com a tela bloqueada (se o som cair, o religamento volta só quando a janela perde o foco).
+- [ ] **Hino 86:** o destaque da partitura segue notas sem som depois da introdução; falta o responsável dizer em qual compasso começa.
+- [ ] **Branches locais sem dono:** `apk-070`, `apk-071-som`, `conversor-refrao`, `docs-auditoria-perfis`, `worktree-card-i30-eneas` e
+      `som-sem-religar-webview` têm commits fora da `main`; o responsável decide quais apagar.
+- [ ] **Outro projeto (nicska):** o rascunho do envio em Ogg foi copiado para `docs/` de lá, sem commit; falta conferir se o código já tem algo
+      parecido e adaptar o texto.
+

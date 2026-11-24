@@ -9,6 +9,8 @@ em aberto. Ao implementar, mude o status e aponte para a etapa ou o commit.
 
 Status possíveis: **anotada** · **em análise** · **planejada** · **feita** · **descartada**.
 
+**Conferido com o código em 2026-11-23:** as ideias abaixo seguem abertas (I-16, I-17, I-18, I-23, I-25, I-27 em parte, I-29, I-30, I-31 e I-34, I-32 e I-33); nenhuma delas tem código no app além do que cada texto diz. O Gravador (I-03) e o Metrônomo (I-20) já foram para o arquivo das implementadas.
+
 **As ideias já implementadas saíram deste arquivo** (2026-11-16): o sumário, com onde está cada uma, é
 [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md); os textos originais completos estão em
 [`archive/ideias-implementadas.md`](archive/ideias-implementadas.md); e o que ficou pendente dentro delas está na seção 7 de
@@ -268,6 +270,7 @@ instrumento por voz): quanto mais combinações possíveis, mais a calibração 
 ## I-25 — Verificar atualização dos pacotes (sons gravados e partituras) ao abrir o app
 
 - **Status:** anotada, **rascunho** (a revisar com o subagente Opus antes de implementar)
+- **Nota (2026-11-23):** vale incluir o **hinário** (hoje troca-se de pacote com Remover e Baixar de novo) e um botão **"Atualizar"**. Com o nome por SHA-256 (`hinario-<sha8>.json`, `partituras-<sha8>.zip`), o manifesto novo já diz se há versão diferente da instalada: basta guardar o `sha256` do pacote instalado e comparar.
 - **Origem:** pedido do responsável, 2026-11-16: "seria interessante mais para frente, no importar partitura e importar sons gravados, que quando abrir ele fosse no servidor e visse se tem alguma atualização nesses pacotes .zip".
 - **Prioridade:** a definir ("mais para frente"; depende da I-24 para ter onde mostrar o aviso)
 
@@ -592,6 +595,12 @@ O responsável **não gosta da numeração sequencial** dos zips de teste (`...-
   (por exemplo `partituras-<commit>-<sha8>.zip`). O manifesto continua guardando o SHA-256 inteiro.
 - **Combina com a I-27:** Ajustes já mostra `Versão (commit)`; com o commit no nome do arquivo, quem testa confere o APK instalado com o nome do zip, e a I-27 (mostrar qual APK está instalado) fica quase resolvida.
 - **O que muda:** `docs/apk-de-teste.md` (a tabela deixa de ser por número e passa a ser por commit, mais recente primeiro), a pasta do Nextcloud (manter só os 10 mais recentes continua valendo) e, nos pacotes, `tools/montar-pacote.py` e `tools/montar-manifesto-partituras.py` (hoje o nome vem do argumento). Os zips antigos (003 a 006) ficam como estão no servidor.
+
+### Por que isto também resolve um limite de hoje (2026-11-23)
+Hoje o link público do servidor entrega a **pasta inteira em zip** (não há link por arquivo), e o app recusa zip acima de **100 MiB**: cada pacote novo
+de partituras (~19 MB) aproxima do teto, e em 2026-11-22 o download das partituras quebrou por isso (ver [`roadmap-pendencias.md`](roadmap-pendencias.md), seção 8).
+Com os pacotes em **GitHub Releases** o link é **por arquivo** (a URL de cada versão é estável), o app baixa só o arquivo do manifesto e o limite da
+pasta deixa de existir. **Ideia ligada:** o app baixar **o arquivo** e não a pasta, mesmo no servidor atual, se o File Browser passar a oferecer link por arquivo.
 
 ### Passos propostos (nesta ordem)
 0. **Autorização do Enéias** registrada (só para os releases de conteúdo). Sem ela, **só o release do app**, sem hinos.
