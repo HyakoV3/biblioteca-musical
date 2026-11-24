@@ -15,16 +15,24 @@ keystores nem endereços internos (`docs/apk-de-teste.md` explica como o APK de 
 Rode o que o CI roda (só dados fictícios; nada precisa de conteúdo real):
 
 ```bash
-npm install
+npm ci                              # (ou npm install)
 npm run check                       # tipos (svelte-check, inclui tests/)
 npm test                            # testes da lógica (Vitest)
 python3 tools/verificar-traducoes.py
 python3 tools/verificar-movimento.py
 python3 tools/contraste.py
+python3 tools/test_gerar_partituras.py
+python3 tools/test_montar_pacote.py
+# o teste do gerador de ícone usa o Pillow; num ambiente virtual (o Python do sistema recusa `pip install` direto):
+#   python3 -m venv /tmp/venv && /tmp/venv/bin/pip install pillow && /tmp/venv/bin/python tools/test_gerar_icone_do_app.py
 npm run test:e2e                    # karaokê num Chrome de verdade (precisa de Chrome ou Chromium)
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test    # em tools/mscx2json
-cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --lib   # em src-tauri
+npm run build                       # o Tauri exige a pasta build/ para compilar o src-tauri
+cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --lib   # em src-tauri (no Linux, com as bibliotecas do Tauri)
 ```
+
+O teste de ponta a ponta do Gravador já falhou de vez em quando no CI sem erro na tela (ver [`docs/archive/roadmap-implementadas.md`](docs/archive/roadmap-implementadas.md));
+se o job "Karaokê num Chrome de verdade" cair numa PR que não mexe nisso, rode-o de novo antes de procurar o defeito.
 
 O CI (`.github/workflows/ci.yml`) tem **4 verificações obrigatórias** para entrar na `main`: **App** (tipos, testes e verificadores),
 **Conversor de partituras (Rust)**, **Leitor do hinário (Rust, src-tauri)** e **Karaokê num Chrome de verdade**. A `main` é protegida: toda
@@ -42,14 +50,17 @@ mudança entra por PR, sem *push* direto.
   [`docs/roadmap-ideas.md`](docs/roadmap-ideas.md) para [`docs/archive/roadmap-implementadas.md`](docs/archive/roadmap-implementadas.md), e o
   que ficou pendente vai para [`docs/roadmap-pendencias.md`](docs/roadmap-pendencias.md).
 - **Pacotes baixáveis:** se mexer no formato do hinário, nas partituras ou nos sons, siga [`docs/pacote-do-hinario.md`](docs/pacote-do-hinario.md),
-  [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md) e [`docs/pacote-de-sons.md`](docs/pacote-de-sons.md). Um pacote **publicado
-  nunca muda de conteúdo**: sobe-se um arquivo com nome novo (o nome leva o início do SHA-256) e refaz-se o manifesto.
+  [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md) e [`docs/pacote-de-sons.md`](docs/pacote-de-sons.md). No hinário e nas partituras, um pacote **publicado
+  nunca muda de conteúdo**: sobe-se um arquivo com nome novo (o nome leva o início do SHA-256) e refaz-se o manifesto. Os sons gravados seguem a
+  regra de [`docs/pacote-de-sons.md`](docs/pacote-de-sons.md) (nomes fixos por instrumento). Antes de colocar um arquivo numa pasta de link do
+  servidor, confira que o zip da pasta fica abaixo do teto de download do app (ver [`docs/roadmap-pendencias.md`](docs/roadmap-pendencias.md), seção 8).
 
 ## Revisão
 
-Cada PR passa por uma **revisão automática** (o job `review`, que comenta no código) e por um job que ajuda a resolver as conversas
-(`resolve`). Comentários válidos são corrigidos na mesma branch; os que não procedem recebem uma resposta explicando. Esses dois jobs
-dependem de uma chave externa e podem falhar sem relação com o seu código; eles não bloqueiam o *merge*.
+Cada PR do próprio repositório recebe uma **revisão automática** (o job `review`, que comenta no código quando a PR é aberta) e, a cada novo
+*push*, um job que ajuda a resolver as conversas (`resolve`). Comentários válidos são corrigidos na mesma branch; os que não procedem recebem uma resposta explicando. Esses dois jobs
+dependem de uma chave externa: em PRs vindas de *fork* eles não rodam ou falham por falta dela, e podem falhar também sem relação com o seu
+código. Eles **não bloqueiam o *merge***: só as 4 verificações do CI bloqueiam.
 
 ## Commits
 
@@ -58,7 +69,7 @@ mais que um grande. Sem atribuição automática de ferramentas nos commits e na
 
 ## Relatar problemas
 
-Bug ou ideia: abra uma *issue* descrevendo o que você esperava e o que aconteceu (versão e commit aparecem em **Ajustes, Sobre**). **Falha de
+Bug ou ideia: abra uma *issue* descrevendo o que você esperava e o que aconteceu (versão e commit aparecem no fim da tela **Ajustes**). **Falha de
 segurança:** não abra *issue* pública, siga o [`SECURITY.md`](SECURITY.md).
 
 ## Licença

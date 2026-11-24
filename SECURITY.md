@@ -18,7 +18,7 @@ sem descrever a falha.
   [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md) e [`docs/pacote-de-sons.md`](docs/pacote-de-sons.md).
 - **Microfone:** só o Gravador (e o Afinador, no futuro) o usa, com a permissão pedida só ao gravar; a gravação fica no aparelho e só sai
   quando a pessoa toca em **Enviar** (folha de compartilhamento do sistema). O `FileProvider` que entrega a gravação ao outro app expõe só a
-  pasta de cache e a pasta do próprio app.
+  pasta de cache e a pasta de arquivos externos do próprio app (`getExternalFilesDir`), e não o armazenamento todo.
 - O conteúdo de hinários (letras e partituras) **não fica neste repositório**: só código e dados de teste fictícios.
 
 ## Versões
