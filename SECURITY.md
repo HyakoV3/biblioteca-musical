@@ -9,8 +9,8 @@ sem descrever a falha.
 ## O que o app faz com a rede e com os dados
 
 - Não tem conta nem login, e não envia dados de uso.
-- Pela rede, o app só acessa **um servidor**, o dos pacotes opcionais: o **hinário**, as **partituras** e os **sons gravados**. Essa
-  permissão é restrita a esse endereço em `src-tauri/capabilities/default.json`.
+- Pela rede, o app só acessa **dois endereços**, ambos de pacotes opcionais: o servidor do responsável (**hinário** e **partituras**) e o repositório público de pacotes no GitHub (**sons gravados**). Essa
+  permissão é restrita a esses endereços em `src-tauri/capabilities/default.json`.
 - Cada pacote baixado é conferido por **tamanho e SHA-256** contra o manifesto que vai dentro do app
   (`src/lib/hinario/manifesto.json`, `src/lib/partituras/manifesto.json` e `src/lib/sons/manifesto.json`) antes de ser guardado. Pacote
   adulterado, incompleto ou com tamanho absurdo (zip "bomba": o download tem teto de 100 MiB) é recusado inteiro; no Rust, cada partitura
