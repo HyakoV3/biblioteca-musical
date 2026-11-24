@@ -1891,3 +1891,35 @@ com a fonte do sistema a 130% e 200%, e na barra lateral com o celular deitado),
 - Respeita o tema, o `rem` e o movimento reduzido no aviso visual (o pisca não pode ser a única indicação).
 
 ---
+
+---
+
+## I-17 — Lembrar o último hino e a posição
+
+- **Status:** anotada
+- **Origem:** ideia do assistente, 2026-11-15.
+- **Prioridade:** a definir
+
+### O que se deseja
+Ao reabrir o app, oferecer "continuar de onde parou": o último hino aberto e, se estava tocando, a posição.
+
+### Perguntas em aberto
+1. Só **mostrar** o atalho ou já abrir o hino? (nunca tocar sozinho, por causa do áudio inesperado)
+2. Guardar também o andamento, o tom e os instrumentos escolhidos (hoje só os instrumentos e volumes por voz são lembrados)?
+
+### Impacto técnico (hipóteses)
+- Preferência no aparelho (`src/lib/preferencias.ts`), como a do karaokê e a da letra; nada sai do aparelho.
+
+---
+
+---
+
+## I-33 — Negrito para o coro e o final
+
+- **Status:** anotada (2026-11-20)
+- **Origem:** o hinário impresso mostra o coro **em negrito e separado** da estrofe, sem número (hinos 398 e 457); o coro e o final já saem como blocos próprios (I-19), mas ainda em texto normal.
+- **Prioridade:** a definir (pequena)
+- **O que se deseja:** que o bloco "Coro" e o bloco "Final" apareçam em negrito na aba Letra, como no impresso. Só o app (`+page.svelte`, CSS do `.estrofe`), sem mexer no hinário nem nos pacotes. Ver o contraste
+  nos temas (alto contraste) e se o negrito atrapalha o destaque da sílaba que soa.
+
+---

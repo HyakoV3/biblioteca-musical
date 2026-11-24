@@ -147,6 +147,28 @@ describe("Gravador (com um MediaRecorder falso)", () => {
     RecorderFalso.ultimo = null;
   });
 
+  it("pede o microfone sem filtros de voz; só com `reduzirRuido` liga a supressão de ruído (I-29)", async () => {
+    const pedidos: MediaStreamConstraints[] = [];
+    trilha = new Trilha();
+    vi.stubGlobal("MediaRecorder", RecorderFalso);
+    vi.stubGlobal("navigator", {
+      mediaDevices: {
+        getUserMedia: async (c: MediaStreamConstraints) => {
+          pedidos.push(c);
+          return { getTracks: () => [trilha] };
+        },
+      },
+    });
+    const g = new Gravador();
+    await g.iniciar();
+    await g.parar();
+    await g.iniciar({ reduzirRuido: true });
+    await g.parar();
+    const audio = (i: number) => pedidos[i]!.audio as MediaTrackConstraints;
+    expect(audio(0)).toMatchObject({ echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 });
+    expect(audio(1)).toMatchObject({ echoCancellation: false, noiseSuppression: true, autoGainControl: false, channelCount: 1 });
+  });
+
   it("grava, para e entrega o arquivo, devolvendo o microfone", async () => {
     preparar();
     const g = new Gravador();

@@ -161,3 +161,57 @@ describe("cartões abertos de Ajustes", () => {
     expect(() => salvarAjustes({ aparencia: true, idioma: true, conteudo: true })).not.toThrow();
   });
 });
+
+describe("o último hino aberto (I-17)", () => {
+  it("sem nada guardado é null; guarda e lê o número", async () => {
+    const { lerUltimoHino, salvarUltimoHino } = await import("../src/lib/preferencias");
+    expect(lerUltimoHino()).toBeNull();
+    salvarUltimoHino(10);
+    expect(mem["prefs.ultimo-hino"]).toBe("10");
+    expect(lerUltimoHino()).toBe(10);
+  });
+
+  it("valor inválido no armazenamento (texto, zero, negativo, fração) é ignorado", async () => {
+    const { lerUltimoHino } = await import("../src/lib/preferencias");
+    for (const ruim of ["abc", "0", "-3", "2.5", "", "NaN"]) {
+      mem["prefs.ultimo-hino"] = ruim;
+      expect(lerUltimoHino(), ruim).toBeNull();
+    }
+  });
+
+  it("sem armazenamento não quebra", async () => {
+    const { lerUltimoHino, salvarUltimoHino } = await import("../src/lib/preferencias");
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("bloqueado");
+      },
+      setItem: () => {
+        throw new Error("bloqueado");
+      },
+    });
+    expect(lerUltimoHino()).toBeNull();
+    expect(() => salvarUltimoHino(5)).not.toThrow();
+  });
+});
+
+describe("reduzir ruído do Gravador (I-29)", () => {
+  it("padrão desligado; guarda e lê; sem armazenamento não quebra", async () => {
+    const { lerReduzirRuido, salvarReduzirRuido } = await import("../src/lib/preferencias");
+    expect(lerReduzirRuido()).toBe(false);
+    salvarReduzirRuido(true);
+    expect(mem["prefs.reduzir-ruido"]).toBe("1");
+    expect(lerReduzirRuido()).toBe(true);
+    salvarReduzirRuido(false);
+    expect(lerReduzirRuido()).toBe(false);
+    vi.stubGlobal("localStorage", {
+      getItem: () => {
+        throw new Error("bloqueado");
+      },
+      setItem: () => {
+        throw new Error("bloqueado");
+      },
+    });
+    expect(lerReduzirRuido()).toBe(false);
+    expect(() => salvarReduzirRuido(true)).not.toThrow();
+  });
+});

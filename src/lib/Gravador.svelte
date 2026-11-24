@@ -9,6 +9,7 @@
   import { emCurso } from "./gravacaoEmCurso.svelte";
   import { metronomo } from "./metronomo.svelte";
   import { reproducao } from "./reproducao.svelte";
+  import { lerReduzirRuido, salvarReduzirRuido } from "./preferencias";
   import { aoFalharServicoDeGravacao, aoPararGravacaoPelaNotificacao, desligarServicoDeGravacao, foneConectado, ligarServicoDeGravacao } from "./servico";
 
   // A aba Gravador (I-03, primeira versão): grava o microfone, ouve de volta e descarta. Nada sai do aparelho. A permissão de microfone é pedida só
@@ -18,6 +19,8 @@
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const gravador = new Gravador();
+  // "Reduzir ruído" (I-29): o filtro do próprio aparelho, desligado por padrão e lembrado. Vale na PRÓXIMA gravação (o microfone é aberto com ele).
+  let reduzirRuido = $state(lerReduzirRuido());
   // A gravação parou sozinha (o sistema tirou o microfone, o gravador falhou): guarda o que já foi gravado, em vez de a tela seguir "gravando".
   gravador.aoInterromper = () => {
     if (gravando) void parar();
@@ -111,7 +114,7 @@
     }
     tocandoId = null; // e uma gravação da lista que tocava também: o alto-falante entraria na nova
     try {
-      await gravador.iniciar();
+      await gravador.iniciar({ reduzirRuido });
     } catch (e) {
       if (minha === tentativa) erro = motivoDoErro(e);
       console.warn("gravador: não foi possível gravar", e);
@@ -439,6 +442,12 @@
     {/if}
   </button>
 
+  <label class="opcao-ruido">
+    <input type="checkbox" id="reduzir-ruido" checked={reduzirRuido} disabled={gravando} onchange={(e) => { reduzirRuido = e.currentTarget.checked; salvarReduzirRuido(reduzirRuido); }} />
+    <span>{t("gravador.reduzir_ruido")}</span>
+  </label>
+  <p class="meta dica-ruido">{t("gravador.reduzir_ruido_dica")}</p>
+
   {#if erro}<Aviso tipo="erro">{t(textoErro[erro])}</Aviso>{/if}
   {#if erroGuardar}<Aviso tipo="erro">{t("gravador.erro_guardar")}</Aviso>{/if}
 
@@ -509,4 +518,8 @@
   .lista { display: grid; gap: 0.7rem; margin: 0; padding: 0; }
   .fim-lista { display: grid; place-items: center; min-height: 2.5rem; }
   .perigo { border-width: 0.125rem; border-color: var(--perigo); font-weight: 700; }
+  /* "Reduzir ruído": uma linha com a caixa e o texto (alvo de toque de 3 rem), e a dica embaixo. */
+  .opcao-ruido { display: flex; align-items: center; gap: 0.75rem; min-height: 3rem; cursor: pointer; }
+  .opcao-ruido input { width: 1.5rem; height: 1.5rem; accent-color: var(--acento); flex: none; }
+  .dica-ruido { margin: 0 0 0.75rem; }
 </style>

@@ -43,6 +43,8 @@ Para cada uma anote: **conseguiu?** (sim / com dificuldade / não), **tempo apro
 | 18 | "Mande a gravação que você fez para alguém, pelo WhatsApp." | Acha **Enviar**? Chega como áudio tocável (e não como arquivo)? |
 | 19 | "O som estala no seu fone. Tente melhorar." | Acha **Ajustes → Saída de áudio**? Entende buffer alto, médio e baixo? |
 | 20 | "Deixe a tela acesa enquanto o hino toca." | Acha o botão do olho na tela do hino? |
+| 21 | "Volte para a lista e ache o hino que você estava lendo." | Vê o anel no hino aberto por último? Usa o atalho "Continuar de onde parou"? |
+| 22 | "Grave de novo com o ruído do ambiente reduzido." | Acha a caixa **Reduzir ruído** no Gravador? Entende que vale na próxima gravação? |
 
 ## Perguntas ao final (uma por vez, sem sugerir a resposta)
 

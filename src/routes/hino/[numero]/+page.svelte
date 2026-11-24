@@ -22,6 +22,7 @@
   import { telaLigada } from "$lib/telaLigada.svelte";
   import { lerKaraoke, lerLeitura, salvarKaraoke, salvarLeitura } from "$lib/preferencias";
   import { reproducao } from "$lib/reproducao.svelte";
+  import { ultimoHino } from "$lib/ultimoHino.svelte";
   import { untrack } from "svelte";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
@@ -50,6 +51,10 @@
       hino.autoria ? t("hino.autoria", { nome: hino.autoria }) : null,
     ].filter(Boolean);
     return partes.length ? (partes as string[]) : undefined;
+  });
+  // O hino aberto vira o "último hino" (I-17): a lista de hinos o marca e oferece "Continuar de onde parou". Só se o hino existe no hinário.
+  $effect(() => {
+    if (hino) ultimoHino.definir(hino.numero);
   });
   const tituloPagina = $derived(hino ? `${hino.numero} · ${hino.titulo}` : t("biblioteca.titulo"));
 
@@ -277,7 +282,7 @@
       {/if}
       <div lang={idiomaConteudo} class={`letra alinha-${alinhamento}`} style:--escala-letra={escalaLetra}>
         {#each partes as e}
-          <div class="estrofe" class:da-vez={aceso !== null && aceso.estrofe === e.numero}>
+          <div class="estrofe" class:da-vez={aceso !== null && aceso.estrofe === e.numero} class:coro-final={e.coro || e.final}>
             {#if e.coro}<h2 lang={i18n.idioma}>{t("hino.coro")}</h2>{:else if e.final}<h2 lang={i18n.idioma}>{t("hino.final")}</h2>{:else if e.numero !== null}<h2 lang={i18n.idioma}>{t("hino.estrofe", { n: e.numero })}</h2>{/if}
             {#each e.linhas as linha, i}
               {@const acesa = aceso !== null && aceso.estrofe === e.numero && aceso.linha === i}
@@ -328,6 +333,8 @@
   /* A estrofe que soa leva uma barra dourada na borda (o recuo negativo mantém o texto no mesmo lugar). */
   .estrofe { margin-bottom: 1.4rem; margin-left: -1rem; padding-left: calc(1rem - 0.25rem); border-left: 0.25rem solid transparent; }
   .estrofe.da-vez { border-left-color: var(--ouro-linha); }
+  /* O coro e o final em negrito, como no hinário impresso (I-33). O negrito já vale antes de acender, então o destaque da sílaba não muda a largura do texto. */
+  .estrofe.coro-final p { font-weight: 700; }
   /* Tocando o karaokê, as outras linhas da estrofe esmaecem; a linha atual fica normal e o trecho que soa, em
      destaque dourado com sublinhado (sem mudar o tamanho do texto, para nada "pular"). */
   .estrofe.da-vez p:not(.acesa) { color: var(--suave); }

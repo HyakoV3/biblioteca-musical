@@ -169,14 +169,15 @@ export class Gravador {
     return this.gravador?.state === "recording";
   }
 
-  async iniciar(): Promise<void> {
+  /** `reduzirRuido` liga a supressão de ruído do aparelho para esta gravação (I-29); desligada por padrão, para o som sair fiel. */
+  async iniciar(opcoes: { reduzirRuido?: boolean } = {}): Promise<void> {
     if (this.gravando) return;
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") throw new DOMException("sem gravação", "NotSupportedError");
     // O contexto do medidor nasce AGORA, no toque (o navegador só deixa o áudio iniciar depois de um gesto), e não depois da espera pela permissão.
     this.abrirMedidor();
     try {
       this.fluxo = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 },
+        audio: { echoCancellation: false, noiseSuppression: opcoes.reduzirRuido === true, autoGainControl: false, channelCount: 1 },
       });
     } catch (e) {
       this.soltar();
