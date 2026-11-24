@@ -58,7 +58,7 @@ Legenda de confiança: **C** = confirmado em fonte oficial ou no código-fonte d
 - **Padrão sem escolher app:** Ogg/Opus (`.ogg`, `audio/ogg`, e `type` do Intent `audio/ogg; codecs=opus`). Plano B universal: AAC em `.m4a` (`audio/mp4`).
 - **Alternativas modernas:** `ContentProvider` com `getStreamTypes`/`openTypedAssetFile` existe e é feito para conversão ([ContentProvider](https://developer.android.com/reference/android/content/ContentProvider#openTypedAssetFile(android.net.Uri,%20java.lang.String,%20android.os.Bundle))), mas só funciona se o app de destino chamar `openTypedAssetFileDescriptor`. O Telegram não chama (usa `getType` e copia o fluxo: **C** no código); WhatsApp e Signal: **N**, improvável. `ClipData` com vários itens/MIME: o app de destino escolhe o que entende, e o Google desaconselha misturar tipos. Descartados.
 - **Tamanho e privacidade:** remux não muda o tamanho (só a caixa, alguns bytes por página Ogg). Tudo local. A limpeza por hora do cache já cobre o arquivo convertido.
-- **O interruptor `.webm | .weba`** da PR #120: **sai** quando o Ogg estiver testado. Nenhuma das duas opções dá áudio no WhatsApp (explicado acima). Se quiser, fica um "enviar o original (WebM)" escondido em avançado, sem o `.weba`.
+- **O interruptor `.webm | .weba`** da PR #120: **saiu** na PR #133 (o Ogg funcionou no aparelho). Nenhuma das duas opções dá áudio no WhatsApp (explicado acima). Se quiser, fica um "enviar o original (WebM)" escondido em avançado, sem o `.weba`.
 
 ## Recomendação
 
@@ -84,7 +84,7 @@ Alternativas descartadas:
 3. *(feito na PR #133)* **Escrever Ogg em TS** (`src/lib/ogg.ts`): páginas, CRC, `OpusHead`/`OpusTags`, granule. Teste: CRC de página conhecido; e conferir a saída com `ffprobe`/`opusinfo` fora do app (duração certa, sem erro).
 4. *(feito na PR #133)* **Ligar no envio:** `compartilharGravacao` converte quando o tipo for WebM/Opus; nome `.ogg`; se o remux falhar, envia o original (como hoje). Teste no Vitest do fluxo (com ponte falsa).
 5. *(feito; testado no aparelho)* **Ponte Kotlin:** o `type` do Intent fica `audio/ogg` **sem parâmetros** (decisão da revisão: o Android compara o tipo por igualdade com o que os apps declaram; o `;codecs=opus` faria apps que declaram `audio/ogg` não aparecerem). Mantém a extensão `.ogg` (o `FileProvider` dá `audio/ogg`). Teste no aparelho: Telegram deve mostrar nota de voz.
-6. **Teste no aparelho** com a lista de "Riscos" abaixo; depois **tirar o interruptor `.webm | .weba`** e o `compartilharPrefs.ts` (com a limpeza da chave antiga).
+6. **Teste no aparelho** com a lista de "Riscos" abaixo; o interruptor `.webm | .weba` e o `compartilharPrefs.ts` foram **removidos** na PR #133 (com a limpeza da chave antiga).
 7. **Opcional (só se a etapa 1 ou 6 mostrar recusa de Ogg em algum destino):** conversão para `.m4a`/AAC com `MediaCodec`, oferecida como "enviar como MP4 (compatível)".
 
 ## Riscos e o que testar no aparelho
