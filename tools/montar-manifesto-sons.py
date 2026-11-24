@@ -5,7 +5,7 @@ Cada link público de download no servidor entrega um zip de uma pasta compartil
 arquivos o zip deve conter e o tamanho e o SHA-256 de cada um; o app recusa o que não bater.
 
 Uso (depois de `python3 tools/preparar-sons.py` ter gerado dist-sons/<grupo>/ e de subir as pastas para o servidor):
-    python3 tools/montar-manifesto-sons.py --link todos=https://fb.hm.hv2.xyz/public/api/resources/download?hash=XXXX
+    python3 tools/montar-manifesto-sons.py --link todos=https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/x/sons-XXXX.zip
     python3 tools/montar-manifesto-sons.py --link orgao=URL1 --link madeiras=URL2 --link metais=URL3 --link cordas=URL4
 
 O id é o nome do grupo (orgao, madeiras, metais, cordas) ou `todos` (a pasta com todos os grupos). Só entram os ids que

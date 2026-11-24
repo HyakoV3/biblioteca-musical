@@ -9,8 +9,8 @@ sem descrever a falha.
 ## O que o app faz com a rede e com os dados
 
 - Não tem conta nem login, e não envia dados de uso.
-- Pela rede, o app só acessa **dois endereços**, ambos de pacotes opcionais: o servidor do responsável (só para APKs antigos) e o repositório público de pacotes no GitHub (**hinário, partituras e sons gravados**). Essa
-  permissão é restrita, em `src-tauri/capabilities/default.json`, ao servidor e a um caminho do GitHub (`.../biblioteca-musical-pacotes/releases/download/*`). O GitHub redireciona o download para o seu armazenamento de assets, e o plugin não restringe esse destino (só a URL inicial); o conteúdo continua protegido pelo SHA-256 de cada arquivo, conferido contra o manifesto embutido no app.
+- Pela rede, o app só acessa **um endereço**, de pacotes opcionais: o repositório público de pacotes no GitHub (**hinário, partituras e sons gravados**). O servidor do responsável (File Browser) deixou de ser usado pelo app em 2026-11-24 e só serve APKs antigos. Essa
+  permissão é restrita, em `src-tauri/capabilities/default.json`, a um caminho do GitHub (`.../biblioteca-musical-pacotes/releases/download/*`). O GitHub redireciona o download para o seu armazenamento de assets, e o plugin não restringe esse destino (só a URL inicial); o conteúdo continua protegido pelo SHA-256 de cada arquivo, conferido contra o manifesto embutido no app.
 - Cada pacote baixado é conferido por **tamanho e SHA-256** contra o manifesto que vai dentro do app
   (`src/lib/hinario/manifesto.json`, `src/lib/partituras/manifesto.json` e `src/lib/sons/manifesto.json`) antes de ser guardado. Pacote
   adulterado, incompleto ou com tamanho absurdo (zip "bomba": o download tem teto de 100 MiB) é recusado inteiro; no Rust, cada partitura

@@ -1,6 +1,6 @@
 # Pacote de partituras
 
-> **Hospedagem (2026-11-24):** as partituras passaram para o repositório público **separado** `HyakoV3/biblioteca-musical-pacotes` (Release `partituras-<sha8>`, o zip direto: o app aceita o zip sozinho ou dentro de uma pasta), pelo mesmo motivo do hinário (uma reclamação não afeta o repositório do app). O manifesto aponta para o asset; o servidor e o link de pasta descritos abaixo valem para APKs antigos.
+> **Hospedagem (2026-11-24):** as partituras passaram para o repositório público **separado** `HyakoV3/biblioteca-musical-pacotes` (Release `partituras-<sha8>`, o zip direto: o app aceita o zip sozinho ou dentro de uma pasta), pelo mesmo motivo do hinário (uma reclamação não afeta o repositório do app). O manifesto aponta para o asset; o servidor e o link de pasta descritos abaixo valem para APKs antigos (o app novo **não aceita mais** o endereço do servidor: `capabilities/default.json` só permite o GitHub).
 
 As partituras são **opcionais**, como os sons gravados: o app baixa um pacote do servidor em **Ajustes → Partituras → Baixar** (decisão do
 responsável, 2026-11-16: o botão "Importar hinário" vai deixar de existir e as partituras ganham um botão automático, no molde dos sons).
