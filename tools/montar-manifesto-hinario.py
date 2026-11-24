@@ -32,7 +32,9 @@ def montar(link: str, arquivo: Path) -> dict:
         raise ValueError("o link precisa ser um endereço https:// sem espaços")
     partes = urlsplit(link)
     do_servidor = partes.hostname == HOST_PERMITIDO
-    do_github = partes.hostname == "github.com" and partes.path.startswith(PREFIXO_GITHUB)
+    # sem usuário, porta, "." / ".." nem "%" no caminho: o escopo do app (capabilities) compara o texto, e um caminho disfarçado sairia dele
+    simples = partes.username is None and partes.password is None and partes.port is None and "%" not in partes.path and not {".", ".."} & set(partes.path.split("/"))
+    do_github = simples and partes.hostname == "github.com" and partes.path.startswith(PREFIXO_GITHUB)
     if not (do_servidor or do_github):
         raise ValueError(f"o app só pode baixar de https://{HOST_PERMITIDO}/ ou de https://github.com{PREFIXO_GITHUB}* (src-tauri/capabilities/default.json); este link é de outro endereço")
     if not arquivo.name.endswith(".json"):
