@@ -9,6 +9,8 @@ em aberto. Ao implementar, mude o status e aponte para a etapa ou o commit.
 
 Status possíveis: **anotada** · **em análise** · **planejada** · **feita** · **descartada**.
 
+**Conferido com o código em 2026-11-23:** as ideias abaixo seguem abertas (I-16, I-17, I-18, I-23, I-25, I-27 em parte, I-29, I-30, I-31 consolidada na I-34, I-32, I-33 e I-34); nenhuma delas tem código no app além do que cada texto diz (a I-27 só repete, no cartão Conteúdo, o que ela pedia). O Gravador (I-03) e o Metrônomo (I-20) já foram para o arquivo das implementadas.
+
 **As ideias já implementadas saíram deste arquivo** (2026-11-16): o sumário, com onde está cada uma, é
 [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md); os textos originais completos estão em
 [`archive/ideias-implementadas.md`](archive/ideias-implementadas.md); e o que ficou pendente dentro delas está na seção 7 de
@@ -53,7 +55,7 @@ Ao reabrir o app, oferecer "continuar de onde parou": o último hino aberto e, s
 
 ### Perguntas em aberto
 1. Só **mostrar** o atalho ou já abrir o hino? (nunca tocar sozinho, por causa do áudio inesperado)
-2. Guardar também o andamento, o tom e os instrumentos escolhidos (hoje só os instrumentos e volumes por voz são lembrados)?
+2. Guardar também o andamento, o tom e os instrumentos escolhidos (hoje o app lembra os instrumentos e volumes por voz, o karaokê, a letra, a tela ligada, a partitura, os cartões de Ajustes e as preferências do metrônomo e do afinador; **não** lembra o último hino nem a posição)?
 
 ### Impacto técnico (hipóteses)
 - Preferência no aparelho (`src/lib/preferencias.ts`), como a do karaokê e a da letra; nada sai do aparelho.
@@ -268,6 +270,7 @@ instrumento por voz): quanto mais combinações possíveis, mais a calibração 
 ## I-25 — Verificar atualização dos pacotes (sons gravados e partituras) ao abrir o app
 
 - **Status:** anotada, **rascunho** (a revisar com o subagente Opus antes de implementar)
+- **Nota (2026-11-23):** vale incluir o **hinário** (hoje troca-se de pacote com Remover e Baixar de novo) e um botão **"Atualizar"**. Com o nome por SHA-256 (`hinario-<sha8>.json`, `partituras-<sha8>.zip`), comparar o `sha256` instalado com o de um manifesto lido do **servidor** (o índice da I-34) diz se há versão nova; com o manifesto embutido no app, só um APK novo traz versão nova (e o manifesto dos sons só tem o SHA por arquivo, não por pacote).
 - **Origem:** pedido do responsável, 2026-11-16: "seria interessante mais para frente, no importar partitura e importar sons gravados, que quando abrir ele fosse no servidor e visse se tem alguma atualização nesses pacotes .zip".
 - **Prioridade:** a definir ("mais para frente"; depende da I-24 para ter onde mostrar o aviso)
 
@@ -308,7 +311,7 @@ Como o plugin de HTTP do Tauri trata cabeçalhos condicionais (ETag) no Android;
 
 ## I-27 — Mostrar na tela de versão qual APK está instalado e em que estado
 
-- **Status:** anotada, **em parte resolvida (2026-11-23):** o zip do APK leva o commit no nome (`BibliotecaMusical-teste-<commit7>.zip`) e Ajustes mostra `Versão (commit)`; **falta** a linha de diagnóstico (qual hinário, quantas partituras).
+- **Status:** anotada, **em parte resolvida (2026-11-23):** o zip do APK leva o commit no nome (`BibliotecaMusical-teste-<commit7>.zip`) e Ajustes mostra `Versão (commit)`; **falta** reunir, junto da versão, o que o cartão Conteúdo de Ajustes já mostra (nome do hinário e quantidade de partituras).
 - **Origem:** ideia do assistente, 2026-11-17, depois do incidente do APK 025 (a aba Partitura e o botão de baixar sumiram no aparelho; voltou ao limpar os dados; a causa não foi achada)
 - **Prioridade:** a definir (pequena)
 - **Nota (2026-11-20):** o responsável prefere nomear os zips de teste pelo **final do commit** (ver a I-34), e não por número; como Ajustes já mostra `Versão (commit)`, isso resolve boa parte desta ideia: falta só a linha de diagnóstico (qual hinário, quantas partituras).
@@ -400,7 +403,7 @@ Esses filtros foram feitos para **fala** e tratam som contínuo e estável como 
 
 ## I-30 — Gerar o hinário completo a partir dos projetos do Enéias
 
-- **Status:** **em andamento** (2026-11-20): os **480 hinos do Dó estão convertidos** (hinário `3d349101…`: 1.121 correções de letra, coro e final em blocos, ligaduras unidas, introdução até a última nota), as **480 partituras estão geradas** (pacote 005) e os APKs de teste (até o 045) as levam; o processo é reproduzível por `pipeline-480/run.sh` (fora do Git). **Falta:** a autorização do Enéias, os outros 10 tons, os coros 1 a 6 e as letras pendentes (61, 62, 185, 189, 198, 238 e 475).
+- **Status:** **em andamento** (2026-11-20): os **480 hinos do Dó estão convertidos** (hinário `3d349101…`: 1.121 correções de letra, coro e final em blocos, ligaduras unidas, introdução até a última nota), as **480 partituras estão geradas** e o app as baixa do servidor (hoje `partituras-fcb6ca0f.zip`, com o hinário `hinario-eca41c3f.json`; os APKs até o 045 as levavam embutidas); o processo é reproduzível por `pipeline-480/run.sh` (fora do Git). **Falta:** a autorização do Enéias, os outros 10 tons, os coros 1 a 6 e as letras pendentes (61, 62, 185, 189, 198, 238 e 475).
 - **Origem:** o responsável, 2026-11-19: o **Enéias respondeu** e é o **dono dos repositórios de onde tiramos os arquivos do MuseScore (`.mscx`)**. Falta registrar aqui o que ele respondeu.
 - **Prioridade:** a definir
 - **Projetos do Enéias (fonte dos `.mscx`), um repositório por tonalidade** (lista dada pelo responsável em 2026-11-19). **Clonados em 2026-11-19** (clone raso) em `~/Development/auxiliar/` (fora do Git do app). **Cada um tem o hinário nº 5 inteiro** (486 `.mscx`: `hino-1` a `hino-480` e `coro-1` a `coro-6`, ~120 MB), **transposto** para os instrumentos da tonalidade: não é uma divisão por hinos. Os 5 hinos de amostra do app são **idênticos, byte a byte, aos do repositório Dó** (`do/musescore/xml/hino-N.mscx`, commit `0f6ab3d` na clonagem); os outros 6 diferem (transposição). Há também PDFs prontos (`<tom>/pdf/final.pdf`) e capa (`misc/capa.png`):
@@ -557,7 +560,7 @@ Dá para hospedar os pacotes **sem servidor**, em um **repositório público só
 
 - **Status:** anotada, **rascunho** (2026-11-20). Junta o que estava espalhado: a **I-31** (servir hinário e partituras pelo GitHub Releases, com o nginx no Vidar como reserva),
   [`release-e-apk-no-github.md`](release-e-apk-no-github.md) (o APK por tag), a nota "Depois: GitHub Releases" de [`pacote-de-sons.md`](pacote-de-sons.md) e o iOS de
-  [`roadmap-pendencias.md`](roadmap-pendencias.md) (seção 2). Nada disto roda ainda.
+  [`roadmap-pendencias.md`](roadmap-pendencias.md) (seção 2). Do que está aqui, **só os nomes dos arquivos foram feitos** (ver "Nome dos arquivos" abaixo); o resto não roda ainda.
 - **Origem:** o responsável, 2026-11-19 (servir pelo GitHub, "melhor que o servidor próprio") e 2026-11-20 ("fazer release também, vários dias sem release"; "disponibilizar os pacotes no GitHub:
   APK, iOS no futuro, sons gravados, partituras").
 - **Prioridade:** a definir. **Trava de tudo o que é conteúdo:** a **autorização do Enéias** (I-30). O que é só código (o APK sem hinos) não depende dela.
@@ -591,13 +594,19 @@ O responsável **não gosta da numeração sequencial** dos zips de teste (`...-
 - **Pacotes de conteúdo:** o conteúdo também depende das **fontes** (`.mscx`), que não estão no Git; então o nome leva o commit do **gerador** e, para ficar inequívoco, o início do SHA-256 do zip
   (por exemplo `partituras-<commit>-<sha8>.zip`). O manifesto continua guardando o SHA-256 inteiro.
 - **Combina com a I-27:** Ajustes já mostra `Versão (commit)`; com o commit no nome do arquivo, quem testa confere o APK instalado com o nome do zip, e a I-27 (mostrar qual APK está instalado) fica quase resolvida.
-- **O que muda:** `docs/apk-de-teste.md` (a tabela deixa de ser por número e passa a ser por commit, mais recente primeiro), a pasta do Nextcloud (manter só os 10 mais recentes continua valendo) e, nos pacotes, `tools/montar-pacote.py` e `tools/montar-manifesto-partituras.py` (hoje o nome vem do argumento). Os zips antigos (003 a 006) ficam como estão no servidor.
+- **O que muda:** `docs/apk-de-teste.md` (a tabela deixa de ser por número e passa a ser por commit, mais recente primeiro), a pasta do Nextcloud (manter só os 5 mais recentes (eram 10 até 2026-11-22) continua valendo) e, nos pacotes, `tools/montar-pacote.py` e `tools/montar-manifesto-partituras.py` (hoje o nome vem do argumento). Os zips antigos (003 a 006) ficam como estão no servidor.
+
+### Por que isto também resolve um limite de hoje (2026-11-23)
+Hoje o link público do servidor entrega a **pasta inteira em zip** (não há link por arquivo), e o app recusa zip acima de **100 MiB**: cada pacote novo
+de partituras (~19 MB) aproxima do teto, e em 2026-11-22 o download das partituras quebrou por isso (ver [`roadmap-pendencias.md`](roadmap-pendencias.md), seção 8).
+Com os pacotes em **GitHub Releases** o link é **por arquivo** (a URL de cada versão é estável), o app baixa só o arquivo do manifesto e o limite da
+pasta deixa de existir. **Ideia ligada:** baixar **o arquivo** e não a pasta, mesmo no servidor atual: o app **já aceita** link de arquivo (`zipConferido` em `src/lib/partituras/baixar.ts`); bastaria o servidor oferecê-lo e o manifesto apontar para ele (APK novo).
 
 ### Passos propostos (nesta ordem)
 0. **Autorização do Enéias** registrada (só para os releases de conteúdo). Sem ela, **só o release do app**, sem hinos.
 1. **Release do app sem conteúdo:** subir a versão (`0.4.0`) nos três arquivos, notas da versão, tag como **pré-lançamento**, sem APK (já combinado com o responsável: "ainda não", 2026-11-20).
 2. **Chave de assinatura própria** (criada e guardada pelo responsável; segredos no GitHub) e o `apk.yml`: primeiro só sob demanda (`workflow_dispatch`), depois por tag, anexando o APK e o SHA-256; testar com `v0.4.0-rc1`.
-3. **Repositório de pacotes** + `tools/publicar-pacote.sh`: publicar `partituras-006`, `hinario-001` e os sons; manifestos do app apontando para as URLs novas; `capabilities/default.json` libera `github.com` e o domínio de onde ele redireciona os downloads
+3. **Repositório de pacotes** + `tools/publicar-pacote.sh`: publicar o pacote de partituras (hoje `partituras-fcb6ca0f.zip`), o hinário (`hinario-eca41c3f.json`) e os sons; manifestos do app apontando para as URLs novas; `capabilities/default.json` libera `github.com` e o domínio de onde ele redireciona os downloads
    (`objects.githubusercontent.com`, a verificar). Pede **APK novo**. Manter o servidor atual como **espelho** durante a troca.
 4. **Índice e atualização (I-25):** o release `indice` e o app lendo-o ao abrir.
 5. **iOS:** só depois de a conta da Apple existir.
@@ -614,7 +623,7 @@ O responsável **não gosta da numeração sequencial** dos zips de teste (`...-
 3. **Domínio** próprio na frente (`bm.driit.co` apontando para o GitHub Pages) ou a URL do GitHub direto.
 4. **Só arm64** (o que os zips de teste já usam) ou também x86_64 (emulador) no APK do release?
 5. **O que o Enéias autoriza** (uso, redistribuição, crédito)? Define se os pacotes podem ser públicos.
-6. **Hinário no release:** vai como pacote próprio (`hinario-001`) ou embutido no APK? Hoje o hinário embutido é só de teste fechado.
+6. **Hinário no release:** vai como pacote próprio (`hinario-<sha8>.json`, como hoje no servidor) ou embutido no APK? Hoje o hinário embutido é só de teste fechado.
 7. **Nome dos pacotes:** o commit do gerador mais o início do SHA-256 (proposta acima) ou só o commit? O pacote muda também quando mudam as fontes, que não estão no Git.
 
 ### Critérios de aceitação (propostos)

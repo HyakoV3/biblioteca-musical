@@ -11,10 +11,11 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
 ## 1. Publicação no GitHub
 
 - [x] Repositório **público** criado em 2026-11-14: <https://github.com/HyakoV3/biblioteca-musical>. Um só e-mail de autor (o `noreply` do GitHub) e sem co-autoria.
-- [ ] Proteções: bloquear exclusão e *force-push* da `main`; ativar *secret scanning* e *push protection*;
-      Dependabot (npm, cargo e GitHub Actions).
-- [ ] Arquivos da comunidade: `CONTRIBUTING.md`, `SECURITY.md`, modelos de *issue* e de *pull request*.
-- [ ] Descrição, tópicos e imagem de pré-visualização do repositório.
+- [x] Proteções da `main` (sem exclusão nem *force-push*, PR obrigatória, 4 verificações do CI), *secret scanning* e *push protection* ativos (conferido em 2026-11-23).
+- [ ] Dependabot (npm, cargo e GitHub Actions): não há `.github/dependabot.yml`.
+- [x] Arquivos da comunidade: `CONTRIBUTING.md` e `SECURITY.md` (2026-11-23).
+- [ ] Modelos de *issue* e de *pull request* (`.github/`).
+- [ ] Tópicos e imagem de pré-visualização do repositório (a descrição já existe; os tópicos estão vazios).
 - [ ] **Regra de ouro:** nada sensível no Git. Conteúdo de hinários e notas locais ficam fora do Git (`content/` e `docs/privado/`, no `.gitignore`).
 
 ## 2. CI/CD (GitHub Actions)
@@ -155,6 +156,24 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
       Opcional: **`.m4a`/AAC com `MediaCodec`** ("enviar como MP4"), só se algum destino recusar Ogg. **(depende do responsável)**
 - [ ] **I-03 (Gravador):** renomear a gravação e ligá-la a um hino; o fone Bluetooth (atraso); confirmar no aparelho a gravação em segundo plano e com o hino no fone.
 - [ ] **I-20 (Metrônomo), como futuro:** o gauge de ponteiro e os compassos irregulares 5 e 7, com agrupamentos.
-- [ ] **Outras ideias soltas:** botão **"Atualizar"** do hinário (hoje troca-se de pacote removendo e baixando de novo); **estalo do som ao
-      bloquear e desbloquear a tela**: diminuiu bastante sem religar a WebView em `onPause` (PR #142, mesclada); falta conferir que o som segue por vários minutos com a tela
-      bloqueada (hino, metrônomo e gravação); **hino 86**: falta o responsável dizer em qual compasso, depois da introdução, o destaque segue notas sem som.
+- [ ] **Outras ideias soltas:** botão **"Atualizar"** do hinário (ver a **I-25** em [`roadmap-ideas.md`](roadmap-ideas.md)); o estalo ao bloquear a tela e o hino 86 estão na seção 8.
+
+## 8. Operação: servidor dos pacotes, entrega do APK e testes no aparelho
+
+Itens de rotina que não são ideias de produto e que só a conversa tinha (conferidos em 2026-11-23).
+
+- [ ] **Limite de 100 MiB do link das partituras (frágil).** O link público entrega a **pasta inteira em zip** e o app recusa zip acima de 100 MiB
+      (`LIMITE_ZIP` em `src/lib/sons/extrair.ts`, aplicado em `src/lib/sons/baixar.ts`, que também baixa o hinário; 100 MiB = 104.857.600 bytes). Cada pacote novo de partituras (~19 MB) aproxima do teto, e a falha só aparece no aparelho: em
+      2026-11-22 a pasta chegou a 117 MB (112 MiB) e o download quebrou. Hoje ela tem ~39 MB (os antigos estão em `BibliotecaMusicalPartituras-archive/`).
+      **Regra até haver guarda:** antes de copiar um arquivo para uma pasta de link, somar os arquivos da pasta (`du -sb` no servidor) e conferir
+      também `curl -sI <link>`, se o servidor mandar `Content-Length` (a pasta tem de ficar abaixo de ~80 MiB, com folga). Possível guarda: um passo em `tools/montar-manifesto-*.py` que avise quando o zip da pasta passar de 80% do teto.
+- [ ] **Barra de instalação das partituras no Android (PR #144):** o andamento real vem por um canal do Tauri, nunca testado no aparelho. Confirmar
+      que a barra sobe de ~94% a 100% e que o botão Baixar volta ao normal; anotar quanto tempo leva a instalação. Hinário e sons gravados seguem
+      **sem andamento real** (a barra fica em ~94% nessa fase).
+- [ ] **Estalo ao bloquear e desbloquear a tela (PR #142):** sem o religamento da WebView o estalo diminuiu; falta conferir que o hino, o metrônomo e a
+      gravação seguem por vários minutos com a tela bloqueada (se o som cair, o religamento volta só quando a janela perde o foco).
+- [ ] **Hino 86:** o destaque da partitura segue notas sem som depois da introdução; falta o responsável dizer em qual compasso começa.
+- [ ] **Branches locais sem dono (conferido em 2026-11-24):** `apk-070` e `apk-071-som` só têm um commit de *merge* (nenhum conteúdo próprio);
+      `som-sem-religar-webview` só difere da `main` em comentários (o código entrou pela PR #142); `conversor-refrao` (4 *patches*),
+      `worktree-card-i30-eneas` (2, os mesmos do `conversor-refrao`) e `docs-auditoria-perfis` (1) têm conteúdo próprio. O responsável decide quais apagar.
+

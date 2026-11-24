@@ -7,7 +7,7 @@ TypeScript**. O alvo principal é o **Android**; o desktop funciona para desenvo
 > **Aviso:** projeto **não oficial**, sem vínculo com a Congregação Cristã no Brasil. O app não é vendido e não pode
 > ser usado para vender conteúdo.
 
-**Estado:** em desenvolvimento, em teste fechado com músicos (versão 0.3.0). Ainda não há versão publicada em loja.
+**Estado:** em desenvolvimento, em teste fechado com músicos (versão 0.3.0). Ainda não há versão publicada em loja. Quer ajudar? Veja o [`CONTRIBUTING.md`](CONTRIBUTING.md); falhas de segurança, o [`SECURITY.md`](SECURITY.md).
 
 ## Sobre o conteúdo
 
@@ -71,7 +71,9 @@ npm run test:e2e             # karaokê num Chrome de verdade (precisa de Chrome
 
 Os testes do conversor e do leitor em Rust: `cargo test` em `tools/mscx2json` e `cargo test --lib` em `src-tauri`.
 
-APK de teste fechado: [`docs/apk-de-teste.md`](docs/apk-de-teste.md).
+APK de teste fechado: [`docs/apk-de-teste.md`](docs/apk-de-teste.md) (como é gerado, assinado e entregue; o zip leva o commit no nome).
+
+Para contribuir (o que a PR precisa ter e o que o CI exige): [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Licença
 

@@ -8,7 +8,7 @@
     "opener:default",
     {
       "identifier": "http:default",
-      "description": "Baixar os pacotes de sons gravados (docs/pacote-de-sons.md). Só este endereço: o app não pode pedir nada a outro servidor.",
+      "description": "Baixar os pacotes opcionais: hinário, partituras e sons gravados (docs/pacote-do-hinario.md, docs/pacote-de-partituras.md, docs/pacote-de-sons.md). Só este endereço: o app não pode pedir nada a outro servidor.",
       "allow": [{ "url": "https://fb.hm.hv2.xyz/*" }]
     }
   ]
