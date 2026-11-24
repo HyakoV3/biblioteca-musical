@@ -1,25 +1,25 @@
 <script lang="ts">
   import { tick } from "svelte";
-  import Abas from "$lib/Abas.svelte";
-  import Afinador from "$lib/Afinador.svelte";
-  import Gravador from "$lib/Gravador.svelte";
-  import Metronomo from "$lib/Metronomo.svelte";
-  import Aviso from "$lib/Aviso.svelte";
-  import AvisoHinario from "$lib/AvisoHinario.svelte";
-  import Barra from "$lib/Barra.svelte";
-  import { biblioteca } from "$lib/biblioteca.svelte";
-  import { reproducao } from "$lib/reproducao.svelte";
-  import { nomeDaTonalidade } from "$lib/notacao";
-  import { notacao } from "$lib/notacao.svelte";
-  import Icone from "$lib/Icone.svelte";
-  import Estado from "$lib/Estado.svelte";
-  import { traduzirErro } from "$lib/erros";
-  import { i18n } from "$lib/i18n/index.svelte";
-  import { casaComNumero, zerosAEsquerda } from "$lib/numero";
-  import { emCurso } from "$lib/gravacaoEmCurso.svelte";
-  import { formatarTempo } from "$lib/gravador";
-  import { inicio, type AbaInicio } from "$lib/inicio.svelte";
-  import { ultimoHino } from "$lib/ultimoHino.svelte";
+  import Abas from "#lib/Abas.svelte";
+  import Afinador from "#lib/Afinador.svelte";
+  import Gravador from "#lib/Gravador.svelte";
+  import Metronomo from "#lib/Metronomo.svelte";
+  import Aviso from "#lib/Aviso.svelte";
+  import AvisoHinario from "#lib/AvisoHinario.svelte";
+  import Barra from "#lib/Barra.svelte";
+  import { biblioteca } from "#lib/biblioteca.svelte";
+  import { reproducao } from "#lib/reproducao.svelte";
+  import { nomeDaTonalidade } from "#lib/notacao";
+  import { notacao } from "#lib/notacao.svelte";
+  import Icone from "#lib/Icone.svelte";
+  import Estado from "#lib/Estado.svelte";
+  import { traduzirErro } from "#lib/erros";
+  import { i18n } from "#lib/i18n/index.svelte";
+  import { casaComNumero, zerosAEsquerda } from "#lib/numero";
+  import { emCurso } from "#lib/gravacaoEmCurso.svelte";
+  import { formatarTempo } from "#lib/gravador";
+  import { inicio, type AbaInicio } from "#lib/inicio.svelte";
+  import { ultimoHino } from "#lib/ultimoHino.svelte";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
 

@@ -1,17 +1,17 @@
 <script lang="ts">
-  import "$lib/tema.css";
-  import "$lib/movimento.css";
+  import "#lib/tema.css";
+  import "#lib/movimento.css";
   import { onMount } from "svelte";
-  import { biblioteca } from "$lib/biblioteca.svelte";
-  import { i18n } from "$lib/i18n/index.svelte";
-  import Miniplayer from "$lib/Miniplayer.svelte";
-  import { reproducao } from "$lib/reproducao.svelte";
-  import { aoPararPelaNotificacao, manterTelaLigada, sincronizarServico } from "$lib/servico";
-  import { limparEscolhaAntigaDoFormato } from "$lib/preferencias";
-  import { telaLigada } from "$lib/telaLigada.svelte";
-  import { metronomo } from "$lib/metronomo.svelte";
-  import { sons } from "$lib/sons/pacotes.svelte";
-  import { aplicarEstilo, aplicarTema, estilo, tema } from "$lib/tema.svelte";
+  import { biblioteca } from "#lib/biblioteca.svelte";
+  import { i18n } from "#lib/i18n/index.svelte";
+  import Miniplayer from "#lib/Miniplayer.svelte";
+  import { reproducao } from "#lib/reproducao.svelte";
+  import { aoPararPelaNotificacao, manterTelaLigada, sincronizarServico } from "#lib/servico";
+  import { limparEscolhaAntigaDoFormato } from "#lib/preferencias";
+  import { telaLigada } from "#lib/telaLigada.svelte";
+  import { metronomo } from "#lib/metronomo.svelte";
+  import { sons } from "#lib/sons/pacotes.svelte";
+  import { aplicarEstilo, aplicarTema, estilo, tema } from "#lib/tema.svelte";
 
   let { children } = $props();
 

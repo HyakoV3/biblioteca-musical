@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icone from "./Icone.svelte";
-  import { i18n } from "$lib/i18n/index.svelte";
+  import { i18n } from "#lib/i18n/index.svelte";
   import { ANDAMENTO_MAX, ANDAMENTO_MIN } from "./reproducao.svelte";
 
   // O controle do andamento (−5 −1 [valor] +1 +5), o mesmo na aba Ouvir e no botão do topo das abas Letra e Partitura. Mexe direto nos ajustes do hino

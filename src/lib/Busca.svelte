@@ -4,7 +4,7 @@
   // arraste, o teclado e o leitor de tela sem ter cor própria (o controle nativo usaria o azul do sistema, fora do tema).
   // Enquanto a pessoa arrasta, mostra o ponto escolhido; o som só muda ao SOLTAR, porque reposicionar a música inteira a cada
   // pixel pesaria no celular.
-  import { i18n } from "$lib/i18n/index.svelte";
+  import { i18n } from "#lib/i18n/index.svelte";
   import { formatarTempo, fracao } from "./tempo";
 
   let {
