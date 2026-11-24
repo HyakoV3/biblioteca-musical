@@ -30,7 +30,7 @@ describe("o hinário baixável (o mesmo caminho conferido das partituras)", () =
     expect(manifesto.versao).toBe(1);
     const p = manifesto.pacote;
     expect(p).not.toBeNull();
-    expect(p!.url).toMatch(/^https:\/\/fb\.hm\.hv2\.xyz\//);
+    expect(p!.url).toMatch(/^https:\/\/(fb\.hm\.hv2\.xyz\/|github\.com\/HyakoV3\/biblioteca-musical-pacotes\/releases\/download\/)/);
     // O nome leva os 8 primeiros caracteres do SHA-256 do conteúdo.
     expect(p!.arquivo).toBe(`hinario-${p!.sha256.slice(0, 8)}.json`);
     expect(p!.bytes).toBeGreaterThan(0);

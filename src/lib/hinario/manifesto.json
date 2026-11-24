@@ -1,7 +1,7 @@
 {
  "versao": 1,
  "pacote": {
-  "url": "https://fb.hm.hv2.xyz/public/api/resources/download?hash=EMnR--vnLpImy8tW7COc2A",
+  "url": "https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/hinario-eca41c3f/hinario-eca41c3f.json",
   "arquivo": "hinario-eca41c3f.json",
   "bytes": 4119994,
   "sha256": "eca41c3f99aa6b2ae01073ca68c1719fbfefb23e89dcb40f5748f6a2c64428fe"

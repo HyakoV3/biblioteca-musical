@@ -134,7 +134,7 @@ describe("manifesto de partituras", () => {
     expect(manifesto.versao).toBe(1);
     const p = manifesto.pacote as null | PacotePartituras;
     if (p === null) return;
-    expect(p.url).toMatch(/^https:\/\/fb\.hm\.hv2\.xyz\//); // o único servidor que o app pode acessar (capabilities/default.json)
+    expect(p.url).toMatch(/^https:\/\/(fb\.hm\.hv2\.xyz\/|github\.com\/HyakoV3\/biblioteca-musical-pacotes\/releases\/download\/)/); // só os endereços que o app pode acessar (capabilities/default.json)
     expect(p.arquivo).toMatch(/^[\w.-]+\.zip$/);
     expect(p.arquivo).toBe(`partituras-${p.sha256.slice(0, 8)}.zip`); // o nome leva os 8 primeiros caracteres do SHA-256
     expect(p.bytes).toBeGreaterThan(0);
