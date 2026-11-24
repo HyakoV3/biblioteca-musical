@@ -86,7 +86,21 @@ responsável (quem perde a chave não consegue mais atualizar o app).
 
 > **Entrega pelo GitHub (a ligar):** o workflow `release.yml` ([`release-e-apk-no-github.md`](release-e-apk-no-github.md)) compila e assina o APK no GitHub e o publica numa página de pré-lançamento (`v0.3.1-rc1`), com o SHA-256. Quando a chave e os segredos estiverem cadastrados e o fluxo testado, ele **substitui** o zip no Nextcloud; até lá, este fluxo manual segue valendo.
 
-## Entregar em zip com o commit no nome
+## Entrega pelo GitHub (padrão desde 2026-11-24)
+
+O APK de teste é publicado como **pré-lançamento** no GitHub (repositório do app), com a tag `teste-<commit>` (não começa com `v`, então **não dispara** o `release.yml`) e o `SHA256SUMS`. O Nextcloud deixa de ser o caminho (já caiu uma vez) e fica só de reserva.
+
+```sh
+C=$(git rev-parse --short=7 HEAD)               # árvore limpa e já commitada
+cp BibliotecaMusical-teste.apk bibliotecamusical-teste-$C.apk && sha256sum bibliotecamusical-teste-$C.apk > SHA256SUMS
+gh release create teste-$C bibliotecamusical-teste-$C.apk SHA256SUMS --target "$(git rev-parse HEAD)" --prerelease \
+  --title "APK de teste $C" --notes "<o que mudou e o que testar; chave de depuração, não serve para loja>"
+curl -sL <url do asset> | sha256sum             # conferir o que foi publicado
+```
+
+O `--target` precisa ser o SHA **completo** (ou um branch). Quando a chave de envio estiver cadastrada, o mesmo papel passa à tag `v0.3.0-rc1` (ver [`release-e-apk-no-github.md`](release-e-apk-no-github.md)), assinada de verdade.
+
+## (Reserva) Entregar em zip com o commit no nome
 
 O APK é entregue **dentro de um `.zip` com o commit no nome**, para o responsável distinguir um build do outro:
 
@@ -120,6 +134,7 @@ commit são os que aparecem no fim da tela **Ajustes** (`Versão X.Y.Z (commit)`
 
 | Zip (commit) | Versão (commit) | Data | Conteúdo | SHA-256 do APK |
 |---|---|---|---|---|
+| **add3ea6** | 0.3.0 (add3ea6) | 2026-11-24 | **A `main` com as PRs #161 e #162** (entregue também como pré-lançamento `teste-add3ea6` no GitHub, o primeiro fora do Nextcloud): **SvelteKit 3 e adapter-static 4** (configuração no `vite.config.js`, `$lib` virou `#lib`, `tsconfig` estende `$app/tsconfig`; corrige os alertas do kit e do cookie), `cookie` e `url` do Rust atualizados e **`npm audit` e `cargo audit` no CI**. **A testar:** abrir o app e navegar pelas telas (a troca de versão maior do SvelteKit passou no CI e no e2e, mas não foi vista no aparelho) e os downloads do hinário, partituras e sons pelo GitHub (ainda sem confirmação). | `a5e1eecc167e797cf95e8cdf98f83522940509f006ed9740c10fc9e0f8284d95` |
 | **577e42e** | 0.3.0 (577e42e) | 2026-11-24 | **A `main` com a PR #158**: **hinário e partituras passam a ser baixados do repositório público `HyakoV3/biblioteca-musical-pacotes`** (Releases `hinario-eca41c3f` e `partituras-fcb6ca0f`), além dos sons (PR #156); os links do servidor ficam só para APKs antigos. Inclui as dependências novas (Dependabot #149 a #155). **A testar:** baixar hinário, partituras e sons em Ajustes (o GitHub redireciona o download a outro host; só li no código do plugin que o escopo vale na URL inicial) e a velocidade (~13 MB/s medidos, contra ~0,8 MB/s do servidor). | `4a806cca891caf53e5952c3854c300ad158b792f74c41aa45075e90e79423dd6` |
 | **c66809a** | 0.3.0 (c66809a) | 2026-11-24 | **A `main` com a PR #156** (sons gravados baixados do Release `sons-a9501573` do repositório de pacotes) e as dependências do Dependabot. Substituído pelo `577e42e`. | `12b0d2a10bc80f721cd7272a49a62b1273441f4bd5e3f720a0034be3b3ab3754` |
 | **adcfd01** | 0.3.0 (adcfd01) | 2026-11-24 | **A `main` anterior ao repositório de pacotes**: anel e atalho do último hino, negrito do coro e do final, Reduzir ruído e a barra das partituras. Ainda a testar no aparelho. | `9b3f136831698da9c82a2e752477f5d7802a352cb6684341f406b7014bcf0ed2` |
