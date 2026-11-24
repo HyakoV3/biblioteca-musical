@@ -39,6 +39,8 @@ O código deste projeto é MIT (`LICENSE`). Alguns materiais de terceiros acompa
 
 ## Sons gravados (pacote opcional, ver I-07)
 
+**Hospedagem (desde 2026-11-24):** o zip com os sons renderizados fica no repositório público `HyakoV3/biblioteca-musical-pacotes` (Release), com o texto da licença junto e o crédito ao autor; a licença permite redistribuir e modificar o banco e o empacotamento, e pede cópia própria em vez de link para o arquivo dele.
+
 **Banco atual (desde 2026-11-15): GeneralUser GS v2.0.3**, de S. Christian Collins (repositório oficial
 `mrbumpy409/GeneralUser-GS`, arquivo `GeneralUser-GS.sf2`, 32,3 MB). Os sons gravados do pacote são **renderizados por nota
 a partir desse banco** (`tools/renderizar-banco.mjs`, secos, sem reverb) e cortados às notas dos hinos. Licença do autor
