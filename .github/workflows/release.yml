@@ -2,7 +2,7 @@ name: release
 
 # Gera o APK e o AAB assinados do Android.
 #  - Tag `vX.Y.Z` (ex.: v0.3.1): compila, confere, cria o GitHub Release com APK, AAB e SHA256SUMS
-#    (e, se a variável ENVIAR_PLAY_STORE for "true" e o segredo PLAY_SERVICE_ACCOUNT_JSON existir, envia o AAB à faixa interna da Play Store como rascunho).
+#    (e, se a variável ENVIAR_PLAY_STORE for "true", envia o AAB das tags FINAIS à faixa interna da Play Store como rascunho; exige o segredo PLAY_SERVICE_ACCOUNT_JSON).
 #    Tag com sufixo (v0.3.1-rc1) vira pré-lançamento.
 #  - Sob demanda (Actions > release > Run workflow): compila um APK de TESTE, só como artefato do job (não cria release).
 # Segredos (Settings > Secrets and variables > Actions), todos fora do repositório:
@@ -37,6 +37,8 @@ jobs:
       assinado: ${{ steps.chave.outputs.assinado }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false   # o GITHUB_TOKEN não fica em .git/config enquanto o npm e os plugins rodam
 
       - name: Versão (a tag tem que bater com package.json, Cargo.toml e tauri.conf.json)
         id: versao
@@ -45,6 +47,8 @@ jobs:
           tauri=$(node -p "require('./src-tauri/tauri.conf.json').version")
           cargo=$(sed -n 's/^version = "\(.*\)"/\1/p' src-tauri/Cargo.toml | head -1)
           echo "package.json=$pkg tauri.conf.json=$tauri Cargo.toml=$cargo"
+          # só X.Y.Z: o valor vem de um arquivo do repositório e vai para nomes de arquivo e scripts
+          printf '%s' "$pkg" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "::error::a versão '$pkg' não é X.Y.Z"; exit 1; }
           [ "$pkg" = "$tauri" ] && [ "$pkg" = "$cargo" ] || { echo "::error::as três versões precisam ser iguais"; exit 1; }
           if [ "${GITHUB_REF_TYPE}" = tag ]; then
             # O sufixo de pré-lançamento (v0.3.1-rc1) não conta: a tag tem que começar pela versão dos três arquivos (v0.3.1).
@@ -55,8 +59,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
-          cache: npm
+          node-version: 22   # sem `cache: npm`: num fluxo que assina, o cache é um risco de envenenamento
       - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
@@ -83,50 +86,68 @@ jobs:
 
       - name: Chave de assinatura
         id: chave
+        # Os segredos só chegam a este passo em TAG (que exige permissão de escrita e deve ter proteção de tags). Uma execução sob demanda, em
+        # qualquer branch, NUNCA vê a chave de envio: usa sempre uma chave descartável. As senhas não vão para o $GITHUB_ENV (todos os passos
+        # seguintes as veriam): só o arquivo da chave é gravado, e as senhas entram por `env:` nos dois passos de compilação.
         env:
-          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          KS_KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          KS_B64: ${{ github.ref_type == 'tag' && secrets.ANDROID_KEYSTORE_BASE64 || '' }}
+          KS_PASS: ${{ github.ref_type == 'tag' && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
+          KS_ALIAS: ${{ github.ref_type == 'tag' && secrets.ANDROID_KEY_ALIAS || '' }}
         run: |
           ks="$RUNNER_TEMP/assinatura.jks"
-          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ] && [ -n "$KS_ALIAS" ]; then
-            echo "$KS_B64" | base64 -d > "$ks"
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then
+            if [ -z "$KS_B64" ] || [ -z "$KS_PASS" ] || [ -z "$KS_ALIAS" ]; then
+              echo "::error::release por tag exige os segredos ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD e ANDROID_KEY_ALIAS"
+              exit 1
+            fi
             echo "::add-mask::$KS_PASS"
-            { echo "BM_KEYSTORE=$ks"; echo "BM_KEYSTORE_PASSWORD=$KS_PASS"; echo "BM_KEY_ALIAS=$KS_ALIAS"; echo "BM_KEY_PASSWORD=${KS_KEY_PASS:-$KS_PASS}"; } >> "$GITHUB_ENV"
+            echo "$KS_B64" | base64 -d > "$ks"
             echo "assinado=sim" >> "$GITHUB_OUTPUT"
-          elif [ "${GITHUB_REF_TYPE}" = tag ]; then
-            echo "::error::release por tag exige os segredos ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD e ANDROID_KEY_ALIAS"
-            exit 1
           else
-            # Build de teste sem segredos: chave descartável, só para o APK instalar. NÃO serve para a loja.
-            senha=teste-descartavel
-            keytool -genkeypair -keystore "$ks" -storepass "$senha" -keypass "$senha" -alias teste -keyalg RSA -keysize 2048 -validity 3 -dname "CN=Biblioteca Musical teste" > /dev/null
-            { echo "BM_KEYSTORE=$ks"; echo "BM_KEYSTORE_PASSWORD=$senha"; echo "BM_KEY_ALIAS=teste"; echo "BM_KEY_PASSWORD=$senha"; } >> "$GITHUB_ENV"
+            # Build de teste: chave descartável, só para o APK instalar. NÃO serve para a loja.
+            keytool -genkeypair -keystore "$ks" -storepass teste-descartavel -keypass teste-descartavel -alias teste -keyalg RSA -keysize 2048 -validity 3 -dname "CN=Biblioteca Musical teste" > /dev/null
             echo "assinado=teste" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Compilar o APK (arm64)
+        env:
+          BM_KEYSTORE: ${{ runner.temp }}/assinatura.jks
+          BM_KEYSTORE_PASSWORD: ${{ steps.chave.outputs.assinado == 'sim' && secrets.ANDROID_KEYSTORE_PASSWORD || 'teste-descartavel' }}
+          BM_KEY_ALIAS: ${{ steps.chave.outputs.assinado == 'sim' && secrets.ANDROID_KEY_ALIAS || 'teste' }}
+          BM_KEY_PASSWORD: ${{ steps.chave.outputs.assinado == 'sim' && (secrets.ANDROID_KEY_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD) || 'teste-descartavel' }}
         run: npm run tauri -- android build --apk --target aarch64 --ci
       - name: Compilar o AAB (arm64)
         if: github.ref_type == 'tag'
+        env:
+          BM_KEYSTORE: ${{ runner.temp }}/assinatura.jks
+          BM_KEYSTORE_PASSWORD: ${{ steps.chave.outputs.assinado == 'sim' && secrets.ANDROID_KEYSTORE_PASSWORD || 'teste-descartavel' }}
+          BM_KEY_ALIAS: ${{ steps.chave.outputs.assinado == 'sim' && secrets.ANDROID_KEY_ALIAS || 'teste' }}
+          BM_KEY_PASSWORD: ${{ steps.chave.outputs.assinado == 'sim' && (secrets.ANDROID_KEY_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD) || 'teste-descartavel' }}
         run: npm run tauri -- android build --aab --target aarch64 --ci
 
       - name: Reunir, conferir e somar (SHA-256)
+        env:
+          VERSAO: ${{ steps.versao.outputs.versao }}
         run: |
-          v="${{ steps.versao.outputs.versao }}"
+          set -euo pipefail
+          v="$VERSAO"
           mkdir -p saida
           apk=$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -1)
           [ -n "$apk" ] || { echo "::error::APK não encontrado"; exit 1; }
           cp "$apk" "saida/bibliotecamusical-$v.apk"
-          aab=$(find src-tauri/gen/android/app/build/outputs/bundle -name '*.aab' | head -1 || true)
-          [ -n "$aab" ] && cp "$aab" "saida/bibliotecamusical-$v.aab"
+          aab=$(find src-tauri/gen/android/app/build/outputs/bundle -name '*.aab' 2>/dev/null | head -1)
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then
+            [ -n "$aab" ] || { echo "::error::AAB não encontrado"; exit 1; }
+          fi
+          if [ -n "$aab" ]; then cp "$aab" "saida/bibliotecamusical-$v.aab"; fi
           apksigner verify --verbose --print-certs "saida/bibliotecamusical-$v.apk"
           # Alinhamento de 16 KB das bibliotecas nativas (exigido pela Play Store em Android 15 ou mais): só avisa, não derruba o release.
           zipalign -c -P 16 4 "saida/bibliotecamusical-$v.apk" || echo "::warning::o APK não está alinhado a 16 KB (zipalign -P 16 4)"
           # Permissões: este app BAIXA os pacotes de conteúdo, então INTERNET é esperada. O que se confere é que não apareceu nenhuma
           # permissão fora desta lista (um plugin novo pode trazer uma sem ninguém notar).
-          permissoes=$(aapt dump permissions "saida/bibliotecamusical-$v.apk" | sed -n "s/^uses-permission: name='\(.*\)'$/\1/p")
+          # `uses-permission-sdk-23` também conta, e `maxSdkVersion` vem depois do nome (o sed pega só o nome entre aspas)
+          permissoes=$(aapt dump permissions "saida/bibliotecamusical-$v.apk" | sed -n "s/^uses-permission[-a-z0-9]*: name='\([^']*\)'.*/\1/p")
+          [ -n "$permissoes" ] || { echo "::error::não consegui ler as permissões do APK"; exit 1; }
           echo "$permissoes"
           permitidas='android.permission.INTERNET android.permission.FOREGROUND_SERVICE android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK android.permission.FOREGROUND_SERVICE_MICROPHONE android.permission.POST_NOTIFICATIONS android.permission.WAKE_LOCK android.permission.RECORD_AUDIO android.permission.MODIFY_AUDIO_SETTINGS'
           for p in $permissoes; do
@@ -166,12 +187,15 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           pre=""; case "${GITHUB_REF_NAME}" in *-*) pre="--prerelease";; esac
-          gh release create "${GITHUB_REF_NAME}" saida/* --title "Biblioteca Musical ${GITHUB_REF_NAME#v}" --generate-notes $pre
+          # Idempotente: se um re-run encontrar o release já criado (o envio falhou no meio), só reenvia os arquivos.
+          gh release create "${GITHUB_REF_NAME}" saida/* --verify-tag --title "Biblioteca Musical ${GITHUB_REF_NAME#v}" --generate-notes $pre \
+            || gh release upload "${GITHUB_REF_NAME}" saida/* --clobber
 
   play:
     name: Play Store (faixa interna, rascunho)
-    # Só roda com a variável ENVIAR_PLAY_STORE=true; o app precisa já existir no Play Console.
-    if: github.ref_type == 'tag' && vars.ENVIAR_PLAY_STORE == 'true'
+    # Só roda em tag FINAL (a rc tem o mesmo versionCode da final e travaria o envio dela) e com a variável ENVIAR_PLAY_STORE=true;
+    # o app precisa já existir no Play Console e o segredo PLAY_SERVICE_ACCOUNT_JSON tem de estar cadastrado (conferido abaixo).
+    if: github.ref_type == 'tag' && !contains(github.ref_name, '-') && vars.ENVIAR_PLAY_STORE == 'true'
     needs: android
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -181,10 +205,14 @@ jobs:
           pattern: bibliotecamusical-*
           merge-multiple: true
           path: saida
+      - name: Conferir o segredo da Play Store
+        env:
+          SA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: '[ -n "$SA" ] || { echo "::error::falta o segredo PLAY_SERVICE_ACCOUNT_JSON"; exit 1; }'
       - uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: ${{ vars.ANDROID_APPLICATION_ID }}
+          packageName: br.pro.bibliotecamusical
           releaseFiles: saida/*.aab
           track: internal
           status: draft

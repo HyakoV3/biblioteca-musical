@@ -6,7 +6,7 @@ O workflow [`.github/workflows/release.yml`](../.github/workflows/release.yml) c
 |---|---|---|
 | **Tag `vX.Y.Z`** (ex.: `v0.3.1`) | APK **e AAB assinados** com a chave de envio, `SHA256SUMS` e o **GitHub Release** com tudo anexado | Distribuir uma versão |
 | **Tag com sufixo** (`v0.3.1-rc1`) | O mesmo, mas o release sai como **pré-lançamento** | **Entregar um APK de teste aos testadores** (substitui o zip numerado do Nextcloud) |
-| **Sob demanda** (Actions → release → Run workflow) | APK de **teste** com chave descartável de 3 dias, só como artefato do job (baixar exige entrar no GitHub) | Conferir o que está na `main` ou numa branch |
+| **Sob demanda** (Actions → release → Run workflow) | APK de **teste** com chave descartável de 3 dias, só como artefato do job (baixar exige entrar no GitHub). **Mesmo com os segredos cadastrados, esta execução nunca vê a chave de envio**: só as tags usam os segredos | Conferir o que está na `main` ou numa branch |
 
 A cada PR ou push o `ci.yml` roda (tipos, testes, e2e, Rust). O release **não** roda a cada push (leva uns 15 minutos).
 
@@ -21,6 +21,8 @@ A cada PR ou push o `ci.yml` roda (tipos, testes, e2e, Rust). O release **não**
 
 ## Chave e segredos (uma vez, num terminal normal)
 
+**Proteja as tags:** só tags usam a chave de envio, então vale restringir quem pode criar `v*` (Settings → Rules → Rulesets → tags), para que quem tem acesso de escrita não assine código por uma tag qualquer. O workflow também não grava as senhas no ambiente dos outros passos (só nos dois passos de compilação), não deixa o token no `.git/config` (`persist-credentials: false`) e não usa cache do npm, que num fluxo que assina seria um risco de envenenamento.
+
 **A chave nunca entra no Git** (`*.jks`, `*.keystore`, `keystore.properties` e `*.idsig` estão no `.gitignore`). Guarde uma cópia do `.jks` e das senhas num cofre seu.
 
 ```sh
@@ -33,7 +35,6 @@ base64 -w0 ~/.android/bibliotecamusical-upload.jks | gh secret set ANDROID_KEYST
 gh secret set ANDROID_KEYSTORE_PASSWORD --repo HyakoV3/biblioteca-musical
 gh secret set ANDROID_KEY_ALIAS --repo HyakoV3/biblioteca-musical        # bibliotecamusical
 gh secret set ANDROID_KEY_PASSWORD --repo HyakoV3/biblioteca-musical
-gh variable set ANDROID_APPLICATION_ID --repo HyakoV3/biblioteca-musical --body br.pro.bibliotecamusical
 ```
 
 | Nome | O quê |
@@ -44,7 +45,7 @@ gh variable set ANDROID_APPLICATION_ID --repo HyakoV3/biblioteca-musical --body 
 | `ANDROID_KEY_PASSWORD` | senha da chave (se omitida, vale a do keystore) |
 | `PLAY_SERVICE_ACCOUNT_JSON` | (opcional) conta de serviço do Play Console, para enviar o AAB |
 
-Variáveis (não secretas): `ANDROID_APPLICATION_ID` e `ENVIAR_PLAY_STORE=true`, que liga o envio à faixa **interna** da Play Store, como rascunho. **Depois de cadastrar, confira** (o GitHub só mostra "Set": um segredo vazio só aparece como erro no workflow, "The 'client-id' input must be set to a non-empty string" ou "a chave de assinatura não abriu"). Com a Play App Signing ativa, a chave guardada é só a de **envio**: se for perdida, o Google permite trocá-la.
+Variável (não secreta): `ENVIAR_PLAY_STORE=true`, que liga o envio à faixa **interna** da Play Store, como rascunho, **só nas tags finais** (a `-rc` tem o mesmo `versionCode` da final e travaria o envio dela); sem o segredo `PLAY_SERVICE_ACCOUNT_JSON` o job falha com uma mensagem clara. O `applicationId` é fixo no Gradle. **Depois de cadastrar, confira** (o GitHub só mostra "Set": um segredo vazio só aparece como erro no workflow, "The 'client-id' input must be set to a non-empty string" ou "a chave de assinatura não abriu"). Com a Play App Signing ativa, a chave guardada é só a de **envio**: se for perdida, o Google permite trocá-la.
 
 **No Gradle** (`src-tauri/gen/android/app/build.gradle.kts`): o release é assinado **só** se existirem `keystore.properties` (modelo em `src-tauri/gen/android/keystore.properties.example`) ou as variáveis `BM_KEYSTORE`, `BM_KEYSTORE_PASSWORD`, `BM_KEY_ALIAS` e `BM_KEY_PASSWORD` (o workflow as define a partir dos segredos). **Sem elas** o release continua saindo `unsigned`, e o fluxo dos APKs de teste da máquina do responsável (`apk-de-teste.md`: `zipalign` e `apksigner` com a chave de depuração) **não muda**.
 

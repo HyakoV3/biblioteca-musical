@@ -21,13 +21,21 @@ val keystoreProps = Properties().apply {
     val f = rootProject.file("keystore.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
+// Valor vazio ("keyPassword=" do .example, variável em branco) conta como ausente.
 fun segredo(chave: String, env: String): String? =
-    keystoreProps.getProperty(chave) ?: System.getenv(env)
-val ksArquivo = segredo("storeFile", "BM_KEYSTORE")
+    (keystoreProps.getProperty(chave) ?: System.getenv(env))?.trim()?.takeIf { it.isNotEmpty() }
+val ksArquivo = segredo("storeFile", "BM_KEYSTORE")?.let { rootProject.file(it) } // relativo à raiz do projeto Android, como o keystore.properties
 val ksSenha = segredo("storePassword", "BM_KEYSTORE_PASSWORD")
 val ksAlias = segredo("keyAlias", "BM_KEY_ALIAS")
 val ksSenhaChave = segredo("keyPassword", "BM_KEY_PASSWORD") ?: ksSenha
-val assinaturaConfigurada = ksArquivo != null && ksSenha != null && ksAlias != null && file(ksArquivo).exists()
+val assinaturaConfigurada = ksArquivo != null && ksArquivo.isFile && ksSenha != null && ksAlias != null
+// Configuração PELA METADE (caminho errado, senha faltando): falha em vez de sair "unsigned" sem avisar.
+if (!assinaturaConfigurada && (ksArquivo != null || ksSenha != null || ksAlias != null)) {
+    throw GradleException(
+        "Assinatura de release incompleta: precisa de storeFile (um arquivo que existe), storePassword e keyAlias " +
+            "(keystore.properties ou BM_KEYSTORE, BM_KEYSTORE_PASSWORD e BM_KEY_ALIAS). Apague o que sobrou para sair sem assinatura.",
+    )
+}
 
 android {
     compileSdk = 37
@@ -43,7 +51,7 @@ android {
     signingConfigs {
         if (assinaturaConfigurada) {
             create("release") {
-                storeFile = file(ksArquivo!!)
+                storeFile = ksArquivo
                 storePassword = ksSenha
                 keyAlias = ksAlias
                 keyPassword = ksSenhaChave
