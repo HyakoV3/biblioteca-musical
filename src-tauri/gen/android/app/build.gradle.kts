@@ -14,6 +14,21 @@ val tauriProperties = Properties().apply {
     }
 }
 
+// Assinatura de release (opcional): lê keystore.properties (raiz do projeto Android) ou as variáveis BM_KEYSTORE, BM_KEYSTORE_PASSWORD,
+// BM_KEY_ALIAS e BM_KEY_PASSWORD (o workflow release.yml as define a partir dos segredos do GitHub). Sem nenhum dos dois, o release continua
+// saindo "unsigned" e é assinado depois com o apksigner (docs/apk-de-teste.md): o fluxo dos APKs de teste não muda.
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun segredo(chave: String, env: String): String? =
+    keystoreProps.getProperty(chave) ?: System.getenv(env)
+val ksArquivo = segredo("storeFile", "BM_KEYSTORE")
+val ksSenha = segredo("storePassword", "BM_KEYSTORE_PASSWORD")
+val ksAlias = segredo("keyAlias", "BM_KEY_ALIAS")
+val ksSenhaChave = segredo("keyPassword", "BM_KEY_PASSWORD") ?: ksSenha
+val assinaturaConfigurada = ksArquivo != null && ksSenha != null && ksAlias != null && file(ksArquivo).exists()
+
 android {
     compileSdk = 37
     namespace = "br.pro.bibliotecamusical"
@@ -24,6 +39,16 @@ android {
         targetSdk = 37
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
+    }
+    signingConfigs {
+        if (assinaturaConfigurada) {
+            create("release") {
+                storeFile = file(ksArquivo!!)
+                storePassword = ksSenha
+                keyAlias = ksAlias
+                keyPassword = ksSenhaChave
+            }
+        }
     }
     buildTypes {
         getByName("debug") {
@@ -39,6 +64,9 @@ android {
             }
         }
         getByName("release") {
+            if (assinaturaConfigurada) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             optimization {
                enable = true
             }

@@ -12,7 +12,7 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
 
 - [x] Repositório **público** criado em 2026-11-14: <https://github.com/HyakoV3/biblioteca-musical>. Um só e-mail de autor (o `noreply` do GitHub) e sem co-autoria.
 - [x] Proteções da `main` (sem exclusão nem *force-push*, PR obrigatória, 4 verificações do CI), *secret scanning* e *push protection* ativos (conferido em 2026-11-23).
-- [ ] Dependabot (npm, cargo e GitHub Actions): não há `.github/dependabot.yml`.
+- [x] Dependabot (npm, cargo, GitHub Actions e Gradle): `.github/dependabot.yml` com um PR por ecossistema e as majors problemáticas ignoradas (2026-11-24). Falta ligar os alertas de segurança do Dependabot nas configurações do repositório.
 - [x] Arquivos da comunidade: `CONTRIBUTING.md` e `SECURITY.md` (2026-11-23).
 - [ ] Modelos de *issue* e de *pull request* (`.github/`).
 - [ ] Tópicos e imagem de pré-visualização do repositório (a descrição já existe; os tópicos estão vazios).
@@ -29,15 +29,9 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
       `cargo clippy --all-targets -- -D warnings` nos dois. Se uma versão nova do Rust trouxer um aviso novo do clippy, o CI
       vermelho é esperado: corrija o aviso (ou, se for falso positivo, silencie-o no ponto exato com `#[allow(...)]`).
 - [ ] Se o teste de ponta a ponta ficar lento ou instável, restringi-lo à `main` e ao disparo manual.
-- [ ] **APK no GitHub, sob demanda e em release (tag `v*`):** rascunho em
-      [`release-e-apk-no-github.md`](release-e-apk-no-github.md), para revisar antes de construir.
-- [ ] **APK de teste no GitHub** (Android): JDK 21, SDK e NDK, `npm run tauri android build -- --apk --target aarch64`,
-      APK como artefato do *workflow*.
-      **Sem conteúdo embutido:** o `BM_PACOTE` (hinos de terceiros) nunca entra no CI nem em *release* público. Só o
-      APK de teste fechado, gerado na máquina do responsável, leva conteúdo (`apk-de-teste.md`).
-- [ ] **Assinatura:** criar uma chave **própria** (a de depuração só serve para teste fechado) e guardá-la como segredo
-      do GitHub (keystore em base64 e senhas). *Release* assinado só em tag `v*`, publicado em *GitHub Releases* com o
-      SHA-256. **(depende do responsável: criar e guardar a chave)**
+- [x] **Workflow de release escrito (2026-11-24)**, em [`release-e-apk-no-github.md`](release-e-apk-no-github.md): tag `v*` gera APK e AAB assinados, `SHA256SUMS` e o GitHub Release (sufixo `-rc1` vira pré-lançamento); sob demanda gera um APK de teste. Assinatura condicional no Gradle (sem chave, o release sai `unsigned` e o fluxo manual dos APKs de teste não muda), conferência de permissões e de tag, `dependabot.yml` agrupado. Testado **localmente**; **não rodou no GitHub ainda**.
+- [ ] **Ligar o release (depende do responsável):** gerar a chave de envio (`keytool`, fora do repositório, com cópia e senha num cofre) e cadastrar `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` e a variável `ANDROID_APPLICATION_ID` **num terminal normal** (comandos em `release-e-apk-no-github.md`); depois rodar o release sob demanda e a tag `v0.3.1-rc1`.
+- [ ] **Sem conteúdo embutido:** o `BM_PACOTE` (hinos de terceiros) nunca entra no CI nem em *release* público. Só o APK de teste fechado, gerado na máquina do responsável, leva conteúdo (`apk-de-teste.md`).
 - [ ] Conferir que versão e commit (`__APP_VERSAO__`, `__APP_COMMIT__`) aparecem certos no APK do CI.
 - [ ] **iOS:** o GitHub tem máquinas macOS (de graça em repositório público), então o CI consegue **compilar** o app
       iOS sem Mac. Mas **instalar** em iPhone, usar o TestFlight ou publicar na App Store exige uma conta do
