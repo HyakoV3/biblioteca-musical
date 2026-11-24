@@ -42,24 +42,6 @@ Marcar um **início** e um **fim** na barra de progresso e a música repetir só
 
 ---
 
-## I-17 — Lembrar o último hino e a posição
-
-- **Status:** anotada
-- **Origem:** ideia do assistente, 2026-11-15.
-- **Prioridade:** a definir
-
-### O que se deseja
-Ao reabrir o app, oferecer "continuar de onde parou": o último hino aberto e, se estava tocando, a posição.
-
-### Perguntas em aberto
-1. Só **mostrar** o atalho ou já abrir o hino? (nunca tocar sozinho, por causa do áudio inesperado)
-2. Guardar também o andamento, o tom e os instrumentos escolhidos (hoje só os instrumentos e volumes por voz são lembrados)?
-
-### Impacto técnico (hipóteses)
-- Preferência no aparelho (`src/lib/preferencias.ts`), como a do karaokê e a da letra; nada sai do aparelho.
-
----
-
 ## I-18 — Pular uma parte inteira no miniplayer
 
 - **Status:** anotada
@@ -330,7 +312,7 @@ Uma variável de ambiente no build (por exemplo `BM_TESTE=026`) lida pelo `vite.
 
 ## I-29 — Filtro de ruído no Gravador (tipo Krisp)
 
-- **Status:** anotada, rascunho (2026-11-19). Nada implementado.
+- **Status:** anotada. **Opção 1 feita (2026-11-24):** o Gravador tem a caixa **Reduzir ruído** (desligada por padrão, lembrada em `prefs.reduzir-ruido`), que liga `noiseSuppression: true` do aparelho na PRÓXIMA gravação. **Falta testar no aparelho do responsável** se já basta; as opções 2 (RNNoise) e 3 (DeepFilterNet3) **só entram se a 1 não bastar**. O medidor lê o mesmo fluxo filtrado (a ressalva "o medidor lê o sinal cru" só vale para as opções 2 e 3).
 - **Origem:** pedido do responsável, 2026-11-19: "um filtro de som tipo Krisp; ele é de graça? dá uma verificada".
 - **Prioridade:** a definir (depois de o Gravador estar estável no aparelho: ver a **I-03**, já implementada, em `archive/roadmap-implementadas.md`).
 
@@ -543,16 +525,6 @@ Dá para hospedar os pacotes **sem servidor**, em um **repositório público só
 
 ---
 
-## I-33 — Negrito para o coro e o final
-
-- **Status:** anotada (2026-11-20)
-- **Origem:** o hinário impresso mostra o coro **em negrito e separado** da estrofe, sem número (hinos 398 e 457); o coro e o final já saem como blocos próprios (I-19), mas ainda em texto normal.
-- **Prioridade:** a definir (pequena)
-- **O que se deseja:** que o bloco "Coro" e o bloco "Final" apareçam em negrito na aba Letra, como no impresso. Só o app (`+page.svelte`, CSS do `.estrofe`), sem mexer no hinário nem nos pacotes. Ver o contraste
-  nos temas (alto contraste) e se o negrito atrapalha o destaque da sílaba que soa.
-
----
-
 ## I-34 — Distribuição pelo GitHub: APK, iOS (futuro), sons gravados, partituras e hinário
 
 - **Status:** anotada, **rascunho** (2026-11-20). Junta o que estava espalhado: a **I-31** (servir hinário e partituras pelo GitHub Releases, com o nginx no Vidar como reserva),
@@ -622,6 +594,15 @@ O responsável **não gosta da numeração sequencial** dos zips de teste (`...-
 - Trocar um pacote não exige APK novo (com o índice) nem mexer em servidor.
 - O release do app **não leva nenhum hino** e o CI nunca vê conteúdo de terceiros.
 - Há cópia de todos os pacotes fora do GitHub.
+
+---
+
+## I-35 — Tocar uma nota e o app dizer qual é (sem escolher o instrumento)
+
+- **Status:** anotada, **rascunho revisado** (2026-11-24). Nada implementado. Expande a **I-32**: o centro da tela passa a ser o **nome da nota**, com a transposição (Si♭, Mi♭, Fá) já na primeira versão, mostrada **sem a pessoa escolher** (como o Band Toolbox).
+- **Origem:** pedido do responsável, 2026-11-24.
+- **Prioridade:** a definir
+- **Onde está o desenho:** [`ideia-detectar-nota-tocada.md`](ideia-detectar-nota-tocada.md) (outros apps, a tela, a transposição, faixa e janela, comportamento, etapas e perguntas). A conta da janela de 2048 amostras da I-13 estava errada para baixo: dois períodos cabem até ~47 Hz, e não ~65 Hz.
 
 ---
 

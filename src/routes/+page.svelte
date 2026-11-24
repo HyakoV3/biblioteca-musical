@@ -19,6 +19,7 @@
   import { emCurso } from "$lib/gravacaoEmCurso.svelte";
   import { formatarTempo } from "$lib/gravador";
   import { inicio, type AbaInicio } from "$lib/inicio.svelte";
+  import { ultimoHino } from "$lib/ultimoHino.svelte";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
 
@@ -37,6 +38,9 @@
 
   // Busca sem diferenciar maiúsculas/minúsculas nem acentos.
   const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+  // O último hino aberto (I-17), só se o hinário instalado o tem: marca a linha na lista e dá o atalho "Continuar de onde parou".
+  const ultimo = $derived(ultimoHino.numero === null ? undefined : biblioteca.hino(ultimoHino.numero));
 
   const hinos = $derived.by(() => {
     const todos = biblioteca.pacote?.hinario.hinos ?? [];
@@ -97,12 +101,19 @@
       {/if}
     </div>
 
+    {#if ultimo && !biblioteca.busca}
+      <a class="continuar" href={`/hino/${ultimo.numero}`}>
+        <span class="continuar-rotulo">{t("biblioteca.continuar")}</span>
+        <span class="continuar-hino">{ultimo.numero} · {ultimo.titulo}</span>
+      </a>
+    {/if}
+
     {#if hinos.length}
       <ul>
         {#each hinos as h (h.numero)}
           {@const estado = reproducao.atual?.numero === h.numero ? reproducao.estado : "parado"}
           <li>
-            <a href={`/hino/${h.numero}`} class:tocando={estado === "tocando"} class:pausado={estado === "pausado"}>
+            <a href={`/hino/${h.numero}`} class:tocando={estado === "tocando"} class:pausado={estado === "pausado"} class:ultimo={ultimo?.numero === h.numero} aria-current={ultimo?.numero === h.numero ? "true" : undefined}>
               <span class="num"><span aria-hidden="true" class="zeros">{zerosAEsquerda(h.numero)}</span>{h.numero}</span>
               <span class="titulo">
                 <span>{h.titulo}</span>
@@ -112,6 +123,7 @@
                 <!-- O hino que está tocando (ou pausado) leva a borda de destaque E um ícone (não só a cor); o leitor de tela ouve o estado. -->
                 <span class="estado"><Icone nome={estado === "tocando" ? "som" : "pause"} tamanho={18} /><span class="so-leitor">{t(estado === "tocando" ? "biblioteca.tocando" : "biblioteca.pausado")}</span></span>
               {/if}
+              {#if ultimo?.numero === h.numero && estado === "parado"}<span class="so-leitor">{t("biblioteca.ultimo")}</span>{/if}
               {#if h.tonalidade}<small>{nomeDaTonalidade(h.tonalidade, i18n.idioma, notacao.atual)}</small>{/if}
             </a>
           </li>
@@ -179,6 +191,15 @@
   /* O hino que toca: borda na cor de destaque (um fio a mais por fora, sem mexer no tamanho da caixa) e o ícone de som; pausado, a borda fica mais fraca e o ícone é o de pausa. */
   li > a.tocando { border-color: var(--acento); box-shadow: 0 0 0 0.0625rem var(--acento); }
   li > a.pausado { border-color: color-mix(in srgb, var(--acento) 55%, var(--borda-controle)); }
+  /* O último hino aberto: um anel dourado de 2 px por fora (o formato diz "este", e não só a cor; sem mexer no tamanho da caixa). Vem ANTES do tocando/pausado, que mandam quando o hino soa. */
+  li > a.ultimo { border-color: var(--ouro-linha); box-shadow: 0 0 0 0.125rem var(--ouro-linha); }
+  li > a.ultimo.tocando { border-color: var(--acento); box-shadow: 0 0 0 0.125rem var(--acento); }
+  .continuar {
+    display: flex; flex-direction: column; gap: 0.1rem; min-height: 3rem; box-sizing: border-box; padding: 0.5rem 0.9rem; margin-bottom: 0.8rem;
+    text-decoration: none; color: var(--texto); background: var(--superficie); border: 0.0625rem solid var(--ouro-linha); border-radius: 0.75rem;
+  }
+  .continuar-rotulo { font-size: 0.85rem; color: var(--suave); }
+  .continuar-hino { font-weight: 700; overflow-wrap: anywhere; }
   .estado { flex: none; display: inline-flex; color: var(--acento); }
   /* Três dígitos com zeros à esquerda e algarismos de mesma largura: os números alinham em coluna. */
   .botao-icone { min-width: 3rem; padding: 0; }

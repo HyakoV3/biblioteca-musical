@@ -1747,6 +1747,9 @@ async function principal() {
   await dormir(500);
   const paus = await av(`(() => { const a = document.querySelector('li > a.pausado'); return a ? { leitor: a.querySelector('.estado .so-leitor')?.textContent.trim(), tocando: !!document.querySelector('li > a.tocando') } : null; })()`);
   confere(paus && /Paused/.test(paus.leitor ?? '') && !paus.tocando, `pausado, a lista mostra o hino com a marca de pausa (e não mais a de tocando): ${JSON.stringify(paus)}`);
+  // O último hino aberto (I-17): a lista o marca com um anel próprio e aria-current, oferece "Continuar de onde parou" e o número fica guardado no aparelho.
+  const ult = await av(`(() => { const a = document.querySelector('li > a.ultimo'); const c = document.querySelector('a.continuar'); return { lista: a?.getAttribute('href') ?? null, atual: a?.getAttribute('aria-current') ?? null, continuar: c?.getAttribute('href') ?? null, anel: a ? getComputedStyle(a).boxShadow : '', unico: document.querySelectorAll('li > a.ultimo').length, guardado: localStorage.getItem('prefs.ultimo-hino') }; })()`);
+  confere(ult.lista !== null && ult.lista === ult.continuar && ult.atual === 'true' && ult.unico === 1 && /rgb/.test(ult.anel) && `/hino/${ult.guardado}` === ult.lista, `o último hino aberto fica marcado na lista (anel e aria-current), tem o atalho "Continuar" e o número guardado: ${JSON.stringify(ult)}`);
   await irParaInicio();
 
   await irParaAjustes(AJ);

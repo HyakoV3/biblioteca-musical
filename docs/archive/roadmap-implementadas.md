@@ -193,3 +193,13 @@ descrito** (documentos, código, testes e PRs). Ele não repete esses detalhes.
 - **Onde:** `src/lib/metronomo.ts`, `src/lib/metronomo.svelte.ts`, `src/lib/Metronomo.svelte`, `tests/metronomo.test.ts`. **PRs #103 a #112.** Texto original em [`ideias-implementadas.md`](ideias-implementadas.md).
 - **Pendente (futuro):** o gauge de ponteiro e os compassos irregulares 5 e 7, com agrupamentos. Ver [`../roadmap-pendencias.md`](../roadmap-pendencias.md), seção 7.
 
+## I-17 — Lembrar o último hino e marcá-lo na lista
+- **O que virou (2026-11-24):** o app guarda o **número do último hino aberto** (`prefs.ultimo-hino`, só no aparelho). Na lista de hinos esse hino leva um **anel dourado de 2 px** (o formato diz "este", e não só a cor), `aria-current` e o texto "Último hino aberto" para o leitor de tela; e, acima da lista, o atalho **Continuar de onde parou** (número e título), que só abre o hino (**nunca toca sozinho**). Atende também ao pedido do responsável: voltar da tela do hino 10 e ver o hino 10 marcado. Quando o hino toca ou está pausado, mandam a borda e o ícone de som ou pausa que já existiam.
+- **Onde:** `src/lib/ultimoHino.svelte.ts`, `src/lib/preferencias.ts`, `src/routes/+page.svelte`, `src/routes/hino/[numero]/+page.svelte`, `tests/preferencias.test.ts`, `tests/e2e/karaoke.mjs`. Texto original em [`ideias-implementadas.md`](ideias-implementadas.md).
+- **Pendente:** a **posição** (retomar de onde estava tocando) **não foi feita**: exigiria guardar a parte e o ponto e começar o hino pausado ali; guardar também andamento, tom e instrumentos escolhidos. Ver [`../roadmap-pendencias.md`](../roadmap-pendencias.md), seção 7.
+
+## I-33 — Negrito para o coro e o final
+- **O que virou (2026-11-24):** os blocos **Coro** e **Final** da aba Letra aparecem em **negrito**, como no hinário impresso. Só o app (CSS `.estrofe.coro-final p`); o hinário e os pacotes não mudaram. O negrito vale antes de a sílaba acender, então o karaokê não muda a largura do texto.
+- **Onde:** `src/routes/hino/[numero]/+page.svelte`. Texto original em [`ideias-implementadas.md`](ideias-implementadas.md).
+- **Pendente:** ver no celular o contraste nos temas (Alto contraste) e se o negrito atrapalha o destaque da sílaba que soa.
+

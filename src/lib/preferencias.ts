@@ -225,3 +225,45 @@ export function limparEscolhaAntigaDoFormato(): void {
     // sem armazenamento: nada a limpar
   }
 }
+
+const CHAVE_ULTIMO = "prefs.ultimo-hino";
+
+/** O número do último hino aberto (I-17), ou `null` se não há nenhum ou o valor guardado é inválido. */
+export function lerUltimoHino(): number | null {
+  try {
+    const bruto = localStorage.getItem(CHAVE_ULTIMO);
+    if (bruto === null) return null;
+    const n = Number(bruto);
+    return Number.isInteger(n) && n > 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+export function salvarUltimoHino(numero: number) {
+  try {
+    localStorage.setItem(CHAVE_ULTIMO, String(numero));
+  } catch {
+    /* sem armazenamento: vale só nesta sessão */
+  }
+}
+
+const CHAVE_RUIDO = "prefs.reduzir-ruido";
+
+/** Gravar com a redução de ruído do aparelho (I-29)? Padrão: desligada, para o som sair como foi tocado ou cantado. */
+export function lerReduzirRuido(): boolean {
+  try {
+    return localStorage.getItem(CHAVE_RUIDO) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function salvarReduzirRuido(ligado: boolean) {
+  try {
+    localStorage.setItem(CHAVE_RUIDO, ligado ? "1" : "0");
+  } catch {
+    /* sem armazenamento: vale só nesta sessão */
+  }
+}
+

@@ -153,6 +153,9 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
 - [ ] **Envio da gravação em Ogg (PR #133; funcionou nos dois destinos testados pelo responsável, o WhatsApp e mais um, em 2026-11-22/23; ver [`ideia-enviar-audio-por-app.md`](ideia-enviar-audio-por-app.md)):** testar o `.ogg` em Telegram (deve virar
       nota de voz), Signal, Messages e WhatsApp Business, e com gravações longas (10, 30 e 60 min; acima de ~34 min o arquivo passa de 16 MB).
       Opcional: **`.m4a`/AAC com `MediaCodec`** ("enviar como MP4"), só se algum destino recusar Ogg. **(depende do responsável)**
+- [ ] **I-17 (último hino):** a posição (retomar de onde estava tocando) não foi feita; guardar andamento, tom e instrumentos; ver no celular o anel da lista e o atalho **Continuar de onde parou**.
+- [ ] **I-33 (negrito):** ver no celular o contraste do negrito no coro e no final (Alto contraste) e se atrapalha o destaque da sílaba.
+- [ ] **I-29 (Reduzir ruído):** testar no aparelho se o filtro do próprio aparelho (opção 1) já basta, com voz e com instrumento (notas longas podem ficar abafadas); se não bastar, RNNoise e DeepFilterNet3 seguem em [`roadmap-ideas.md`](roadmap-ideas.md).
 - [ ] **I-03 (Gravador):** renomear a gravação e ligá-la a um hino; o fone Bluetooth (atraso); confirmar no aparelho a gravação em segundo plano e com o hino no fone.
 - [ ] **I-20 (Metrônomo), como futuro:** o gauge de ponteiro e os compassos irregulares 5 e 7, com agrupamentos.
 - [ ] **Outras ideias soltas:** botão **"Atualizar"** do hinário (hoje troca-se de pacote removendo e baixando de novo); **estalo do som ao
