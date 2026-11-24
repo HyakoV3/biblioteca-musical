@@ -191,9 +191,10 @@
   /* O hino que toca: borda na cor de destaque (um fio a mais por fora, sem mexer no tamanho da caixa) e o ícone de som; pausado, a borda fica mais fraca e o ícone é o de pausa. */
   li > a.tocando { border-color: var(--acento); box-shadow: 0 0 0 0.0625rem var(--acento); }
   li > a.pausado { border-color: color-mix(in srgb, var(--acento) 55%, var(--borda-controle)); }
-  /* O último hino aberto: um anel dourado de 2 px por fora (o formato diz "este", e não só a cor; sem mexer no tamanho da caixa). Vem ANTES do tocando/pausado, que mandam quando o hino soa. */
+  /* O último hino aberto: um anel dourado de 2 px por fora (o formato diz "este", e não só a cor; sem mexer no tamanho da caixa). Vem DEPOIS das regras de tocando e pausado (mesma especificidade); por isso as duas combinações `.ultimo.tocando` e `.ultimo.pausado` repetem a cor delas, que manda quando o hino soa ou está pausado. */
   li > a.ultimo { border-color: var(--ouro-linha); box-shadow: 0 0 0 0.125rem var(--ouro-linha); }
   li > a.ultimo.tocando { border-color: var(--acento); box-shadow: 0 0 0 0.125rem var(--acento); }
+  li > a.ultimo.pausado { border-color: color-mix(in srgb, var(--acento) 55%, var(--borda-controle)); box-shadow: 0 0 0 0.125rem color-mix(in srgb, var(--acento) 55%, var(--borda-controle)); }
   .continuar {
     display: flex; flex-direction: column; gap: 0.1rem; min-height: 3rem; box-sizing: border-box; padding: 0.5rem 0.9rem; margin-bottom: 0.8rem;
     text-decoration: none; color: var(--texto); background: var(--superficie); border: 0.0625rem solid var(--ouro-linha); border-radius: 0.75rem;
