@@ -566,7 +566,7 @@ Dá para hospedar os pacotes **sem servidor**, em um **repositório público só
 - **Prioridade:** a definir. **Trava de tudo o que é conteúdo:** a **autorização do Enéias** (I-30). O que é só código (o APK sem hinos) não depende dela.
 
 ### O problema
-Hoje cada coisa sai de um lugar: o APK de teste vai para o Nextcloud (fora do ar em 2026-11-23; hoje vai para `~/Downloads/BibliotecaMusical/`), na mão (sem o hinário embutido desde o 060: o hinário é **baixado** de uma pasta própria do File Browser, `BibliotecaMusicalHinario`, ver [`pacote-do-hinario.md`](pacote-do-hinario.md)); as partituras e os sons saem de um **link público do File Browser** que baixa a **pasta inteira em zip**
+Hoje cada coisa sai de um lugar: o APK de teste vai para o Nextcloud, na mão (sem o hinário embutido desde o 060: o hinário é **baixado** de uma pasta própria do File Browser, `BibliotecaMusicalHinario`, ver [`pacote-do-hinario.md`](pacote-do-hinario.md)); as partituras e os sons saem de um **link público do File Browser** que baixa a **pasta inteira em zip**
 (`fb.hm.hv2.xyz`, ~500 KB/s); e **não há tag nem release** (a versão é `0.3.0` em todos os zips). Não há endereço estável por arquivo, nem jeito de uma pessoa de fora instalar o app sem pedir o zip ao responsável.
 
 ### O que se deseja

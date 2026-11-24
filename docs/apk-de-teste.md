@@ -99,7 +99,7 @@ rm BibliotecaMusical-teste.apk BibliotecaMusical-teste.apk.idsig     # o apksign
 Os zips (e os pacotes de sons, `docs/pacote-de-sons.md`) vão **direto para a pasta de entrega**, a pedido do
 responsável (antes iam para `~/Downloads`, e ele os movia para lá).
 
-> **Nextcloud fora do ar (2026-11-23):** enquanto ele não volta, os zips vão para `~/Downloads/BibliotecaMusical/` (sem `archive/`: só se move o que o responsável mandar). Onde ficam depois é uma pendência ([`roadmap-pendencias.md`](roadmap-pendencias.md), seção 8).
+> **Nextcloud (2026-11-24):** ficou fora do ar em 2026-11-23, e os zips daquele dia foram entregues numa pasta local; ele voltou e os zips estão de novo em `~/Nextcloud/08.4#Compartilha/BibliotecaMusical/` (os 5 mais recentes na pasta, o resto em `archive/`).
 
 **Arrumação da pasta (pedido do responsável, 2026-11-16; de 10 para 5 zips em 2026-11-22):** ficam **fora** só os **5 zips de APK mais recentes**; todo o resto
 (zips de APK mais antigos e materiais soltos, como as comparações de bancos e as prévias de timbres) vai para a subpasta

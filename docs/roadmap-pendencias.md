@@ -167,9 +167,6 @@ Itens de rotina que não são ideias de produto e que só a conversa tinha (conf
       2026-11-22 a pasta chegou a 117 MB (112 MiB) e o download quebrou. Hoje ela tem ~39 MB (os antigos estão em `BibliotecaMusicalPartituras-archive/`).
       **Regra até haver guarda:** antes de copiar um arquivo para uma pasta de link, somar os arquivos da pasta (`du -sb` no servidor) e conferir
       também `curl -sI <link>`, se o servidor mandar `Content-Length` (a pasta tem de ficar abaixo de ~80 MiB, com folga). Possível guarda: um passo em `tools/montar-manifesto-*.py` que avise quando o zip da pasta passar de 80% do teto.
-- [ ] **Destino dos zips de APK.** O Nextcloud está fora do ar (2026-11-23): os zips vão para `~/Downloads/BibliotecaMusical/`. Definir onde
-      passam a ficar quando ele voltar e ajustar a regra da pasta de entrega (5 zips e `archive/`) em `docs/apk-de-teste.md` e a **I-34** em
-      [`roadmap-ideas.md`](roadmap-ideas.md), que ainda cita o Nextcloud.
 - [ ] **Barra de instalação das partituras no Android (PR #144):** o andamento real vem por um canal do Tauri, nunca testado no aparelho. Confirmar
       que a barra sobe de ~94% a 100% e que o botão Baixar volta ao normal; anotar quanto tempo leva a instalação. Hinário e sons gravados seguem
       **sem andamento real** (a barra fica em ~94% nessa fase).
