@@ -9,7 +9,7 @@ em aberto. Ao implementar, mude o status e aponte para a etapa ou o commit.
 
 Status possíveis: **anotada** · **em análise** · **planejada** · **feita** · **descartada**.
 
-**Conferido com o código em 2026-11-23:** as ideias abaixo seguem abertas (I-16, I-17, I-18, I-23, I-25, I-27 em parte, I-29, I-30, I-31 consolidada na I-34, I-32, I-33 e I-34); nenhuma delas tem código no app além do que cada texto diz (a I-27 só repete, no cartão Conteúdo, o que ela pedia). O Gravador (I-03) e o Metrônomo (I-20) já foram para o arquivo das implementadas.
+**Conferido com o código em 2026-11-24:** as ideias abaixo seguem abertas (I-16, I-18, I-23, I-25, I-27 em parte, I-29 em parte, I-30, I-31 consolidada na I-34, I-32, I-34 e I-35); nenhuma delas tem código no app além do que cada texto diz (a I-27 só repete, no cartão Conteúdo, o que ela pedia). O Gravador (I-03), o Metrônomo (I-20), o "último hino" (I-17) e o negrito do coro e do final (I-33) já foram para o arquivo das implementadas.
 
 **As ideias já implementadas saíram deste arquivo** (2026-11-16): o sumário, com onde está cada uma, é
 [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md); os textos originais completos estão em
