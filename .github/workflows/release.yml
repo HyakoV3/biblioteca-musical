@@ -135,7 +135,7 @@ jobs:
           apk=$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -1)
           [ -n "$apk" ] || { echo "::error::APK não encontrado"; exit 1; }
           cp "$apk" "saida/bibliotecamusical-$v.apk"
-          aab=$(find src-tauri/gen/android/app/build/outputs/bundle -name '*.aab' 2>/dev/null | head -1)
+          aab=$(find src-tauri/gen/android/app/build/outputs/bundle -name '*.aab' 2>/dev/null | head -1 || true)
           if [ "${GITHUB_REF_TYPE}" = tag ]; then
             [ -n "$aab" ] || { echo "::error::AAB não encontrado"; exit 1; }
           fi
