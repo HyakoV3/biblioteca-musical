@@ -8,7 +8,7 @@ _spec = importlib.util.spec_from_file_location("montar_manifesto_hinario", Path(
 mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(mod)
 
-LINK = "https://fb.hm.hv2.xyz/public/api/resources/download?hash=abc"
+LINK = "https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/x/hinario-abc.json"
 
 
 def _hinario(tmp_path, nome="hinario-001.json", corpo=None):
@@ -25,7 +25,7 @@ def test_monta_o_manifesto_com_nome_tamanho_e_sha(tmp_path):
     assert len(m["pacote"]["sha256"]) == 64
 
 
-@pytest.mark.parametrize("link", ["http://fb.hm.hv2.xyz/x", "https://exemplo.com/x", "https://fb.hm.hv2.xyz.mau.com/x", "https://", "https://fb.hm.hv2.xyz/a b", "https://github.com/outro/repo/releases/download/x/y.json", "https://github.com/HyakoV3/biblioteca-musical-pacotes/raw/main/y.json", "https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/../../../outro/repo/raw/x.json", "https://usuario@github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/a/b.json", "https://github.com:444/HyakoV3/biblioteca-musical-pacotes/releases/download/a/b.json", "https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/%2e%2e/b.json"])
+@pytest.mark.parametrize("link", ["http://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/x/y.json", "https://exemplo.com/x", "https://github.com.mau.com/HyakoV3/biblioteca-musical-pacotes/releases/download/x/y.json", "https://fb.hm.hv2.xyz/public/api/resources/download?hash=abc", "https://", "https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/x/a b", "https://github.com/outro/repo/releases/download/x/y.json", "https://github.com/HyakoV3/biblioteca-musical-pacotes/raw/main/y.json", "https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/../../../outro/repo/raw/x.json", "https://usuario@github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/a/b.json", "https://github.com:444/HyakoV3/biblioteca-musical-pacotes/releases/download/a/b.json", "https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/%2e%2e/b.json"])
 def test_recusa_link_fora_do_servidor_permitido_ou_malformado(tmp_path, link):
     with pytest.raises(ValueError):
         mod.montar(link, _hinario(tmp_path))

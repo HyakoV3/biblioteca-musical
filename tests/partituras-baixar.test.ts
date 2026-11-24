@@ -10,7 +10,7 @@ const NOME = "partituras-001.zip";
 
 /** O pacote do manifesto para o zip falso: tamanho e SHA-256 de verdade. */
 async function pacoteDe(zip: Uint8Array, mudar: Partial<PacotePartituras> = {}): Promise<PacotePartituras> {
-  return { url: "https://fb.hm.hv2.xyz/p", arquivo: NOME, bytes: zip.length, sha256: await sha256Hex(zip), ...mudar };
+  return { url: "https://exemplo.invalid/p", arquivo: NOME, bytes: zip.length, sha256: await sha256Hex(zip), ...mudar };
 }
 
 /** A pasta em zip que o File Browser entrega para um link de pasta: o zip das partituras dentro de uma pasta, mais o que mais houver. */
@@ -52,7 +52,7 @@ describe("baixar e instalar o pacote de partituras: link de um ARQUIVO (o servid
     const fases: [Fase, number][] = [];
     const r = await baixarEInstalar(await pacoteDe(ZIP), dep, (f, p) => fases.push([f, p]));
     expect(r).toBe("instalado");
-    expect(chamadas).toEqual([`baixar https://fb.hm.hv2.xyz/p ${ZIP.length}`, "sha256", `instalar ${ZIP.length}`]);
+    expect(chamadas).toEqual([`baixar https://exemplo.invalid/p ${ZIP.length}`, "sha256", `instalar ${ZIP.length}`]);
     expect(fases).toEqual([["baixando", 0], ["baixando", 0.5], ["baixando", 1], ["conferindo", 1], ["instalando", 0]]);
   });
 
@@ -134,7 +134,7 @@ describe("manifesto de partituras", () => {
     expect(manifesto.versao).toBe(1);
     const p = manifesto.pacote as null | PacotePartituras;
     if (p === null) return;
-    expect(p.url).toMatch(/^https:\/\/(fb\.hm\.hv2\.xyz\/|github\.com\/HyakoV3\/biblioteca-musical-pacotes\/releases\/download\/)/); // só os endereços que o app pode acessar (capabilities/default.json)
+    expect(p.url).toMatch(/^https:\/\/github\.com\/HyakoV3\/biblioteca-musical-pacotes\/releases\/download\//); // só os endereços que o app pode acessar (capabilities/default.json)
     expect(p.arquivo).toMatch(/^[\w.-]+\.zip$/);
     expect(p.arquivo).toBe(`partituras-${p.sha256.slice(0, 8)}.zip`); // o nome leva os 8 primeiros caracteres do SHA-256
     expect(p.bytes).toBeGreaterThan(0);

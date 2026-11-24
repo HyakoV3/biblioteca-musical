@@ -146,9 +146,9 @@ class Manifesto(unittest.TestCase):
     def test_tamanho_e_sha256_do_arquivo(self):
         with tempfile.TemporaryDirectory() as t:
             z = self.zip_de_teste(Path(t))
-            r = mm.montar("https://fb.hm.hv2.xyz/public/api/resources/download?hash=abc", z)
+            r = mm.montar("https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/x/p.zip", z)
             dados = z.read_bytes()
-            self.assertEqual(r, {"versao": 1, "pacote": {"url": "https://fb.hm.hv2.xyz/public/api/resources/download?hash=abc",
+            self.assertEqual(r, {"versao": 1, "pacote": {"url": "https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/x/p.zip",
                                                           "arquivo": "p.zip", "bytes": len(dados),
                                                           "sha256": hashlib.sha256(dados).hexdigest()}})
 
