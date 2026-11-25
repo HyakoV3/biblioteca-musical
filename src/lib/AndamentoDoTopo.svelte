@@ -21,7 +21,7 @@
 </button>
 <div id={idPainel} popover="auto" class="painel" role="group" aria-label={t("player.andamento_rotulo")}>
   <p class="titulo">{t("player.andamento_rotulo")}</p>
-  <ControleAndamento {cfg} {editavel} />
+  <ControleAndamento {cfg} {editavel} padrao={hino.andamento ?? 90} />
   {#if !editavel}<p class="dica" role="status">{t("hino.andamento_pausar")}</p>{/if}
 </div>
 
