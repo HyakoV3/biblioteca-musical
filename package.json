@@ -21,6 +21,7 @@
     "@tauri-apps/plugin-http": "^2.9.0",
     "@tauri-apps/plugin-opener": "^2",
     "fflate": "^0.8.3",
+    "pitchy": "^4.1.0",
     "smplr": "^1.2.0"
   },
   "devDependencies": {
