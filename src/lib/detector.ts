@@ -51,9 +51,10 @@ export const leituraValida = (b: Bruta | null): b is Bruta =>
 
 export type Estado =
   | { tipo: "silencio" }
-  | { tipo: "nota"; leitura: Leitura; freq: number }
-  /** O som acabou há menos de `CONGELAR_MS`: a última nota segue na tela, esmaecida. */
-  | { tipo: "congelada"; leitura: Leitura; freq: number };
+  /** `repetida`: a leitura é a MESMA de antes (um quadro suspeito de erro de oitava foi descartado); quem suaviza segura o valor em vez de andar. */
+  | { tipo: "nota"; leitura: Leitura; freq: number; repetida?: true }
+  /** O som acabou há menos de `CONGELAR_MS`: a última nota segue na tela, esmaecida (sempre a mesma leitura de antes). */
+  | { tipo: "congelada"; leitura: Leitura; freq: number; repetida: true };
 
 /** Junta as leituras no tempo. `entrar(agora, leitura)` com `agora` em ms (qualquer relógio crescente) devolve o que a tela mostra. */
 export class Estabilizador {
@@ -88,10 +89,10 @@ export class Estabilizador {
       } else if (this.ultima) {
         // Um quadro suspeito de erro de oitava: segue a nota de antes (viva, não esmaecida) e adia o `t` do último som bom para o congelamento não começar à toa.
         this.ultima.t = agora;
-        return { tipo: "nota", leitura: this.ultima.leitura, freq: this.ultima.freq };
+        return { tipo: "nota", leitura: this.ultima.leitura, freq: this.ultima.freq, repetida: true };
       }
     }
-    if (this.ultima && agora - this.ultima.t <= CONGELAR_MS) return { tipo: "congelada", leitura: this.ultima.leitura, freq: this.ultima.freq };
+    if (this.ultima && agora - this.ultima.t <= CONGELAR_MS) return { tipo: "congelada", leitura: this.ultima.leitura, freq: this.ultima.freq, repetida: true };
     this.recentes = [];
     this.nota = null;
     this.ultima = null;
