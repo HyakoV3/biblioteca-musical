@@ -274,6 +274,26 @@ describe("propriedades herdadas do objeto não viram nota", () => {
   });
 });
 
+describe("trecho com emoji e símbolos soltos", () => {
+  it("o corte do trecho não parte um emoji ao meio", () => {
+    const emoji = "😀".repeat(20);
+    const a = indexar([h(1, "A", { letra: [`${emoji} graça ${emoji}`] })]);
+    const d = buscar(a, "graca").resultados[0]!.destaque!;
+    expect(d.onde).toBe("letra");
+    for (const parte of [d.antes, d.achado, d.depois]) {
+      expect(parte, "sem par substituto solto").not.toMatch(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
+    }
+    expect(d.achado).toBe("graça");
+  });
+
+  it('"#" e "♭" numa busca de texto sem tom não acrescentam palavra: "#louvor" = "louvor"', () => {
+    expect(nums("#louvor")).toEqual(nums("louvor"));
+    expect(nums("louvor #")).toEqual(nums("louvor"));
+    expect(nums("louvor ♭")).toEqual(nums("louvor"));
+    expect(nums("louvor")).toEqual([1]);
+  });
+});
+
 describe("robustez", () => {
   it("consulta estranha não quebra", () => {
     for (const q of ["((", "\\", "%%", "a|b", "😀", "ñ", "çççç", "x".repeat(500)]) expect(() => buscar(ind, q), q).not.toThrow();

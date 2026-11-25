@@ -239,8 +239,12 @@ function destacar(textoOriginal: string, termos: readonly string[], inteira: (t:
     const ini = mapa[m.index]!;
     const fim = mapa[m.index + termo.length - 1]! + 1;
     const CONTEXTO = 28;
-    const a = Math.max(0, ini - CONTEXTO);
-    const d = Math.min(textoOriginal.length, fim + CONTEXTO);
+    // O corte é em unidades UTF-16: se cair no meio de um par substituto (um emoji), recua ou avança uma unidade para não deixar metade dele.
+    const meioDePar = (k: number) => /[\uDC00-\uDFFF]/.test(textoOriginal[k] ?? "");
+    let a = Math.max(0, ini - CONTEXTO);
+    if (a > 0 && meioDePar(a)) a--;
+    let d = Math.min(textoOriginal.length, fim + CONTEXTO);
+    if (d < textoOriginal.length && meioDePar(d)) d++;
     return {
       antes: (a > 0 ? "…" : "") + textoOriginal.slice(a, ini),
       achado: textoOriginal.slice(ini, fim),
@@ -320,7 +324,8 @@ export function buscar<T extends ItemBusca>(ind: Indice<T>, consulta: string, op
   if (n !== null) return buscarNumero(ind, n, opcoes);
 
   const { tom, resto, todos, ambiguo } = extrairTom(consulta);
-  if (!tom) return { intencao: "texto", resultados: rodarTexto(ind.entradas, todos), exato: null, maisNumeros: 0 };
+  // Sem tom, os termos são os do texto como digitado: `todos` já traz "#" e "♭" trocados por "sustenido" e "bemol" (para a leitura do tom), e exigi-los quebraria "#louvor".
+  if (!tom) return { intencao: "texto", resultados: rodarTexto(ind.entradas, palavrasDe(normalizar(consulta))), exato: null, maisNumeros: 0 };
   const comoTom = rodarTexto(dosTom(ind.entradas, tom), resto);
   if (!ambiguo) return { intencao: "texto", resultados: comoTom, exato: null, maisNumeros: 0 };
   // Termo colado ainda sendo digitado ("reb"): os acertos de TEXTO ("Rebanho…") primeiro, depois os hinos do tom que ainda não apareceram.
