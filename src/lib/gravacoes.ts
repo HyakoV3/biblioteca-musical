@@ -4,9 +4,12 @@
 
 import type { ContextoGravacao } from "./contexto";
 import { rastro } from "./gravador";
+import { limparTitulo, normalizarMeta } from "./metaGravacao";
 
-/** `contexto` (I-38) é opcional e só existe nas gravações feitas ouvindo o metrônomo ou um hino no fone; as antigas não o têm (acrescentar o campo não muda o banco). */
-export type MetaGravacao = { id: string; criadaEm: number; segundos: number; tipo: string; bytes: number; contexto?: ContextoGravacao };
+/** Campos opcionais: `contexto` (I-38) só existe nas gravações feitas ouvindo o metrônomo ou um hino no fone; `titulo` e `favorita` (I-39) só quando a pessoa renomeia ou marca a estrela. As antigas não os têm (acrescentar campos não muda o banco). */
+export type MetaGravacao = { id: string; criadaEm: number; segundos: number; tipo: string; bytes: number; contexto?: ContextoGravacao; titulo?: string; favorita?: boolean };
+/** O que a pessoa pode mudar numa gravação: o nome (nulo ou vazio volta ao nome padrão) e a estrela. */
+export type Mudancas = { titulo?: string | null; favorita?: boolean };
 /** Onde a página anterior terminou: a próxima começa logo depois (da mais nova para a mais antiga). */
 export type Posicao = { criadaEm: number; id: string };
 export type Pagina = { itens: MetaGravacao[]; temMais: boolean };
@@ -18,10 +21,10 @@ export const TAMANHO_DA_PAGINA = 10;
 export const BANCO = "bm-gravacoes";
 const VERSAO = 1;
 
-/** "17/11 10:46" (dia e mês na ordem do idioma, mais hora e minuto). */
-export function formatarData(criadaEm: number, idioma: string): string {
+/** "17/11 10:46" (dia e mês na ordem do idioma, mais hora e minuto); com `comAno`, "17/11/2025 10:46". */
+export function formatarData(criadaEm: number, idioma: string, comAno = false): string {
   if (!Number.isFinite(criadaEm)) return "";
-  return new Intl.DateTimeFormat(idioma, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(criadaEm));
+  return new Intl.DateTimeFormat(idioma, { day: "2-digit", month: "2-digit", ...(comAno ? { year: "numeric" } : {}), hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(criadaEm));
 }
 
 const pedido = <T>(r: IDBRequest<T>): Promise<T> =>
@@ -195,7 +198,35 @@ export class Gravacoes {
     const banco = await this.banco();
     return transacao(banco, ["meta"], "readonly", async (t) => {
       const lidas = (await pedido(t.objectStore("meta").index("porData").getAll())) as MetaGravacao[];
-      return lidas.reverse(); // o índice vai da mais antiga para a mais nova
+      return lidas.reverse().map(normalizarMeta); // o índice vai da mais antiga para a mais nova; nome e estrela lidos do banco são validados
+    });
+  }
+
+  /**
+   * Muda o nome ou a estrela de uma gravação. O `get` e o `put` vão na MESMA transação de `meta`: duas mudanças seguidas (favoritar e renomear) não perdem uma à outra, e uma gravação
+   * apagada no meio NÃO é recriada (sem registro, não grava nada e devolve nulo). Os outros campos do registro, conhecidos ou não, ficam como estão; o áudio não é tocado.
+   */
+  async atualizar(id: string, mudancas: Mudancas): Promise<MetaGravacao | null> {
+    const banco = await this.banco();
+    // CUIDADO: dentro desta função só se pode esperar pedidos do IndexedDB. Qualquer outro `await` (um `tick`, um `fetch`, um `setTimeout`) deixa a transação terminar sozinha,
+    // e o `put` abaixo daria `TransactionInactiveError`.
+    return transacao(banco, ["meta"], "readwrite", async (t) => {
+      const loja = t.objectStore("meta");
+      const atual = (await pedido(loja.get(id))) as MetaGravacao | undefined;
+      if (!atual) return null;
+      const novo: MetaGravacao = { ...atual };
+      if ("titulo" in mudancas) {
+        const v = limparTitulo(mudancas.titulo);
+        if (v) novo.titulo = v;
+        else delete novo.titulo;
+      }
+      if ("favorita" in mudancas) {
+        if (mudancas.favorita) novo.favorita = true;
+        else delete novo.favorita;
+      }
+      const final = normalizarMeta(novo); // grava o que a tela vai mostrar: um título inválido que já estava no banco sai agora
+      loja.put(final);
+      return final;
     });
   }
 

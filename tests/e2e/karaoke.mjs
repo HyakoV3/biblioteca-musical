@@ -1413,6 +1413,63 @@ async function principal() {
   confere(JSON.stringify(await ids()) === JSON.stringify(["semente-11"]), `Gravador: o filtro "Com metrônomo" mostra só a do metrônomo: ${JSON.stringify(await ids())}`);
   await av(`document.querySelector('#filtro-gravacoes input[value="todas"]').click(); 1`);
   await dormir(300);
+  // O contexto no card: o resumo de uma linha e, ao abrir, as linhas completas (as mesmas do texto enviado).
+  const ctx = await av(`(() => { const d = document.querySelector('.gravacao-item[data-id="semente-03"] details.contexto'); if (!d) return null; const antes = d.open; d.open = true; return { antes, resumo: d.querySelector('summary').textContent.replace(/\\s+/g, ' ').trim(), linhas: d.querySelectorAll('li').length, primeira: d.querySelector('li').textContent.trim() }; })()`);
+  confere(ctx !== null && ctx.antes === false && /10/.test(ctx.resumo) && ctx.linhas >= 3 && /10/.test(ctx.primeira), `Gravador: o card com contexto mostra o resumo e, aberto, as linhas do que se ouvia: ${JSON.stringify(ctx)}`);
+  const nomeCtx = await av(`document.querySelector('.gravacao-item[data-id="semente-03"] .nome').textContent.trim()`);
+  confere(/10/.test(nomeCtx) && /^(Hymn|Himno|Hino)/.test(nomeCtx), `Gravador: o nome padrão de uma gravação com hino diz o hino: "${nomeCtx}"`);
+  // Favoritar, filtrar por favoritas e tirar a estrela.
+  const item05 = `.gravacao-item[data-id="semente-05"]`;
+  await av(`document.querySelector('${item05} .estrela').click(); 1`);
+  await dormir(400);
+  confere((await av(`document.querySelector('${item05} .estrela').getAttribute('aria-pressed')`)) === "true", "Gravador: tocar na estrela favorita a gravação (aria-pressed)");
+  await av(`document.querySelector('#filtro-gravacoes input[value="favoritas"]').click(); 1`);
+  await dormir(300);
+  confere(JSON.stringify(await ids()) === JSON.stringify(["semente-05"]), `Gravador: o filtro "Favoritas" mostra só a favorita: ${JSON.stringify(await ids())}`);
+  // Renomear: o nome novo aparece, a busca o acha, e vazio volta ao nome padrão.
+  await av(`document.querySelector('${item05} .renomear-botao').click(); 1`);
+  await dormir(200);
+  const campo = await av(`document.activeElement?.tagName`);
+  confere(campo === "INPUT", `Gravador: renomear abre o campo com o foco nele: ${campo}`);
+  confere((await av(`document.querySelector('${item05} .renomear-botao').disabled`)) === true, "Gravador: com a edição aberta o botão Renomear fica desabilitado (não apaga o rascunho)");
+  // O campo corta em 80 caracteres visíveis na hora (e não só ao salvar).
+  const cortou = await av(`(() => { const i = document.querySelector('${item05} .renomear input'); i.value = 'x'.repeat(120); i.dispatchEvent(new Event('input', { bubbles: true })); return i.value.length; })()`);
+  confere(cortou === 80, `Gravador: o campo do nome corta em 80 caracteres ao digitar: ${cortou}`);
+  const escrever = (v) => av(`(() => { const i = document.querySelector('${item05} .renomear input'); i.value = new TextDecoder().decode(Uint8Array.from('${Buffer.from(v, 'utf8').toString('hex')}'.match(/../g) ?? [], (h) => parseInt(h, 16))); i.dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('${item05} .renomear').requestSubmit(); return 1; })()`);
+  await escrever("Ensaio do coro");
+  await dormir(500);
+  const renomeada = await av(`({ nome: document.querySelector('${item05} .nome')?.textContent.trim(), foco: document.activeElement?.classList.contains('renomear-botao') })`);
+  confere(renomeada.nome === "Ensaio do coro" && renomeada.foco === true, `Gravador: o nome novo aparece e o foco volta ao botão Renomear: ${JSON.stringify(renomeada)}`);
+  await av(`document.querySelector('#filtro-gravacoes input[value="todas"]').click(); 1`);
+  await digitar("ensaio");
+  await dormir(300);
+  confere(JSON.stringify(await ids()) === JSON.stringify(["semente-05"]), `Gravador: a busca acha pelo nome que a pessoa deu: ${JSON.stringify(await ids())}`);
+  await av(`document.getElementById('limpar-filtros')?.click(); 1`);
+  await digitar("");
+  await dormir(300);
+  await av(`document.querySelector('${item05} .renomear-botao').click(); 1`);
+  await dormir(200);
+  await escrever("   ");
+  await dormir(500);
+  const padrao = await av(`document.querySelector('${item05} .nome')?.textContent.trim()`);
+  confere(/^(Recording|Gravação|Grabación) /.test(padrao ?? ""), `Gravador: nome vazio volta ao nome padrão: "${padrao}"`);
+  // Tirar a estrela com o filtro "Favoritas" ligado: a gravação sai da lista e o foco NÃO se perde (vai ao item seguinte; sem nenhum, ao título da lista).
+  const item06 = `.gravacao-item[data-id="semente-06"]`;
+  await av(`document.querySelector('${item06} .estrela').click(); 1`); // a 05 já é favorita (marcada acima): agora são duas
+  await dormir(500);
+  await av(`document.querySelector('#filtro-gravacoes input[value="favoritas"]').click(); 1`);
+  await dormir(300);
+  confere(JSON.stringify(await ids()) === JSON.stringify(["semente-05", "semente-06"]), `Gravador: com duas favoritas o filtro mostra as duas: ${JSON.stringify(await ids())}`);
+  await av(`(() => { const b = document.querySelector('${item05} .estrela'); b.focus(); b.click(); return 1; })()`);
+  await dormir(500);
+  const focoNoOutro = await av(`({ ids: [...document.querySelectorAll('.gravacao-item')].map((e) => e.dataset.id), foco: document.activeElement?.closest('.gravacao-item')?.dataset.id ?? null })`);
+  confere(JSON.stringify(focoNoOutro.ids) === JSON.stringify(["semente-06"]) && focoNoOutro.foco === "semente-06", `Gravador: tirar a estrela com o filtro Favoritas tira o item da lista e o foco vai ao item seguinte: ${JSON.stringify(focoNoOutro)}`);
+  await av(`(() => { const b = document.querySelector('${item06} .estrela'); b.focus(); b.click(); return 1; })()`);
+  await dormir(500);
+  const semFav = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, aviso: !!document.getElementById('sem-resultado'), foco: document.activeElement?.id ?? null })`);
+  confere(semFav.itens === 0 && semFav.aviso && semFav.foco === "titulo-guardadas", `Gravador: tirando a última estrela o filtro mostra o aviso e o foco vai ao título da lista: ${JSON.stringify(semFav)}`);
+  await av(`document.getElementById('limpar-filtros').click(); 1`);
+  await dormir(300);
   await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
   // Um arquivo que não toca (os zeros semeados não decodificam): a tela explica e devolve o botão "Ouvir" para tentar de novo, em vez de deixar um player cinza.
   await av(`document.querySelectorAll('.gravacao-item .ouvir')[0].click(); 1`);

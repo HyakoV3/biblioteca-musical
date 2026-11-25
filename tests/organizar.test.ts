@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PAGINA, SEM_FILTRO, agrupar, chaveDeBusca, diaCivil, filtrar, grupoDe, janela, maisNovaPrimeiro, mesclar, resumir } from "../src/lib/organizar";
+import { PAGINA, SEM_FILTRO, agrupar, chaveDeBusca, diaCivil, filtrar, grupoDe, janela, maisNovaPrimeiro, mesclar, nomeDaGravacao, resumir } from "../src/lib/organizar";
 import type { MetaGravacao } from "../src/lib/gravacoes";
 import type { ContextoGravacao } from "../src/lib/contexto";
 
@@ -139,5 +139,49 @@ describe("escala: milhares de registros", () => {
     const grupos = agrupar(lista, base + 12 * 3_600_000);
     expect(grupos.reduce((s, g) => s + g.itens.length, 0)).toBe(N);
     expect(janela(lista, PAGINA)).toHaveLength(PAGINA);
+  });
+});
+
+describe("favoritas, alteradas e o nome mostrado (I-39, PR 2)", () => {
+  const t = (c: string, p: Record<string, string | number> = {}) =>
+    ({ "gravador.nome": "Gravação {data}", "gravador.nome_hino": "Hino {numero} · {data}", "gravador.nome_metronomo": "Metrônomo {bpm} bpm · {data}" } as Record<string, string>)[c]!.replace(/\{(\w+)\}/g, (_, k) => String(p[k]));
+  const agora = new Date(2026, 10, 25, 12).getTime();
+  const quando = new Date(2026, 10, 20, 14, 30).getTime();
+
+  it("o filtro Favoritas só mostra as marcadas", () => {
+    const l = [{ ...meta("a", 3), favorita: true }, meta("b", 2), { ...meta("c", 1, HINO(1, "X")), favorita: true }];
+    expect(ids(filtrar(l, { filtro: "favoritas", busca: "" }, chave))).toEqual(["a", "c"]);
+    expect(ids(filtrar(l, { filtro: "hino", busca: "" }, chave))).toEqual(["c"]);
+  });
+
+  it("mesclar: a versão alterada localmente vale sobre a lida; alterada que foi apagada não volta", () => {
+    const lida = meta("a", 3000);
+    const local = { ...lida, titulo: "Novo nome", favorita: true };
+    expect(mesclar([lida], [], new Set(), new Map([["a", local]]))[0]).toBe(local);
+    expect(ids(mesclar([lida], [], new Set(["a"]), new Map([["a", local]])))).toEqual([]);
+    expect(ids(mesclar([], [], new Set(), new Map([["fantasma", local]])))).toEqual([]); // alterada que a leitura nem trouxe não aparece do nada
+    // gravada durante a leitura e favoritada logo depois: vale a versão alterada, uma vez só
+    const nova = meta("n", 4000);
+    const favorita = { ...nova, favorita: true };
+    const r = mesclar([lida], [nova], new Set(), new Map([["n", favorita]]));
+    expect(ids(r)).toEqual(["n", "a"]);
+    expect(r[0]).toBe(favorita);
+  });
+
+  it("nome: o da pessoa; senão o padrão com a data, com o hino ou o metrônomo; o ano só quando não é o corrente", () => {
+    expect(nomeDaGravacao({ ...meta("a", quando), titulo: "Ensaio do coro" }, t, "pt-BR", agora)).toBe("Ensaio do coro");
+    expect(nomeDaGravacao(meta("a", quando), t, "pt-BR", agora)).toMatch(/^Gravação 20\/11.*14:30$/);
+    expect(nomeDaGravacao(meta("a", quando, HINO(10, "X")), t, "pt-BR", agora)).toMatch(/^Hino 10 · 20\/11.*14:30$/);
+    expect(nomeDaGravacao(meta("a", quando, METRO), t, "pt-BR", agora)).toMatch(/^Metrônomo 65 bpm · 20\/11/);
+    const antiga = new Date(2025, 10, 20, 14, 30).getTime();
+    expect(nomeDaGravacao(meta("a", antiga), t, "pt-BR", agora)).toMatch(/20\/11\/2025/);
+    expect(nomeDaGravacao(meta("a", quando), t, "pt-BR", agora)).not.toMatch(/2026/);
+  });
+
+  it("a busca acha pelo nome que a pessoa deu e pelo padrão", () => {
+    const l = [{ ...meta("a", quando), titulo: "Ensaio do coro" }, meta("b", quando - DIA)];
+    const k = (m: MetaGravacao) => chaveDeBusca(m, (x) => nomeDaGravacao(x, t, "pt-BR", agora), dataDe);
+    expect(ids(filtrar(l, { filtro: "todas", busca: "ensaio" }, k))).toEqual(["a"]);
+    expect(ids(filtrar(l, { filtro: "todas", busca: "gravacao" }, k))).toEqual(["b"]);
   });
 });
