@@ -1,0 +1,119 @@
+import { describe, expect, it } from "vitest";
+import { contextoValido, limparParaMarkdown, marcarMudanca, montarContexto, textoDoContexto, type Entrada } from "../src/lib/contexto";
+import { pt } from "../src/lib/i18n/pt";
+import { en } from "../src/lib/i18n/en";
+import { es } from "../src/lib/i18n/es";
+
+const tr = (d: Record<string, string>) => (c: string, p: Record<string, string | number> = {}) =>
+  (d[c] ?? `?${c}`).replace(/\{(\w+)\}/g, (_, k) => String(p[k] ?? `{${k}}`));
+
+const base: Entrada = { fone: true, metronomo: { ligado: false, bpm: 60, compasso: 4 }, hino: null };
+const hino = (o: Partial<NonNullable<Entrada["hino"]>> = {}): Entrada["hino"] => ({
+  tocando: true,
+  numero: 10,
+  titulo: "Hino fictício",
+  tonalidade: "Si♭ maior",
+  transposicao: 0,
+  andamento: 69,
+  andamentoOriginal: 69,
+  parte: "tudo",
+  vozes: [
+    { nome: "Soprano", muda: false },
+    { nome: "Contralto", muda: false },
+    { nome: "Tenor", muda: false },
+    { nome: "Baixo", muda: false },
+  ],
+  ...o,
+});
+
+describe("montarContexto", () => {
+  it("sem fone ou sem nada tocando não há contexto", () => {
+    expect(montarContexto({ ...base, fone: false, metronomo: { ligado: true, bpm: 65, compasso: 4 } })).toBeNull();
+    expect(montarContexto(base)).toBeNull();
+  });
+  it("metrônomo simples e composto", () => {
+    expect(montarContexto({ ...base, metronomo: { ligado: true, bpm: 65, compasso: 4 } })?.metronomo).toEqual({ bpm: 65, cliques: 4, familia: "simples", tempos: 4 });
+    expect(montarContexto({ ...base, metronomo: { ligado: true, bpm: 120, compasso: 6 } })?.metronomo).toEqual({ bpm: 120, cliques: 6, familia: "composto", tempos: 2 });
+    expect(montarContexto({ ...base, metronomo: { ligado: true, bpm: 90, compasso: 12 } })?.metronomo?.tempos).toBe(4);
+  });
+  it("hino: guarda só o andamento original quando difere; vozes mudas viram tocando=false", () => {
+    const c = montarContexto({ ...base, hino: hino({ andamento: 60, vozes: [{ nome: "Soprano", muda: false }, { nome: "Contralto", muda: true }] }) })!;
+    expect(c.origem).toBe("hino");
+    expect(c.hino?.andamentoOriginal).toBe(69);
+    expect(c.hino?.vozes).toEqual([{ nome: "Soprano", tocando: true }, { nome: "Contralto", tocando: false }]);
+    expect(montarContexto({ ...base, hino: hino() })?.hino).not.toHaveProperty("andamentoOriginal");
+  });
+  it("o hino tem prioridade sobre o metrônomo", () => {
+    expect(montarContexto({ ...base, metronomo: { ligado: true, bpm: 65, compasso: 4 }, hino: hino() })?.origem).toBe("hino");
+  });
+});
+
+describe("marcarMudanca", () => {
+  const a = montarContexto({ ...base, metronomo: { ligado: true, bpm: 65, compasso: 4 } });
+  it("igual no fim: sem marca; diferente ou parou: com marca", () => {
+    expect(marcarMudanca(a, a)?.mudouDurante).toBeUndefined();
+    expect(marcarMudanca(a, montarContexto({ ...base, metronomo: { ligado: true, bpm: 70, compasso: 4 } }))?.mudouDurante).toBe(true);
+    expect(marcarMudanca(a, null)?.mudouDurante).toBe(true);
+    expect(marcarMudanca(null, a)).toBeNull();
+  });
+});
+
+describe("contextoValido", () => {
+  it("aceita o que o app grava; recusa lixo e versão futura", () => {
+    const c = montarContexto({ ...base, hino: hino() });
+    expect(contextoValido(c)).toEqual(c);
+    expect(contextoValido(null)).toBeNull();
+    expect(contextoValido({ v: 99, origem: "hino" })).toBeNull();
+    expect(contextoValido({ v: 1, origem: "hino", hino: { numero: "x", vozes: [] } })).toBeNull();
+  });
+});
+
+describe("textoDoContexto", () => {
+  it("metrônomo simples (pt)", () => {
+    const c = montarContexto({ ...base, metronomo: { ligado: true, bpm: 65, compasso: 4 } })!;
+    expect(textoDoContexto(c, tr(pt), "pt")).toBe("*Gravação com contexto*\n- Com: metrônomo, 65 bpm\n- Compasso: quaternário simples (4 tempos)");
+  });
+  it("metrônomo composto diz o bpm por clique e por tempo", () => {
+    const c = montarContexto({ ...base, metronomo: { ligado: true, bpm: 120, compasso: 6 } })!;
+    const t = textoDoContexto(c, tr(pt), "pt");
+    expect(t).toContain("120 bpm por clique (40 bpm por tempo)");
+    expect(t).toContain("binário composto (6 cliques, 2 tempos de 3)");
+  });
+  it("hino com voz tirada, andamento mudado e transposição (pt)", () => {
+    const c = montarContexto({
+      ...base,
+      hino: hino({ andamento: 60, transposicao: 1, vozes: [{ nome: "Soprano", muda: false }, { nome: "Contralto", muda: true }, { nome: "Tenor", muda: false }, { nome: "Baixo", muda: false }] }),
+    })!;
+    expect(textoDoContexto(c, tr(pt), "pt")).toBe(
+      [
+        "*Gravação com contexto*",
+        '- Com: hino 10, "Hino fictício"',
+        "- Vozes no fone: soprano, tenor e baixo _(sem contralto)_",
+        "- Andamento: 60 bpm _(original 69)_",
+        "- Tom do hino: Si♭ maior",
+        "- Transposição: +1 semitom",
+      ].join("\n"),
+    );
+  });
+  it("linhas que não se aplicam somem; parte e mudança aparecem", () => {
+    const c = marcarMudanca(montarContexto({ ...base, hino: hino({ tonalidade: null, parte: 2, transposicao: -2 }) }), null)!;
+    const t = textoDoContexto(c, tr(pt), "pt");
+    expect(t).not.toContain("Tom do hino");
+    expect(t).not.toContain("original");
+    expect(t).not.toContain("sem ");
+    expect(t).toContain("Transposição: −2 semitons");
+    expect(t).toContain("Parte: vez 2");
+    expect(t).toContain("_Algo mudou durante a gravação");
+  });
+  it("título sem caracteres de formatação", () => {
+    expect(limparParaMarkdown("A *bela* _voz_ ~x~ `y`")).toBe("A bela voz x y");
+  });
+  it("en e es têm as mesmas chaves que pt (nenhuma sem tradução)", () => {
+    const chaves = Object.keys(pt).filter((k) => k.startsWith("ctx.") || k.startsWith("gravador."));
+    for (const d of [en, es]) for (const k of chaves) expect(d, k).toHaveProperty([k]);
+  });
+  it("en: texto do hino", () => {
+    const c = montarContexto({ ...base, hino: hino() })!;
+    expect(textoDoContexto(c, tr(en), "en")).toContain("Voices in the headphones: soprano, contralto, tenor, and baixo");
+  });
+});

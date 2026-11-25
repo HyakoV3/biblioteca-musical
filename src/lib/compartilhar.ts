@@ -8,6 +8,8 @@ type Ponte = {
   comecar(nome: string, tipo: string): boolean;
   parte(base64: string): boolean;
   enviar(titulo: string): boolean;
+  /** Com um texto (o contexto em Markdown) que vai junto do áudio. Ponte antiga, sem este método: o texto não vai. */
+  enviarComTexto?(titulo: string, texto: string): boolean;
   cancelar(): void;
 };
 
@@ -45,9 +47,9 @@ export function podeCompartilhar(): boolean {
  * Abre a folha de compartilhamento com o áudio. Devolve "ok" quando a folha abriu (ou o navegador compartilhou), "cancelado" se a pessoa fechou a folha do
  * navegador sem enviar e "erro" se não foi possível preparar o envio.
  */
-export function compartilharGravacao(blob: Blob, nome: string, titulo: string): Promise<"ok" | "cancelado" | "erro"> {
+export function compartilharGravacao(blob: Blob, nome: string, titulo: string, texto?: string): Promise<"ok" | "cancelado" | "erro"> {
   // Um envio de cada vez: a ponte tem um arquivo em andamento só, e dois envios juntos se misturariam.
-  const vez = fila.then(() => enviarAgora(blob, nome, titulo));
+  const vez = fila.then(() => enviarAgora(blob, nome, titulo, texto));
   fila = vez.then(() => undefined, () => undefined);
   return vez;
 }
@@ -67,7 +69,7 @@ async function prepararOgg(blob: Blob, nome: string): Promise<{ blob: Blob; nome
   }
 }
 
-async function enviarAgora(blobOriginal: Blob, nomeOriginal: string, titulo: string): Promise<"ok" | "cancelado" | "erro"> {
+async function enviarAgora(blobOriginal: Blob, nomeOriginal: string, titulo: string, texto?: string): Promise<"ok" | "cancelado" | "erro"> {
   const conv = await prepararOgg(blobOriginal, nomeOriginal);
   const blob = conv?.blob ?? blobOriginal;
   const nome = conv?.nome ?? nomeOriginal;
@@ -84,7 +86,7 @@ async function enviarAgora(blobOriginal: Blob, nomeOriginal: string, titulo: str
             return "erro";
           }
         }
-        return p.enviar(titulo) ? "ok" : "erro";
+        return (texto && p.enviarComTexto ? p.enviarComTexto(titulo, texto) : p.enviar(titulo)) ? "ok" : "erro";
       } catch (e) {
         // Falhou no meio (ler o pedaço, codificar): a ponte fecha o arquivo e apaga o que já tinha escrito.
         try {
@@ -99,7 +101,7 @@ async function enviarAgora(blobOriginal: Blob, nomeOriginal: string, titulo: str
     // Se o navegador não aceita o Ogg convertido, tenta o original.
     if (!navigator.canShare?.({ files: [arquivo] }) && conv) arquivo = new File([blobOriginal], nomeOriginal, { type: tipoSemCodec(blobOriginal.type) });
     if (!navigator.canShare?.({ files: [arquivo] })) return "erro";
-    await navigator.share({ files: [arquivo], title: titulo });
+    await navigator.share({ files: [arquivo], title: titulo, ...(texto ? { text: texto } : {}) });
     return "ok";
   } catch (e) {
     if (e instanceof DOMException && e.name === "AbortError") return "cancelado";

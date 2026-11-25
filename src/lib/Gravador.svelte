@@ -7,6 +7,8 @@
   import { LIMITE_PARA_GUARDAR_MS, TAMANHO_DA_PAGINA, comLimite, gravacoes, type MetaGravacao, type Resumo } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
   import { emCurso } from "./gravacaoEmCurso.svelte";
+  import { biblioteca } from "./biblioteca.svelte";
+  import { marcarMudanca, montarContexto, type ContextoGravacao } from "./contexto";
   import { metronomo } from "./metronomo.svelte";
   import { reproducao } from "./reproducao.svelte";
   import { lerReduzirRuido, salvarReduzirRuido } from "./preferencias";
@@ -102,6 +104,34 @@
     erroGuardar = false; // o aviso de "não pôde guardar" era sobre esta gravação
   }
 
+  /** O que a pessoa ouve no fone agora (metrônomo ou hino), para guardar com a gravação (I-38). Nulo sem fone ou sem nada tocando. */
+  function lerContexto(): ContextoGravacao | null {
+    const atual = reproducao.atual;
+    const hino = atual && reproducao.estado === "tocando" ? biblioteca.pacote?.hinario.hinos.find((h) => h.numero === atual.numero) : undefined;
+    const c = hino ? reproducao.config(hino) : null;
+    return montarContexto({
+      fone: foneConectado(),
+      metronomo: { ligado: metronomo.ligado, bpm: metronomo.bpm, compasso: metronomo.compasso },
+      hino:
+        atual && hino && c
+          ? {
+              tocando: true,
+              numero: atual.numero,
+              titulo: atual.titulo,
+              tonalidade: hino.tonalidade,
+              transposicao: c.transposicao,
+              andamento: c.andamento,
+              andamentoOriginal: hino.andamento,
+              parte: atual.parte,
+              vozes: hino.vozes.map((v, i) => ({ nome: v.nome, muda: c.mudas[i] ?? false })),
+            }
+          : null,
+    });
+  }
+  /** O contexto do instante em que a gravação começou; ao parar, vira o contexto guardado (com a marca de que algo mudou, se mudou). */
+  let contextoDoInicio: ContextoGravacao | null = null;
+  const contextoParaGuardar = () => marcarMudanca(contextoDoInicio, lerContexto());
+
   async function iniciar() {
     const minha = ++tentativa;
     erro = null;
@@ -124,6 +154,7 @@
       gravador.soltar(); // a pessoa já saiu ou mandou parar enquanto o aparelho liberava o microfone
       return;
     }
+    contextoDoInicio = lerContexto();
     gravando = true;
     protegida = ligarServicoDeGravacao();
     decorrido = 0;
@@ -168,7 +199,7 @@
     erroGuardar = false;
     rastro(`guardando ${nova.bytes} bytes`);
     const comeco = performance.now();
-    const salvando = gravacoes.salvar(nova.blob, nova.tipo, nova.segundos);
+    const salvando = gravacoes.salvar(nova.blob, nova.tipo, nova.segundos, contextoParaGuardar());
     try {
       const meta = await comLimite(salvando, LIMITE_PARA_GUARDAR_MS, "o armazenamento demorou demais para guardar a gravação");
       rastro(`guardada em ${Math.round(performance.now() - comeco)} ms`);
@@ -384,7 +415,7 @@
         return;
       }
       URL.revokeObjectURL(nova.url);
-      const salvando = gravacoes.salvar(nova.blob, nova.tipo, nova.segundos);
+      const salvando = gravacoes.salvar(nova.blob, nova.tipo, nova.segundos, contextoParaGuardar());
       try {
         // Com o mesmo limite de espera de `guardar()`: um armazenamento lento não deixa a espera pendente para sempre.
         await comLimite(salvando, LIMITE_PARA_GUARDAR_MS, MOTIVO_DEMORA);
