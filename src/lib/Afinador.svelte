@@ -28,7 +28,7 @@
   let oitava = $state(OITAVA_PADRAO);
   /** O cartão "Outra nota" começa fechado e não é lembrado. */
   let outraAberta = $state(false);
-  /** O cartão "Temporizador" começa fechado e não é lembrado; o tempo começa em "até parar" (0) a cada abertura do app. */
+  /** O cartão "Temporizador" começa fechado e não é lembrado; o TEMPO escolhido (até parar, 10, 20 ou 30 s) é lembrado neste aparelho. */
   let temporizadorAberto = $state(false);
   let limite = $state<Limite>(0);
   /** Segundos que faltam para o tom parar sozinho, ou nulo sem contagem (até parar, ou nada tocando). */
@@ -47,11 +47,13 @@
   /** As últimas notas dadas em "Outra nota" (a mais recente no topo), lembradas neste aparelho. */
   let recentes = $state<NotaRecente[]>([]);
   onMount(() => {
-    recentes = lerAfinador().recentes;
+    const p = lerAfinador();
+    recentes = p.recentes;
+    limite = p.limite;
   });
   function registrarNota() {
     recentes = adicionarNota(recentes, { classe, oitava });
-    salvarAfinador({ recentes });
+    salvarAfinador({ recentes, limite });
   }
   /** Toca uma nota da lista de recentes: escolhe a nota e a oitava e liga o tom (um som de cada vez, como no botão da pílula). */
   async function usarRecente(n: NotaRecente) {
@@ -232,7 +234,10 @@
             value={l}
             checked={limite === l}
             aria-label={l === 0 ? t("afinador.ate_parar") : t("afinador.segundos", { n: l })}
-            onchange={() => (limite = l)}
+            onchange={() => {
+              limite = l;
+              salvarAfinador({ recentes, limite });
+            }}
           />
           <span>{#if limite === l}<Icone nome="ok" tamanho={16} />{/if}{l === 0 ? t("afinador.ate_parar") : `${l} s`}</span>
         </label>

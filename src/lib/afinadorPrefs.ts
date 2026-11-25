@@ -1,9 +1,10 @@
-// O que o afinador lembra: a lista das últimas notas dadas em "Outra nota" (sem repetir, a mais recente no topo), no mesmo molde do metrônomo (`metronomoPrefs.ts`).
+// O que o afinador lembra: a lista das últimas notas dadas em "Outra nota" (sem repetir, a mais recente no topo) e o tempo do temporizador (até parar, 10, 20 ou 30 s), no mesmo molde do metrônomo (`metronomoPrefs.ts`).
 // Guardado no aparelho (localStorage) e SEMPRE validado ao ler: valor fora da faixa é descartado, e uma falha de armazenamento é ignorada.
 import { OITAVA_MAX, OITAVA_MIN } from "./afinador";
+import { LIMITES, type Limite } from "./contagem";
 
 export type NotaRecente = { classe: number; oitava: number };
-export type PrefAfinador = { recentes: NotaRecente[] };
+export type PrefAfinador = { recentes: NotaRecente[]; limite: Limite };
 
 export const CHAVE_AFINADOR = "prefs.afinador";
 export const RECENTES_MAX = 10;
@@ -21,15 +22,19 @@ export function adicionarNota(lista: readonly NotaRecente[], nota: NotaRecente):
   return [nota, ...lista.filter((n) => !(n.classe === nota.classe && n.oitava === nota.oitava))].slice(0, RECENTES_MAX);
 }
 
+const limiteValido = (v: unknown): v is Limite => (LIMITES as readonly unknown[]).includes(v);
+
 export function normalizarPref(bruto: unknown): PrefAfinador {
   const recentes: NotaRecente[] = [];
+  const salvo = bruto && typeof bruto === "object" && !Array.isArray(bruto) ? (bruto as Record<string, unknown>).limite : undefined;
+  const limite: Limite = limiteValido(salvo) ? salvo : 0; // valor inválido ou ausente: "até parar", o padrão de sempre
   if (bruto && typeof bruto === "object" && !Array.isArray(bruto) && Array.isArray((bruto as Record<string, unknown>).recentes)) {
     for (const r of (bruto as { recentes: unknown[] }).recentes) {
       const n = lerNota(r);
       if (n && !recentes.some((x) => x.classe === n.classe && x.oitava === n.oitava) && recentes.length < RECENTES_MAX) recentes.push(n); // a ordem salva é a do topo para baixo
     }
   }
-  return { recentes };
+  return { recentes, limite };
 }
 
 export function lerAfinador(): PrefAfinador {
@@ -37,7 +42,7 @@ export function lerAfinador(): PrefAfinador {
     const bruto = localStorage.getItem(CHAVE_AFINADOR);
     return normalizarPref(bruto ? JSON.parse(bruto) : null);
   } catch {
-    return { recentes: [] };
+    return { recentes: [], limite: 0 };
   }
 }
 
