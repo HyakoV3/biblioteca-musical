@@ -20,6 +20,17 @@ describe("gravações guardadas", () => {
     expect(p.temMais).toBe(false);
   });
 
+  it("guarda o contexto (I-38) quando há; sem ele, o registro não ganha o campo", async () => {
+    const g = novo();
+    const contexto = { v: 1, fone: true, origem: "metronomo", metronomo: { bpm: 65, cliques: 4, familia: "simples", tempos: 4 } } as const;
+    const com = await g.salvar(audio(10), "audio/webm", 1, contexto);
+    const sem = await g.salvar(audio(10), "audio/webm", 1, null);
+    expect(sem).not.toHaveProperty("contexto");
+    const { itens } = await g.listar();
+    expect(itens.find((i) => i.id === com.id)?.contexto).toEqual(contexto);
+    expect(itens.find((i) => i.id === sem.id)).not.toHaveProperty("contexto");
+  });
+
   it("a lista vem da mais nova para a mais antiga", async () => {
     vi.useFakeTimers({ toFake: ["Date"] }); // só o relógio: o fake-indexeddb usa timers de verdade
     try {

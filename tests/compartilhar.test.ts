@@ -46,6 +46,20 @@ describe("ponte do Android", () => {
     expect(p.comecar).toHaveBeenLastCalledWith("h.weba", "audio/webm");
   });
 
+  it("com texto usa enviarComTexto; sem texto (ou ponte antiga) usa enviar", async () => {
+    const enviarComTexto = vi.fn((_titulo: string, _texto: string) => true);
+    const { p } = ponteFalsa({ enviarComTexto });
+    const audio = () => new Blob([new Uint8Array([1, 2, 3])], { type: "audio/webm" });
+    expect(await compartilharGravacao(audio(), "a.webm", "Enviar", "*Contexto*")).toBe("ok");
+    expect(enviarComTexto).toHaveBeenCalledWith("Enviar", "*Contexto*");
+    expect(p.enviar).not.toHaveBeenCalled();
+    expect(await compartilharGravacao(audio(), "a.webm", "Enviar")).toBe("ok");
+    expect(p.enviar).toHaveBeenCalledWith("Enviar");
+    const antiga = ponteFalsa();
+    expect(await compartilharGravacao(audio(), "a.webm", "Enviar", "*Contexto*")).toBe("ok");
+    expect(antiga.p.enviar).toHaveBeenCalledWith("Enviar");
+  });
+
   it("só aparece quando há ponte ou Web Share", () => {
     expect(podeCompartilhar()).toBe(false);
     ponteFalsa();
