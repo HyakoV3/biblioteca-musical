@@ -4,6 +4,7 @@
   import Cartao from "./Cartao.svelte";
   import Icone from "./Icone.svelte";
   import ListaRecentes from "./ListaRecentes.svelte";
+  import QualNota from "./QualNota.svelte";
   import { LA_PADRAO, OITAVA_MAX, OITAVA_MIN, OITAVA_PADRAO, frequenciaDe, limitarOitava, midiDe } from "./afinador";
   import { nomeDaNota, nomeDaNotaPorExtenso } from "./notacao";
   import { notacao } from "./notacao.svelte";
@@ -44,6 +45,8 @@
   );
   /** O que está soando: o Lá 440, a nota escolhida, ou nada. */
   let tocando = $state<"la" | "nota" | null>(null);
+  /** A escuta do microfone ("Qual nota é essa?") está ligada. Um som de cada vez: tocar um tom a desliga, e ouvir cala o tom. */
+  let ouvindo = $state(false);
   /** As últimas notas dadas em "Outra nota" (a mais recente no topo), lembradas neste aparelho. */
   let recentes = $state<NotaRecente[]>([]);
   onMount(() => {
@@ -61,6 +64,7 @@
     oitava = n.oitava;
     registrarNota();
     reproducao.parar();
+    ouvindo = false;
     await soar("nota", frequenciaDe(midiDe(n.classe, n.oitava), LA_PADRAO));
   }
   const rotuloRecente = (n: NotaRecente) => `${nomeDaNota(n.classe, i18n.idioma, notacao.atual)}${n.oitava} · ${hz(frequenciaDe(midiDe(n.classe, n.oitava), LA_PADRAO))} Hz`;
@@ -116,6 +120,7 @@
   async function alternar(qual: "la" | "nota") {
     if (tocando === qual) return parar();
     reproducao.parar(); // um som de cada vez: dar o tom para o hino que tocava (ou que ainda estava carregando)
+    ouvindo = false; // e a escuta do microfone não ouviria o próprio tom
     if (qual === "nota") registrarNota(); // só entra nos recentes a nota pedida de propósito (como no metrônomo): trocar de nota ou de oitava com o tom soando não registra
     await soar(qual, qual === "la" ? LA_PADRAO : freqNota);
   }
@@ -245,6 +250,8 @@
     </fieldset>
     <p class="meta">{t("afinador.temporizador_vale")}</p>
   </Cartao>
+
+  <QualNota {ativa} bind:ouvindo aoComecar={parar} />
 
   <ListaRecentes
     titulo={t("afinador.recentes")}

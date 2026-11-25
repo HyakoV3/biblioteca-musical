@@ -16,7 +16,7 @@ sem descrever a falha.
   adulterado, incompleto ou com tamanho absurdo (zip "bomba": o download tem teto de 100 MiB) é recusado inteiro; no Rust, cada partitura
   ainda passa por uma limpeza do SVG (lista de elementos permitidos). Detalhes em [`docs/pacote-do-hinario.md`](docs/pacote-do-hinario.md),
   [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md) e [`docs/pacote-de-sons.md`](docs/pacote-de-sons.md).
-- **Microfone:** só o Gravador (e o Afinador, no futuro) o usa, com a permissão pedida só ao gravar; a gravação fica no aparelho e só sai
+- **Microfone:** só o Gravador e o "Qual nota é essa?" do Afinador o usam, com a permissão pedida só ao gravar ou ao tocar em Ouvir (o Afinador não grava nada: lê o som e o descarta); a gravação fica no aparelho e só sai
   quando a pessoa toca em **Enviar** (folha de compartilhamento do sistema). O `FileProvider` que entrega a gravação ao outro app expõe só a
   pasta de cache e a pasta de arquivos externos do próprio app (`getExternalFilesDir`), e não o armazenamento todo.
 - O conteúdo de hinários (letras e partituras) **não fica neste repositório**: só código e dados de teste fictícios.

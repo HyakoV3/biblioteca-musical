@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onDestroy } from "svelte";
   import { compartilharGravacao, nomeDoArquivo, podeCompartilhar, tipoSemCodec } from "./compartilhar";
+  import { contextoValido, textoDoContexto } from "./contexto";
   import { corrigirDuracao, formatarTamanho, formatarTempo, nomeDoFormato } from "./gravador";
   import { formatarData, gravacoes, type MetaGravacao } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
@@ -51,15 +52,34 @@
   let enviando = $state(false);
   let falhouEnvio = $state(false);
   const sePodeEnviar = podeCompartilhar();
+  const contexto = $derived(contextoValido(meta.contexto));
+  const textoDoEnvio = $derived(contexto ? textoDoContexto(contexto, (c, p) => t(c as Parameters<typeof i18n.t>[0], p), i18n.idioma) : "");
+  const resumo = $derived(
+    contexto?.origem === "hino" && contexto.hino
+      ? t("gravador.resumo_hino", { numero: contexto.hino.numero })
+      : contexto?.metronomo
+        ? t("gravador.resumo_metronomo", { bpm: contexto.metronomo.bpm })
+        : "",
+  );
+  let janela = $state<HTMLDialogElement | null>(null);
+
+  /** Com contexto, pergunta antes (modal): enviar com o texto do que a pessoa ouvia, ou só o áudio. Sem contexto, envia direto. */
+  function pedirEnvio() {
+    if (enviando) return;
+    if (contexto && janela) janela.showModal();
+    else void enviar(false);
+  }
+
   /** Abre a folha de compartilhamento do sistema com o arquivo desta gravação (lido do armazenamento só agora). */
-  async function enviar() {
+  async function enviar(comContexto: boolean) {
+    janela?.close();
     if (enviando) return;
     enviando = true;
     falhouEnvio = false;
     try {
       const blob = await gravacoes.blob(meta.id);
       if (!blob) throw new Error("sem arquivo");
-      const r = await compartilharGravacao(blob, nomeDoArquivo(meta.criadaEm, meta.tipo), t("gravador.enviar_titulo"));
+      const r = await compartilharGravacao(blob, nomeDoArquivo(meta.criadaEm, meta.tipo), t("gravador.enviar_titulo"), comContexto ? textoDoEnvio : undefined);
       if (!destruido) falhouEnvio = r === "erro";
     } catch (e) {
       console.warn("gravador: não foi possível enviar a gravação", e);
@@ -132,17 +152,29 @@
   {/if}
   {#if falhou}<p class="meta erro-item" role="alert">{t("gravador.erro_abrir")}</p>{/if}
   {#if falhouEnvio}<p class="meta erro-item" role="alert">{t("gravador.erro_enviar")}</p>{/if}
+  {#if resumo}<p class="meta contexto-resumo">{t("gravador.tem_contexto", { resumo })}</p>{/if}
   <div class="acoes">
     {#if !url}
       <button class="botao ouvir" onclick={ouvir} disabled={carregando} aria-label={`${t("gravador.ouvir")}: ${nome}`}>{t("gravador.ouvir")}</button>
     {/if}
     {#if sePodeEnviar}
-      <button class="botao enviar" onclick={enviar} disabled={enviando} aria-label={`${t("gravador.enviar")}: ${nome}`}>{t("gravador.enviar")}</button>
+      <button class="botao enviar" onclick={pedirEnvio} disabled={enviando} aria-label={`${t("gravador.enviar")}: ${nome}`}>{t("gravador.enviar")}</button>
     {/if}
     <button class="botao apagar" class:perigo={confirmando} onclick={apagar} aria-label={`${confirmando ? t("gravador.apagar_mesmo") : t("gravador.apagar")}: ${nome}`}>
       {confirmando ? t("gravador.apagar_mesmo") : t("gravador.apagar")}
     </button>
   </div>
+
+  <dialog bind:this={janela} class="envio-contexto" aria-labelledby={`envio-${meta.id}`}>
+    <h2 id={`envio-${meta.id}`}>{t("gravador.contexto_titulo")}</h2>
+    <p>{t("gravador.contexto_explica")}</p>
+    <pre class="previa">{textoDoEnvio}</pre>
+    <div class="botoes">
+      <button class="botao primario" onclick={() => enviar(true)}>{t("gravador.enviar_com")}</button>
+      <button class="botao" onclick={() => enviar(false)}>{t("gravador.enviar_sem")}</button>
+      <button class="botao" onclick={() => janela?.close()}>{t("gravador.cancelar")}</button>
+    </div>
+  </dialog>
 </li>
 
 <style>
@@ -154,5 +186,12 @@
   .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .acoes .botao { flex: 1 1 5.5rem; min-height: 2.75rem; }
   /* Confirmando: borda e texto em destaque (não só a cor: o texto do botão muda para "Apagar mesmo?"). */
+  .contexto-resumo { margin: 0; }
+  .envio-contexto { box-sizing: border-box; width: min(32rem, calc(100% - 2rem)); margin: auto; padding: 1.25rem; border: 0.0625rem solid var(--borda-controle); border-radius: 1rem; background: var(--fundo); color: var(--texto); }
+  .envio-contexto::backdrop { background: rgb(0 0 0 / 0.55); }
+  .envio-contexto h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+  .previa { margin: 0.5rem 0 0.8rem; padding: 0.6rem 0.7rem; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 0.95rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.5rem; }
+  .botoes { display: grid; gap: 0.5rem; }
+  .botoes .botao { min-height: 2.75rem; }
   .perigo { border-width: 0.125rem; border-color: var(--perigo); font-weight: 700; }
 </style>

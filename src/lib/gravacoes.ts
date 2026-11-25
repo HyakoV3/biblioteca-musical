@@ -2,9 +2,11 @@
 // quando a pessoa as apaga ou limpa os dados do app. Dois depósitos: `meta` (nome, data, duração, tamanho: leve, é o que a lista lê, página por página)
 // e `blobs` (o arquivo de áudio, lido só quando a pessoa toca em "Ouvir"). Sem limite de quantidade: a lista pagina e a tela mostra o espaço usado.
 
+import type { ContextoGravacao } from "./contexto";
 import { rastro } from "./gravador";
 
-export type MetaGravacao = { id: string; criadaEm: number; segundos: number; tipo: string; bytes: number };
+/** `contexto` (I-38) é opcional e só existe nas gravações feitas ouvindo o metrônomo ou um hino no fone; as antigas não o têm (acrescentar o campo não muda o banco). */
+export type MetaGravacao = { id: string; criadaEm: number; segundos: number; tipo: string; bytes: number; contexto?: ContextoGravacao };
 /** Onde a página anterior terminou: a próxima começa logo depois (da mais nova para a mais antiga). */
 export type Posicao = { criadaEm: number; id: string };
 export type Pagina = { itens: MetaGravacao[]; temMais: boolean };
@@ -146,7 +148,7 @@ export class Gravacoes {
    * no CI, o `put` de um Blob feito pelo MediaRecorder nunca confirmava (o gravador entregava o arquivo e o armazenamento ficava mudo). A leitura entende os
    * dois formatos, então o que já estava guardado como Blob continua tocando.
    */
-  async salvar(blob: Blob, tipo: string, segundos: number): Promise<MetaGravacao> {
+  async salvar(blob: Blob, tipo: string, segundos: number, contexto?: ContextoGravacao | null): Promise<MetaGravacao> {
     const comeco = performance.now();
     rastro(`lendo os ${blob.size} bytes do arquivo`);
     const dados = await blob.arrayBuffer();
@@ -159,6 +161,7 @@ export class Gravacoes {
       segundos: Number.isFinite(segundos) && segundos > 0 ? segundos : 0,
       tipo,
       bytes: blob.size,
+      ...(contexto ? { contexto } : {}),
     };
     await transacao(banco, ["meta", "blobs"], "readwrite", (t) => {
       t.objectStore("meta").put(meta);

@@ -1,6 +1,6 @@
 // O que o afinador lembra: a lista das últimas notas dadas em "Outra nota" (sem repetir, a mais recente no topo) e o tempo do temporizador (até parar, 10, 20 ou 30 s), no mesmo molde do metrônomo (`metronomoPrefs.ts`).
 // Guardado no aparelho (localStorage) e SEMPRE validado ao ler: valor fora da faixa é descartado, e uma falha de armazenamento é ignorada.
-import { OITAVA_MAX, OITAVA_MIN } from "./afinador";
+import { DESLOCAMENTO_ESCRITO, OITAVA_MAX, OITAVA_MIN, type Transposicao } from "./afinador";
 import { LIMITES, type Limite } from "./contagem";
 
 export type NotaRecente = { classe: number; oitava: number };
@@ -51,5 +51,28 @@ export function salvarAfinador(p: PrefAfinador): void {
     localStorage.setItem(CHAVE_AFINADOR, JSON.stringify(p));
   } catch {
     // sem armazenamento: o app segue com o que tem na memória
+  }
+}
+
+// O instrumento de "Qual nota é essa?" (o que transpõe: a nota escrita para ele), à parte do resto das preferências do afinador.
+export const CHAVE_INSTRUMENTO = "prefs.afinador.instrumento";
+const INSTRUMENTOS = Object.keys(DESLOCAMENTO_ESCRITO) as Transposicao[];
+export const ehInstrumento = (v: unknown): v is Transposicao => typeof v === "string" && (INSTRUMENTOS as string[]).includes(v);
+
+/** O instrumento lembrado; sem nada guardado (ou com lixo), "concerto": mostra a nota que soa. */
+export function lerInstrumento(): Transposicao {
+  try {
+    const v = localStorage.getItem(CHAVE_INSTRUMENTO);
+    return ehInstrumento(v) ? v : "concerto";
+  } catch {
+    return "concerto";
+  }
+}
+
+export function salvarInstrumento(v: Transposicao): void {
+  try {
+    localStorage.setItem(CHAVE_INSTRUMENTO, v);
+  } catch {
+    // sem armazenamento: vale só nesta sessão
   }
 }
