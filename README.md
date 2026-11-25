@@ -7,7 +7,7 @@ TypeScript**. O alvo principal é o **Android**; o desktop funciona para desenvo
 > **Aviso:** projeto **não oficial**, sem vínculo com a Congregação Cristã no Brasil. O app não é vendido e não pode
 > ser usado para vender conteúdo.
 
-**Estado:** em desenvolvimento, em teste fechado com músicos (versão 0.3.2). Ainda não há versão publicada em loja. Quer ajudar? Veja o [`CONTRIBUTING.md`](CONTRIBUTING.md); falhas de segurança, o [`SECURITY.md`](SECURITY.md).
+**Estado:** em desenvolvimento, em teste fechado com músicos (versão 0.3.3). Ainda não há versão publicada em loja. Quer ajudar? Veja o [`CONTRIBUTING.md`](CONTRIBUTING.md); falhas de segurança, o [`SECURITY.md`](SECURITY.md).
 
 ## Sobre o conteúdo
 
@@ -33,7 +33,7 @@ O código foi escrito do zero: nenhum código ou arquivo de outros aplicativos f
 - **Lista de hinos** com busca por número ou título; o **último hino aberto** fica marcado e há o atalho **Continuar de onde parou**.
 - **Letra** com as estrofes (o coro e o final em negrito), em abas na parte de baixo da tela (ao lado, com o celular deitado), com o **karaokê** acendendo cada sílaba.
 - **Partitura** de cada hino (opcional, baixada em Ajustes), com o compasso e a nota que está soando em destaque.
-- **Afinador:** dá o tom (Lá 440 ou outra nota, com temporizador) e lembra as últimas notas usadas.
+- **Afinador:** dá o tom (Lá 440 ou outra nota, com temporizador), lembra as últimas notas usadas e, em "Qual nota é essa?", ouve o microfone e diz a nota que você toca, com os cents e as vizinhas (e a nota que se lê em instrumentos que transpõem, como o trompete em Si♭).
 - **Gravador:** grava a sua voz ou o seu instrumento (segue gravando com a tela bloqueada; a caixa **Reduzir ruído** liga o filtro do aparelho, desligada por padrão), guarda no aparelho e compartilha pela folha do sistema. A gravação sai como **Ogg/Opus (`.ogg`)**, que o WhatsApp e o Telegram aceitam como áudio ([`docs/ideia-enviar-audio-por-app.md`](docs/ideia-enviar-audio-por-app.md)). Com fone, dá para gravar ouvindo um hino.
 - **Metrônomo:** de 30 a 240 bpm, compassos simples (2, 3, 4) e compostos (6, 9, 12), pêndulo que vai e volta; segue com a tela bloqueada e lembra os últimos usados.
 - **Saída de áudio:** em Ajustes, a saída em uso (alto-falante, fone com fio, USB-C ou Bluetooth) e quatro modos, **Automático e buffer alto, médio e baixo**, guardados por saída, com as medidas do que valeu, para quem ouve estalos no fone ([`docs/saida-de-audio.md`](docs/saida-de-audio.md)).
