@@ -14,8 +14,8 @@ export class Escuta {
     return this.relogio !== null;
   }
 
-  /** Abre o microfone (chamar a partir de um toque). `aoLer` recebe a leitura de cada janela, ou nulo se não há som para medir. Rejeita se não há microfone ou a permissão foi negada. */
-  async iniciar(aoLer: (b: Bruta | null) => void): Promise<void> {
+  /** Abre o microfone (chamar a partir de um toque). `aoLer` recebe a leitura de cada janela, ou nulo se não há som para medir; `aoPerder` avisa quando o sistema tira o microfone (permissão revogada, aparelho desconectado, outro app o toma). Rejeita se não há microfone ou a permissão foi negada. */
+  async iniciar(aoLer: (b: Bruta | null) => void, aoPerder?: () => void): Promise<void> {
     if (this.ligada) return;
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) throw new DOMException("sem microfone", "NotSupportedError");
     const meu = ++this.numero;
@@ -37,6 +37,18 @@ export class Escuta {
     }
     this.fluxo = fluxo;
     this.contexto = contexto;
+    for (const faixa of fluxo.getAudioTracks()) {
+      // `ended` não dispara no `stop()` do próprio `parar()`: sem laço.
+      faixa.addEventListener(
+        "ended",
+        () => {
+          if (meu !== this.numero) return;
+          this.parar();
+          aoPerder?.();
+        },
+        { once: true },
+      );
+    }
     void contexto.resume().catch(() => {});
     const analisador = contexto.createAnalyser();
     analisador.fftSize = JANELA;

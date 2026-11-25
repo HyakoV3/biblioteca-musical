@@ -66,6 +66,15 @@ describe("contextoValido", () => {
     expect(contextoValido({ v: 99, origem: "hino" })).toBeNull();
     expect(contextoValido({ v: 1, origem: "hino", hino: { numero: "x", vozes: [] } })).toBeNull();
   });
+  it("recusa registro malformado, que quebraria o texto (sem título, voz sem nome, tempos fora de 2 a 4)", () => {
+    const ok = montarContexto({ ...base, hino: hino() })!;
+    expect(contextoValido({ ...ok, hino: { ...ok.hino!, titulo: undefined } })).toBeNull();
+    expect(contextoValido({ ...ok, hino: { ...ok.hino!, vozes: [{ tocando: true }] } })).toBeNull();
+    expect(contextoValido({ ...ok, hino: { ...ok.hino!, parte: "x" } })).toBeNull();
+    const m = montarContexto({ ...base, metronomo: { ligado: true, bpm: 65, compasso: 4 } })!;
+    expect(contextoValido({ ...m, metronomo: { ...m.metronomo!, tempos: 5 } })).toBeNull();
+    expect(contextoValido({ ...m, metronomo: { ...m.metronomo!, familia: "x" } })).toBeNull();
+  });
 });
 
 describe("textoDoContexto", () => {

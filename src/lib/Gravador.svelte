@@ -128,9 +128,9 @@
           : null,
     });
   }
-  /** O contexto do instante em que a gravação começou; ao parar, vira o contexto guardado (com a marca de que algo mudou, se mudou). */
+  /** O contexto do instante em que a gravação começou; no instante de parar (lido ANTES de qualquer espera), vira o contexto guardado, com a marca de que algo mudou, se mudou. */
   let contextoDoInicio: ContextoGravacao | null = null;
-  const contextoParaGuardar = () => marcarMudanca(contextoDoInicio, lerContexto());
+  const contextoAoParar = () => marcarMudanca(contextoDoInicio, lerContexto());
 
   async function iniciar() {
     const minha = ++tentativa;
@@ -176,6 +176,7 @@
 
   async function parar() {
     if (!gravando) return; // outra parada já está em andamento
+    const contexto = contextoAoParar(); // antes de qualquer espera: o que mudar enquanto o arquivo fecha não conta
     tentativa++;
     pararRelogio();
     gravando = false;
@@ -191,15 +192,15 @@
       erro = "falhou";
       return;
     }
-    await guardar(nova);
+    await guardar(nova, contexto);
   }
 
   /** Guarda a gravação na lista (no topo). Se não der (cota cheia, armazenamento indisponível), ela fica na tela para a pessoa ouvir e a tela explica. */
-  async function guardar(nova: Gravacao) {
+  async function guardar(nova: Gravacao, contexto: ContextoGravacao | null) {
     erroGuardar = false;
     rastro(`guardando ${nova.bytes} bytes`);
     const comeco = performance.now();
-    const salvando = gravacoes.salvar(nova.blob, nova.tipo, nova.segundos, contextoParaGuardar());
+    const salvando = gravacoes.salvar(nova.blob, nova.tipo, nova.segundos, contexto);
     try {
       const meta = await comLimite(salvando, LIMITE_PARA_GUARDAR_MS, "o armazenamento demorou demais para guardar a gravação");
       rastro(`guardada em ${Math.round(performance.now() - comeco)} ms`);
@@ -406,6 +407,7 @@
   const MOTIVO_DEMORA = "o armazenamento demorou demais para guardar a gravação";
 
   async function pararEGuardarAoSair() {
+    const contexto = contextoAoParar(); // antes do primeiro await: parar o hino ou o metrônomo durante a espera não conta como mudança
     try {
       // `parar()` já tem o seu limite (entrega o que foi gravado se o `stop` não vier): sem um segundo, mais curto ou igual, que descartaria a entrega parcial.
       const nova = await gravador.parar();
@@ -415,7 +417,7 @@
         return;
       }
       URL.revokeObjectURL(nova.url);
-      const salvando = gravacoes.salvar(nova.blob, nova.tipo, nova.segundos, contextoParaGuardar());
+      const salvando = gravacoes.salvar(nova.blob, nova.tipo, nova.segundos, contexto);
       try {
         // Com o mesmo limite de espera de `guardar()`: um armazenamento lento não deixa a espera pendente para sempre.
         await comLimite(salvando, LIMITE_PARA_GUARDAR_MS, MOTIVO_DEMORA);

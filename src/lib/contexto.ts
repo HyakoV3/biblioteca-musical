@@ -106,13 +106,32 @@ export function marcarMudanca(inicio: ContextoGravacao | null, fim: ContextoGrav
   return fim !== null && JSON.stringify(base) === JSON.stringify(semMarca(fim)) ? base : { ...base, mudouDurante: true };
 }
 
+const finito = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
+
 /** Lê um contexto guardado: devolve nulo se não é um objeto reconhecível. Campos que este app não conhece são ignorados ao ler, mas ficam no registro (não se reescreve o que está guardado). */
 export function contextoValido(x: unknown): ContextoGravacao | null {
   if (!x || typeof x !== "object") return null;
   const c = x as Partial<ContextoGravacao>;
   if (typeof c.v !== "number" || c.v < 1 || c.v > VERSAO_DO_CONTEXTO) return null;
-  if (c.origem === "metronomo" && c.metronomo && Number.isFinite(c.metronomo.bpm) && Number.isFinite(c.metronomo.tempos)) return c as ContextoGravacao;
-  if (c.origem === "hino" && c.hino && Number.isFinite(c.hino.numero) && Array.isArray(c.hino.vozes)) return c as ContextoGravacao;
+  if (c.origem === "metronomo") {
+    const m = c.metronomo;
+    return m && finito(m.bpm) && finito(m.cliques) && (m.familia === "simples" || m.familia === "composto") && [2, 3, 4].includes(m.tempos) ? (c as ContextoGravacao) : null;
+  }
+  if (c.origem === "hino") {
+    const h = c.hino;
+    return h &&
+      finito(h.numero) &&
+      typeof h.titulo === "string" &&
+      finito(h.andamento) &&
+      finito(h.transposicao) &&
+      (h.tonalidade === undefined || typeof h.tonalidade === "string") &&
+      (h.andamentoOriginal === undefined || finito(h.andamentoOriginal)) &&
+      (h.parte === "tudo" || h.parte === "intro" || finito(h.parte)) &&
+      Array.isArray(h.vozes) &&
+      h.vozes.every((v) => !!v && typeof v === "object" && typeof v.nome === "string" && typeof v.tocando === "boolean")
+      ? (c as ContextoGravacao)
+      : null;
+  }
   return null;
 }
 

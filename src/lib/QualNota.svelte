@@ -58,12 +58,21 @@
     ultimoSom = performance.now();
     ouvindo = true;
     try {
-      await escuta.iniciar((bruta) => {
-        const agora = performance.now();
-        estado = estabilizador.entrar(agora, bruta);
-        if (estado.tipo !== "silencio") ultimoSom = agora;
-        else if (agora - ultimoSom > SEM_SOM_MAX_MS) parar(); // esquecida ligada: solta o microfone
-      });
+      await escuta.iniciar(
+        (bruta) => {
+          const agora = performance.now();
+          estado = estabilizador.entrar(agora, bruta);
+          if (estado.tipo !== "silencio") ultimoSom = agora;
+          else if (agora - ultimoSom > SEM_SOM_MAX_MS) parar(); // esquecida ligada: solta o microfone
+        },
+        () => {
+          // o sistema tirou o microfone: não fica "ouvindo" sem ouvir
+          if (minha !== tentativa) return;
+          parar();
+          erro = "falhou";
+        },
+      );
+      if (minha === tentativa) ultimoSom = performance.now(); // o relógio dos 2 min começa quando o microfone abre, e não no pedido de permissão
     } catch (e) {
       console.warn("afinador: não foi possível ouvir", e);
       if (minha !== tentativa) return;
@@ -85,9 +94,10 @@
       erro = "gravando";
     }
   });
-  // O pai desligou `ouvindo` (o tom de referência começou): solta o microfone.
+  // `ouvindo` desligado (o pai, porque o tom de referência começou, ou esta tela): solta o microfone. Sempre, e não só com a escuta já ligada: `parar()` é idempotente e cancela um
+  // pedido que ainda espera a permissão (senão o microfone abriria depois, com a tela em "Ouvir").
   $effect(() => {
-    if (!ouvindo && escuta.ligada) parar();
+    if (!ouvindo) parar();
   });
   $effect(() => {
     const aoEsconder = () => {
@@ -120,12 +130,18 @@
   let anunciadoEm = 0;
   $effect(() => {
     const novo = escrita !== null && palavra ? `${porExtenso(escrita)}, ${t(`afinador.${palavra}`)}` : "";
-    const agora = performance.now();
-    if (novo && novo !== anuncio && agora - anunciadoEm >= 1000) {
-      anuncio = novo;
-      anunciadoEm = agora;
+    if (!novo) {
+      if (!ouvindo) anuncio = "";
+      return;
     }
-    if (!novo && !ouvindo) anuncio = "";
+    if (novo === anuncio) return;
+    // No máximo uma vez por segundo, e o ÚLTIMO valor sempre chega: o anúncio é adiado pelo tempo que falta, em vez de ser perdido.
+    const espera = Math.max(0, 1000 - (performance.now() - anunciadoEm));
+    const id = setTimeout(() => {
+      anuncio = novo;
+      anunciadoEm = performance.now();
+    }, espera);
+    return () => clearTimeout(id);
   });
 </script>
 

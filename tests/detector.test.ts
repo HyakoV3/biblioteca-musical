@@ -95,6 +95,13 @@ describe("Estabilizador", () => {
     expect(r).toMatchObject({ tipo: "nota", leitura: { midi: 69 } });
   });
 
+  it("depois de uma pausa curta, uma nota uma oitava acima vale na hora (a mediana velha não decide)", () => {
+    const e = new Estabilizador();
+    for (const t of [0, 50, 100]) e.entrar(t, b(440));
+    expect(e.entrar(400, null).tipo).toBe("congelada");
+    expect(e.entrar(450, b(880))).toMatchObject({ tipo: "nota", leitura: { midi: 81 } });
+  });
+
   it("depois do fim do som a última nota fica congelada por ~1 s e então volta ao silêncio", () => {
     const e = new Estabilizador();
     e.entrar(0, b(440));

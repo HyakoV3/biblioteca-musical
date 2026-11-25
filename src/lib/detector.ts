@@ -73,10 +73,11 @@ export class Estabilizador {
 
   entrar(agora: number, bruta: Bruta | null): Estado {
     if (leituraValida(bruta)) {
+      // Poda ANTES de filtrar: depois de uma pausa (entre 200 ms e o fim do congelamento) as leituras velhas não podem decidir se a nota nova é "erro de oitava".
+      this.recentes = this.recentes.filter((r) => agora - r.t <= JANELA_MEDIANA_MS);
       const f = this.filtrarOitava(bruta.freq);
       if (f !== null) {
         this.recentes.push({ t: agora, f });
-        this.recentes = this.recentes.filter((r) => agora - r.t <= JANELA_MEDIANA_MS);
         const freq = mediana(this.recentes.map((r) => r.f));
         const leitura = freq === null ? null : leituraComHisterese(freq, this.nota, this.la);
         if (freq !== null && leitura) {
