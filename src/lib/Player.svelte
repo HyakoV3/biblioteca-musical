@@ -266,7 +266,7 @@
             disabled={!editavel || cfg.transposicao <= -TRANSPOSICAO_MAX}
             onclick={() => mudarTom(-1)}><Icone nome="menos" tamanho={24} /></button
           >
-          <output aria-live="polite" class="restauravel" title={t("player.duplo_clique_restaurar")} ondblclick={() => editavel && (cfg.transposicao = 0)}>
+          <output aria-live="polite" class:restauravel={editavel} title={editavel ? t("player.duplo_clique_restaurar") : undefined} ondblclick={() => editavel && (cfg.transposicao = 0)}>
             {i18n.tn("plural.semitons", Math.abs(cfg.transposicao), { n: sinal(cfg.transposicao) })}
           </output>
           <button

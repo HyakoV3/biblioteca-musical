@@ -27,7 +27,7 @@
       onclick={() => mudar(bpm)}>{#if -bpm === PASSO_FINO}<Icone nome="menos" tamanho={24} />{:else}−{-bpm}{/if}</button
     >
   {/each}
-  <output aria-live="polite" class:restauravel={padrao !== undefined} title={padrao !== undefined ? t("player.duplo_clique_restaurar") : undefined} ondblclick={restaurar}>{t("player.bpm", { n: cfg.andamento })}</output>
+  <output aria-live="polite" class:restauravel={editavel && padrao !== undefined} title={editavel && padrao !== undefined ? t("player.duplo_clique_restaurar") : undefined} ondblclick={restaurar}>{t("player.bpm", { n: cfg.andamento })}</output>
   {#each [PASSO_FINO, PASSO_GROSSO] as bpm (bpm)}
     <button
       aria-label={t("player.aumentar_n", { item, n: bpm })}

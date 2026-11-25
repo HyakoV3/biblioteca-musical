@@ -14,6 +14,8 @@
   const cfg = reproducao.config(hino);
   const editavel = $derived(!(reproducao.atual?.numero === hino.numero && reproducao.estado === "tocando"));
   const idPainel = "painel-andamento-topo";
+  // svelte-ignore state_referenced_locally
+  const padrao = hino.andamento ?? 90;
 </script>
 
 <button class="botao andamento" popovertarget={idPainel} aria-label={t("hino.andamento_botao", { n: cfg.andamento })} title={t("hino.andamento_botao", { n: cfg.andamento })}>
@@ -21,7 +23,9 @@
 </button>
 <div id={idPainel} popover="auto" class="painel" role="group" aria-label={t("player.andamento_rotulo")}>
   <p class="titulo">{t("player.andamento_rotulo")}</p>
-  <ControleAndamento {cfg} {editavel} padrao={hino.andamento ?? 90} />
+  <ControleAndamento {cfg} {editavel} padrao={padrao} />
+  <!-- O mesmo que dois cliques no valor, num botão de verdade (teclado, leitor de tela e aparelhos onde o duplo toque não chega). -->
+  <button class="botao secundario" disabled={!editavel || cfg.andamento === padrao} onclick={() => (cfg.andamento = padrao)}>{t("player.restaurar_andamento", { n: padrao })}</button>
   {#if !editavel}<p class="dica" role="status">{t("hino.andamento_pausar")}</p>{/if}
 </div>
 
