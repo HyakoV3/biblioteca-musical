@@ -63,7 +63,7 @@ Um objeto `contexto`, guardado **junto da gravação**, com versão. Só dados *
 | Campo | Para quê |
 |---|---|
 | `origem` | `"metronomo"`, `"hino"` ou `"nada"` (gravou em silêncio; **o `contexto` pode nem existir**). |
-| `metronomo.bpm`, `cliques`, `familia` | O professor sabe o andamento e se o compasso é simples ou composto. **Pergunta aberta:** nos compostos (6, 9, 12) o `bpm` do app é **por clique (colcheia)** ou **por tempo (semínima pontuada)**? Não confirmei no código, e o professor precisa saber qual: **registrar os dois**: `bpm` do clique e `tempos` (cliques ÷ 3) com `bpmDoTempo`. |
+| `metronomo.bpm`, `cliques`, `familia`, `tempos` | O professor sabe o andamento e se o compasso é simples ou composto. **Conferido no código** (`metronomo.ts`, período do clique = 60 ÷ bpm): o `bpm` do app é **por clique**, que nos compostos é a **colcheia**. `tempos` = `cliques` nos simples (2, 3, 4) e `cliques` ÷ 3 nos compostos (6, 9, 12). O **bpm por tempo** (semínima pontuada, `bpm` ÷ 3) **não é guardado**: o texto o calcula na hora, só para os compostos. |
 | `metronomo.nome` | Texto pronto: "binário/ternário/quaternário simples ou composto". |
 | `hino.numero`, `titulo`, `acervo` | Qual hino. O **acervo** entra por causa do Hinário 4 (o mesmo número em dois hinários). |
 | `hino.tonalidade`, `transposicao` | O professor ouve o aluno em outro tom: "**+1 semitom** sobre Si♭ maior" é o que explica. Registrar também o **tom resultante** (Si♭ + 1 = Si maior) ajuda quem não faz a conta. |
@@ -146,7 +146,7 @@ Regras: linhas **opcionais** somem quando não se aplicam (sem voz tirada, trans
 1. **Padrão do interruptor "Anexar o que eu ouvia":** ligado ou desligado? (Proposta: **ligado**, porque o professor quase sempre quer saber.)
 2. O professor precisa de **instrumento e volume** de cada voz, ou só **quais vozes** estavam no fone?
 3. **Mudou no meio da gravação:** basta "no início da gravação" (v1) ou quer a **linha do tempo** (v2)?
-4. **bpm do compasso composto:** o professor entende "65 bpm" como o **clique** (colcheia) ou como o **tempo** (semínima pontuada)? O texto deve dizer qual.
+4. **bpm do compasso composto:** o app conta por **clique** (colcheia). O texto da proposta diz os dois ("120 bpm por clique (40 bpm por tempo)"): serve, ou o professor prefere só o por tempo?
 5. Quer o **nome do arquivo** informativo, ou prefere manter `gravacao-AAAA-MM-DD-HHMM`?
 6. O **tom de referência do Afinador** (Lá 440 ou outra nota) também entra? Hoje o Afinador tem som próprio e, pelo código, é **um som de cada vez**; não achei como ele convive com a gravação, **conferir** antes de decidir.
 7. Se a pessoa **gravar sem fone** (o app impede som), ou **em silêncio**, vale ainda gravar o **hino que estava aberto** na tela como contexto (sem som no áudio), ou nada?
@@ -166,4 +166,4 @@ Regras: linhas **opcionais** somem quando não se aplicam (sem voz tirada, trans
 - Ogg/Opus: [RFC 7845](https://rfc-editor.org/rfc/rfc7845) (seção 5.2.1, a conferir); [Vorbis comment, especificação](https://xiph.org/vorbis/doc/v-comment.html); [Xiph, VorbisComment](https://wiki.xiph.org/VorbisComment).
 - Compasso: [Open Music Theory, compassos compostos](https://viva.pressbooks.pub/openmusictheory/chapter/compound-meters-and-time-signatures/); [Soundbrenner](https://www.soundbrenner.com/blogs/articles/compound-meter); [LibreTexts, simples x composto](https://human.libretexts.org/Courses/Sierra_College/Equipping_the_Musical_Ear/04%3A_Compound_Meter/4.02%3A_Simple_Meter_vs._Compound_Meter).
 - Esquema versionado: [version-migrate](https://docs.rs/crate/version-migrate/0.20.0); [padrão de estado persistido versionado](https://dev.to/sebastianthiebaud/a-simple-pattern-for-versioned-persisted-state-in-react-native-ll6).
-- **Não verificado nesta rodada:** se WhatsApp ou Telegram mostram `EXTRA_TEXT`, o nome do arquivo ou o `COMMENT` de um áudio; a lista de nomes padrão do RFC 7845; o que o `bpm` do metrônomo significa nos compassos compostos.
+- **Não verificado nesta rodada:** se WhatsApp ou Telegram mostram `EXTRA_TEXT`, o nome do arquivo ou o `COMMENT` de um áudio; a lista de nomes padrão do RFC 7845.
