@@ -76,9 +76,14 @@ describe("justificado: versos curtos", () => {
     expect(maiorVerso(partes)).toBe("Senhor, tu és o meu pastor e nada me faltará".length);
     expect(maiorVerso([])).toBe(0);
   });
-  it("só os muito curtos (menos de 60% do maior) ficam fora do esticado", () => {
+  it("só os muito curtos (até 2 palavras ou menos de 35% do maior) ficam fora do esticado", () => {
     const m = maiorVerso(partes);
     expect(versoCurto("Amém.", m)).toBe(true);
-    expect(versoCurto("Senhor, tu és o meu pastor e nada", m)).toBe(false);
+    expect(versoCurto("Glória a Deus", m)).toBe(true); // 3 palavras, mas 13 de 45 caracteres é menos de 35%
+    expect(versoCurto("Glória a Deus nos céus", m)).toBe(false); // 3 ou mais palavras e mais de 35%
+    expect(versoCurto("Ó Senhor", m)).toBe(true); // 2 palavras
+    expect(versoCurto("Sim, Senhor, sim", m)).toBe(false);
+    expect(versoCurto("Senhor, tu és o meu pastor", m)).toBe(false); // antes (60%) ficava de fora
+    expect(versoCurto("a b c", 200)).toBe(true); // menos de 35% de um verso de 200
   });
 });
