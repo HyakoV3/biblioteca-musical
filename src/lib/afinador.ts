@@ -54,9 +54,11 @@ export type Leitura = { midi: number; cents: number };
  * Sem nota atual, vale a mais próxima. Frequência inválida: nulo.
  */
 export function leituraComHisterese(freq: number, atual: number | null, la: number = LA_PADRAO, limite: number = HISTERESE_CENTS): Leitura | null {
-  const perto = notaMaisProxima(freq, la);
+  const perto = notaMaisProxima(freq, la); // já recusa frequência e afinação inválidas
   if (!perto) return null;
-  if (atual !== null) {
+  // `atual` que não é uma nota (NaN, fração) e `limite` inválido não escondem erro: a nota atual é ignorada e o limite volta ao padrão.
+  if (!Number.isFinite(limite) || limite <= 0) limite = HISTERESE_CENTS;
+  if (atual !== null && Number.isInteger(atual)) {
     const cents = centsEntre(freq, frequenciaDe(atual, la));
     if (Math.abs(cents) <= limite) return { midi: atual, cents };
   }
@@ -64,12 +66,12 @@ export function leituraComHisterese(freq: number, atual: number | null, la: numb
 }
 
 /** Onde a bola fica na trilha, de −1 (ponta esquerda, a nota abaixo) a 1 (ponta direita, a nota acima); passando de ±50 cents, presa na ponta. */
-export const posicaoNaTrilha = (cents: number): number => Math.max(-1, Math.min(1, cents / PONTA_CENTS));
+export const posicaoNaTrilha = (cents: number): number => (Number.isFinite(cents) ? Math.max(-1, Math.min(1, cents / PONTA_CENTS)) : 0);
 
 export type Palavra = "afinado" | "baixo" | "alto";
-/** "Afinado" dentro de ±5 cents; fora, "baixo" (abaixo da nota) ou "alto" (acima). */
-export const palavraDeAfinacao = (cents: number, tolerancia: number = AFINADO_CENTS): Palavra =>
-  Math.abs(cents) <= tolerancia ? "afinado" : cents < 0 ? "baixo" : "alto";
+/** "Afinado" dentro de ±5 cents; fora, "baixo" (abaixo da nota) ou "alto" (acima). Leitura inválida (NaN): nulo, para a tela não mostrar "alto" sem ter lido nada. */
+export const palavraDeAfinacao = (cents: number, tolerancia: number = AFINADO_CENTS): Palavra | null =>
+  !Number.isFinite(cents) ? null : Math.abs(cents) <= tolerancia ? "afinado" : cents < 0 ? "baixo" : "alto";
 
 /** As vizinhas de uma nota: a de baixo e a de cima (um semitom). */
 export const vizinhas = (midi: number): { abaixo: number; acima: number } => ({ abaixo: midi - 1, acima: midi + 1 });
@@ -83,10 +85,10 @@ export type Transposicao = keyof typeof DESLOCAMENTO_ESCRITO;
 /** A nota (MIDI) que o músico lê na partitura dele, a partir da que soa. */
 export const notaEscrita = (midiQueSoa: number, instrumento: Transposicao): number => midiQueSoa + DESLOCAMENTO_ESCRITO[instrumento];
 
-/** Mediana (vibrato da voz, ruído): de uma janela de leituras recentes. Lista vazia: nulo. */
+/** Mediana (vibrato da voz, ruído): de uma janela de leituras recentes. Valores não finitos (NaN, infinito) são descartados; sem nenhum válido: nulo. */
 export function mediana(valores: readonly number[]): number | null {
-  if (valores.length === 0) return null;
-  const o = [...valores].sort((a, b) => a - b);
+  const o = valores.filter(Number.isFinite).sort((a, b) => a - b);
+  if (o.length === 0) return null;
   const m = o.length >> 1;
   return o.length % 2 ? o[m] : (o[m - 1] + o[m]) / 2;
 }

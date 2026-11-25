@@ -239,6 +239,19 @@ describe("Qual nota é essa? (I-35): contas do medidor de vizinhas", () => {
     expect(mediana([440, 441, 900, 439, 440])).toBe(440); // um pico isolado não pesa
   });
 
+  it("entradas inválidas não viram leitura nem palavra", () => {
+    expect(posicaoNaTrilha(NaN)).toBe(0);
+    expect(posicaoNaTrilha(Infinity)).toBe(0);
+    expect(palavraDeAfinacao(NaN)).toBeNull();
+    expect(palavraDeAfinacao(Infinity)).toBeNull();
+    expect(mediana([NaN, 3, 1, Infinity, 2])).toBe(2); // descarta o que não é número
+    expect(mediana([NaN, NaN])).toBeNull();
+    expect(leituraComHisterese(440, 69, 0)).toBeNull(); // afinação inválida
+    expect(leituraComHisterese(440, NaN)!.midi).toBe(69); // nota atual inválida é ignorada
+    expect(leituraComHisterese(440, 69.5)!.midi).toBe(69);
+    expect(leituraComHisterese(f(69, 55), 69, 440, NaN)!.midi).toBe(69); // limite inválido volta ao padrão de 60
+  });
+
   it("frequência inválida não dá leitura", () => {
     expect(leituraComHisterese(0, null)).toBeNull();
     expect(leituraComHisterese(NaN, 69)).toBeNull();
