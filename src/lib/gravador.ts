@@ -2,6 +2,8 @@
 // até a pessoa descartá-la ou sair. A parte pura (escolha do formato e os textos de tempo e tamanho) se testa no Vitest; o resto liga a API do
 // navegador (`getUserMedia` e `MediaRecorder`), que no WebView do Android depende de o aplicativo ter a permissão de microfone.
 
+import { FILTRO_PADRAO, TAXA_NEURAL, ehNeural, type FiltroDeRuido } from "./filtroDeRuido";
+
 /** Formatos que se tenta, do preferido ao último recurso: Opus é compacto e o que o responsável pediu; MP4 e WebM são o que o navegador sabe gravar. */
 export const FORMATOS_PREFERIDOS = ["audio/ogg;codecs=opus", "audio/webm;codecs=opus", "audio/mp4", "audio/webm"] as const;
 
@@ -156,6 +158,8 @@ export class Gravador {
   private contexto: AudioContext | null = null;
   private analisador: AnalyserNode | null = null;
   private amostras: Float32Array<ArrayBuffer> | null = null;
+  /** O filtro neural no caminho do microfone (fonte, filtro e destino), quando há: o gravador grava a saída do destino. */
+  private nos: { fonte: AudioNode; filtro: AudioNode & { destroy?: () => void }; destino: MediaStreamAudioDestinationNode } | null = null;
   private pedacos: Blob[] = [];
   private inicio = 0;
   /** Quando a gravação terminou (por `parar` ou porque a trilha do microfone acabou); 0 enquanto grava. */
@@ -169,26 +173,38 @@ export class Gravador {
     return this.gravador?.state === "recording";
   }
 
-  /** `reduzirRuido` liga a supressão de ruído do aparelho para esta gravação (I-29); desligada por padrão, para o som sair fiel. */
-  async iniciar(opcoes: { reduzirRuido?: boolean } = {}): Promise<void> {
-    if (this.gravando) return;
+  /**
+   * `filtro` escolhe a redução de ruído desta gravação (I-29): desligada por padrão, para o som sair fiel. Devolve o filtro que de fato foi aplicado: se um filtro neural não pôde ser ligado
+   * (sem AudioWorklet, sem WebAssembly, arquivo que não carrega), a gravação SEGUE sem filtro (devolve "desligado") em vez de falhar, e a tela avisa.
+   */
+  async iniciar(opcoes: { filtro?: FiltroDeRuido } = {}): Promise<FiltroDeRuido> {
+    if (this.gravando) return "desligado";
+    const filtro = opcoes.filtro ?? FILTRO_PADRAO;
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") throw new DOMException("sem gravação", "NotSupportedError");
     // O contexto do medidor nasce AGORA, no toque (o navegador só deixa o áudio iniciar depois de um gesto), e não depois da espera pela permissão.
-    this.abrirMedidor();
+    this.abrirMedidor(ehNeural(filtro) ? TAXA_NEURAL : undefined);
     try {
       this.fluxo = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: false, noiseSuppression: opcoes.reduzirRuido === true, autoGainControl: false, channelCount: 1 },
+        audio: { echoCancellation: false, noiseSuppression: filtro === "android", autoGainControl: false, channelCount: 1 },
       });
     } catch (e) {
       this.soltar();
       throw e;
     }
     try {
-      this.ligarMedidor(this.fluxo);
+      // O que o gravador grava: o microfone direto, ou a saída do filtro neural.
+      let aGravar: MediaStream = this.fluxo;
+      let aplicado: FiltroDeRuido = filtro;
+      if (ehNeural(filtro)) {
+        const ligado = await this.ligarFiltro(filtro);
+        if (ligado) aGravar = ligado;
+        else aplicado = "desligado";
+      }
+      if (!this.nos) this.ligarMedidor(this.fluxo);
       const preferido = escolherFormato((t) => MediaRecorder.isTypeSupported(t));
       this.gravador = preferido
-        ? new MediaRecorder(this.fluxo, { mimeType: preferido, audioBitsPerSecond: BITS_POR_SEGUNDO })
-        : new MediaRecorder(this.fluxo, { audioBitsPerSecond: BITS_POR_SEGUNDO });
+        ? new MediaRecorder(aGravar, { mimeType: preferido, audioBitsPerSecond: BITS_POR_SEGUNDO })
+        : new MediaRecorder(aGravar, { audioBitsPerSecond: BITS_POR_SEGUNDO });
       this.tipo = this.gravador.mimeType || preferido || "";
       this.pedacos = [];
       this.fim = 0;
@@ -204,10 +220,43 @@ export class Gravador {
       this.fluxo.getTracks().forEach((t) => t.addEventListener("ended", interrompida));
       this.gravador.start(1000); // um pedaço por segundo: uma queda no meio ainda deixa o que já foi gravado
       this.inicio = performance.now();
-      rastro(`gravando (${this.tipo || "formato do navegador"})`);
+      rastro(`gravando (${this.tipo || "formato do navegador"}, filtro ${aplicado})`);
+      return aplicado;
     } catch (e) {
       this.soltar();
       throw e;
+    }
+  }
+
+  /**
+   * Põe o filtro neural entre o microfone e o gravador (fonte → filtro → destino). Devolve o fluxo filtrado, ou nulo se não deu (sem contexto de 48 kHz, sem AudioWorklet, arquivo que não
+   * carrega): aí nada fica ligado pela metade e a gravação segue sem filtro. O medidor passa a ler a saída do filtro.
+   */
+  private async ligarFiltro(qual: "rnnoise" | "gtcrn"): Promise<MediaStream | null> {
+    const ctx = this.contexto;
+    const mic = this.fluxo;
+    if (!ctx || !mic || ctx.sampleRate !== TAXA_NEURAL) {
+      console.warn("gravador: sem contexto de 48 kHz para o filtro de ruído; gravando sem filtro");
+      return null;
+    }
+    try {
+      const { criarFiltro } = await import("./ruido");
+      const filtro = await criarFiltro(ctx, qual);
+      if (this.fluxo !== mic || this.contexto !== ctx) {
+        // `soltar` aconteceu enquanto o filtro carregava: não deixa nada ligado.
+        filtro.destroy();
+        return null;
+      }
+      const fonte = ctx.createMediaStreamSource(mic);
+      const destino = ctx.createMediaStreamDestination();
+      fonte.connect(filtro);
+      filtro.connect(destino);
+      this.nos = { fonte, filtro, destino };
+      this.ligarMedidorEm(filtro);
+      return destino.stream;
+    } catch (e) {
+      console.warn(`gravador: não foi possível ligar o filtro de ruído ${qual}; gravando sem filtro`, e);
+      return null;
     }
   }
 
@@ -230,12 +279,12 @@ export class Gravador {
     }
   }
 
-  private abrirMedidor(): void {
+  private abrirMedidor(taxa?: number): void {
     try {
       const g = globalThis as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext };
       const Contexto = g.AudioContext ?? g.webkitAudioContext; // WebViews e Safari antigos só têm o nome com prefixo
       if (!Contexto) return;
-      this.contexto = new Contexto();
+      this.contexto = taxa ? new Contexto({ sampleRate: taxa }) : new Contexto(); // os filtros neurais pedem 48 kHz
       void this.contexto.resume().catch(() => {});
     } catch {
       this.contexto = null; // sem medidor, a gravação segue igual
@@ -245,11 +294,22 @@ export class Gravador {
   private ligarMedidor(fluxo: MediaStream): void {
     if (!this.contexto) return;
     try {
+      // Só escuta: a fonte NÃO vai para a saída (senão o microfone tocaria no alto-falante).
+      this.ligarMedidorEm(this.contexto.createMediaStreamSource(fluxo));
+    } catch {
+      this.analisador = null;
+      this.amostras = null;
+    }
+  }
+
+  /** O medidor lê a saída de `origem` (o microfone, ou o filtro neural: assim a barra mostra o que vai ser gravado). Não vai para a saída. */
+  private ligarMedidorEm(origem: AudioNode): void {
+    if (!this.contexto) return;
+    try {
       this.analisador = this.contexto.createAnalyser();
       this.analisador.fftSize = 1024;
       this.amostras = new Float32Array(new ArrayBuffer(this.analisador.fftSize * 4));
-      // Só escuta: a fonte NÃO vai para a saída (senão o microfone tocaria no alto-falante).
-      this.contexto.createMediaStreamSource(fluxo).connect(this.analisador);
+      origem.connect(this.analisador);
     } catch {
       this.analisador = null;
       this.amostras = null;
@@ -317,6 +377,16 @@ export class Gravador {
     }
     this.gravador = null;
     this.pedacos = [];
+    if (this.nos) {
+      try {
+        this.nos.fonte.disconnect();
+        this.nos.filtro.disconnect();
+        this.nos.filtro.destroy?.();
+      } catch {
+        /* já desligado */
+      }
+      this.nos = null;
+    }
     this.analisador = null;
     this.amostras = null;
     void this.contexto?.close().catch(() => {});

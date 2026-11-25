@@ -194,15 +194,21 @@ describe("o último hino aberto (I-17)", () => {
   });
 });
 
-describe("reduzir ruído do Gravador (I-29)", () => {
-  it("padrão desligado; guarda e lê; sem armazenamento não quebra", async () => {
-    const { lerReduzirRuido, salvarReduzirRuido } = await import("../src/lib/preferencias");
-    expect(lerReduzirRuido()).toBe(false);
-    salvarReduzirRuido(true);
-    expect(mem["prefs.reduzir-ruido"]).toBe("1");
-    expect(lerReduzirRuido()).toBe(true);
-    salvarReduzirRuido(false);
-    expect(lerReduzirRuido()).toBe(false);
+describe("filtro de ruído do Gravador (I-29)", () => {
+  it("padrão desligado; guarda e lê cada filtro; o formato antigo (caixa) é entendido; sem armazenamento não quebra", async () => {
+    const { lerFiltroDeRuido, salvarFiltroDeRuido } = await import("../src/lib/preferencias");
+    expect(lerFiltroDeRuido()).toBe("desligado");
+    for (const f of ["android", "rnnoise", "gtcrn", "desligado"] as const) {
+      salvarFiltroDeRuido(f);
+      expect(mem["prefs.reduzir-ruido"]).toBe(f);
+      expect(lerFiltroDeRuido()).toBe(f);
+    }
+    mem["prefs.reduzir-ruido"] = "1"; // a caixa antiga ligada era o filtro do aparelho
+    expect(lerFiltroDeRuido()).toBe("android");
+    mem["prefs.reduzir-ruido"] = "0";
+    expect(lerFiltroDeRuido()).toBe("desligado");
+    mem["prefs.reduzir-ruido"] = "lixo";
+    expect(lerFiltroDeRuido()).toBe("desligado");
     vi.stubGlobal("localStorage", {
       getItem: () => {
         throw new Error("bloqueado");
@@ -211,8 +217,8 @@ describe("reduzir ruído do Gravador (I-29)", () => {
         throw new Error("bloqueado");
       },
     });
-    expect(lerReduzirRuido()).toBe(false);
-    expect(() => salvarReduzirRuido(true)).not.toThrow();
+    expect(lerFiltroDeRuido()).toBe("desligado");
+    expect(() => salvarFiltroDeRuido("rnnoise")).not.toThrow();
   });
 });
 

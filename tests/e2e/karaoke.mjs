@@ -1485,6 +1485,26 @@ async function principal() {
   await dormir(600);
   const tudoApagado = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, vazio: !!document.getElementById('lista-vazia'), resumo: !!document.getElementById('resumo-gravacoes') })`);
   confere(tudoApagado.itens === 0 && tudoApagado.vazio === true && tudoApagado.resumo === false, `Gravador: confirmando, "Apagar todas" esvazia a lista e o resumo: ${JSON.stringify(tudoApagado)}`);
+  // Filtros de ruído por rede neural (I-29): gravar DE VERDADE com o RNNoise e com o GTCRN no Chrome (AudioWorklet e WebAssembly locais, nada baixado). A gravação entra na lista, o botão mostra
+  // o nível e o aviso "não foi possível ligar o filtro" NÃO aparece (se aparecesse, o filtro teria caído em silêncio para "sem filtro").
+  for (const f of ["rnnoise", "gtcrn"]) {
+    await av(`document.querySelector('#filtro-de-ruido input[value="${f}"]').click(); 1`);
+    await dormir(200);
+    const n0 = await av(`document.querySelectorAll('.gravacao-item').length`);
+    await av(`document.getElementById('gravar').click(); 1`);
+    await dormir(2500);
+    const durante = await av(`({ gravando: document.getElementById('gravar').getAttribute('aria-pressed'), noiseSuppression: window.__pedido?.audio?.noiseSuppression, fieldsetTravado: document.getElementById('filtro-de-ruido').disabled })`);
+    await av(`document.getElementById('gravar').click(); 1`);
+    await esperarGravacao(n0 + 1);
+    const r = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, info: document.querySelector('.gravacao-item .info')?.textContent.replace(/\\s+/g, ' ').trim() ?? null, avisoDeFiltro: [...document.querySelectorAll('.aviso')].some((a) => /filter|filtro/i.test(a.textContent)) })`);
+    confere(
+      durante.gravando === "true" && durante.noiseSuppression === false && durante.fieldsetTravado === true && r.itens === n0 + 1 && /^0:0[1-4] · .*KB/.test(r.info ?? "") && r.avisoDeFiltro === false,
+      `Gravador: gravar com o filtro ${f} funciona (o filtro do aparelho fica desligado, a escolha trava enquanto grava, a gravação entra na lista e não cai para "sem filtro"): ${JSON.stringify({ durante, r })}`,
+    );
+  }
+  await av(`document.querySelector('#filtro-de-ruido input[value="desligado"]').click(); 1`);
+  await dormir(200);
+  confere((await av(`localStorage.getItem('prefs.reduzir-ruido')`)) === "desligado", "Gravador: a escolha do filtro é lembrada (volta a Desligado)");
   await av(`document.getElementById('aba-hinos').click(); 1`);
   await dormir(300);
 
