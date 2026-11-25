@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   LA_PADRAO,
+  leituraComHisterese,
+  mediana,
+  notaEscrita,
+  palavraDeAfinacao,
+  posicaoNaTrilha,
+  vizinhas,
   OITAVA_MAX,
   OITAVA_MIN,
   OITAVA_PADRAO,
@@ -170,5 +176,84 @@ describe("nomes das notas em sílabas ou letras", () => {
     expect(nomeDaTonalidade("Fá# menor", "pt", "letras")).toBe("F♯ menor");
     expect(nomeDaTonalidade("tonalidade livre", "pt", "letras")).toBe("tonalidade livre"); // o que não se reconhece volta como veio
     expect(nomeDaTonalidade("Re\u0301♭ maior".replace("Re\u0301", "Ré".normalize("NFD")), "pt", "letras")).toBe("D♭ maior"); // "Ré" decomposto (NFD) também vale
+  });
+});
+
+describe("Qual nota é essa? (I-35): contas do medidor de vizinhas", () => {
+  const f = (midi: number, cents = 0) => frequenciaDe(midi) * 2 ** (cents / 1200);
+
+  it("a vizinha de baixo e a de cima, um semitom", () => {
+    expect(vizinhas(69)).toEqual({ abaixo: 68, acima: 70 });
+  });
+
+  it("sem nota atual vale a mais próxima, com cents com sinal", () => {
+    const l = leituraComHisterese(f(69, 14), null)!;
+    expect(l.midi).toBe(69);
+    expect(l.cents).toBeCloseTo(14, 6);
+    expect(leituraComHisterese(f(69, -30), null)!.cents).toBeCloseTo(-30, 6);
+  });
+
+  it("histerese: a nota só muda depois de passar de 60 cents; a 55 continua a mesma, com a bola presa na ponta", () => {
+    const aos55 = leituraComHisterese(f(69, 55), 69)!;
+    expect(aos55.midi).toBe(69);
+    expect(aos55.cents).toBeCloseTo(55, 6);
+    expect(posicaoNaTrilha(aos55.cents)).toBe(1);
+    const aos65 = leituraComHisterese(f(69, 65), 69)!;
+    expect(aos65.midi).toBe(70); // virou a vizinha de cima, com −35 cents dela
+    expect(aos65.cents).toBeCloseTo(-35, 6);
+  });
+
+  it("o nome não pisca na fronteira: a 49 e a 51 cents da nota atual vale sempre a atual", () => {
+    for (const c of [49, 51, -49, -51]) expect(leituraComHisterese(f(60, c), 60)!.midi).toBe(60);
+  });
+
+  it("posição na trilha vai de −1 a 1 e prende nas pontas", () => {
+    expect(posicaoNaTrilha(0)).toBe(0);
+    expect(posicaoNaTrilha(25)).toBe(0.5);
+    expect(posicaoNaTrilha(-25)).toBe(-0.5);
+    expect(posicaoNaTrilha(80)).toBe(1);
+    expect(posicaoNaTrilha(-80)).toBe(-1);
+  });
+
+  it("palavra: afinado até ±5 cents, depois baixo ou alto", () => {
+    expect(palavraDeAfinacao(0)).toBe("afinado");
+    expect(palavraDeAfinacao(5)).toBe("afinado");
+    expect(palavraDeAfinacao(-5)).toBe("afinado");
+    expect(palavraDeAfinacao(5.1)).toBe("alto");
+    expect(palavraDeAfinacao(-5.1)).toBe("baixo");
+  });
+
+  it("nota escrita dos instrumentos que transpõem (com a oitava)", () => {
+    // trompete em Si♭ lê Ré quando soa Dó; sax alto em Mi♭ lê Lá quando soa Dó; trompa em Fá lê Sol quando soa Dó
+    expect(notaEscrita(60, "concerto")).toBe(60);
+    expect(notaEscrita(60, "si_bemol")).toBe(62);
+    expect(notaEscrita(60, "mi_bemol")).toBe(69);
+    expect(notaEscrita(60, "fa")).toBe(67);
+    expect(notaEscrita(70, "si_bemol")).toBe(72); // passa de oitava: Si♭4 que soa vira Dó5 escrito
+  });
+
+  it("mediana da janela (vibrato e ruído)", () => {
+    expect(mediana([])).toBeNull();
+    expect(mediana([3, 1, 2])).toBe(2);
+    expect(mediana([4, 1, 2, 3])).toBe(2.5);
+    expect(mediana([440, 441, 900, 439, 440])).toBe(440); // um pico isolado não pesa
+  });
+
+  it("entradas inválidas não viram leitura nem palavra", () => {
+    expect(posicaoNaTrilha(NaN)).toBe(0);
+    expect(posicaoNaTrilha(Infinity)).toBe(0);
+    expect(palavraDeAfinacao(NaN)).toBeNull();
+    expect(palavraDeAfinacao(Infinity)).toBeNull();
+    expect(mediana([NaN, 3, 1, Infinity, 2])).toBe(2); // descarta o que não é número
+    expect(mediana([NaN, NaN])).toBeNull();
+    expect(leituraComHisterese(440, 69, 0)).toBeNull(); // afinação inválida
+    expect(leituraComHisterese(440, NaN)!.midi).toBe(69); // nota atual inválida é ignorada
+    expect(leituraComHisterese(440, 69.5)!.midi).toBe(69);
+    expect(leituraComHisterese(f(69, 55), 69, 440, NaN)!.midi).toBe(69); // limite inválido volta ao padrão de 60
+  });
+
+  it("frequência inválida não dá leitura", () => {
+    expect(leituraComHisterese(0, null)).toBeNull();
+    expect(leituraComHisterese(NaN, 69)).toBeNull();
   });
 });
