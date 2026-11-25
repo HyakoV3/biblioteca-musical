@@ -443,8 +443,8 @@
   .sem-pacote h2 { margin: 0; font-size: 1.15rem; }
   .sem-pacote p { margin: 0; color: var(--suave); line-height: 1.5; }
 
-  /* Barra de zoom: o mesmo controle de tamanho da barra da letra (ControleDeTamanho), à direita. */
-  .barra-zoom { display: flex; justify-content: flex-end; margin: 0 0 1rem; }
+  /* Barra de zoom: o mesmo controle de tamanho da barra da letra (ControleDeTamanho), à esquerda como lá. */
+  .barra-zoom { display: flex; justify-content: flex-start; margin: 0 0 1rem; }
   .tentar { display: block; margin: 0 auto; }
   .dica { margin: 0 0 0.6rem; font-size: 0.9rem; color: var(--suave); }
 

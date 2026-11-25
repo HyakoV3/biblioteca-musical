@@ -11,7 +11,7 @@
   import { traduzirErro } from "#lib/erros";
   import { i18n } from "#lib/i18n/index.svelte";
   import AndamentoDoTopo from "#lib/AndamentoDoTopo.svelte";
-  import { estrofes } from "#lib/letra";
+  import { estrofes, maiorVerso, versoCurto } from "#lib/letra";
   import { marcaEm, marcasDaVez, sincroniaCombina, type Marca } from "#lib/karaoke";
   import { usarVoltar } from "#lib/navegacao";
   import Partitura from "#lib/Partitura.svelte";
@@ -33,6 +33,7 @@
   const numero = $derived(Number(page.params.numero));
   const hino = $derived(biblioteca.hino(numero));
   const partes = $derived(hino ? estrofes(hino.letra) : []);
+  const maior = $derived(maiorVerso(partes));
   const temAudio = $derived((hino?.vozes.length ?? 0) > 0);
   // Partitura (I-08): a aba existe nos hinos que têm partitura importada e, enquanto nenhum pacote com partituras foi importado,
   // em todos (com um aviso e um botão para Ajustes). Num pacote que tem partituras, não aparece nos hinos que não têm.
@@ -63,6 +64,26 @@
   let passoLetra = $state(leituraSalva.passo);
   let alinhamento = $state<Alinhamento>(leituraSalva.alinhamento);
   const escalaLetra = $derived(escalaDoPasso(passoLetra));
+
+  // Justificado: um verso que QUEBRA de linha na tela (tela estreita, letra grande) tem a última linha visual curta, e esticá-la deixaria buracos
+  // enormes. Só o CSS não sabe se quebrou, então medimos: o verso mais alto que uma linha e meia ganha `quebra` (a última linha fica à esquerda,
+  // as de cima seguem justificadas). Remede ao mudar o tamanho da tela, da letra, o alinhamento ou o hino.
+  let letraEl = $state<HTMLElement>();
+  $effect(() => {
+    const el = letraEl;
+    void [alinhamento, escalaLetra, partes];
+    if (!el) return;
+    const medir = () => {
+      for (const p of el.querySelectorAll<HTMLElement>(".estrofe p")) {
+        const linha = parseFloat(getComputedStyle(p).lineHeight);
+        p.classList.toggle("quebra", linha > 0 && p.getBoundingClientRect().height > linha * 1.5);
+      }
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
   function tamanhoLetra(acao: "menos" | "padrao" | "mais") {
     passoLetra = acao === "padrao" ? PASSO_PADRAO : limitarPasso(passoLetra + (acao === "mais" ? 1 : -1));
     salvarLeitura({ passo: passoLetra, alinhamento });
@@ -280,13 +301,13 @@
           </div>
         </div>
       {/if}
-      <div lang={idiomaConteudo} class={`letra alinha-${alinhamento}`} style:--escala-letra={escalaLetra}>
+      <div bind:this={letraEl} lang={idiomaConteudo} class={`letra alinha-${alinhamento}`} style:--escala-letra={escalaLetra}>
         {#each partes as e}
           <div class="estrofe" class:da-vez={aceso !== null && aceso.estrofe === e.numero} class:coro-final={e.coro || e.final}>
             {#if e.coro}<h2 lang={i18n.idioma}>{t("hino.coro")}</h2>{:else if e.final}<h2 lang={i18n.idioma}>{t("hino.final")}</h2>{:else if e.numero !== null}<h2 lang={i18n.idioma}>{t("hino.estrofe", { n: e.numero })}</h2>{/if}
             {#each e.linhas as linha, i}
               {@const acesa = aceso !== null && aceso.estrofe === e.numero && aceso.linha === i}
-              <p id={`linha-${e.numero}-${i}`} class:acesa>
+              <p id={`linha-${e.numero}-${i}`} class:acesa class:curto={versoCurto(linha, maior)}>
                 {#if acesa && aceso}{linha.slice(0, aceso.de)}<span class="trecho">{linha.slice(aceso.de, aceso.ate)}</span>{linha.slice(aceso.ate)}{:else}{linha}{/if}
               </p>
             {/each}
@@ -346,7 +367,10 @@
   /* O tamanho multiplica o de base (em rem, que já segue a fonte do sistema), e não o substitui. */
   .estrofe p { margin: 0; font-size: calc(1.15rem * var(--escala-letra, 1)); line-height: 1.7; overflow-wrap: anywhere; }
   .alinha-direita { text-align: right; }
+  /* Justificado: cada verso é um <p>, e a última linha de um parágrafo nunca é esticada; `text-align-last` estica todas (versos muito curtos, ver `versoCurto`, e os que quebram de linha, ver `quebra`, ficam com a última linha à esquerda). */
   .alinha-justificado { text-align: justify; hyphens: auto; }
+  .alinha-justificado .estrofe p { text-align-last: justify; }
+  .alinha-justificado .estrofe p.curto, .alinha-justificado .estrofe p:global(.quebra) { text-align-last: start; }
 
   /* Barra de tamanho e alinhamento da letra (os botões são o `.botao-barra` global). */
   .barra-letra { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1rem; margin: 0 0 1.2rem; }

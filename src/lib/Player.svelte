@@ -255,7 +255,7 @@
       <!-- Andamento e transposição têm o mesmo desenho: o rótulo em cima e os controles numa linha inteira embaixo. No andamento são dois passos de cada lado (−5 −1 [valor] +1 +5), e quatro botões não cabem ao lado do rótulo; na transposição, − [n semitons] +. -->
       <div class="passo-linha empilhado">
         <span class="rotulo" id="rot-andamento">{t("player.andamento_rotulo")}</span>
-        <ControleAndamento {cfg} {editavel} />
+        <ControleAndamento {cfg} {editavel} padrao={padraoAndamento} />
       </div>
 
       <div class="passo-linha empilhado">
@@ -266,7 +266,7 @@
             disabled={!editavel || cfg.transposicao <= -TRANSPOSICAO_MAX}
             onclick={() => mudarTom(-1)}><Icone nome="menos" tamanho={24} /></button
           >
-          <output aria-live="polite">
+          <output aria-live="polite" class:restauravel={editavel} title={editavel ? t("player.duplo_clique_restaurar") : undefined} ondblclick={() => editavel && (cfg.transposicao = 0)}>
             {i18n.tn("plural.semitons", Math.abs(cfg.transposicao), { n: sinal(cfg.transposicao) })}
           </output>
           <button
@@ -400,6 +400,7 @@
     border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
   .passo output { min-width: 6.5rem; text-align: center; font-variant-numeric: tabular-nums; }
+  .passo output.restauravel { touch-action: manipulation; user-select: none; cursor: pointer; }
   /* Andamento: rótulo em cima e os cinco itens (−5 −1 valor +1 +5) repartindo a largura toda. Botões de texto. */
   .passo-linha.empilhado { flex-wrap: wrap; }
   .empilhado .passo { flex: 1 1 100%; justify-content: space-between; }
