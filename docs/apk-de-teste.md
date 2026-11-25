@@ -84,11 +84,13 @@ $BT/apksigner verify --verbose BibliotecaMusical-teste.apk
 **Esta assinatura não serve para loja.** Para publicar é preciso uma chave **própria**, criada e guardada pelo
 responsável (quem perde a chave não consegue mais atualizar o app).
 
-## Entrega pelo GitHub (a ligar)
+## Entrega pelo GitHub (padrão)
 
-**Destino:** o APK sai de uma **tag `vX.Y.Z`** (ou `vX.Y.Z-rcN`, pré-lançamento) pelo workflow `release.yml`, assinado com a chave de envio, como no Nicska: `bibliotecamusical-X.Y.Z.apk`, `bibliotecamusical-X.Y.Z.aab`, `SHA256SUMS` e as notas geradas das PRs. Passo a passo e o que falta ligar (a chave e os 4 segredos): [`release-e-apk-no-github.md`](release-e-apk-no-github.md). **Hoje isso ainda não funciona:** faltam a chave de envio e os 4 segredos `ANDROID_*`. **Até lá vale o fluxo manual abaixo** (zip com o commit no nome, compilado na máquina e assinado com a chave de depuração). Não se publica APK da máquina no GitHub (foi feito duas vezes em 2026-11-24, `teste-add3ea6` e `teste-e2781c4`, e removido). Quando o fluxo da tag estiver testado, este título passa a "(padrão)" e o manual vira reserva.
+O APK sai de uma **tag `vX.Y.Z`** (ou `vX.Y.Z-rcN`, pré-lançamento) pelo workflow `release.yml`, assinado com a chave de envio, como no Nicska: `bibliotecamusical-X.Y.Z.apk`, `bibliotecamusical-X.Y.Z.aab`, `SHA256SUMS` e as notas geradas das PRs. **Funcionou em 2026-11-24 com a `v0.3.0-rc1`** (passo a passo e estado: [`release-e-apk-no-github.md`](release-e-apk-no-github.md)). Esse APK usa a chave de envio, **diferente da chave de depuração** dos zips abaixo: o Android não instala um por cima do outro (desinstalar antes, exportando as gravações). Não se publica APK compilado na máquina no GitHub (foi feito duas vezes em 2026-11-24, `teste-add3ea6` e `teste-e2781c4`, e removido).
 
-## Entregar em zip com o commit no nome (vigente até o fluxo da tag funcionar)
+O fluxo manual abaixo (zip com o commit no nome, chave de depuração) fica como **reserva**, para testar uma branch sem criar tag.
+
+## (Reserva) Entregar em zip com o commit no nome
 
 O APK é entregue **dentro de um `.zip` com o commit no nome**, para o responsável distinguir um build do outro:
 
