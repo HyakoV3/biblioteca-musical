@@ -19,7 +19,8 @@ export const INSTRUMENTOS = {
   orgao_principal: { harmonicos: [0, 1, 0.5, 0.35, 0.25, 0.15, 0.1, 0.07], ataque: 0.03, solta: 0.09, nivel: 0.2 },
   orgao_pleno: { harmonicos: [0, 1, 0.8, 0.6, 0.5, 0.4, 0.3, 0.25, 0.2, 0.15, 0.1, 0.07, 0.05], ataque: 0.03, solta: 0.1, nivel: 0.12 },
   // Soprano
-  flauta_doce: { harmonicos: [0, 1, 0.05, 0.02], ataque: 0.05, solta: 0.1, nivel: 0.3, vibrato: { hz: 5, cents: 6, atraso: 0.3 } },
+  // Flauta transversal (a flauta doce saiu em 2026-11-25). Os harmônicos daqui valem fora da faixa medida; dentro dela vale o timbre de timbres.json.
+  flauta: { harmonicos: [0, 1, 0.55, 0.15, 0.12, 0.05, 0.02], ataque: 0.06, solta: 0.1, nivel: 0.28, vibrato: { hz: 5.2, cents: 7, atraso: 0.3 } },
   violino: { harmonicos: [0, 1, 0.7, 0.55, 0.45, 0.35, 0.3, 0.25, 0.2, 0.15, 0.12, 0.1], ataque: 0.06, solta: 0.1, nivel: 0.14, vibrato: { hz: 5.5, cents: 14, atraso: 0.15 } },
   clarinete: { harmonicos: [0, 1, 0.02, 0.6, 0.02, 0.35, 0.02, 0.2, 0.02, 0.1], ataque: 0.04, solta: 0.08, nivel: 0.2 },
   trompete: { harmonicos: [0, 1, 0.9, 0.75, 0.6, 0.5, 0.4, 0.3, 0.22, 0.15, 0.1], ataque: 0.03, solta: 0.06, nivel: 0.1 },
@@ -52,7 +53,7 @@ export type TipoVoz = "soprano" | "contralto" | "tenor" | "baixo";
 
 /** Instrumentos oferecidos para cada voz do coro (além dos órgãos). */
 export const POR_VOZ: Record<TipoVoz, InstrumentoId[]> = {
-  soprano: ["flauta_doce", "violino", "clarinete", "trompete"],
+  soprano: ["flauta", "violino", "clarinete", "trompete"],
   contralto: ["sax_alto", "flugelhorn", "oboe", "viola"],
   tenor: ["sax_tenor", "trombone", "trompa", "violoncelo"],
   baixo: ["tuba", "bombardino", "fagote", "contrabaixo"],

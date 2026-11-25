@@ -3,7 +3,7 @@ import medidas from "../src/lib/timbres.json";
 import { INSTRUMENTOS, type SinteticoId } from "../src/lib/instrumentos";
 import { COM_TIMBRE_MEDIDO, eficazRelativo, harmonicosEm, perfilDaNota, temTimbre, temTimbreDerivado, temTimbreMedido } from "../src/lib/timbres";
 
-const AFETADOS = ["trompete", "trombone", "tuba", "fagote", "oboe", "sax_alto", "sax_tenor", "flauta_doce", "violino", "clarinete", "viola", "violoncelo", "contrabaixo", "trompa"] as const;
+const AFETADOS = ["trompete", "trombone", "tuba", "fagote", "oboe", "sax_alto", "sax_tenor", "flauta", "violino", "clarinete", "viola", "violoncelo", "contrabaixo", "trompa"] as const;
 type Ancora = { midi: number; h: number[]; ataque: number };
 const ancoras = (id: string) => (medidas.instrumentos as unknown as Record<string, { faixa: number[]; ancoras: Ancora[] }>)[id];
 const centroide = (h: number[]) => {

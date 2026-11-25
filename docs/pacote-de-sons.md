@@ -16,6 +16,8 @@ de um grupo de uma vez:
 | **Metais** | trompete (`trumpet`), trompa (`french_horn`), trombone (`trombone`), tuba (`tuba`) | ~7 MB |
 | **Cordas** | violino (`violin`), viola (`viola`), violoncelo (`cello`), contrabaixo (`contrabass`) | ~8 MB |
 
+**Flauta (2026-11-25):** o soprano oferece a **flauta transversal** (`flute`) tanto sintetizada (`flauta`, com o timbre medido nas amostras do `flute`) quanto gravada (`real_flauta`), e as duas são o par do alternador Sintetizado/Gravado. A flauta doce sintetizada saiu (quem a tinha escolhida passa para a flauta); a **gravada** (`real_flauta_doce`, `recorder`) continua no pacote, sem par sintetizado.
+
 Sem equivalente no banco General MIDI: **flugelhorn** e **bombardino** (em inglês, *euphonium*). Ficam só na síntese até
 haver uma amostra com licença livre. O responsável quer o bombardino gravado ("vai ter"); busca feita em 2026-11-14:
 
