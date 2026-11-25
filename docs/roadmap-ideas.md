@@ -608,7 +608,7 @@ pasta deixa de existir. **Ideia ligada:** baixar **o arquivo** e não a pasta, m
 
 ## I-35 — Tocar uma nota e o app dizer qual é (sem escolher o instrumento)
 
-- **Status:** anotada, **rascunho revisado** (2026-11-24). Nada implementado. Expande a **I-32**: o centro da tela passa a ser o **nome da nota**, com a transposição (Si♭, Mi♭, Fá) já na primeira versão, mostrada **sem a pessoa escolher** (como o Band Toolbox).
+- **Status:** **implementada na v1** (2026-11-25, `v0.3.3-rc4`): detector `pitchy` com mediana, regra de oitava e histerese, card "Qual nota é essa?", instrumentos que transpõem; falta calibrar com gravações reais do responsável e testar no aparelho. Texto original: rascunho revisado (2026-11-24). Expande a **I-32**: o centro da tela passa a ser o **nome da nota**, com a transposição (Si♭, Mi♭, Fá) já na primeira versão, mostrada **sem a pessoa escolher** (como o Band Toolbox).
 - **Origem:** pedido do responsável, 2026-11-24.
 - **Prioridade:** a definir
 - **Medidor (pedido do responsável, 2026-11-24):** um **pêndulo de vizinhas**, como o do Metrônomo: no centro a nota que soa, à esquerda a nota logo abaixo, à direita a logo acima, e a bola mostra os cents.
