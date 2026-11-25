@@ -29,6 +29,7 @@ const INSTRUMENTOS = {
   oboe: ["oboe", 60, "real_oboe"],
   sax_alto: ["alto_sax", 51, "real_sax_alto"],
   sax_tenor: ["tenor_sax", 46, "real_sax_tenor"],
+  flauta_doce: ["recorder", 72, "real_flauta_doce"],
   flauta: ["flute", 60, "real_flauta"],
   violino: ["violin", 55, "real_violino"],
   clarinete: ["clarinet", 52, "real_clarinete"],

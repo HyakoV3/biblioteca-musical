@@ -70,6 +70,7 @@ export const en: Dicionario = {
   "inst.orgao_suave": "Soft organ (8' flute)",
   "inst.orgao_principal": "Principal organ",
   "inst.orgao_pleno": "Full organ",
+  "inst.flauta_doce": "Recorder",
   "inst.flauta": "Flute",
   "inst.violino": "Violin",
   "inst.clarinete": "Clarinet",

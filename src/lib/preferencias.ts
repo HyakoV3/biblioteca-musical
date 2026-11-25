@@ -32,10 +32,12 @@ export function lerVoz(nome: string): PrefVoz {
   if (!salvo || typeof salvo !== "object") return p;
   const s = salvo as Record<string, unknown>;
   const permitidos: string[] = [...ORGAOS, ...instrumentosDaVoz(nome), ...IDS_REALISTAS];
-  // A flauta doce sintetizada virou flauta transversal (2026-11-25): quem a tinha escolhida fica com a flauta.
-  const salvoId = s.instrumento === "flauta_doce" ? "flauta" : s.instrumento;
-  if (typeof salvoId === "string" && (salvoId in INSTRUMENTOS || ehRealista(salvoId)) && permitidos.includes(salvoId)) {
-    p.instrumento = salvoId as InstrumentoId;
+  if (
+    typeof s.instrumento === "string" &&
+    (s.instrumento in INSTRUMENTOS || ehRealista(s.instrumento)) &&
+    permitidos.includes(s.instrumento)
+  ) {
+    p.instrumento = s.instrumento as InstrumentoId;
   }
   if (typeof s.volume === "number" && Number.isFinite(s.volume)) p.volume = Math.min(1, Math.max(0, s.volume));
   if (typeof s.muda === "boolean") p.muda = s.muda;

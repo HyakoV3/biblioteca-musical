@@ -216,16 +216,18 @@ describe("reduzir ruído do Gravador (I-29)", () => {
   });
 });
 
-describe("flauta transversal no lugar da flauta doce", () => {
-  it("quem tinha a flauta doce sintetizada fica com a flauta", () => {
-    mem["prefs.vozes"] = JSON.stringify({ soprano: { instrumento: "flauta_doce", volume: 0.5, muda: false } });
-    expect(lerVoz("Soprano").instrumento).toBe("flauta");
-    expect(lerVoz("Soprano").volume).toBe(0.5);
+describe("as duas flautas", () => {
+  it("a flauta doce e a transversal sintetizadas são escolhas válidas do soprano", () => {
+    for (const id of ["flauta_doce", "flauta"]) {
+      mem["prefs.vozes"] = JSON.stringify({ soprano: { instrumento: id, volume: 0.5, muda: false } });
+      expect(lerVoz("Soprano").instrumento).toBe(id);
+    }
   });
-  it("a flauta gravada é o par da sintetizada, e a flauta doce gravada não tem par", async () => {
+  it("cada flauta gravada é o par da sua sintetizada", async () => {
     const { gravadoEquivalente, sinteticoEquivalente } = await import("../src/lib/realista");
     expect(gravadoEquivalente("flauta")).toBe("real_flauta");
     expect(sinteticoEquivalente("real_flauta")).toBe("flauta");
-    expect(sinteticoEquivalente("real_flauta_doce")).toBeNull();
+    expect(gravadoEquivalente("flauta_doce")).toBe("real_flauta_doce");
+    expect(sinteticoEquivalente("real_flauta_doce")).toBe("flauta_doce");
   });
 });

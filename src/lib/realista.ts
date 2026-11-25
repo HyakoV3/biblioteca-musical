@@ -32,7 +32,7 @@ export const REALISTAS = {
   // Se no celular ainda soar abaixo dos outros, subir só o dele (o teto do teste é 10).
   real_orgao_tirantes: { arquivo: "drawbar_organ", ganho: 4.39, grupo: "orgao", vozes: TODAS, sintetico: "orgao_principal" },
   real_flauta: { arquivo: "flute", ganho: 1.33, grupo: "madeiras", vozes: ["soprano"], sintetico: "flauta" },
-  real_flauta_doce: { arquivo: "recorder", ganho: 2.0, grupo: "madeiras", vozes: ["soprano"] },
+  real_flauta_doce: { arquivo: "recorder", ganho: 2.0, grupo: "madeiras", vozes: ["soprano"], sintetico: "flauta_doce" },
   real_clarinete: { arquivo: "clarinet", ganho: 1.68, grupo: "madeiras", vozes: ["soprano"], sintetico: "clarinete" },
   real_oboe: { arquivo: "oboe", ganho: 1.54, grupo: "madeiras", vozes: ["contralto"], sintetico: "oboe" },
   real_sax_alto: { arquivo: "alto_sax", ganho: 2.62, grupo: "madeiras", vozes: ["contralto"], sintetico: "sax_alto" },
