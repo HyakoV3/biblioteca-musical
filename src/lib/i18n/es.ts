@@ -342,7 +342,6 @@ export const es: Dicionario = {
   "player.diminuir_n": "Disminuir {item} en {n}",
   "player.aumentar_n": "Aumentar {item} en {n}",
   "player.duplo_clique_restaurar": "Doble clic en el valor para restablecer",
-  "player.restaurar_andamento": "Restablecer {n} bpm",
   "player.restaurar_padrao": "Restablecer valores",
   "player.parar_para_alterar": "Pausa o detén la reproducción para cambiar tempo, tono e instrumentos.",
   "player.mudancas_ao_continuar": "Ahora puedes cambiar tempo, tono e instrumentos. Los cambios valen al continuar.",
