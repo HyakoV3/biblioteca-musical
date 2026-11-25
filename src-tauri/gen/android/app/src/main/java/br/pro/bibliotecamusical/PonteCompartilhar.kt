@@ -66,8 +66,12 @@ class PonteCompartilhar(private val atividade: MainActivity) {
 
     /** Fecha o arquivo e abre a folha de compartilhamento. Devolve false se algo falhou antes de abrir. */
     @JavascriptInterface
+    fun enviar(titulo: String): Boolean = enviarComTexto(titulo, "")
+
+    /** Igual a `enviar`, com um texto (o contexto da gravação, em Markdown) que vai junto do áudio, abaixo dele. */
+    @JavascriptInterface
     @Synchronized
-    fun enviar(titulo: String): Boolean {
+    fun enviarComTexto(titulo: String, texto: String): Boolean {
         val f = arquivo
         try {
             saida?.close()
@@ -85,6 +89,7 @@ class PonteCompartilhar(private val atividade: MainActivity) {
             val envio = Intent(Intent.ACTION_SEND).apply {
                 type = mime
                 putExtra(Intent.EXTRA_STREAM, uri)
+                if (texto.isNotBlank()) putExtra(Intent.EXTRA_TEXT, texto.take(4000))
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             val folha = Intent.createChooser(envio, titulo.take(80))
