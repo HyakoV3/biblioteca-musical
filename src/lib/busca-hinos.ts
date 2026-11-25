@@ -113,7 +113,7 @@ export function tomDoHino(tonalidade: string | null | undefined): Tom | null {
  * ("mi maior"), ou a palavra "tom" antes de uma nota ("tom si"). Uma nota SOZINHA ("la", "sol", "si", "a", "e") NÃO é tom: é texto.
  * Devolve o tom e os termos que sobram (os que a tonalidade não consumiu).
  */
-function extrairTom(bruta: string): { tom: Tom | null; resto: string[] } {
+function extrairTom(bruta: string): { tom: Tom | null; resto: string[]; todos: string[]; ambiguo: boolean } {
   const termos = palavrasDe(normalizarComMapa(comAcidentesEmPalavras(bruta)).n);
   const sem = (usados: number[]) => termos.filter((_, k) => !usados.includes(k));
   for (let i = 0; i < termos.length; i++) {
@@ -125,7 +125,9 @@ function extrairTom(bruta: string): { tom: Tom | null; resto: string[] } {
     const colado = /^(do|re|mi|fa|sol|la|si|[a-g])b$/.exec(w);
     if (colado) {
       const modo = termos[i + 1] ? modoDe(termos[i + 1]!) : null;
-      return { tom: { classe: mod12(NOTAS[colado[1]!]! - 1), modo }, resto: sem([...prefixoTom, i, ...(modo ? [i + 1] : [])]) };
+      // Colado e ainda sendo digitado ("reb" a caminho de "rebanho", "lab" de "labor"): pode ser tom OU o começo de uma palavra. Com "tom" antes ou um modo depois, é tom.
+      const ambiguo = i === termos.length - 1 && !aposTom && !modo;
+      return { tom: { classe: mod12(NOTAS[colado[1]!]! - 1), modo }, resto: sem([...prefixoTom, i, ...(modo ? [i + 1] : [])]), todos: termos, ambiguo };
     }
 
     const nota = NOTAS[w];
@@ -136,9 +138,9 @@ function extrairTom(bruta: string): { tom: Tom | null; resto: string[] } {
     const modo = termos[posModo] ? modoDe(termos[posModo]!) : null;
     if (!(aposTom || acidente !== null || modo !== null)) continue; // nota sozinha: texto
     const usados = [...prefixoTom, i, ...(acidente !== null ? [i + 1] : []), ...(modo !== null ? [posModo] : [])];
-    return { tom: { classe: mod12(nota + (acidente ?? 0)), modo }, resto: sem(usados) };
+    return { tom: { classe: mod12(nota + (acidente ?? 0)), modo }, resto: sem(usados), todos: termos, ambiguo: false };
   }
-  return { tom: null, resto: termos };
+  return { tom: null, resto: termos, todos: termos, ambiguo: false };
 }
 
 // ---------- índice ----------
@@ -282,6 +284,22 @@ function pontuar<T extends ItemBusca>(e: Entrada<T>, termos: readonly string[], 
   return { r: { item: e.item, destaque }, pontos };
 }
 
+/** Os acertos de texto de `termos` entre as `candidatas`, do mais para o menos relevante; sem termos, todas as candidatas na ordem do acervo. */
+function rodarTexto<T extends ItemBusca>(candidatas: readonly Entrada<T>[], termos: readonly string[]): Resultado<T>[] {
+  if (termos.length === 0) return candidatas.map((e) => ({ item: e.item, destaque: null }));
+  const consultaN = termos.join(" ");
+  const achados: { r: Resultado<T>; pontos: number }[] = [];
+  for (const e of candidatas) {
+    const a = pontuar(e, termos, consultaN);
+    if (a) achados.push(a);
+  }
+  achados.sort((a, b) => b.pontos - a.pontos || a.r.item.numero - b.r.item.numero);
+  return achados.map((a) => a.r);
+}
+
+const dosTom = <T extends ItemBusca>(entradas: readonly Entrada<T>[], tom: Tom): Entrada<T>[] =>
+  entradas.filter((e) => e.tom !== null && e.tom.classe === tom.classe && (tom.modo === null || e.tom.modo === null || e.tom.modo === tom.modo));
+
 /** Busca em um acervo já indexado. Consulta vazia: todos, na ordem do acervo. */
 export function buscar<T extends ItemBusca>(ind: Indice<T>, consulta: string, opcoes: OpcoesBusca = {}): Busca<T> {
   if (!normalizar(consulta)) {
@@ -290,19 +308,12 @@ export function buscar<T extends ItemBusca>(ind: Indice<T>, consulta: string, op
   const n = numeroDaConsulta(consulta);
   if (n !== null) return buscarNumero(ind, n, opcoes);
 
-  const { tom, resto } = extrairTom(consulta);
-  const termos = resto;
-  let candidatas = ind.entradas;
-  if (tom) candidatas = candidatas.filter((e) => e.tom !== null && e.tom.classe === tom.classe && (tom.modo === null || e.tom.modo === null || e.tom.modo === tom.modo));
-  if (termos.length === 0) {
-    return { intencao: "texto", resultados: candidatas.map((e) => ({ item: e.item, destaque: null })), exato: null, maisNumeros: 0 };
-  }
-  const consultaN = termos.join(" ");
-  const achados: { r: Resultado<T>; pontos: number }[] = [];
-  for (const e of candidatas) {
-    const a = pontuar(e, termos, consultaN);
-    if (a) achados.push(a);
-  }
-  achados.sort((a, b) => b.pontos - a.pontos || a.r.item.numero - b.r.item.numero);
-  return { intencao: "texto", resultados: achados.map((a) => a.r), exato: null, maisNumeros: 0 };
+  const { tom, resto, todos, ambiguo } = extrairTom(consulta);
+  if (!tom) return { intencao: "texto", resultados: rodarTexto(ind.entradas, todos), exato: null, maisNumeros: 0 };
+  const comoTom = rodarTexto(dosTom(ind.entradas, tom), resto);
+  if (!ambiguo) return { intencao: "texto", resultados: comoTom, exato: null, maisNumeros: 0 };
+  // Termo colado ainda sendo digitado ("reb"): os acertos de TEXTO ("Rebanho…") primeiro, depois os hinos do tom que ainda não apareceram.
+  const comoTexto = rodarTexto(ind.entradas, todos);
+  const vistos = new Set(comoTexto.map((r) => r.item));
+  return { intencao: "texto", resultados: [...comoTexto, ...comoTom.filter((r) => !vistos.has(r.item))], exato: null, maisNumeros: 0 };
 }

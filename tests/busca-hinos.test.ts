@@ -13,6 +13,7 @@ const ACERVO: ItemBusca[] = [
   h(100, "Cristo, rocha firme", { tonalidade: "Fá maior", letra: ["1. Cristo é a rocha firme", "Em ti confio, Senhor"] }),
   h(101, "Glória a Deus nos céus", { tonalidade: "Ré maior", letra: ["1. Glória a Deus nos céus", "Amém."] }),
   h(210, "Lá no céu", { tonalidade: "Lá maior", letra: ["1. Lá no céu há paz", "Lá me espera o Senhor"] }),
+  h(30, "Rebanho do Senhor", { tonalidade: "Sol maior", letra: ["1. O Senhor cuida do rebanho"] }),
   h(480, "Tarde de domingo", { tonalidade: "Mi maior", letra: ["1. A tarde cai tranquila", "Assim é o dia do Senhor"] }),
 ];
 const ind = indexar(ACERVO);
@@ -200,7 +201,6 @@ describe("tom", () => {
   it("nota + acidente, nas formas de digitar", () => {
     for (const q of ["mib", "mi bemol", "mi b", "mi♭", "Mi♭ maior", "tom mi bemol", "eb", "e bemol", "tom eb"]) expect(nums(q), q).toEqual([1]);
     for (const q of ["sib", "si bemol", "si♭", "bb", "tom bb"]) expect(nums(q), q).toEqual([10]);
-    expect(nums("reb")).toEqual([11]);
     expect(nums("lab")).toEqual([12]);
   });
 
@@ -210,9 +210,19 @@ describe("tom", () => {
     expect(nums("dó♯ maior")).toEqual([11]);
   });
 
+  it("termo colado ainda sendo digitado vale como tom E como texto (reb → Ré♭ e também Rebanho)", () => {
+    // "reb" é o começo de "rebanho": os acertos de texto vêm primeiro, depois os hinos em Ré♭
+    expect(nums("reb")).toEqual([30, 11]);
+    expect(nums("rebanho")).toEqual([30]); // digitou a palavra: só texto
+    expect(nums("lab")).toEqual([12]); // sem texto que comece por "lab": só os hinos em Lá♭
+    // com "tom" antes, ou um modo depois, é só tom
+    expect(nums("tom reb")).toEqual([11]);
+    expect(nums("reb maior")).toEqual([11]);
+  });
+
   it("nota + modo, e 'tom' + nota", () => {
-    expect(nums("sol maior")).toEqual([2]);
-    expect(nums("tom sol")).toEqual([2]);
+    expect(nums("sol maior")).toEqual([2, 30]); // o 2 e o 30 (Rebanho) estão em Sol maior
+    expect(nums("tom sol")).toEqual([2, 30]);
     expect(nums("la maior")).toEqual([210]);
     expect(nums("mi maior")).toEqual([480]); // Mi maior, e não Mi♭
   });
