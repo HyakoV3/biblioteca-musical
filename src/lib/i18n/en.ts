@@ -342,7 +342,6 @@ export const en: Dicionario = {
   "player.diminuir_n": "Decrease {item} by {n}",
   "player.aumentar_n": "Increase {item} by {n}",
   "player.duplo_clique_restaurar": "Double-click the value to restore the default",
-  "player.restaurar_andamento": "Restore {n} bpm",
   "player.restaurar_padrao": "Restore defaults",
   "player.parar_para_alterar": "Pause or stop playback to change tempo, key and instruments.",
   "player.mudancas_ao_continuar": "You can change tempo, key and instruments now. Changes apply when you resume.",
