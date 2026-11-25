@@ -22,7 +22,13 @@
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const SEM_SOM_MAX_MS = 120_000;
-  const INSTRUMENTOS: Transposicao[] = ["concerto", "si_bemol", "mi_bemol", "fa"];
+  /** Os 4 botões de tom, na ordem da tela (2 por linha): a nota de cada um (Dó, Si♭, Mi♭, Fá) e o que cada uma é. */
+  const TONS: { id: Transposicao; classe: number }[] = [
+    { id: "concerto", classe: 0 },
+    { id: "si_bemol", classe: 10 },
+    { id: "mi_bemol", classe: 3 },
+    { id: "fa", classe: 5 },
+  ];
 
   const escuta = new Escuta();
   const estabilizador = new Estabilizador();
@@ -34,6 +40,8 @@
   let suave = $state<Suave | null>(null);
   let erro = $state<"negada" | "sem_microfone" | "falhou" | "gravando" | null>(null);
   let instrumento = $state<Transposicao>("concerto");
+  /** Os instrumentos do tom escolhido (só informativos: o app guarda o tom, e não o instrumento), um por linha, em duas colunas quando cabe. */
+  const instrumentosDoTom = $derived(t(`afinador.lista_${instrumento}`).split("|"));
   let ultimoSom = 0;
   let tentativa = 0;
 
@@ -121,6 +129,9 @@
   const oitavaDe = (m: number) => Math.floor(m / 12) - 1;
   const nome = (m: number) => `${nomeDaNota(classeDe(m), i18n.idioma, notacao.atual)}${oitavaDe(m)}`;
   const porExtenso = (m: number) => `${nomeDaNotaPorExtenso(classeDe(m), i18n.idioma, notacao.atual)} ${oitavaDe(m)}`;
+  // Com um tom que transpõe a pessoa lê o NOME da nota: o número da oitava mudaria de instrumento para instrumento (o sax tenor lê uma oitava abaixo do trompete), então some. Em Dó (concerto) fica.
+  const nomeEscrito = (m: number) => (instrumento === "concerto" ? nome(m) : nomeDaNota(classeDe(m), i18n.idioma, notacao.atual));
+  const extensoEscrito = (m: number) => (instrumento === "concerto" ? porExtenso(m) : nomeDaNotaPorExtenso(classeDe(m), i18n.idioma, notacao.atual));
   const hz = (f: number) => new Intl.NumberFormat(i18n.idioma, { maximumFractionDigits: f >= 100 ? 0 : 1 }).format(f);
 
   const lida = $derived(estado.tipo === "silencio" ? null : estado);
@@ -132,13 +143,13 @@
   const palavra = $derived(lida && suave ? palavraDeAfinacao(suave.mostrado) : null);
   const posicao = $derived(suave ? posicaoNaTrilha(suave.suave) : 0);
   const textoCents = $derived(lida ? `${cents > 0 ? "+" : cents < 0 ? "−" : ""}${Math.abs(cents)} ${t("afinador.cents")}` : "");
-  const resumo = $derived(ouvindo ? (escrita !== null ? nome(escrita) : t("afinador.escutando")) : "");
+  const resumo = $derived(ouvindo ? (escrita !== null ? nomeEscrito(escrita) : t("afinador.escutando")) : "");
 
   // O leitor de tela: o nome por extenso e a palavra, no máximo uma vez por segundo e só quando mudam.
   let anuncio = $state("");
   let anunciadoEm = 0;
   $effect(() => {
-    const novo = escrita !== null && palavra ? `${porExtenso(escrita)}, ${t(`afinador.${palavra}`)}` : "";
+    const novo = escrita !== null && palavra ? `${extensoEscrito(escrita)}, ${t(`afinador.${palavra}`)}` : "";
     if (!novo) {
       if (!ouvindo) anuncio = "";
       return;
@@ -163,7 +174,7 @@
 
   {#if ouvindo}
     <div class="leitura" class:esmaecida={estado.tipo !== "nota"}>
-      <div class="nome" aria-hidden="true">{escrita !== null ? nome(escrita) : "—"}</div>
+      <div class="nome" aria-hidden="true">{escrita !== null ? nomeEscrito(escrita) : "—"}</div>
       {#if lida && instrumento !== "concerto"}<div class="soa meta">{t("afinador.soa", { nota: nome(lida.leitura.midi) })}</div>{/if}
       <div
         class="medidor"
@@ -172,11 +183,11 @@
         aria-valuemin={-50}
         aria-valuemax={50}
         aria-valuenow={lida ? Math.max(-50, Math.min(50, cents)) : undefined}
-        aria-valuetext={lida && escrita !== null ? t("afinador.valor_texto", { cents: textoCents, nota: porExtenso(escrita) }) : t("afinador.toque")}
+        aria-valuetext={lida && escrita !== null ? t("afinador.valor_texto", { cents: textoCents, nota: extensoEscrito(escrita) }) : t("afinador.toque")}
       >
         <div class="vizinhas" aria-hidden="true">
-          <span>{escrita !== null ? nome(escrita - 1) : ""}</span>
-          <span>{escrita !== null ? nome(escrita + 1) : ""}</span>
+          <span>{escrita !== null ? nomeEscrito(escrita - 1) : ""}</span>
+          <span>{escrita !== null ? nomeEscrito(escrita + 1) : ""}</span>
         </div>
         <div class="trilha" aria-hidden="true">
           <span class="faixa"></span>
@@ -188,27 +199,31 @@
       </div>
     </div>
     <p class="meta">{t("afinador.microfone_ligado")}</p>
-  {:else}
-    <p class="meta">{t("afinador.privacidade")}</p>
   {/if}
 
   <fieldset class="instrumentos">
     <legend class="meta">{t("afinador.instrumento")}</legend>
-    {#each INSTRUMENTOS as i (i)}
-      <label class:ativo={instrumento === i}>
-        <input
-          type="radio"
-          name="instrumento"
-          value={i}
-          checked={instrumento === i}
-          onchange={() => {
-            instrumento = i;
-            salvarInstrumento(i);
-          }}
-        />
-        <span>{#if instrumento === i}<Icone nome="ok" tamanho={16} />{/if}{t(`afinador.inst_${i}`)}</span>
-      </label>
-    {/each}
+    <div class="tons">
+      {#each TONS as tom (tom.id)}
+        <label class:ativo={instrumento === tom.id}>
+          <input
+            type="radio"
+            name="instrumento"
+            value={tom.id}
+            checked={instrumento === tom.id}
+            aria-label={nomeDaNotaPorExtenso(tom.classe, i18n.idioma, notacao.atual)}
+            onchange={() => {
+              instrumento = tom.id;
+              salvarInstrumento(tom.id);
+            }}
+          />
+          <span>{#if instrumento === tom.id}<Icone nome="ok" tamanho={16} />{/if}{nomeDaNota(tom.classe, i18n.idioma, notacao.atual)}</span>
+        </label>
+      {/each}
+    </div>
+    <ul class="lista-instrumentos" aria-label={t("afinador.neste_tom")}>
+      {#each instrumentosDoTom as item (item)}<li>{item}</li>{/each}
+    </ul>
   </fieldset>
 
   <p class="so-leitor" aria-live="polite">{anuncio}</p>
@@ -227,10 +242,15 @@
   .faixa { position: absolute; left: 45%; width: 10%; top: calc(50% - 0.5rem); height: 1rem; border: 0.125rem solid var(--acento); border-radius: 0.25rem; box-sizing: border-box; }
   .bola { position: absolute; top: calc(50% - 0.75rem); width: 1.5rem; height: 1.5rem; margin-left: -0.75rem; box-sizing: border-box; border-radius: 50%; background: var(--ouro-linha); border: 0.125rem solid var(--texto); }
   .detalhe { font-variant-numeric: tabular-nums; }
-  .instrumentos { display: grid; gap: 0.4rem; margin: 0; padding: 0; border: 0; }
+  .instrumentos { display: grid; gap: 0.6rem; margin: 0; padding: 0; border: 0; }
+  /* Os 4 tons em 2 por linha: [Dó] [Si♭] / [Mi♭] [Fá]. */
+  .tons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+  /* A lista de instrumentos do tom: uma por linha, em até 3 colunas (cada uma com pelo menos 9,5 rem): uma coluna em tela estreita ou com fonte grande, duas no celular em pé e três deitado. */
+  .lista-instrumentos { margin: 0; padding: 0 0 0 1.1rem; columns: 9.5rem 3; column-gap: 1rem; }
+  .lista-instrumentos li { break-inside: avoid; padding: 0.15rem 0; line-height: 1.3; }
   .instrumentos label { position: relative; }
   .instrumentos input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-  .instrumentos span { display: flex; align-items: center; gap: 0.25rem; min-height: 3rem; box-sizing: border-box; padding: 0.3rem 0.75rem; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); line-height: 1.25; }
+  .instrumentos span { display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 3rem; box-sizing: border-box; padding: 0.3rem 0.75rem; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); line-height: 1.25; }
   .instrumentos .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
   .instrumentos input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
 </style>

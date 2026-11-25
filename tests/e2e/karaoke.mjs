@@ -1888,6 +1888,31 @@ async function principal() {
   await dormir(600);
   const axAfinador = await titulosNaArvore();
   confere(axAfinador.titulos.some((t) => /^(Another note|Outra nota|Otra nota):2$/.test(t)) && axAfinador.botoes.some((b) => /Another note|Outra nota|Otra nota/.test(b)), `Afinador: "Outra nota" é um título de nível 2 e também o botão que abre o cartão (árvore de acessibilidade): ${JSON.stringify(axAfinador)}`);
+  // "Qual nota é essa?": 4 botões só com a nota (Dó, Si♭, Mi♭, Fá), e embaixo a lista dos instrumentos do tom escolhido, em até 3 colunas (2 no celular em pé, 3 deitado).
+  await av(`document.querySelector('#painel-afinador details:has(.instrumentos) summary')?.click(); 1`);
+  await dormir(300);
+  const tons = await av(`[...document.querySelectorAll('.instrumentos .tons label')].map((l) => l.textContent.trim())`);
+  confere(JSON.stringify(tons) === JSON.stringify(["C", "B♭", "E♭", "F"]), `Afinador: os 4 botões de tom mostram só a nota (Dó, Si♭, Mi♭, Fá): ${JSON.stringify(tons)}`);
+  const listaDoTom = async (nome) => {
+    await av(`document.querySelector('.instrumentos input[value="${nome}"]').click(); 1`);
+    await dormir(200); // a tela troca a lista depois do clique
+    return av(`[...document.querySelectorAll('.lista-instrumentos li')].map((l) => l.textContent.trim())`);
+  };
+  const emSi = await listaDoTom("si_bemol");
+  confere(emSi.some((x) => /trumpet/i.test(x)) && emSi.some((x) => /clarinet/i.test(x)) && !emSi.some((x) => /^piano$/i.test(x)), `Afinador: escolher Si♭ lista os instrumentos em Si♭ (trompete, clarinete...): ${JSON.stringify(emSi)}`);
+  const emFa = await listaDoTom("fa");
+  confere(emFa.length === 2 && emFa.some((x) => /^horn$/i.test(x)), `Afinador: em Fá só a trompa e o corne inglês: ${JSON.stringify(emFa)}`);
+  const emDo = await listaDoTom("concerto");
+  confere(emDo.some((x) => /^piano$/i.test(x)) && emDo.some((x) => /^voice$/i.test(x)), `Afinador: em Dó (concerto) a lista traz piano e voz: ${JSON.stringify(emDo)}`);
+  const colunas = () => av(`new Set([...document.querySelectorAll('.lista-instrumentos li')].map((l) => Math.round(l.getBoundingClientRect().left))).size`);
+  const emPe = await colunas();
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 915, height: 412, deviceScaleFactor: 1, mobile: true });
+  await dormir(400);
+  const deitado = await colunas();
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
+  await dormir(300);
+  confere(emPe === 2 && deitado === 3, `Afinador: a lista de instrumentos tem 2 colunas no celular em pé e 3 deitado: ${JSON.stringify({ emPe, deitado })}`);
+  await av(`document.querySelector('.instrumentos input[value="concerto"]').click(); 1`);
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes` });
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('conteudo')`)); ) await dormir(250);
   await dormir(500);
