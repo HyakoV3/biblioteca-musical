@@ -4,7 +4,7 @@ export const pt = {
   carregando: "Carregando…",
   "erro.carregar": "Erro ao carregar o hinário: {erro}",
 
-  "lista.buscar": "Buscar por número ou título",
+  "lista.buscar": "Buscar por número, título, autor ou verso",
   "lista.buscar_aria": "Buscar hino",
 
   "erro.rust.json_invalido": "O arquivo não é um JSON válido: {detalhe}",
@@ -143,6 +143,8 @@ export const pt = {
   "partituras.recusadas": "Partituras que não entraram: {total} (hinos {lista}). Primeiro motivo: {motivo}",
   "erro.rust.partituras_nenhuma": "O pacote não tem nenhuma partitura.",
   "erro.rust.partituras_sem_hinario": "Importe o hinário antes de instalar as partituras.",
+  "busca.mais": "e mais {n}",
+  "busca.nenhum": "Nenhum hino encontrado",
   "biblioteca.limpar_busca": "Limpar busca",
   "biblioteca.fonte": "Fonte: {nome} · {total}",
   "biblioteca.aviso_exemplo": "Você está vendo um pacote de exemplo. Baixe o hinário em Ajustes.",

@@ -4,7 +4,7 @@ export const es: Dicionario = {
   carregando: "Cargando…",
   "erro.carregar": "Error al cargar el himnario: {erro}",
 
-  "lista.buscar": "Buscar por número o título",
+  "lista.buscar": "Buscar por número, título, autor o verso",
   "lista.buscar_aria": "Buscar himno",
 
   "erro.rust.json_invalido": "El archivo no es un JSON válido: {detalhe}",
@@ -143,6 +143,8 @@ export const es: Dicionario = {
   "partituras.recusadas": "Partituras que no entraron: {total} (himnos {lista}). Primer motivo: {motivo}",
   "erro.rust.partituras_nenhuma": "El paquete no tiene ninguna partitura.",
   "erro.rust.partituras_sem_hinario": "Importe el himnario antes de instalar las partituras.",
+  "busca.mais": "y {n} más",
+  "busca.nenhum": "Ningún himno encontrado",
   "biblioteca.limpar_busca": "Borrar búsqueda",
   "biblioteca.fonte": "Fuente: {nome} · {total}",
   "biblioteca.aviso_exemplo": "Está viendo un paquete de ejemplo. Descargue el himnario en Ajustes.",
