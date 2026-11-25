@@ -15,6 +15,7 @@ const ACERVO: ItemBusca[] = [
   h(210, "Lá no céu", { tonalidade: "Lá maior", letra: ["1. Lá no céu há paz", "Lá me espera o Senhor"] }),
   h(30, "Rebanho do Senhor", { tonalidade: "Sol maior", letra: ["1. O Senhor cuida do rebanho"] }),
   h(40, "Deus é maior", { tonalidade: "Dó maior", letra: ["1. Deus é maior que tudo"] }),
+  h(50, "Hino da vitória", { letra: ["1. Com Cristo venceremos"] }), // "cristo" só na letra
   h(480, "Tarde de domingo", { tonalidade: "Mi maior", letra: ["1. A tarde cai tranquila", "Assim é o dia do Senhor"] }),
 ];
 const ind = indexar(ACERVO);
@@ -157,15 +158,16 @@ describe("letra", () => {
     expect(d.antes + d.achado + d.depois).toBe("Senhor, tu és o meu pastor");
   });
 
-  it("título vale mais que letra: 'cristo' acha o 100 e o 10 pelo título antes de qualquer acerto só na letra", () => {
+  it("título vale mais que letra: 'cristo' acha o 10 e o 100 (no título) antes do 50 (só na letra)", () => {
     const r = nums("cristo");
     expect(r.slice(0, 2).sort((a, b) => a - b)).toEqual([10, 100]);
+    expect(r[2]).toBe(50);
   });
 
   it("palavras curtas só valem inteiras na letra (fé, ti, só)", () => {
     expect(nums("fé ti")).toEqual([12]); // 'fé' e 'ti' como palavras, ambos na letra do 12
     expect(nums("só ele")).toEqual([2]);
-    // "ti" como prefixo NÃO acha "tipo", "tinha"... e "só" não acha "sólido": aqui só confere que 'ti' inteira acha o 12 e o 100 ('Em ti confio')
+    // 'ti' inteira está no 12 e no 100 ('Em ti confio'), mas só o 12 tem também "louvamos"
     expect(nums("ti louvamos")).toEqual([12]);
   });
 
@@ -271,6 +273,46 @@ describe("propriedades herdadas do objeto não viram nota", () => {
       expect(buscar(ind, q).resultados, q).toEqual([]);
     }
     expect(nums("tom constructor")).toEqual([]);
+  });
+});
+
+describe("formas de escrever o número", () => {
+  it("nº, n.º, n°, no, num., numero, hino, himno e hymn", () => {
+    for (const q of ["n.º 21", "hino nº 21", "hino n.º 21", "n° 21", "num. 21", "numero 21", "himno 21", "hymn 21", "Hino 021"]) expect(numeroDaConsulta(q), q).toBe(21);
+  });
+  it('"o 21", "abc 21" e "21 abc" não são só um número', () => {
+    for (const q of ["o 21", "abc 21", "21 abc", "hino abc"]) expect(numeroDaConsulta(q), q).toBeNull();
+  });
+});
+
+describe("sustenido em espanhol", () => {
+  it('"sostenido" vale como "sustenido"', () => {
+    const a = indexar([h(1, "A", { tonalidade: "Sol♯ menor" }), h(2, "B", { tonalidade: "Sol maior" })]);
+    expect(buscar(a, "sol sostenido").resultados.map((r) => r.item.numero)).toEqual([1]);
+    expect(buscar(a, "sol sustenido").resultados.map((r) => r.item.numero)).toEqual([1]);
+  });
+});
+
+describe("destaque só do que casou naquele campo", () => {
+  it("autoria: 'a souza' destaca Souza (o 'a' foi satisfeito pelo título)", () => {
+    const a = indexar([h(1, "Louvor ao Cordeiro", { autoria: "Ana Maria Souza" })]);
+    const d = buscar(a, "a souza").resultados[0]!.destaque!;
+    expect(d.onde).toBe("autoria");
+    expect(d.achado).toBe("Souza");
+  });
+  it("letra: 'cristo confio' mostra o verso que tem 'confio', e não o do título", () => {
+    const a = indexar([h(1, "Cristo, rocha firme", { letra: ["1. Cristo é a rocha firme", "Em ti confio, Senhor"] })]);
+    const d = buscar(a, "cristo confio").resultados[0]!.destaque!;
+    expect(d.onde).toBe("letra");
+    expect(d.achado).toBe("confio");
+    expect(d.antes + d.achado + d.depois).toBe("Em ti confio, Senhor");
+  });
+  it("texto em NFD: o acento combinante fica dentro do destaque", () => {
+    const nfd = "Minha fe\u0301 vive".normalize("NFD");
+    const a = indexar([h(1, "A", { letra: [nfd] })]);
+    const d = buscar(a, "fé vive").resultados[0]!.destaque!;
+    expect(d.achado.normalize("NFC")).toBe("fé");
+    expect(d.depois.startsWith("\u0301")).toBe(false);
   });
 });
 

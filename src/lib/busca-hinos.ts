@@ -87,7 +87,7 @@ const BEMOL_COLADO = /^(do|re|mi|fa|sol|la|si|[a-g])b$/;
 
 function acidenteDe(t: string): number | null {
   if (t === "bemol" || t === "flat" || t === "b") return -1; // "b" solto, depois de uma nota ("si b")
-  if (t === "sustenido" || t === "sharp") return 1;
+  if (t === "sustenido" || t === "sostenido" || t === "sharp") return 1;
   return null;
 }
 function modoDe(t: string): "maior" | "menor" | null {
@@ -187,7 +187,8 @@ export function indexar<T extends ItemBusca>(itens: readonly T[]): Indice<T> {
 
 // ---------- número ----------
 
-const COMO_NUMERO = /^\s*(?:hino|numero|num|nr|no|n|#)?[ºo°.:]?\s*(\d+)\s*$/;
+// "21", "021", "hino 21", "himno 21", "hymn 21", "nº 21", "n.º 21", "n° 21", "no 21", "num. 21", "numero 21", "#21", "hino nº 21". Não "o 21", "abc 21" nem "21 abc".
+const COMO_NUMERO = /^\s*(?:(?:hino|himno|hymn)\s*)?(?:#|(?:numero|num|nr|n)[.ºo°:]{0,2})?\s*(\d+)\s*$/;
 
 /** O número digitado ("21", "021", "hino 21", "nº 21", "#21"), ou nulo se a consulta não é só um número. */
 export function numeroDaConsulta(consulta: string): number | null {
@@ -237,7 +238,9 @@ function destacar(textoOriginal: string, termos: readonly string[], inteira: (t:
     const termo = termos.find((t) => (inteira(t) ? palavra === t : palavra.startsWith(t)));
     if (!termo) continue;
     const ini = mapa[m.index]!;
-    const fim = mapa[m.index + termo.length - 1]! + 1;
+    let fim = mapa[m.index + termo.length - 1]! + 1;
+    // texto em NFD: a marca de acento que vem logo depois da letra pertence ao trecho que casou (o normalizador a descarta e ela não tem posição própria)
+    while (fim < textoOriginal.length && /[\u0300-\u036f]/.test(textoOriginal[fim]!)) fim++;
     const CONTEXTO = 28;
     // O corte é em unidades UTF-16: se cair no meio de um par substituto (um emoji), recua ou avança uma unidade para não deixar metade dele.
     const meioDePar = (k: number) => /[\uDC00-\uDFFF]/.test(textoOriginal[k] ?? "");
@@ -258,6 +261,9 @@ function pontuar<T extends ItemBusca>(e: Entrada<T>, termos: readonly string[], 
   let pontos = 0;
   let usouLetra = false;
   let usouAutoria = false;
+  /** Só os termos que casaram na autoria e na letra: o destaque e a escolha do verso usam estes, e não os que já foram satisfeitos pelo título. */
+  const naAutoria: string[] = [];
+  const naLetra: string[] = [];
   const soCurtos = termos.length === 1 && termos[0]!.length <= CURTO; // um termo curto sozinho não consulta a letra: só título e autoria
   for (const t of termos) {
     let melhor = 0;
@@ -266,15 +272,17 @@ function pontuar<T extends ItemBusca>(e: Entrada<T>, termos: readonly string[], 
     if (melhor < PONTOS_AUTORIA && comecaPalavra(e.autoriaPalavras, t)) {
       melhor = PONTOS_AUTORIA;
       usouAutoria = true;
+      naAutoria.push(t);
     }
     if (melhor === 0 && !soCurtos && e.linhas.some((l) => casaNaLetra(l, t))) {
       melhor = PONTOS_LETRA;
       usouLetra = true;
+      naLetra.push(t);
     }
     if (melhor === 0) return null; // todos os termos precisam casar
     pontos += melhor;
   }
-  if (usouLetra && e.linhas.some((l) => termos.every((t) => casaNaLetra(l, t)))) pontos += BONUS_MESMA_LINHA;
+  if (naLetra.length > 1 && e.linhas.some((l) => naLetra.every((t) => casaNaLetra(l, t)))) pontos += BONUS_MESMA_LINHA;
   if (consultaN && e.tituloN === consultaN) pontos += BONUS_TITULO_IGUAL;
   else if (consultaN && e.tituloN.startsWith(consultaN)) pontos += BONUS_TITULO_COMECA;
 
@@ -284,16 +292,16 @@ function pontuar<T extends ItemBusca>(e: Entrada<T>, termos: readonly string[], 
     let melhorLinha = -1;
     let melhorQtd = 0;
     e.linhas.forEach((l, i) => {
-      const qtd = termos.filter((t) => casaNaLetra(l, t)).length;
+      const qtd = naLetra.filter((t) => casaNaLetra(l, t)).length;
       if (qtd > melhorQtd) {
         melhorQtd = qtd;
         melhorLinha = i;
       }
     });
-    const d = melhorLinha >= 0 ? destacar(e.item.letra[melhorLinha]!, termos, (t) => t.length <= CURTO) : null;
+    const d = melhorLinha >= 0 ? destacar(e.item.letra[melhorLinha]!, naLetra, (t) => t.length <= CURTO) : null;
     if (d) destaque = { onde: "letra", ...d };
   } else if (usouAutoria && e.item.autoria) {
-    const d = destacar(e.item.autoria, termos, () => false);
+    const d = destacar(e.item.autoria, naAutoria, () => false);
     if (d) destaque = { onde: "autoria", ...d };
   }
   return { r: { item: e.item, destaque }, pontos };
