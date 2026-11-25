@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ajustesPadrao, cartoesPadrao, lerAjustes, lerCartoes, lerKaraoke, lerCiente, lerManterTela, salvarAjustes, salvarCartoes, salvarCiente, salvarKaraoke, salvarManterTela } from "../src/lib/preferencias";
+import { lerVoz, ajustesPadrao, cartoesPadrao, lerAjustes, lerCartoes, lerKaraoke, lerCiente, lerManterTela, salvarAjustes, salvarCartoes, salvarCiente, salvarKaraoke, salvarManterTela } from "../src/lib/preferencias";
 
 // localStorage simples, em memória.
 let mem: Record<string, string>;
@@ -213,5 +213,21 @@ describe("reduzir ruído do Gravador (I-29)", () => {
     });
     expect(lerReduzirRuido()).toBe(false);
     expect(() => salvarReduzirRuido(true)).not.toThrow();
+  });
+});
+
+describe("as duas flautas", () => {
+  it("a flauta doce e a transversal sintetizadas são escolhas válidas do soprano", () => {
+    for (const id of ["flauta_doce", "flauta"]) {
+      mem["prefs.vozes"] = JSON.stringify({ soprano: { instrumento: id, volume: 0.5, muda: false } });
+      expect(lerVoz("Soprano").instrumento).toBe(id);
+    }
+  });
+  it("cada flauta gravada é o par da sua sintetizada", async () => {
+    const { gravadoEquivalente, sinteticoEquivalente } = await import("../src/lib/realista");
+    expect(gravadoEquivalente("flauta")).toBe("real_flauta");
+    expect(sinteticoEquivalente("real_flauta")).toBe("flauta");
+    expect(gravadoEquivalente("flauta_doce")).toBe("real_flauta_doce");
+    expect(sinteticoEquivalente("real_flauta_doce")).toBe("flauta_doce");
   });
 });

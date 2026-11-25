@@ -71,6 +71,7 @@ export const pt = {
   "inst.orgao_principal": "Órgão principal",
   "inst.orgao_pleno": "Órgão pleno",
   "inst.flauta_doce": "Flauta doce",
+  "inst.flauta": "Flauta",
   "inst.violino": "Violino",
   "inst.clarinete": "Clarinete",
   "inst.trompete": "Trompete",

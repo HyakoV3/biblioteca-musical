@@ -127,7 +127,7 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
       travados): decisão do responsável.
 - [ ] **I-12 (karaokê, fase A):** ver no aparelho; **mudar o andamento na pausa** mantendo o lugar do destaque não tem teste
       automatizado. A fase B (partitura) está feita (ver I-12 fase B e I-26 abaixo).
-- [ ] **I-15 (timbres):** ouvir os sintéticos novos de **flauta doce, violino, clarinete, viola, violoncelo, contrabaixo e trompa** e
+- [ ] **I-15 (timbres):** ouvir os sintéticos novos de **flauta transversal e flauta doce (as duas, desde 2026-11-25), violino, clarinete, viola, violoncelo, contrabaixo e trompa** e
       dizer se algum ficou fraco; o teste cego com o gravado (critério de aceitação) não foi feito; **4 vozes de metal ao mesmo
       tempo no celular** (custo de um filtro a mais por nota).
 - [ ] **I-21 (slider do miniplayer em cima):** ver no celular: se o **polegar cobre o tempo** ("0:42 / 3:10", que fica na linha de

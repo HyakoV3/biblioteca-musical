@@ -42,6 +42,7 @@ INSTRUMENTOS = {
     "sax_alto": ("alto_sax", 49, 81),
     "sax_tenor": ("tenor_sax", 44, 76),
     # Segunda leva: os demais com gravado no banco. O contrabaixo só tem notas audíveis até a 57.
+    "flauta": ("flute", 60, 84),  # flauta transversal (2026-11-25); o pacote só vai até a nota 86 e as acima da 84 não entram nas âncoras
     "flauta_doce": ("recorder", 72, 96),
     "violino": ("violin", 55, 96),
     "clarinete": ("clarinet", 50, 94),

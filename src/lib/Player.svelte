@@ -87,7 +87,7 @@
   };
 
   // Sons gravados (pacote opcional): só aparecem os que já foram baixados e servem à voz. O alternador troca o modo da
-  // voz mantendo o instrumento quando há equivalente (flauta doce sintetizada <-> flauta doce gravada).
+  // voz mantendo o instrumento quando há equivalente (flauta sintetizada <-> flauta gravada).
   const gravadosDaVoz = (tipo: TipoVoz | null) => realistasDaVoz(tipo).filter((id) => sons.instalado(id));
   function mudarModo(i: number, tipo: TipoVoz | null, gravado: boolean) {
     const atual = cfg.instrumentos[i];

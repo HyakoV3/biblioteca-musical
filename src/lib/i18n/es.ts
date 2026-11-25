@@ -71,6 +71,7 @@ export const es: Dicionario = {
   "inst.orgao_principal": "Órgano principal",
   "inst.orgao_pleno": "Órgano pleno",
   "inst.flauta_doce": "Flauta dulce",
+  "inst.flauta": "Flauta",
   "inst.violino": "Violín",
   "inst.clarinete": "Clarinete",
   "inst.trompete": "Trompeta",
