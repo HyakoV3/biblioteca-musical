@@ -4,7 +4,7 @@ export const en: Dicionario = {
   carregando: "Loading…",
   "erro.carregar": "Error loading the hymnal: {erro}",
 
-  "lista.buscar": "Search by number or title",
+  "lista.buscar": "Search by number, title, author or verse",
   "lista.buscar_aria": "Search hymn",
 
   "erro.rust.json_invalido": "The file is not valid JSON: {detalhe}",
@@ -143,6 +143,8 @@ export const en: Dicionario = {
   "partituras.recusadas": "Scores that were not installed: {total} (hymns {lista}). First reason: {motivo}",
   "erro.rust.partituras_nenhuma": "The package has no scores.",
   "erro.rust.partituras_sem_hinario": "Import the hymnal before installing the scores.",
+  "busca.mais": "and {n} more",
+  "busca.nenhum": "No hymns found",
   "biblioteca.limpar_busca": "Clear search",
   "biblioteca.fonte": "Source: {nome} · {total}",
   "biblioteca.aviso_exemplo": "You are seeing a sample package. Download the hymnal in Settings.",

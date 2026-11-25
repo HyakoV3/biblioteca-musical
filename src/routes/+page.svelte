@@ -15,7 +15,9 @@
   import Estado from "#lib/Estado.svelte";
   import { traduzirErro } from "#lib/erros";
   import { i18n } from "#lib/i18n/index.svelte";
-  import { casaComNumero, zerosAEsquerda } from "#lib/numero";
+  import { zerosAEsquerda } from "#lib/numero";
+  import { buscar, indexar } from "#lib/busca-hinos";
+  import { goto } from "$app/navigation";
   import { emCurso } from "#lib/gravacaoEmCurso.svelte";
   import { formatarTempo } from "#lib/gravador";
   import { inicio, type AbaInicio } from "#lib/inicio.svelte";
@@ -36,18 +38,41 @@
     window.scrollTo(0, inicio.rolagem[nova]);
   }
 
-  // Busca sem diferenciar maiúsculas/minúsculas nem acentos.
-  const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  // A busca (I-37, motor em `busca-hinos.ts`): número (o exato primeiro e fixo, depois os que começam pelos mesmos dígitos), tom, e texto em título, autoria e letra.
+  const indice = $derived(biblioteca.pacote ? indexar(biblioteca.pacote.hinario.hinos) : null);
+  /** "e mais N" tocado: mostra todos os hinos que começam pelos dígitos digitados. Volta ao normal quando a consulta muda. */
+  let expandir = $state(false);
+  $effect(() => {
+    void biblioteca.busca;
+    expandir = false;
+  });
+  const busca = $derived(indice ? buscar(indice, biblioteca.busca, { expandirPrefixo: expandir }) : null);
+  const resultados = $derived(busca?.resultados ?? []);
+
+  /** Enter num número abre o hino exato (o caminho rápido de quem já sabe o número); se o número não existe, não faz nada. */
+  function aoTeclar(e: KeyboardEvent) {
+    if (e.key === "Enter" && busca?.exato) {
+      e.preventDefault();
+      void goto(`/hino/${busca.exato.numero}`);
+    }
+  }
+
+  // Quantos hinos casaram, para o leitor de tela: só depois de uma pausa na digitação (anunciar a cada tecla atropelaria a fala).
+  let anuncio = $state("");
+  $effect(() => {
+    const n = resultados.length;
+    const consulta = biblioteca.busca.trim();
+    if (!consulta) {
+      anuncio = "";
+      return;
+    }
+    const espera = setTimeout(() => (anuncio = n === 0 ? t("busca.nenhum") : i18n.tn("plural.hinos", n)), 600);
+    return () => clearTimeout(espera);
+  });
 
   // O último hino aberto (I-17), só se o hinário instalado o tem: marca a linha na lista e dá o atalho "Continuar de onde parou".
   const ultimo = $derived(ultimoHino.numero === null ? undefined : biblioteca.hino(ultimoHino.numero));
 
-  const hinos = $derived.by(() => {
-    const todos = biblioteca.pacote?.hinario.hinos ?? [];
-    const q = normalizar(biblioteca.busca);
-    if (!q) return todos;
-    return todos.filter((h) => casaComNumero(q, h.numero) || normalizar(h.titulo).includes(q));
-  });
 </script>
 
 <!-- O título do documento é o que leitores de tela anunciam a cada troca de tela. -->
@@ -95,6 +120,7 @@
         placeholder={t("lista.buscar")}
         aria-label={t("lista.buscar_aria")}
         bind:value={biblioteca.busca}
+        onkeydown={aoTeclar}
       />
       {#if biblioteca.busca}
         <button class="limpar" aria-label={t("biblioteca.limpar_busca")} onclick={() => (biblioteca.busca = "")}>✕</button>
@@ -108,16 +134,24 @@
       </a>
     {/if}
 
-    {#if hinos.length}
+    <!-- Só para o leitor de tela: quantos hinos casaram, depois de uma pausa na digitação. -->
+    <p class="so-leitor" role="status" aria-live="polite">{anuncio}</p>
+
+    {#if resultados.length}
       <ul>
-        {#each hinos as h (h.numero)}
+        {#each resultados as r (r.item.numero)}
+          {@const h = r.item}
+          {@const d = r.destaque}
           {@const estado = reproducao.atual?.numero === h.numero ? reproducao.estado : "parado"}
           <li>
             <a href={`/hino/${h.numero}`} class:tocando={estado === "tocando"} class:pausado={estado === "pausado"} class:ultimo={ultimo?.numero === h.numero} aria-current={ultimo?.numero === h.numero ? "true" : undefined}>
               <span class="num"><span aria-hidden="true" class="zeros">{zerosAEsquerda(h.numero)}</span>{h.numero}</span>
               <span class="titulo">
                 <span>{h.titulo}</span>
-                {#if h.autoria}<span class="autoria">{h.autoria}</span>{/if}
+                {#if h.autoria}
+                  <span class="autoria">{#if d?.onde === "autoria"}{d.antes}<mark>{d.achado}</mark>{d.depois}{:else}{h.autoria}{/if}</span>
+                {/if}
+                {#if d?.onde === "letra"}<span class="trecho-letra">{d.antes}<mark>{d.achado}</mark>{d.depois}</span>{/if}
               </span>
               {#if estado !== "parado"}
                 <!-- O hino que está tocando (ou pausado) leva a borda de destaque E um ícone (não só a cor); o leitor de tela ouve o estado. -->
@@ -129,6 +163,9 @@
           </li>
         {/each}
       </ul>
+      {#if busca && busca.maisNumeros > 0}
+        <button class="botao mais" onclick={() => (expandir = true)}>{t("busca.mais", { n: busca.maisNumeros })}</button>
+      {/if}
     {:else}
       <Estado tipo="vazio" texto={t("biblioteca.sem_resultado", { termo: biblioteca.busca })}>
         {#snippet acao()}
@@ -208,6 +245,10 @@
   .zeros { color: var(--suave); font-weight: 400; }
   .titulo { flex: 1; min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; }
   .autoria { font-size: 0.85rem; color: var(--suave); }
+  /* O trecho do verso em que a busca achou o termo, e o que casou em negrito e sublinhado (o texto da linha é o mesmo para o leitor de tela). */
+  .trecho-letra { font-size: 0.85rem; color: var(--suave); font-style: italic; }
+  mark { background: transparent; color: var(--texto); font-weight: 700; text-decoration: underline; text-underline-offset: 0.15em; }
+  .mais { margin-top: 0.6rem; width: 100%; }
   small { color: var(--suave); }
   .fonte { margin-top: 1.2rem; }
   /* O aviso de gravação em curso nas outras abas: uma faixa com o ponto, o texto e o Parar (o ponto é só enfeite: o texto diz "Gravando"). */
