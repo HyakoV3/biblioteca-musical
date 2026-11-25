@@ -51,7 +51,8 @@
 
   /** Enter num número abre o hino exato (o caminho rápido de quem já sabe o número); se o número não existe, não faz nada. */
   function aoTeclar(e: KeyboardEvent) {
-    if (e.key === "Enter" && busca?.exato) {
+    // `isComposing` e o código 229: o Enter que só confirma a composição de um teclado de entrada (IME) não deve abrir o hino
+    if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229 && busca?.exato) {
       e.preventDefault();
       void goto(`/hino/${busca.exato.numero}`);
     }

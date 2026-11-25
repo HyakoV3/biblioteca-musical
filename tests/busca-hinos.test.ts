@@ -14,6 +14,7 @@ const ACERVO: ItemBusca[] = [
   h(101, "Glória a Deus nos céus", { tonalidade: "Ré maior", letra: ["1. Glória a Deus nos céus", "Amém."] }),
   h(210, "Lá no céu", { tonalidade: "Lá maior", letra: ["1. Lá no céu há paz", "Lá me espera o Senhor"] }),
   h(30, "Rebanho do Senhor", { tonalidade: "Sol maior", letra: ["1. O Senhor cuida do rebanho"] }),
+  h(40, "Deus é maior", { tonalidade: "Dó maior", letra: ["1. Deus é maior que tudo"] }),
   h(480, "Tarde de domingo", { tonalidade: "Mi maior", letra: ["1. A tarde cai tranquila", "Assim é o dia do Senhor"] }),
 ];
 const ind = indexar(ACERVO);
@@ -194,6 +195,11 @@ describe("tom", () => {
     expect(tomDoHino("Ré♭ maior")).toEqual({ classe: 1, modo: "maior" });
     expect(tomDoHino("E♭ major")).toEqual({ classe: 3, modo: "maior" });
     expect(tomDoHino("Sol")).toEqual({ classe: 7, modo: null });
+    // a grafia sem símbolo também: "Sib maior", "Eb major", "Bb major"
+    expect(tomDoHino("Sib maior")).toEqual({ classe: 10, modo: "maior" });
+    expect(tomDoHino("Eb major")).toEqual({ classe: 3, modo: "maior" });
+    expect(tomDoHino("Bb major")).toEqual({ classe: 10, modo: "maior" });
+    expect(tomDoHino("constructor maior")).toBeNull(); // nada de propriedade herdada do objeto
     expect(tomDoHino(null)).toBeNull();
     expect(tomDoHino("xyz")).toBeNull();
   });
@@ -242,6 +248,29 @@ describe("tom", () => {
   it("tom junto de texto filtra e busca", () => {
     expect(nums("sib prossegui")).toEqual([10]);
     expect(nums("sib louvor")).toEqual([]);
+  });
+});
+
+describe("palavras comuns que também são notas", () => {
+  it('"é", "a", "do" e "lá" só viram tom se a consulta inteira é o tom (ou depois de "tom")', () => {
+    // "Deus é maior" é texto: acha o hino 40, e não vira "Mi maior" + "deus"
+    expect(nums("deus e maior")).toEqual([40]);
+    expect(nums("deus é maior")).toEqual([40]);
+    // a consulta inteira É o tom: vale como tom
+    expect(nums("la maior")).toEqual([210]);
+    expect(nums("do maior")).toEqual([21, 40]);
+    expect(nums("e maior")).toEqual([480]); // Mi maior
+    expect(nums("tom a")).toEqual([210]); // com "tom" antes, a nota solta vale
+  });
+});
+
+describe("propriedades herdadas do objeto não viram nota", () => {
+  it("constructor, toString, __proto__ não quebram e viram texto", () => {
+    for (const q of ["constructor", "tom constructor", "constructor maior", "tostring", "__proto__", "hasownproperty maior"]) {
+      expect(() => buscar(ind, q), q).not.toThrow();
+      expect(buscar(ind, q).resultados, q).toEqual([]);
+    }
+    expect(nums("tom constructor")).toEqual([]);
   });
 });
 
