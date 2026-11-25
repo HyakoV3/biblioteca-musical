@@ -634,3 +634,12 @@ pasta deixa de existir. **Ideia ligada:** baixar **o arquivo** e não a pasta, m
 ### Impacto técnico (hipóteses)
 ### Critérios de aceitação (propostos)
 ```
+
+---
+
+## I-37 — Busca inteligente (número, autoria, letra e tom; vários acervos)
+
+- **Status:** anotada, **rascunho revisado** (2026-11-25). O texto completo, com a pesquisa, os números do hinário e as perguntas, está em [`ideia-busca-inteligente.md`](ideia-busca-inteligente.md).
+- **Origem:** o responsável, 2026-11-25: a busca só acha por número exato e por trecho do título; deve achar por número de forma esperta ("1" ajuda a chegar no 1, 10, 100), por autoria, por letra e por tom, e preparar-se para o Hinário 4 e outras bibliotecas.
+- **Prioridade:** a definir.
+- **Em uma frase:** o exato do número fica fixo no topo e o prefixo vem limitado; a letra só com palavras (curtas inteiras, a partir de 3 letras por início de palavra); o tom por botões; e o número deixa de ser a chave única do app antes de entrar um segundo acervo.
