@@ -40,12 +40,10 @@
 
   // A busca (I-37, motor em `busca-hinos.ts`): número (o exato primeiro e fixo, depois os que começam pelos mesmos dígitos), tom, e texto em título, autoria e letra.
   const indice = $derived(biblioteca.pacote ? indexar(biblioteca.pacote.hinario.hinos) : null);
-  /** "e mais N" tocado: mostra todos os hinos que começam pelos dígitos digitados. Volta ao normal quando a consulta muda. */
-  let expandir = $state(false);
-  $effect(() => {
-    void biblioteca.busca;
-    expandir = false;
-  });
+  /** A consulta para a qual "e mais N" foi tocado: mostra todos os hinos que começam pelos dígitos digitados. Mudou a consulta, deixa de valer (voltar a ela reexpande). Derivado, e não resetado num `$effect`, para não calcular a lista inteira uma vez à toa a cada tecla. */
+  let expandidoPara = $state<string | null>(null);
+  const expandir = $derived(expandidoPara === biblioteca.busca);
+  let listaEl = $state<HTMLUListElement>();
   const busca = $derived(indice ? buscar(indice, biblioteca.busca, { expandirPrefixo: expandir }) : null);
   const resultados = $derived(busca?.resultados ?? []);
 
@@ -58,15 +56,22 @@
     }
   }
 
-  // Quantos hinos casaram, para o leitor de tela: só depois de uma pausa na digitação (anunciar a cada tecla atropelaria a fala).
+  /** O "e mais N" tocado: mostra todos e leva o foco ao primeiro hino que acabou de aparecer (o botão some, e o foco iria para o corpo da página). */
+  async function mostrarTodos() {
+    const jaMostrados = resultados.length;
+    expandidoPara = biblioteca.busca;
+    await tick();
+    listaEl?.querySelectorAll<HTMLElement>("li > a")[jaMostrados]?.focus();
+  }
+
+  // Quantos hinos casaram, para o leitor de tela: só depois de uma pausa na digitação (anunciar a cada tecla atropelaria a fala). Conta também os que ficaram
+  // atrás do "e mais N" e limpa antes de preencher, senão duas consultas com a mesma contagem ("12" e "13") não seriam anunciadas de novo.
   let anuncio = $state("");
   $effect(() => {
-    const n = resultados.length;
+    const n = resultados.length + (busca?.maisNumeros ?? 0);
     const consulta = biblioteca.busca.trim();
-    if (!consulta) {
-      anuncio = "";
-      return;
-    }
+    anuncio = "";
+    if (!consulta) return;
     const espera = setTimeout(() => (anuncio = n === 0 ? t("busca.nenhum") : i18n.tn("plural.hinos", n)), 600);
     return () => clearTimeout(espera);
   });
@@ -139,7 +144,7 @@
     <p class="so-leitor" role="status" aria-live="polite">{anuncio}</p>
 
     {#if resultados.length}
-      <ul>
+      <ul bind:this={listaEl}>
         {#each resultados as r (r.item.numero)}
           {@const h = r.item}
           {@const d = r.destaque}
@@ -165,7 +170,7 @@
         {/each}
       </ul>
       {#if busca && busca.maisNumeros > 0}
-        <button class="botao mais" onclick={() => (expandir = true)}>{t("busca.mais", { n: busca.maisNumeros })}</button>
+        <button class="botao mais" onclick={mostrarTodos}>{t("busca.mais", { n: busca.maisNumeros })}</button>
       {/if}
     {:else}
       <Estado tipo="vazio" texto={t("biblioteca.sem_resultado", { termo: biblioteca.busca })}>
