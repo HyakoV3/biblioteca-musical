@@ -42,11 +42,31 @@ describe("o que o afinador lembra", () => {
   it("guarda e lê do aparelho, e ignora falha de armazenamento", () => {
     const m = new Map<string, string>();
     vi.stubGlobal("localStorage", { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) });
-    salvarAfinador({ recentes: [{ classe: 9, oitava: 4 }] });
-    expect(JSON.parse(m.get(CHAVE_AFINADOR)!)).toEqual({ recentes: [{ classe: 9, oitava: 4 }] });
+    salvarAfinador({ recentes: [{ classe: 9, oitava: 4 }], limite: 0 });
+    expect(JSON.parse(m.get(CHAVE_AFINADOR)!)).toEqual({ recentes: [{ classe: 9, oitava: 4 }], limite: 0 });
     expect(lerAfinador().recentes).toEqual([{ classe: 9, oitava: 4 }]);
     vi.stubGlobal("localStorage", undefined);
     expect(lerAfinador().recentes).toEqual([]);
-    expect(() => salvarAfinador({ recentes: [] })).not.toThrow();
+    expect(() => salvarAfinador({ recentes: [], limite: 0 })).not.toThrow();
+  });
+});
+
+describe("o afinador lembra o tempo do temporizador", () => {
+  it("só aceita até parar, 10, 20 ou 30 s; o resto volta a até parar", () => {
+    for (const l of [0, 10, 20, 30]) expect(normalizarPref({ recentes: [], limite: l }).limite).toBe(l);
+    for (const ruim of [5, 15, -1, "20", null, NaN, undefined, 99]) expect(normalizarPref({ recentes: [], limite: ruim }).limite).toBe(0);
+    expect(normalizarPref(null).limite).toBe(0);
+    expect(normalizarPref([20]).limite).toBe(0);
+  });
+  it("salvar e ler devolve o tempo escolhido, e escolher o tempo não perde as notas recentes", () => {
+    const m = new Map<string, string>();
+    vi.stubGlobal("localStorage", { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) });
+    salvarAfinador({ recentes: [{ classe: 9, oitava: 4 }], limite: 20 });
+    expect(lerAfinador()).toEqual({ recentes: [{ classe: 9, oitava: 4 }], limite: 20 });
+  });
+  it("preferência antiga, sem o tempo, abre em até parar", () => {
+    const m = new Map<string, string>([[CHAVE_AFINADOR, JSON.stringify({ recentes: [{ classe: 2, oitava: 4 }] })]]);
+    vi.stubGlobal("localStorage", { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v) });
+    expect(lerAfinador()).toEqual({ recentes: [{ classe: 2, oitava: 4 }], limite: 0 });
   });
 });
