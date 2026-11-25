@@ -643,3 +643,12 @@ pasta deixa de existir. **Ideia ligada:** baixar **o arquivo** e não a pasta, m
 - **Origem:** o responsável, 2026-11-25: a busca só acha por número exato e por trecho do título; deve achar por número de forma esperta ("1" ajuda a chegar no 1, 10, 100), por autoria, por letra e por tom, e preparar-se para o Hinário 4 e outras bibliotecas.
 - **Prioridade:** a definir.
 - **Em uma frase:** o exato do número fica fixo no topo e o prefixo vem limitado; a letra só com palavras (curtas inteiras, a partir de 3 letras por início de palavra); o tom por botões; e o número deixa de ser a chave única do app antes de entrar um segundo acervo.
+
+---
+
+## I-38 — Gravar com contexto (o que tocava no fone: metrônomo ou hino)
+
+- **Status:** anotada, **rascunho** (2026-11-25). O texto completo, com a pesquisa, o modelo JSON, o texto para o professor, os canais de envio e as perguntas, está em [`ideia-gravacao-com-contexto.md`](ideia-gravacao-com-contexto.md).
+- **Origem:** o responsável, 2026-11-25: ao gravar ouvindo o metrônomo ou um hino no fone, o app deve guardar isso (etiquetas em JSON) para o aluno dizer ao professor, no envio, "tocando com metrônomo 65 bpm, quaternário simples" ou "hino 10, vozes soprano, tenor e baixo, 60 bpm, +1 semitom".
+- **Prioridade:** a definir.
+- **Em uma frase:** guardar um `contexto` versionado junto de cada gravação (instantâneo do início), gerar daí um texto curto em pt/en/es e levá-lo no envio (`EXTRA_TEXT`, nome do arquivo e `OpusTags`), com o canal que o professor de fato vê decidido por teste no aparelho.
