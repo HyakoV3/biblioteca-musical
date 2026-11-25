@@ -306,6 +306,16 @@
     }
     return lista;
   });
+  type Linha = { chave: string; tipo: "grupo"; grupo: Grupo } | { chave: string; tipo: "item"; meta: MetaGravacao; marca?: "nova" | "tocando" };
+  /** As linhas da lista, na ordem da tela: os destaques, e depois cada grupo por dia com o seu cabeçalho. A chave do item é só o id: ele não é recriado ao mudar de lugar. */
+  const linhas = $derived.by(() => {
+    const l: Linha[] = fixadas.map((f) => ({ chave: `i:${f.meta.id}`, tipo: "item", meta: f.meta, marca: f.marca }));
+    for (const g of grupos) {
+      l.push({ chave: `g:${g.chave}`, tipo: "grupo", grupo: g });
+      for (const meta of g.itens) l.push({ chave: `i:${meta.id}`, tipo: "item", meta });
+    }
+    return l;
+  });
   const consultaAtiva = $derived(consulta.filtro !== "todas" || consulta.busca.trim() !== "");
   const FILTROS: Filtro[] = ["todas", "hino", "metronomo"];
 
@@ -349,6 +359,11 @@
     return () => clearTimeout(id);
   });
 
+  /** Uma gravação da lista pausou ou terminou: deixa de ser a "que toca" (só se ainda era ela). */
+  function aoPararItem(id: string) {
+    if (tocandoId === id) tocandoId = null;
+  }
+
   /** Uma gravação da lista começou a tocar: só ela toca, o hino cala e uma gravação em andamento PARA (o alto-falante entraria nela). */
   function aoTocarItem(id: string) {
     tocandoId = id;
@@ -386,10 +401,11 @@
     relogioTudo = null;
     confirmandoTudo = false;
     try {
-      carga++; // uma leitura em andamento agora é descartada (traria gravações que vão deixar de existir)
-      registro = null;
       await gravacoes.apagarTodas();
+      carga++; // só agora, que apagou: uma leitura em andamento é descartada (traria gravações que já não existem); se apagar falhar, ela segue
+      registro = null;
       todas = [];
+      listaPronta = true; // sabemos o que há: nada
       tocandoId = null;
       novaId = null;
       mostrando = PAGINA;
@@ -610,23 +626,17 @@
           {/each}
         </fieldset>
       </div>
-      {#if fixadas.length > 0}
-        <ul class="lista" id="lista-fixadas" aria-label={t("gravador.em_destaque")}>
-          {#each fixadas as f (f.meta.id)}
-            <ItemGravacao meta={f.meta} marca={f.marca} {tocandoId} aoTocar={aoTocarItem} aoApagar={apagarUma} />
-          {/each}
-        </ul>
-      {/if}
-      {#each grupos as g (g.chave)}
-        <section class="grupo" aria-labelledby={`grupo-${g.chave}`}>
-          <h3 id={`grupo-${g.chave}`} class="titulo-grupo">{rotuloDoGrupo(g)}</h3>
-          <ul class="lista">
-            {#each g.itens as m (m.id)}
-              <ItemGravacao meta={m} {tocandoId} aoTocar={aoTocarItem} aoApagar={apagarUma} />
-            {/each}
-          </ul>
-        </section>
-      {/each}
+      <!-- UMA lista só, com chave por item: a gravação que toca muda de lugar (da janela para o destaque, de "Hoje" para "Ontem") sem ser desmontada, e o áudio segue. Os cabeçalhos de dia são
+           linhas da lista (`<li>` com `<h3>`), para a navegação por títulos continuar. -->
+      <ul class="lista" id="lista-gravacoes">
+        {#each linhas as l (l.chave)}
+          {#if l.tipo === "grupo"}
+            <li class="grupo" role="presentation"><h3 class="titulo-grupo">{rotuloDoGrupo(l.grupo)}</h3></li>
+          {:else}
+            <ItemGravacao meta={l.meta} marca={l.marca} {tocandoId} aoTocar={aoTocarItem} aoApagar={apagarUma} aoParar={aoPararItem} />
+          {/if}
+        {/each}
+      </ul>
       {#if filtradas.length === 0}
         <p class="meta" id="sem-resultado">{t("gravador.nenhuma_filtro")}</p>
         <button id="limpar-filtros" class="botao" onclick={limparFiltros}>{t("gravador.limpar_filtros")}</button>
@@ -635,9 +645,12 @@
         <p class="meta" id="contador-gravacoes">{t("gravador.mostrando", { a: naJanela.length, b: filtradas.length })}</p>
         <button id="mostrar-mais" class="botao" onclick={mostrarMais}>{t("gravador.mostrar_mais", { n: Math.min(PAGINA, filtradas.length - naJanela.length) })}</button>
       {/if}
-      <button id="apagar-todas" class="botao" class:perigo={confirmandoTudo} onclick={apagarTodas}>
-        {confirmandoTudo ? t("gravador.apagar_todas_mesmo", { n: resumo.quantidade }) : t("gravador.apagar_todas")}
-      </button>
+      {#if listaPronta && !erroCarga}
+        <!-- Só com a lista completa conhecida: "Apagar todas" apaga TUDO o que está guardado, e o número da confirmação tem de ser o verdadeiro. -->
+        <button id="apagar-todas" class="botao" class:perigo={confirmandoTudo} onclick={apagarTodas}>
+          {confirmandoTudo ? t("gravador.apagar_todas_mesmo", { n: resumo.quantidade }) : t("gravador.apagar_todas")}
+        </button>
+      {/if}
     {:else if listaPronta && !erroCarga && !erroAcao}
       <p class="meta" id="lista-vazia">{t("gravador.nenhuma")}</p>
     {/if}
@@ -664,7 +677,7 @@
   .cabeca { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 1rem; }
   .cabeca h2 { margin: 0; font-size: 1rem; }
   .lista { display: grid; gap: 0.7rem; margin: 0; padding: 0; }
-  .grupo { display: grid; gap: 0.5rem; }
+  .grupo { list-style: none; }
   .titulo-grupo { margin: 0.4rem 0 0; font-size: 0.95rem; }
   .controles { display: grid; gap: 0.6rem; }
   .busca { display: grid; gap: 0.25rem; }

@@ -38,7 +38,8 @@ export function resumir(lista: readonly MetaGravacao[]): Resumo {
  */
 export function chaveDeBusca(m: MetaGravacao, nomeDe: (m: MetaGravacao) => string, dataDe: (m: MetaGravacao) => string): string {
   const c = contextoValido(m.contexto);
-  const contexto = c?.origem === "hino" && c.hino ? `hino ${c.hino.numero} ${c.hino.titulo}` : c?.origem === "metronomo" && c.metronomo ? `metronomo ${c.metronomo.bpm} bpm` : "";
+  // A palavra da origem entra nas três línguas da tela (pt, en e es): quem usa o app em inglês busca "metronome" ou "hymn 10".
+  const contexto = c?.origem === "hino" && c.hino ? `hino hymn himno ${c.hino.numero} ${c.hino.titulo}` : c?.origem === "metronomo" && c.metronomo ? `metronomo metronome ${c.metronomo.bpm} bpm` : "";
   return normalizar(`${nomeDe(m)} ${contexto} ${dataDe(m)}`);
 }
 

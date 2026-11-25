@@ -14,8 +14,17 @@
     tocandoId,
     aoTocar,
     aoApagar,
+    aoParar,
     marca,
-  }: { meta: MetaGravacao; tocandoId: string | null; aoTocar: (id: string) => void; aoApagar: (id: string) => void; marca?: "nova" | "tocando" } = $props();
+  }: {
+    meta: MetaGravacao;
+    tocandoId: string | null;
+    aoTocar: (id: string) => void;
+    aoApagar: (id: string) => void;
+    /** O áudio pausou ou terminou: a lista deixa de considerá-la "tocando" (senão um filtro que a esconda a fixaria no topo sem som). */
+    aoParar: (id: string) => void;
+    marca?: "nova" | "tocando";
+  } = $props();
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
 
@@ -64,8 +73,14 @@
   );
   /** O diálogo de envio só existe no DOM enquanto está aberto (com muitas gravações, um `<dialog>` por item pesaria à toa). */
   let dialogoAberto = $state(false);
+  let dialogo = $state<HTMLDialogElement | null>(null);
   function modal(el: HTMLDialogElement) {
     el.showModal();
+  }
+  /** Fecha com `close()` (e não tirando o diálogo do DOM): só assim o navegador devolve o foco ao botão "Enviar". O `onclose` desmonta o diálogo. */
+  function fecharDialogo() {
+    if (dialogo) dialogo.close();
+    else dialogoAberto = false;
   }
 
   /** Com contexto, pergunta antes (modal): enviar com o texto do que a pessoa ouvia, ou só o áudio. Sem contexto, envia direto. */
@@ -77,7 +92,7 @@
 
   /** Abre a folha de compartilhamento do sistema com o arquivo desta gravação (lido do armazenamento só agora). */
   async function enviar(comContexto: boolean) {
-    dialogoAberto = false;
+    fecharDialogo();
     if (enviando) return;
     enviando = true;
     falhouEnvio = false;
@@ -120,7 +135,10 @@
   function player(el: HTMLAudioElement) {
     const desfazer = corrigirDuracao(el);
     const aoComecar = () => aoTocar(meta.id); // o usuário apertou play nos controles do player
+    const aoPausar = () => aoParar(meta.id);
     el.addEventListener("play", aoComecar);
+    el.addEventListener("pause", aoPausar);
+    el.addEventListener("ended", aoPausar);
     el.addEventListener("error", aoFalhar);
     aoTocar(meta.id);
     void el.play().catch((e) => {
@@ -130,6 +148,8 @@
       destroy() {
         desfazer();
         el.removeEventListener("play", aoComecar);
+        el.removeEventListener("pause", aoPausar);
+        el.removeEventListener("ended", aoPausar);
         el.removeEventListener("error", aoFalhar);
       },
     };
@@ -172,14 +192,14 @@
   </div>
 
   {#if dialogoAberto}
-  <dialog use:modal onclose={() => (dialogoAberto = false)} class="envio-contexto" aria-labelledby={`envio-${meta.id}`}>
+  <dialog bind:this={dialogo} use:modal onclose={() => (dialogoAberto = false)} class="envio-contexto" aria-labelledby={`envio-${meta.id}`}>
     <h2 id={`envio-${meta.id}`}>{t("gravador.contexto_titulo")}</h2>
     <p>{t("gravador.contexto_explica")}</p>
     <pre class="previa">{textoDoEnvio}</pre>
     <div class="botoes">
       <button class="botao primario" onclick={() => enviar(true)}>{t("gravador.enviar_com")}</button>
       <button class="botao" onclick={() => enviar(false)}>{t("gravador.enviar_sem")}</button>
-      <button class="botao" onclick={() => (dialogoAberto = false)}>{t("gravador.cancelar")}</button>
+      <button class="botao" onclick={fecharDialogo}>{t("gravador.cancelar")}</button>
     </div>
   </dialog>
   {/if}

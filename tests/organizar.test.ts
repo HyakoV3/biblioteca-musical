@@ -68,6 +68,12 @@ describe("filtrar", () => {
     expect(f("todas", "metronomo")).toEqual(["m"]);
     expect(f("todas", "gravacao")).toHaveLength(4);
   });
+  it("a palavra da origem vale nas três línguas (pt, en e es)", () => {
+    expect(f("todas", "metronome")).toEqual(["m"]);
+    expect(f("todas", "hymn vitoriosos")).toEqual(["h10"]);
+    expect(f("todas", "himno santo")).toEqual(["h100"]);
+    expect(f("todas", "hino 100")).toEqual(["h100"]); // "hino N" sozinho segue valendo como número
+  });
   it("filtro e busca se combinam; contexto malformado não quebra nem entra no filtro", () => {
     expect(f("hino", "vitoriosos")).toEqual(["h10"]);
     expect(f("metronomo", "vitoriosos")).toEqual([]);

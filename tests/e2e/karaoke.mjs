@@ -1388,7 +1388,8 @@ async function principal() {
   const unicas = await av(`new Set([...document.querySelectorAll('.gravacao-item')].map((e) => e.dataset.id)).size`);
   confere(unicas === 25, `Gravador: nenhuma gravação repetida nem pulada (25 únicas): ${unicas}`);
   // Busca e filtros (a lista toda está na memória): número de hino, origem, sem resultado e limpar.
-  const digitar = (v) => av(`(() => { const i = document.getElementById('buscar-gravacoes'); i.value = ${JSON.stringify(v)}; i.dispatchEvent(new Event('input', { bubbles: true })); return 1; })()`);
+  // O texto vai em hexadecimal (só 0-9 e a-f) e é decodificado na página: nada de montar código com um valor escapado à mão.
+  const digitar = (v) => av(`(() => { const i = document.getElementById('buscar-gravacoes'); i.value = new TextDecoder().decode(Uint8Array.from('${Buffer.from(v, 'utf8').toString('hex')}'.match(/../g) ?? [], (h) => parseInt(h, 16))); i.dispatchEvent(new Event('input', { bubbles: true })); return 1; })()`);
   const ids = () => av(`[...document.querySelectorAll('.gravacao-item')].map((e) => e.dataset.id)`);
   await digitar("10");
   await dormir(300);
