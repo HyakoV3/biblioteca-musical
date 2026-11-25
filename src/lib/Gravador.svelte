@@ -4,8 +4,8 @@
   import Icone from "./Icone.svelte";
   import ItemGravacao from "./ItemGravacao.svelte";
   import { DetectorDeSom, Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nivelParaBarra, nomeDoFormato, rastro, suavizarBarra, type Gravacao, type MotivoDoErro } from "./gravador";
-  import { LIMITE_PARA_GUARDAR_MS, comLimite, formatarData, gravacoes, type MetaGravacao } from "./gravacoes";
-  import { PAGINA, SEM_FILTRO, agrupar, chaveDeBusca, filtrar, janela, mesclar, resumir, type Consulta, type Filtro, type Grupo } from "./organizar";
+  import { LIMITE_PARA_GUARDAR_MS, comLimite, formatarData, gravacoes, type MetaGravacao, type Mudancas } from "./gravacoes";
+  import { PAGINA, SEM_FILTRO, agrupar, chaveDeBusca, filtrar, janela, mesclar, nomeDaGravacao, resumir, type Consulta, type Filtro, type Grupo } from "./organizar";
   import { i18n } from "./i18n/index.svelte";
   import { emCurso } from "./gravacaoEmCurso.svelte";
   import { biblioteca } from "./biblioteca.svelte";
@@ -60,7 +60,7 @@
    * O que mudou enquanto a leitura completa corria: o que foi SALVO e o que foi APAGADO desde o início dela. Ao chegar, a leitura é mesclada com isso (`mesclar`), em vez de substituir a lista
    * (senão uma gravação feita durante a leitura sumiria, e uma apagada voltaria). Nulo fora de uma leitura.
    */
-  let registro: { salvas: MetaGravacao[]; apagadas: Set<string> } | null = null;
+  let registro: { salvas: MetaGravacao[]; apagadas: Set<string>; alteradas: Map<string, MetaGravacao> } | null = null;
   /** Numera as leituras: "Apagar todas" ou uma leitura mais nova descarta a anterior. */
   let carga = 0;
   /** Busca e filtro de origem (limpos ao sair e ao reabrir: não são lembrados). */
@@ -257,11 +257,11 @@
   /** Lê todos os metadados de uma vez e os mescla com o que mudou durante a leitura. */
   async function carregarTudo() {
     const minha = ++carga;
-    const meu = (registro = { salvas: [], apagadas: new Set<string>() });
+    const meu = (registro = { salvas: [], apagadas: new Set<string>(), alteradas: new Map<string, MetaGravacao>() });
     try {
       const lidas = await gravacoes.listarTodas();
       if (destruido || minha !== carga) return; // "Apagar todas" ou uma leitura mais nova aconteceu no meio: esta é do passado
-      todas = mesclar(lidas, meu.salvas, meu.apagadas);
+      todas = mesclar(lidas, meu.salvas, meu.apagadas, meu.alteradas);
       erroCarga = false;
     } catch (e) {
       console.warn("gravador: não foi possível ler as gravações", e);
@@ -286,7 +286,7 @@
     let c = cacheDeChaves.get(m);
     if (c === undefined) {
       const data = formatarData(m.criadaEm, i18n.idioma);
-      c = chaveDeBusca(m, () => t("gravador.nome", { data }), () => data);
+      c = chaveDeBusca(m, (x) => nomeDaGravacao(x, (k, p) => t(k as Parameters<typeof t>[0], p), i18n.idioma), () => data);
       cacheDeChaves.set(m, c);
     }
     return c;
@@ -317,7 +317,7 @@
     return l;
   });
   const consultaAtiva = $derived(consulta.filtro !== "todas" || consulta.busca.trim() !== "");
-  const FILTROS: Filtro[] = ["todas", "hino", "metronomo"];
+  const FILTROS: Filtro[] = ["todas", "favoritas", "hino", "metronomo"];
 
   function mudouConsulta() {
     mostrando = PAGINA;
@@ -358,6 +358,45 @@
     const id = setTimeout(() => (anuncio = texto), 600);
     return () => clearTimeout(id);
   });
+
+  /** Muda o nome ou a estrela de uma gravação. Se ela já não existe (apagada em outro lugar), sai da lista. Devolve se deu certo. */
+  async function atualizarUma(id: string, mudancas: Mudancas): Promise<boolean> {
+    // O foco não pode se perder quando a mudança TIRA o item da lista (tirar a estrela com o filtro "Favoritas"), nem quando o MOVE (da janela para o destaque: o navegador tira o foco
+    // de um nó movido): vai ao item seguinte, ao próprio item ou, sem nenhum, ao título.
+    const ordem = [...fixadas.map((f) => f.meta.id), ...naJanela.map((m) => m.id)];
+    const i = ordem.indexOf(id);
+    const proximo = ordem[i + 1] ?? ordem[i - 1];
+    const tinhaFoco = document.activeElement?.closest("[data-id]")?.getAttribute("data-id") === id;
+    const recuperarFoco = async () => {
+      await tick();
+      if (!tinhaFoco) return;
+      const ativo = document.activeElement;
+      if (ativo && ativo !== document.body) return; // o foco está em algum lugar: não mexe
+      const doItem = document.querySelector(`[data-id="${CSS.escape(id)}"] .estrela`) as HTMLElement | null;
+      if (doItem) doItem.focus();
+      else if (proximo && document.querySelector(`[data-id="${CSS.escape(proximo)}"]`)) focarItem(proximo);
+      else document.getElementById("titulo-guardadas")?.focus();
+    };
+    try {
+      const novo = await gravacoes.atualizar(id, mudancas);
+      if (!novo) {
+        // Apagada em outro lugar: sai da lista como em `apagarUma` (e deixa de ser a que toca).
+        remover([id]);
+        if (tocandoId === id) tocandoId = null;
+        if (novaId === id) novaId = null;
+        await recuperarFoco();
+        return true;
+      }
+      registro?.alteradas.set(id, novo);
+      todas = todas.map((m) => (m.id === id ? novo : m));
+      erroAcao = false;
+      await recuperarFoco();
+      return true;
+    } catch (e) {
+      console.warn("gravador: não foi possível salvar a alteração", e);
+      return false;
+    }
+  }
 
   /** Uma gravação da lista pausou ou terminou: deixa de ser a "que toca" (só se ainda era ela). */
   function aoPararItem(id: string) {
@@ -633,7 +672,7 @@
           {#if l.tipo === "grupo"}
             <li class="grupo" role="presentation"><h3 class="titulo-grupo">{rotuloDoGrupo(l.grupo)}</h3></li>
           {:else}
-            <ItemGravacao meta={l.meta} marca={l.marca} {tocandoId} aoTocar={aoTocarItem} aoApagar={apagarUma} aoParar={aoPararItem} />
+            <ItemGravacao meta={l.meta} marca={l.marca} {tocandoId} aoTocar={aoTocarItem} aoApagar={apagarUma} aoParar={aoPararItem} aoAtualizar={atualizarUma} />
           {/if}
         {/each}
       </ul>

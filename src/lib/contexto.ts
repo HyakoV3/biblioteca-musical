@@ -150,42 +150,57 @@ function lista(nomes: string[], idioma: string): string {
   }
 }
 
-/** O texto em Markdown (só `*negrito*`, `_itálico_` e `- ` de lista: o que os apps de mensagem entendem), no idioma de `t`. Linhas que não se aplicam não aparecem. */
-export function textoDoContexto(c: ContextoGravacao, t: Tradutor, idioma: string): string {
-  const linhas: string[] = [`*${t("ctx.titulo")}*`];
+/** Uma linha do contexto: o texto e, quando há, uma nota entre parênteses (o que foi tirado, o andamento original). `plano` não leva formatação; o Markdown a põe em itálico. */
+export type LinhaDoContexto = { texto: string; nota?: string };
+
+/** As linhas do contexto no idioma de `t`, sem formatação nenhuma (a tela do app mostra assim; o texto enviado as põe em Markdown). Linhas que não se aplicam não aparecem. */
+export function linhasDoContexto(c: ContextoGravacao, t: Tradutor, idioma: string): LinhaDoContexto[] {
+  const linhas: LinhaDoContexto[] = [];
   if (c.origem === "metronomo" && c.metronomo) {
     const m = c.metronomo;
-    linhas.push(
-      m.familia === "composto"
-        ? `- ${t("ctx.com_metronomo_composto", { bpm: m.bpm, porTempo: Math.round(m.bpm / 3) })}`
-        : `- ${t("ctx.com_metronomo", { bpm: m.bpm })}`,
-    );
+    linhas.push({ texto: m.familia === "composto" ? t("ctx.com_metronomo_composto", { bpm: m.bpm, porTempo: Math.round(m.bpm / 3) }) : t("ctx.com_metronomo", { bpm: m.bpm }) });
     const nome = t(`ctx.compasso.${m.familia}.${m.tempos}`);
-    linhas.push(
-      m.familia === "composto"
-        ? `- ${t("ctx.compasso_composto", { nome, cliques: m.cliques, tempos: m.tempos })}`
-        : `- ${t("ctx.compasso_simples", { nome, tempos: m.tempos })}`,
-    );
+    linhas.push({ texto: m.familia === "composto" ? t("ctx.compasso_composto", { nome, cliques: m.cliques, tempos: m.tempos }) : t("ctx.compasso_simples", { nome, tempos: m.tempos }) });
   }
   if (c.origem === "hino" && c.hino) {
     const h = c.hino;
-    linhas.push(`- ${t("ctx.com_hino", { numero: h.numero, titulo: limparParaMarkdown(h.titulo) })}`);
+    linhas.push({ texto: t("ctx.com_hino", { numero: h.numero, titulo: limparParaMarkdown(h.titulo) }) });
     const nome = (v: { nome: string }) => v.nome.toLocaleLowerCase(idioma);
     const tocando = h.vozes.filter((v) => v.tocando).map(nome);
     const fora = h.vozes.filter((v) => !v.tocando).map(nome);
-    if (tocando.length === 0) linhas.push(`- ${t("ctx.sem_vozes")}`);
-    else linhas.push(`- ${t("ctx.vozes", { lista: lista(tocando, idioma) })}${fora.length ? ` _(${t("ctx.sem", { lista: lista(fora, idioma) })})_` : ""}`);
-    linhas.push(
-      `- ${t("ctx.andamento", { bpm: h.andamento })}${h.andamentoOriginal !== undefined ? ` _(${t("ctx.original", { bpm: h.andamentoOriginal })})_` : ""}`,
-    );
-    if (h.tonalidade) linhas.push(`- ${t("ctx.tom", { tom: limparParaMarkdown(h.tonalidade) })}`);
+    if (tocando.length === 0) linhas.push({ texto: t("ctx.sem_vozes") });
+    else linhas.push({ texto: t("ctx.vozes", { lista: lista(tocando, idioma) }), ...(fora.length ? { nota: t("ctx.sem", { lista: lista(fora, idioma) }) } : {}) });
+    linhas.push({ texto: t("ctx.andamento", { bpm: h.andamento }), ...(h.andamentoOriginal !== undefined ? { nota: t("ctx.original", { bpm: h.andamentoOriginal }) } : {}) });
+    if (h.tonalidade) linhas.push({ texto: t("ctx.tom", { tom: limparParaMarkdown(h.tonalidade) }) });
     if (h.transposicao !== 0) {
       const n = Math.abs(h.transposicao);
-      linhas.push(`- ${t("ctx.transposicao", { n: `${h.transposicao > 0 ? "+" : "−"}${n}`, unidade: t(n === 1 ? "ctx.semitom_um" : "ctx.semitom_varios") })}`);
+      linhas.push({ texto: t("ctx.transposicao", { n: `${h.transposicao > 0 ? "+" : "−"}${n}`, unidade: t(n === 1 ? "ctx.semitom_um" : "ctx.semitom_varios") }) });
     }
-    if (h.parte === "intro") linhas.push(`- ${t("ctx.parte_intro")}`);
-    else if (typeof h.parte === "number") linhas.push(`- ${t("ctx.parte_vez", { n: h.parte })}`);
+    if (h.parte === "intro") linhas.push({ texto: t("ctx.parte_intro") });
+    else if (typeof h.parte === "number") linhas.push({ texto: t("ctx.parte_vez", { n: h.parte }) });
   }
+  return linhas;
+}
+
+/** O texto em Markdown (só `*negrito*`, `_itálico_` e `- ` de lista: o que os apps de mensagem entendem), no idioma de `t`. Linhas que não se aplicam não aparecem. */
+export function textoDoContexto(c: ContextoGravacao, t: Tradutor, idioma: string): string {
+  const linhas: string[] = [`*${t("ctx.titulo")}*`];
+  for (const l of linhasDoContexto(c, t, idioma)) linhas.push(`- ${l.texto}${l.nota ? ` _(${l.nota})_` : ""}`);
   if (c.mudouDurante) linhas.push(`_${t("ctx.mudou")}_`);
   return linhas.join("\n");
+}
+
+/** O resumo de uma linha para o card da gravação: "hino 10 · 60 bpm · +1 semitom" ou "metrônomo, 65 bpm". Os detalhes ficam nas linhas. */
+export function resumoDoContexto(c: ContextoGravacao, t: Tradutor): string {
+  if (c.origem === "hino" && c.hino) {
+    const h = c.hino;
+    const partes = [t("gravador.resumo_hino", { numero: h.numero }), `${h.andamento} bpm`];
+    if (h.transposicao !== 0) {
+      const n = Math.abs(h.transposicao);
+      partes.push(`${h.transposicao > 0 ? "+" : "−"}${n} ${t(n === 1 ? "ctx.semitom_um" : "ctx.semitom_varios")}`);
+    }
+    return partes.join(" · ");
+  }
+  if (c.metronomo) return t("gravador.resumo_metronomo", { bpm: c.metronomo.bpm });
+  return "";
 }

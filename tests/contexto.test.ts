@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contextoValido, limparParaMarkdown, marcarMudanca, montarContexto, textoDoContexto, type Entrada } from "../src/lib/contexto";
+import { contextoValido, limparParaMarkdown, linhasDoContexto, marcarMudanca, montarContexto, resumoDoContexto, textoDoContexto, type Entrada } from "../src/lib/contexto";
 import { pt } from "../src/lib/i18n/pt";
 import { en } from "../src/lib/i18n/en";
 import { es } from "../src/lib/i18n/es";
@@ -124,5 +124,28 @@ describe("textoDoContexto", () => {
   it("en: texto do hino", () => {
     const c = montarContexto({ ...base, hino: hino() })!;
     expect(textoDoContexto(c, tr(en), "en")).toContain("Voices in the headphones: soprano, contralto, tenor, and baixo");
+  });
+});
+
+describe("linhas e resumo do contexto (o card da gravação)", () => {
+  const pt_ = tr({ ...pt, "gravador.resumo_hino": "hino {numero}", "gravador.resumo_metronomo": "metrônomo, {bpm} bpm" });
+  it("as linhas são as do texto enviado, sem formatação; a nota vai à parte", () => {
+    const c = montarContexto({ ...base, hino: hino({ andamento: 60, transposicao: 1, vozes: [{ nome: "Soprano", muda: false }, { nome: "Contralto", muda: true }] }) })!;
+    const l = linhasDoContexto(c, pt_, "pt");
+    expect(l[0]!.texto).toBe('Com: hino 10, "Hino fictício"');
+    expect(l[1]).toEqual({ texto: "Vozes no fone: soprano", nota: "sem contralto" });
+    expect(l[2]).toEqual({ texto: "Andamento: 60 bpm", nota: "original 69" });
+    expect(l.map((x) => x.texto).join()).not.toMatch(/[*_]/);
+    // o Markdown enviado continua igual: as mesmas linhas, com a nota em itálico
+    expect(textoDoContexto(c, pt_, "pt")).toContain("- Vozes no fone: soprano _(sem contralto)_");
+  });
+  it("sem nenhuma voz tocando o texto diz isso", () => {
+    const c = montarContexto({ ...base, hino: hino({ vozes: [{ nome: "Soprano", muda: true }, { nome: "Tenor", muda: true }] }) })!;
+    expect(linhasDoContexto(c, pt_, "pt").map((x) => x.texto)).toContain("Vozes no fone: nenhuma (todas silenciadas)");
+  });
+  it("o resumo de uma linha: hino com andamento e transposição, ou metrônomo", () => {
+    expect(resumoDoContexto(montarContexto({ ...base, hino: hino({ andamento: 60, transposicao: 1 }) })!, pt_)).toBe("hino 10 · 60 bpm · +1 semitom");
+    expect(resumoDoContexto(montarContexto({ ...base, hino: hino({ transposicao: -2 }) })!, pt_)).toBe("hino 10 · 69 bpm · −2 semitons");
+    expect(resumoDoContexto(montarContexto({ ...base, metronomo: { ligado: true, bpm: 65, compasso: 4 } })!, pt_)).toBe("metrônomo, 65 bpm");
   });
 });

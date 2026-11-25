@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, tick } from "svelte";
   import { compartilharGravacao, nomeDoArquivo, podeCompartilhar, tipoSemCodec } from "./compartilhar";
-  import { contextoValido, textoDoContexto } from "./contexto";
+  import { contextoValido, linhasDoContexto, resumoDoContexto, textoDoContexto } from "./contexto";
   import { corrigirDuracao, formatarTamanho, formatarTempo, nomeDoFormato } from "./gravador";
-  import { formatarData, gravacoes, type MetaGravacao } from "./gravacoes";
+  import { gravacoes, type MetaGravacao, type Mudancas } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
+  import { TITULO_MAX } from "./metaGravacao";
+  import { nomeDaGravacao } from "./organizar";
 
   // Uma gravação da lista: nome (data e hora), duração, tamanho e formato, "Ouvir", "Enviar" (folha de compartilhamento do sistema) e "Apagar". O arquivo de áudio só é lido do armazenamento quando a pessoa toca
   // em "Ouvir" (a lista carrega só os metadados). Apagar pede confirmação: o primeiro toque muda o botão para "Apagar mesmo?" e o segundo apaga; sem o segundo toque em
@@ -15,6 +17,7 @@
     aoTocar,
     aoApagar,
     aoParar,
+    aoAtualizar,
     marca,
   }: {
     meta: MetaGravacao;
@@ -23,6 +26,8 @@
     aoApagar: (id: string) => void;
     /** O áudio pausou ou terminou: a lista deixa de considerá-la "tocando" (senão um filtro que a esconda a fixaria no topo sem som). */
     aoParar: (id: string) => void;
+    /** Muda o nome ou a estrela (a lista grava e atualiza); devolve se deu certo. */
+    aoAtualizar: (id: string, mudancas: Mudancas) => Promise<boolean>;
     marca?: "nova" | "tocando";
   } = $props();
 
@@ -36,7 +41,54 @@
   let audio = $state<HTMLAudioElement | null>(null);
   let destruido = false;
 
-  const nome = $derived(t("gravador.nome", { data: formatarData(meta.criadaEm, i18n.idioma) }));
+  const tr = (c: string, p?: Record<string, string | number>) => t(c as Parameters<typeof i18n.t>[0], p);
+  /** O nome mostrado: o da pessoa, ou o padrão (com o hino ou o metrônomo e a data), derivado na hora. */
+  const nome = $derived(nomeDaGravacao(meta, tr, i18n.idioma));
+  const nomePadrao = $derived(nomeDaGravacao({ ...meta, titulo: undefined }, tr, i18n.idioma));
+
+  // Renomear e favoritar (I-39).
+  let editando = $state(false);
+  let rascunho = $state("");
+  let salvandoNome = $state(false);
+  let erroAtualizar = $state(false);
+  let botaoRenomear = $state<HTMLButtonElement | null>(null);
+  function focar(el: HTMLInputElement) {
+    el.focus();
+    el.select();
+  }
+  function comecarRenomear() {
+    rascunho = meta.titulo ?? "";
+    erroAtualizar = false;
+    editando = true;
+  }
+  async function fecharRenomear() {
+    editando = false;
+    await tick();
+    botaoRenomear?.focus(); // o foco volta ao botão que abriu a edição
+  }
+  async function salvarNome() {
+    if (salvandoNome) return;
+    salvandoNome = true;
+    erroAtualizar = false;
+    const ok = await aoAtualizar(meta.id, { titulo: rascunho });
+    salvandoNome = false;
+    if (destruido) return;
+    if (ok) await fecharRenomear();
+    else erroAtualizar = true;
+  }
+  /** Enquanto a estrela grava, outro toque é ignorado: o valor novo vem do registro de agora, e dois toques rápidos pediriam o mesmo valor. */
+  let salvandoEstrela = false;
+  async function alternarFavorita() {
+    if (salvandoEstrela) return;
+    salvandoEstrela = true;
+    erroAtualizar = false;
+    try {
+      const ok = await aoAtualizar(meta.id, { favorita: meta.favorita !== true });
+      if (!ok && !destruido) erroAtualizar = true;
+    } finally {
+      salvandoEstrela = false;
+    }
+  }
 
   async function ouvir() {
     if (carregando) return;
@@ -63,14 +115,10 @@
   let falhouEnvio = $state(false);
   const sePodeEnviar = podeCompartilhar();
   const contexto = $derived(contextoValido(meta.contexto));
-  const textoDoEnvio = $derived(contexto ? textoDoContexto(contexto, (c, p) => t(c as Parameters<typeof i18n.t>[0], p), i18n.idioma) : "");
-  const resumo = $derived(
-    contexto?.origem === "hino" && contexto.hino
-      ? t("gravador.resumo_hino", { numero: contexto.hino.numero })
-      : contexto?.metronomo
-        ? t("gravador.resumo_metronomo", { bpm: contexto.metronomo.bpm })
-        : "",
-  );
+  const textoDoEnvio = $derived(contexto ? textoDoContexto(contexto, tr, i18n.idioma) : "");
+  /** O resumo de uma linha no card e as linhas completas ao abrir (as mesmas do texto enviado, sem a formatação). */
+  const resumo = $derived(contexto ? resumoDoContexto(contexto, tr) : "");
+  const linhasContexto = $derived(contexto ? linhasDoContexto(contexto, tr, i18n.idioma) : []);
   /** O diálogo de envio só existe no DOM enquanto está aberto (com muitas gravações, um `<dialog>` por item pesaria à toa). */
   let dialogoAberto = $state(false);
   let dialogo = $state<HTMLDialogElement | null>(null);
@@ -169,7 +217,34 @@
 
 <li class="gravacao-item" data-id={meta.id}>
   <div class="topo">
-    <strong class="nome">{nome}</strong>
+    {#if editando}
+      <form
+        class="renomear"
+        onsubmit={(e) => {
+          e.preventDefault();
+          void salvarNome();
+        }}
+      >
+        <label>
+          <span class="meta">{t("gravador.nome_campo")} ({t("gravador.nome_limite", { n: TITULO_MAX })})</span>
+          <input use:focar type="text" maxlength={TITULO_MAX * 4} readonly={salvandoNome} placeholder={nomePadrao} bind:value={rascunho} onkeydown={(e) => e.key === "Escape" && void fecharRenomear()} />
+        </label>
+        <div class="botoes-nome">
+          <button type="submit" class="botao primario" disabled={salvandoNome}>{t("gravador.salvar_nome")}</button>
+          <button type="button" class="botao" onclick={fecharRenomear}>{t("gravador.cancelar")}</button>
+        </div>
+      </form>
+    {:else}
+      <div class="linha-nome">
+        <strong class="nome">{nome}</strong>
+        <button
+          class="estrela"
+          aria-pressed={meta.favorita === true}
+          aria-label={`${t("gravador.favorita")}: ${nome}`}
+          onclick={alternarFavorita}>{meta.favorita ? "★" : "☆"}</button
+        >
+      </div>
+    {/if}
     {#if marca}<span class="marca">{t(marca === "nova" ? "gravador.marca_nova" : "gravador.marca_tocando")}</span>{/if}
     <span class="info meta">{formatarTempo(meta.segundos)} · {formatarTamanho(meta.bytes, i18n.idioma)} · {nomeDoFormato(meta.tipo)}</span>
   </div>
@@ -178,11 +253,21 @@
   {/if}
   {#if falhou}<p class="meta erro-item" role="alert">{t("gravador.erro_abrir")}</p>{/if}
   {#if falhouEnvio}<p class="meta erro-item" role="alert">{t("gravador.erro_enviar")}</p>{/if}
-  {#if resumo}<p class="meta contexto-resumo">{t("gravador.tem_contexto", { resumo })}</p>{/if}
+  {#if erroAtualizar}<p class="meta erro-item" role="alert">{t("gravador.erro_atualizar")}</p>{/if}
+  {#if resumo}
+    <details class="contexto">
+      <summary class="meta">{t("gravador.tem_contexto", { resumo })}</summary>
+      <ul class="linhas-contexto">
+        {#each linhasContexto as l, i (i)}<li>{l.texto}{#if l.nota} ({l.nota}){/if}</li>{/each}
+      </ul>
+      {#if contexto?.mudouDurante}<p class="meta">{t("ctx.mudou")}</p>{/if}
+    </details>
+  {/if}
   <div class="acoes">
     {#if !url}
       <button class="botao ouvir" onclick={ouvir} disabled={carregando} aria-label={`${t("gravador.ouvir")}: ${nome}`}>{t("gravador.ouvir")}</button>
     {/if}
+    <button class="botao renomear-botao" bind:this={botaoRenomear} onclick={comecarRenomear} aria-label={`${t("gravador.renomear")}: ${nome}`}>{t("gravador.renomear")}</button>
     {#if sePodeEnviar}
       <button class="botao enviar" onclick={pedirEnvio} disabled={enviando} aria-label={`${t("gravador.enviar")}: ${nome}`}>{t("gravador.enviar")}</button>
     {/if}
@@ -215,7 +300,16 @@
   .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .acoes .botao { flex: 1 1 5.5rem; min-height: 2.75rem; }
   /* Confirmando: borda e texto em destaque (não só a cor: o texto do botão muda para "Apagar mesmo?"). */
-  .contexto-resumo { margin: 0; }
+  .linha-nome { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .estrela { flex: none; min-width: 2.75rem; min-height: 2.75rem; font-size: 1.5rem; line-height: 1; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); color: var(--texto); cursor: pointer; }
+  .estrela[aria-pressed="true"] { border: 0.125rem solid var(--acento); }
+  .renomear { display: grid; gap: 0.5rem; }
+  .renomear label { display: grid; gap: 0.25rem; }
+  .renomear input { box-sizing: border-box; width: 100%; min-height: 3rem; padding: 0 0.75rem; font: inherit; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); color: var(--texto); }
+  .botoes-nome { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .botoes-nome .botao { flex: 1 1 5.5rem; min-height: 2.75rem; }
+  .contexto summary { cursor: pointer; min-height: 2.75rem; display: flex; align-items: center; }
+  .linhas-contexto { margin: 0 0 0.25rem; padding-left: 1.25rem; }
   .envio-contexto { box-sizing: border-box; width: min(32rem, calc(100% - 2rem)); margin: auto; padding: 1.25rem; border: 0.0625rem solid var(--borda-controle); border-radius: 1rem; background: var(--fundo); color: var(--texto); }
   .envio-contexto::backdrop { background: rgb(0 0 0 / 0.55); }
   .envio-contexto h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }

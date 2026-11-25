@@ -2,12 +2,12 @@
 // testar no Vitest com milhares de registros. A lista inteira de `meta` fica na memória (o áudio fica fora, em outra loja); só o que se desenha é paginado.
 import { numeroDaConsulta, normalizar } from "./busca-hinos";
 import { contextoValido } from "./contexto";
-import type { MetaGravacao, Resumo } from "./gravacoes";
+import { formatarData, type MetaGravacao, type Resumo } from "./gravacoes";
 
 /** Quantas gravações aparecem por vez (e quantas mais cada "Mostrar mais" traz). */
 export const PAGINA = 20;
 
-export type Filtro = "todas" | "hino" | "metronomo";
+export type Filtro = "todas" | "favoritas" | "hino" | "metronomo";
 export type Consulta = { filtro: Filtro; busca: string };
 export const SEM_FILTRO: Consulta = { filtro: "todas", busca: "" };
 
@@ -18,10 +18,17 @@ export const maisNovaPrimeiro = (a: MetaGravacao, b: MetaGravacao): number => b.
  * O que a lista mostra depois de uma leitura completa que começou antes de mudanças: o que foi LIDO e não foi apagado desde o início, mais o que foi SALVO desde o início e a leitura
  * não trouxe. Quem foi salvo e também foi lido entra uma vez só. A ordem é da mais nova para a mais antiga.
  */
-export function mesclar(lidas: readonly MetaGravacao[], salvas: readonly MetaGravacao[], apagadas: ReadonlySet<string>): MetaGravacao[] {
+export function mesclar(
+  lidas: readonly MetaGravacao[],
+  salvas: readonly MetaGravacao[],
+  apagadas: ReadonlySet<string>,
+  alteradas: ReadonlyMap<string, MetaGravacao> = new Map(),
+): MetaGravacao[] {
   const porId = new Map<string, MetaGravacao>();
   for (const m of lidas) if (!apagadas.has(m.id)) porId.set(m.id, m);
   for (const m of salvas) if (!apagadas.has(m.id)) porId.set(m.id, m); // a versão salva vale (é a mais nova)
+  // Nome ou estrela mudados DURANTE a leitura: a versão local vale (a leitura pode ter lido o valor antigo). Só vale para quem ainda existe.
+  for (const [id, m] of alteradas) if (porId.has(id) && !apagadas.has(id)) porId.set(id, m);
   return [...porId.values()].sort(maisNovaPrimeiro);
 }
 
@@ -46,6 +53,7 @@ export function chaveDeBusca(m: MetaGravacao, nomeDe: (m: MetaGravacao) => strin
 /** A gravação entra no filtro de origem? */
 export function passaNoFiltro(m: MetaGravacao, filtro: Filtro): boolean {
   if (filtro === "todas") return true;
+  if (filtro === "favoritas") return m.favorita === true;
   return contextoValido(m.contexto)?.origem === filtro;
 }
 
@@ -71,6 +79,23 @@ export function filtrar(lista: readonly MetaGravacao[], c: Consulta, chaveDe: (m
 
 /** As primeiras `quantas` (a janela que se desenha). */
 export const janela = <T>(lista: readonly T[], quantas: number): T[] => lista.slice(0, Math.max(0, Math.floor(quantas)));
+
+// ---------- o nome mostrado ----------
+
+type Tradutor = (chave: string, p?: Record<string, string | number>) => string;
+
+/**
+ * O nome que a tela mostra: o que a pessoa deu, ou um padrão com a data (com o ANO quando não é o corrente: sem ele, depois de um ano os nomes se repetem). Com contexto, o padrão diz o que
+ * tocava: "Hino 10 · 25/11 14:30" ou "Metrônomo 65 bpm · 25/11 14:30". Nada disso é gravado: é derivado na exibição, então muda com o idioma.
+ */
+export function nomeDaGravacao(m: MetaGravacao, t: Tradutor, idioma: string, agora: number = Date.now()): string {
+  if (m.titulo) return m.titulo;
+  const data = formatarData(m.criadaEm, idioma, new Date(m.criadaEm).getFullYear() !== new Date(agora).getFullYear());
+  const c = contextoValido(m.contexto);
+  if (c?.origem === "hino" && c.hino) return t("gravador.nome_hino", { numero: c.hino.numero, data });
+  if (c?.origem === "metronomo" && c.metronomo) return t("gravador.nome_metronomo", { bpm: c.metronomo.bpm, data });
+  return t("gravador.nome", { data });
+}
 
 // ---------- agrupar por dia ----------
 
