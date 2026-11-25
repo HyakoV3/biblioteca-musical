@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TITULO_MAX, limparTitulo, normalizarMeta } from "../src/lib/metaGravacao";
+import { TITULO_MAX, cortarGrafemas, limparTitulo, normalizarMeta } from "../src/lib/metaGravacao";
 import type { MetaGravacao } from "../src/lib/gravacoes";
 
 describe("limparTitulo", () => {
@@ -24,6 +24,20 @@ describe("limparTitulo", () => {
     expect(grafemas(limparTitulo(familia.repeat(TITULO_MAX + 20))!)).toBe(TITULO_MAX);
     expect(grafemas(limparTitulo(bandeira.repeat(TITULO_MAX + 20))!)).toBe(TITULO_MAX);
     expect(limparTitulo("\u{1F3BA}".repeat(TITULO_MAX + 20))!.length).toBeGreaterThan(TITULO_MAX); // pares substitutos: mais unidades UTF-16 que grafemas
+  });
+  it("a checagem de invisíveis vale DEPOIS do corte (80 invisíveis e uma letra não viram nome vazio)", () => {
+    expect(limparTitulo("\u200B".repeat(TITULO_MAX) + "a")).toBeNull();
+    expect(limparTitulo("\u200B".repeat(TITULO_MAX - 1) + "a")).toBe("\u200B".repeat(TITULO_MAX - 1) + "a");
+  });
+  it("os preenchimentos do Hangul também não são nome", () => {
+    expect(limparTitulo("\u115F\u1160\uFFA0\u3164")).toBeNull();
+    expect(limparTitulo("\u115F a")).toBe("\u115F a");
+  });
+  it("cortarGrafemas corta em caracteres visíveis e deixa o curto como está", () => {
+    expect(cortarGrafemas("abc", 5)).toBe("abc");
+    expect(cortarGrafemas("abcdef", 4)).toBe("abcd");
+    const familia = "\u{1F468}\u200D\u{1F469}\u200D\u{1F467}\u200D\u{1F466}";
+    expect(cortarGrafemas(familia.repeat(5), 2)).toBe(familia.repeat(2));
   });
   it("só invisíveis, controles C1 e marcas de direção não viram nome", () => {
     expect(limparTitulo("\u200B\u200B")).toBeNull();

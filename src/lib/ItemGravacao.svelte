@@ -5,7 +5,7 @@
   import { corrigirDuracao, formatarTamanho, formatarTempo, nomeDoFormato } from "./gravador";
   import { gravacoes, type MetaGravacao, type Mudancas } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
-  import { TITULO_MAX } from "./metaGravacao";
+  import { TITULO_MAX, cortarGrafemas } from "./metaGravacao";
   import { nomeDaGravacao } from "./organizar";
 
   // Uma gravação da lista: nome (data e hora), duração, tamanho e formato, "Ouvir", "Enviar" (folha de compartilhamento do sistema) e "Apagar". O arquivo de áudio só é lido do armazenamento quando a pessoa toca
@@ -61,7 +61,13 @@
     erroAtualizar = false;
     editando = true;
   }
-  async function fecharRenomear() {
+  /** Fecha a edição (Cancelar e Esc). Com um salvamento em andamento não fecha: o nome seria salvo mesmo depois de cancelar. */
+  async function cancelarRenomear() {
+    if (salvandoNome) return;
+    erroAtualizar = false;
+    await fechar();
+  }
+  async function fechar() {
     editando = false;
     await tick();
     botaoRenomear?.focus(); // o foco volta ao botão que abriu a edição
@@ -73,8 +79,14 @@
     const ok = await aoAtualizar(meta.id, { titulo: rascunho });
     salvandoNome = false;
     if (destruido) return;
-    if (ok) await fecharRenomear();
-    else erroAtualizar = true;
+    if (ok) await fechar();
+    else erroAtualizar = true; // a edição segue aberta, com o aviso
+  }
+  /** O campo aceita no máximo `TITULO_MAX` caracteres visíveis: o que passar é cortado na hora, e a pessoa vê o corte (e não só ao salvar). */
+  function aoDigitar(e: Event & { currentTarget: HTMLInputElement }) {
+    const v = cortarGrafemas(e.currentTarget.value);
+    if (v !== e.currentTarget.value) e.currentTarget.value = v;
+    rascunho = v;
   }
   /** Enquanto a estrela grava, outro toque é ignorado: o valor novo vem do registro de agora, e dois toques rápidos pediriam o mesmo valor. */
   let salvandoEstrela = false;
@@ -227,11 +239,11 @@
       >
         <label>
           <span class="meta">{t("gravador.nome_campo")} ({t("gravador.nome_limite", { n: TITULO_MAX })})</span>
-          <input use:focar type="text" maxlength={TITULO_MAX * 4} readonly={salvandoNome} placeholder={nomePadrao} bind:value={rascunho} onkeydown={(e) => e.key === "Escape" && void fecharRenomear()} />
+          <input use:focar type="text" readonly={salvandoNome} placeholder={nomePadrao} value={rascunho} oninput={aoDigitar} onkeydown={(e) => e.key === "Escape" && void cancelarRenomear()} />
         </label>
         <div class="botoes-nome">
-          <button type="submit" class="botao primario" disabled={salvandoNome}>{t("gravador.salvar_nome")}</button>
-          <button type="button" class="botao" onclick={fecharRenomear}>{t("gravador.cancelar")}</button>
+          <button type="submit" class="botao primario">{t("gravador.salvar_nome")}</button>
+          <button type="button" class="botao" disabled={salvandoNome} onclick={cancelarRenomear}>{t("gravador.cancelar")}</button>
         </div>
       </form>
     {:else}
@@ -267,7 +279,7 @@
     {#if !url}
       <button class="botao ouvir" onclick={ouvir} disabled={carregando} aria-label={`${t("gravador.ouvir")}: ${nome}`}>{t("gravador.ouvir")}</button>
     {/if}
-    <button class="botao renomear-botao" bind:this={botaoRenomear} onclick={comecarRenomear} aria-label={`${t("gravador.renomear")}: ${nome}`}>{t("gravador.renomear")}</button>
+    <button class="botao renomear-botao" bind:this={botaoRenomear} disabled={editando} onclick={comecarRenomear} aria-label={`${t("gravador.renomear")}: ${nome}`}>{t("gravador.renomear")}</button>
     {#if sePodeEnviar}
       <button class="botao enviar" onclick={pedirEnvio} disabled={enviando} aria-label={`${t("gravador.enviar")}: ${nome}`}>{t("gravador.enviar")}</button>
     {/if}

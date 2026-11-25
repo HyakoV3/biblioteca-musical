@@ -6,7 +6,7 @@ import type { ContextoGravacao } from "./contexto";
 import { rastro } from "./gravador";
 import { limparTitulo, normalizarMeta } from "./metaGravacao";
 
-/** `contexto` (I-38), `titulo` e `favorita` (I-39) são opcionais e só existe nas gravações feitas ouvindo o metrônomo ou um hino no fone; as antigas não o têm (acrescentar o campo não muda o banco). */
+/** Campos opcionais: `contexto` (I-38) só existe nas gravações feitas ouvindo o metrônomo ou um hino no fone; `titulo` e `favorita` (I-39) só quando a pessoa renomeia ou marca a estrela. As antigas não os têm (acrescentar campos não muda o banco). */
 export type MetaGravacao = { id: string; criadaEm: number; segundos: number; tipo: string; bytes: number; contexto?: ContextoGravacao; titulo?: string; favorita?: boolean };
 /** O que a pessoa pode mudar numa gravação: o nome (nulo ou vazio volta ao nome padrão) e a estrela. */
 export type Mudancas = { titulo?: string | null; favorita?: boolean };

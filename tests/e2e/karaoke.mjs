@@ -1431,6 +1431,10 @@ async function principal() {
   await dormir(200);
   const campo = await av(`document.activeElement?.tagName`);
   confere(campo === "INPUT", `Gravador: renomear abre o campo com o foco nele: ${campo}`);
+  confere((await av(`document.querySelector('${item05} .renomear-botao').disabled`)) === true, "Gravador: com a edição aberta o botão Renomear fica desabilitado (não apaga o rascunho)");
+  // O campo corta em 80 caracteres visíveis na hora (e não só ao salvar).
+  const cortou = await av(`(() => { const i = document.querySelector('${item05} .renomear input'); i.value = 'x'.repeat(120); i.dispatchEvent(new Event('input', { bubbles: true })); return i.value.length; })()`);
+  confere(cortou === 80, `Gravador: o campo do nome corta em 80 caracteres ao digitar: ${cortou}`);
   const escrever = (v) => av(`(() => { const i = document.querySelector('${item05} .renomear input'); i.value = new TextDecoder().decode(Uint8Array.from('${Buffer.from(v, 'utf8').toString('hex')}'.match(/../g) ?? [], (h) => parseInt(h, 16))); i.dispatchEvent(new Event('input', { bubbles: true })); document.querySelector('${item05} .renomear').requestSubmit(); return 1; })()`);
   await escrever("Ensaio do coro");
   await dormir(500);

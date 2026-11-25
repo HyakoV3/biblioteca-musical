@@ -139,6 +139,16 @@ describe("linhas e resumo do contexto (o card da gravação)", () => {
     // o Markdown enviado continua igual: as mesmas linhas, com a nota em itálico
     expect(textoDoContexto(c, pt_, "pt")).toContain("- Vozes no fone: soprano _(sem contralto)_");
   });
+  it("na tela o título e o tom ficam como são; só o texto enviado tira * _ ~ e crase", () => {
+    const c = montarContexto({ ...base, hino: hino({ titulo: "Louvor *ao* Senhor_", tonalidade: "Si♭ ~maior~" }) })!;
+    const tela = linhasDoContexto(c, pt_, "pt").map((x) => x.texto).join("\n");
+    expect(tela).toContain('Louvor *ao* Senhor_');
+    expect(tela).toContain("Si♭ ~maior~");
+    const enviado = textoDoContexto(c, pt_, "pt");
+    expect(enviado).toContain("Louvor ao Senhor");
+    expect(enviado).not.toContain("*ao*");
+    expect(enviado).toContain("Si♭ maior");
+  });
   it("sem nenhuma voz tocando o texto diz isso", () => {
     const c = montarContexto({ ...base, hino: hino({ vozes: [{ nome: "Soprano", muda: true }, { nome: "Tenor", muda: true }] }) })!;
     expect(linhasDoContexto(c, pt_, "pt").map((x) => x.texto)).toContain("Vozes no fone: nenhuma (todas silenciadas)");

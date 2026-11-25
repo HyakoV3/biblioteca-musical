@@ -9,7 +9,16 @@ const segmentar: ((s: string) => string[]) | null =
     ? (s) => Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(s), (x) => x.segment)
     : null;
 
-/** O nome limpo, ou nulo se não sobra nada (ou se não é texto). */
+/** Só invisíveis (espaços de largura zero, marcas, preenchimentos do Hangul e do braille) não são nome: sem nada para ler, vale "sem nome". */
+const TEM_VISIVEL = /[^\p{Cf}\p{Z}\p{M}\u115F\u1160\u3164\uFFA0\u2800]/u;
+
+/** Corta em no máximo `max` caracteres VISÍVEIS (grafemas), sem partir um emoji ou um acento. */
+export function cortarGrafemas(s: string, max: number = TITULO_MAX): string {
+  const partes = segmentar ? segmentar(s) : Array.from(s);
+  return partes.length > max ? partes.slice(0, max).join("") : s;
+}
+
+/** O nome limpo, ou nulo se não sobra nada visível (ou se não é texto). */
 export function limparTitulo(bruto: unknown): string | null {
   if (typeof bruto !== "string") return null;
   const limpo = bruto
@@ -18,10 +27,9 @@ export function limparTitulo(bruto: unknown): string | null {
     .replace(/[\p{Cc}\u2028\u2029\u202A-\u202E\u2066-\u2069]+/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
-  // Só invisíveis (espaço de largura zero, preenchimentos do Hangul e do braille): sem nada para ler, vale "sem nome".
-  if (!limpo || !/[^\p{Cf}\p{Z}\p{M}\u3164\u2800]/u.test(limpo)) return null;
-  const partes = segmentar ? segmentar(limpo) : Array.from(limpo);
-  return partes.length > TITULO_MAX ? partes.slice(0, TITULO_MAX).join("").trim() : limpo;
+  const cortado = cortarGrafemas(limpo).trim();
+  // A checagem vem DEPOIS do corte: 80 invisíveis seguidos de uma letra viram só invisíveis ao cortar.
+  return cortado && TEM_VISIVEL.test(cortado) ? cortado : null;
 }
 
 /** O registro com `titulo` e `favorita` validados: o que não vale é REMOVIDO (não vira lixo na tela). Os outros campos, conhecidos ou não, ficam como estão. */
