@@ -20,6 +20,33 @@ describe("gravações guardadas", () => {
     expect(p.temMais).toBe(false);
   });
 
+  it("listarTodas devolve todos os metadados da mais nova para a mais antiga, igual às páginas juntas", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    try {
+      const g = novo();
+      for (let i = 0; i < 25; i++) {
+        vi.setSystemTime(new Date(2026, 10, 25, 10, i));
+        await g.salvar(audio(10 + i), "audio/webm", i);
+      }
+      const todas = await g.listarTodas();
+      expect(todas).toHaveLength(25);
+      expect(todas.map((m) => m.segundos)).toEqual(Array.from({ length: 25 }, (_, i) => 24 - i));
+      let juntas: typeof todas = [];
+      let antes: { criadaEm: number; id: string } | undefined;
+      for (;;) {
+        const p = await g.listar(10, antes);
+        juntas = [...juntas, ...p.itens];
+        if (!p.temMais) break;
+        const ultima = p.itens[p.itens.length - 1]!;
+        antes = { criadaEm: ultima.criadaEm, id: ultima.id };
+      }
+      expect(todas.map((m) => m.id)).toEqual(juntas.map((m) => m.id));
+      expect(await novo().listarTodas()).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("guarda o contexto (I-38) quando há; sem ele, o registro não ganha o campo", async () => {
     const g = novo();
     const contexto = { v: 1, fone: true, origem: "metronomo", metronomo: { bpm: 65, cliques: 4, familia: "simples", tempos: 4 } } as const;

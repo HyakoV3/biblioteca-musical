@@ -1358,40 +1358,60 @@ async function principal() {
   confere(itemParaAGravacao.pressionado === "false" && itemParaAGravacao.itens === 2 && itemParaAGravacao.ativos === 0, `Gravador: tocar uma gravação da lista com outra em andamento a para, guarda o gravado e devolve o microfone: ${JSON.stringify(itemParaAGravacao)}`);
   await limparLista();
 
-  // Paginação: 25 gravações semeadas direto no armazenamento (o mesmo formato do app); a lista mostra 10, e mais 10 a cada vez que o fim chega perto da tela.
+  // Paginação e busca (I-39): 25 gravações semeadas direto no armazenamento (o mesmo formato do app, três delas com contexto: hino 10, hino 100 e metrônomo); a lista mostra 20 e o botão "Mostrar mais" traz as outras.
   await av(`new Promise((ok, falha) => {
     const r = indexedDB.open('bm-gravacoes', 1);
     r.onupgradeneeded = () => { const b = r.result; b.createObjectStore('meta', { keyPath: 'id' }).createIndex('porData', ['criadaEm', 'id']); b.createObjectStore('blobs'); };
     r.onerror = () => falha(r.error);
     r.onsuccess = () => {
       const b = r.result; const t = b.transaction(['meta', 'blobs'], 'readwrite'); const agora = Date.now();
-      for (let i = 0; i < 25; i++) { const id = 'semente-' + String(i).padStart(2, '0'); t.objectStore('meta').put({ id, criadaEm: agora - i * 60000, segundos: 5 + i, tipo: 'audio/webm;codecs=opus', bytes: 1000 }); t.objectStore('blobs').put(new Blob([new Uint8Array(1000)], { type: 'audio/webm' }), id); }
+      const hinoCtx = (numero) => ({ v: 1, fone: true, origem: 'hino', hino: { numero, titulo: 'Hino fictício', transposicao: 0, andamento: 60, parte: 'tudo', vozes: [{ nome: 'Soprano', tocando: true }] } }); const metroCtx = { v: 1, fone: true, origem: 'metronomo', metronomo: { bpm: 65, cliques: 4, familia: 'simples', tempos: 4 } };
+      for (let i = 0; i < 25; i++) { const id = 'semente-' + String(i).padStart(2, '0'); const contexto = i === 3 ? hinoCtx(10) : i === 7 ? hinoCtx(100) : i === 11 ? metroCtx : null; t.objectStore('meta').put({ id, criadaEm: agora - i * 60000, segundos: 5 + i, tipo: 'audio/webm;codecs=opus', bytes: 1000, ...(contexto ? { contexto } : {}) }); t.objectStore('blobs').put(new Blob([new Uint8Array(1000)], { type: 'audio/webm' }), id); }
       t.oncomplete = () => { b.close(); ok(1); }; t.onerror = () => falha(t.error);
     };
   })`);
-  // A paginação carrega mais quando o fim da lista chega a 600 px da tela. Numa tela baixa essa zona é pequena e o resultado não depende de quanto a aba tem de texto
-  // em cima (o CI, com outras fontes, chegou a carregar a 2ª página sozinho numa tela alta).
-  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 420, deviceScaleFactor: 1, mobile: true });
   await abrirGravador();
-  const contar = () => av(`({ itens: document.querySelectorAll('.gravacao-item').length, fim: !!document.getElementById('fim-lista'), resumo: document.getElementById('resumo-gravacoes')?.textContent.replace(/\\s+/g, ' ').trim() ?? null })`);
+  const contar = () => av(`({ itens: document.querySelectorAll('.gravacao-item').length, mais: !!document.getElementById('mostrar-mais'), contador: document.getElementById('contador-gravacoes')?.textContent.trim() ?? null, resumo: document.getElementById('resumo-gravacoes')?.textContent.replace(/\\s+/g, ' ').trim() ?? null })`);
   const pag1 = await contar();
-  confere(pag1.itens === 10 && pag1.fim === true && /^25 /.test(pag1.resumo ?? ""), `Gravador: a lista começa com 10 de 25 gravações e o resumo diz 25: ${JSON.stringify(pag1)}`);
+  confere(pag1.itens === 20 && pag1.mais === true && /20/.test(pag1.contador ?? "") && /25/.test(pag1.contador ?? "") && /^25 /.test(pag1.resumo ?? ""), `Gravador: a lista começa com 20 de 25 gravações, com o contador e o botão "Mostrar mais", e o resumo diz 25: ${JSON.stringify(pag1)}`);
   // Não há mais o interruptor ".webm | .weba": o áudio em WebM é convertido para Ogg ao enviar.
   confere((await av(`document.querySelectorAll('.gravacao-item .formato').length`)) === 0, "Gravador: a gravação não tem mais o interruptor .webm | .weba");
-
+  const titulosDeGrupo = await av(`[...document.querySelectorAll('.titulo-grupo')].map((e) => e.textContent.trim())`);
+  confere(titulosDeGrupo.length >= 1 && titulosDeGrupo.length <= 2 && /Today|Hoy|Hoje|Yesterday|Ayer|Ontem/.test(titulosDeGrupo[0] ?? ""), `Gravador: a lista tem cabeçalhos de dia (h3): ${JSON.stringify(titulosDeGrupo)}`);
   const ordem = await av(`[...document.querySelectorAll('.gravacao-item')].map((e) => e.dataset.id).slice(0, 3)`);
   confere(JSON.stringify(ordem) === JSON.stringify(["semente-00", "semente-01", "semente-02"]), `Gravador: da mais nova para a mais antiga: ${JSON.stringify(ordem)}`);
-  const rolarAteOFim = () => av(`window.scrollTo(0, document.documentElement.scrollHeight); 1`);
-  await rolarAteOFim();
-  await dormir(900);
+  await av(`document.getElementById('mostrar-mais').click(); 1`);
+  await dormir(500);
   const pag2 = await contar();
-  confere(pag2.itens === 20 && pag2.fim === true, `Gravador: rolar até perto do fim carrega mais 10 (20): ${JSON.stringify(pag2)}`);
-  await rolarAteOFim();
-  await dormir(900);
-  const pag3 = await contar();
-  confere(pag3.itens === 25 && pag3.fim === false, `Gravador: a última página traz as 5 que faltam (25) e o fim da lista some: ${JSON.stringify(pag3)}`);
+  const foco = await av(`document.activeElement?.closest('.gravacao-item')?.dataset.id ?? null`);
+  confere(pag2.itens === 25 && pag2.mais === false && foco === "semente-20", `Gravador: "Mostrar mais" traz as 5 que faltam (25), o botão some e o foco vai ao primeiro item novo (semente-20): ${JSON.stringify({ ...pag2, foco })}`);
   const unicas = await av(`new Set([...document.querySelectorAll('.gravacao-item')].map((e) => e.dataset.id)).size`);
   confere(unicas === 25, `Gravador: nenhuma gravação repetida nem pulada (25 únicas): ${unicas}`);
+  // Busca e filtros (a lista toda está na memória): número de hino, origem, sem resultado e limpar.
+  const digitar = (v) => av(`(() => { const i = document.getElementById('buscar-gravacoes'); i.value = ${JSON.stringify(v)}; i.dispatchEvent(new Event('input', { bubbles: true })); return 1; })()`);
+  const ids = () => av(`[...document.querySelectorAll('.gravacao-item')].map((e) => e.dataset.id)`);
+  await digitar("10");
+  await dormir(300);
+  confere(JSON.stringify(await ids()) === JSON.stringify(["semente-03"]), `Gravador: buscar 10 acha só o hino 10 (e não o 100 nem a data): ${JSON.stringify(await ids())}`);
+  await digitar("hino 100");
+  await dormir(300);
+  confere(JSON.stringify(await ids()) === JSON.stringify(["semente-07"]), `Gravador: buscar "hino 100" acha só o hino 100: ${JSON.stringify(await ids())}`);
+  await digitar("zzzz");
+  await dormir(300);
+  const vazio = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, aviso: !!document.getElementById('sem-resultado'), limpar: !!document.getElementById('limpar-filtros') })`);
+  confere(vazio.itens === 0 && vazio.aviso && vazio.limpar, `Gravador: busca sem resultado mostra o aviso e "Limpar filtros": ${JSON.stringify(vazio)}`);
+  await av(`document.getElementById('limpar-filtros').click(); 1`);
+  await dormir(300);
+  const limpo = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, busca: document.getElementById('buscar-gravacoes').value, todas: document.querySelector('#filtro-gravacoes input[value="todas"]').checked })`);
+  confere(limpo.itens === 20 && limpo.busca === "" && limpo.todas === true, `Gravador: "Limpar filtros" volta à lista de 20 sem busca: ${JSON.stringify(limpo)}`);
+  await av(`document.querySelector('#filtro-gravacoes input[value="hino"]').click(); 1`);
+  await dormir(300);
+  confere(JSON.stringify(await ids()) === JSON.stringify(["semente-03", "semente-07"]), `Gravador: o filtro "Com hino" mostra só as duas com hino: ${JSON.stringify(await ids())}`);
+  await av(`document.querySelector('#filtro-gravacoes input[value="metronomo"]').click(); 1`);
+  await dormir(300);
+  confere(JSON.stringify(await ids()) === JSON.stringify(["semente-11"]), `Gravador: o filtro "Com metrônomo" mostra só a do metrônomo: ${JSON.stringify(await ids())}`);
+  await av(`document.querySelector('#filtro-gravacoes input[value="todas"]').click(); 1`);
+  await dormir(300);
   await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
   // Um arquivo que não toca (os zeros semeados não decodificam): a tela explica e devolve o botão "Ouvir" para tentar de novo, em vez de deixar um player cinza.
   await av(`document.querySelectorAll('.gravacao-item .ouvir')[0].click(); 1`);
@@ -1402,7 +1422,7 @@ async function principal() {
   await av(`document.getElementById('apagar-todas').click(); 1`);
   await dormir(200);
   const todasPede = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, texto: document.getElementById('apagar-todas').textContent.replace(/\\s+/g, ' ').trim() })`);
-  confere(todasPede.itens === 25 && /25/.test(todasPede.texto), `Gravador: "Apagar todas" pede confirmação dizendo quantas (25) e nada some: ${JSON.stringify(todasPede)}`);
+  confere(todasPede.itens === 20 && /25/.test(todasPede.texto), `Gravador: "Apagar todas" pede confirmação dizendo quantas (25) e nada some (20 na tela): ${JSON.stringify(todasPede)}`);
   await av(`document.getElementById('apagar-todas').click(); 1`);
   await dormir(600);
   const tudoApagado = await av(`({ itens: document.querySelectorAll('.gravacao-item').length, vazio: !!document.getElementById('lista-vazia'), resumo: !!document.getElementById('resumo-gravacoes') })`);

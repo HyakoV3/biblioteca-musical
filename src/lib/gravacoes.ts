@@ -190,6 +190,15 @@ export class Gravacoes {
     });
   }
 
+  /** Todos os metadados, da mais nova para a mais antiga (o áudio fica de fora: `meta` é leve). Uma leitura só, pelo índice `porData`, no lugar de um cursor por página. */
+  async listarTodas(): Promise<MetaGravacao[]> {
+    const banco = await this.banco();
+    return transacao(banco, ["meta"], "readonly", async (t) => {
+      const lidas = (await pedido(t.objectStore("meta").index("porData").getAll())) as MetaGravacao[];
+      return lidas.reverse(); // o índice vai da mais antiga para a mais nova
+    });
+  }
+
   /** O arquivo de áudio de uma gravação, ou nulo se não existe mais. */
   async blob(id: string): Promise<Blob | null> {
     const banco = await this.banco();

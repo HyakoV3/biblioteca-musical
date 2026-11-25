@@ -14,7 +14,8 @@
     tocandoId,
     aoTocar,
     aoApagar,
-  }: { meta: MetaGravacao; tocandoId: string | null; aoTocar: (id: string) => void; aoApagar: (id: string) => void } = $props();
+    marca,
+  }: { meta: MetaGravacao; tocandoId: string | null; aoTocar: (id: string) => void; aoApagar: (id: string) => void; marca?: "nova" | "tocando" } = $props();
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
 
@@ -61,18 +62,22 @@
         ? t("gravador.resumo_metronomo", { bpm: contexto.metronomo.bpm })
         : "",
   );
-  let janela = $state<HTMLDialogElement | null>(null);
+  /** O diálogo de envio só existe no DOM enquanto está aberto (com muitas gravações, um `<dialog>` por item pesaria à toa). */
+  let dialogoAberto = $state(false);
+  function modal(el: HTMLDialogElement) {
+    el.showModal();
+  }
 
   /** Com contexto, pergunta antes (modal): enviar com o texto do que a pessoa ouvia, ou só o áudio. Sem contexto, envia direto. */
   function pedirEnvio() {
     if (enviando) return;
-    if (contexto && janela) janela.showModal();
+    if (contexto) dialogoAberto = true;
     else void enviar(false);
   }
 
   /** Abre a folha de compartilhamento do sistema com o arquivo desta gravação (lido do armazenamento só agora). */
   async function enviar(comContexto: boolean) {
-    janela?.close();
+    dialogoAberto = false;
     if (enviando) return;
     enviando = true;
     falhouEnvio = false;
@@ -145,6 +150,7 @@
 <li class="gravacao-item" data-id={meta.id}>
   <div class="topo">
     <strong class="nome">{nome}</strong>
+    {#if marca}<span class="marca">{t(marca === "nova" ? "gravador.marca_nova" : "gravador.marca_tocando")}</span>{/if}
     <span class="info meta">{formatarTempo(meta.segundos)} · {formatarTamanho(meta.bytes, i18n.idioma)} · {nomeDoFormato(meta.tipo)}</span>
   </div>
   {#if url}
@@ -165,22 +171,25 @@
     </button>
   </div>
 
-  <dialog bind:this={janela} class="envio-contexto" aria-labelledby={`envio-${meta.id}`}>
+  {#if dialogoAberto}
+  <dialog use:modal onclose={() => (dialogoAberto = false)} class="envio-contexto" aria-labelledby={`envio-${meta.id}`}>
     <h2 id={`envio-${meta.id}`}>{t("gravador.contexto_titulo")}</h2>
     <p>{t("gravador.contexto_explica")}</p>
     <pre class="previa">{textoDoEnvio}</pre>
     <div class="botoes">
       <button class="botao primario" onclick={() => enviar(true)}>{t("gravador.enviar_com")}</button>
       <button class="botao" onclick={() => enviar(false)}>{t("gravador.enviar_sem")}</button>
-      <button class="botao" onclick={() => janela?.close()}>{t("gravador.cancelar")}</button>
+      <button class="botao" onclick={() => (dialogoAberto = false)}>{t("gravador.cancelar")}</button>
     </div>
   </dialog>
+  {/if}
 </li>
 
 <style>
   .gravacao-item { display: grid; gap: 0.5rem; padding: 0.8rem 0.9rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); list-style: none; }
   .topo { display: grid; gap: 0.15rem; }
   .nome { font-size: 1rem; }
+  .marca { justify-self: start; padding: 0.1rem 0.5rem; border: 0.125rem solid var(--acento); border-radius: 0.75rem; font-size: 0.85rem; font-weight: 700; }
   .info, .erro-item { margin: 0; font-variant-numeric: tabular-nums; }
   audio { width: 100%; }
   .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
