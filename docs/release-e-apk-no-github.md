@@ -1,11 +1,11 @@
 # Release e APK no GitHub
 
-O workflow [`.github/workflows/release.yml`](../.github/workflows/release.yml) compila, assina e publica o Android no GitHub, sem depender da máquina do responsável. **Status (2026-11-24):** escrito e testado localmente (assinatura do Gradle com e sem chave, conferência de permissões e de tag); **ainda não rodou no GitHub**: falta a chave de envio e os segredos (seção "Para ligar").
+O workflow [`.github/workflows/release.yml`](../.github/workflows/release.yml) compila, assina e publica o Android no GitHub, sem depender da máquina do responsável. **Status (2026-11-24):** **funcionou no GitHub**. A tag `v0.3.0-rc1` gerou o APK e o AAB assinados, o `SHA256SUMS` e o pré-lançamento (conferido baixando: `sha256sum -c`, `apksigner verify`, `aapt dump badging`: `br.pro.bibliotecamusical`, `versionCode 3000`). **Ainda não** foi instalado no aparelho, a tag final `v0.3.0` não saiu e o envio à Play Store não foi testado (seção "Para ligar").
 
 | Gatilho | O que gera | Para quê |
 |---|---|---|
 | **Tag `vX.Y.Z`** (ex.: `v0.3.1`) | APK **e AAB assinados** com a chave de envio, `SHA256SUMS` e o **GitHub Release** com tudo anexado | Distribuir uma versão |
-| **Tag com sufixo** (`v0.3.1-rc1`) | O mesmo, mas o release sai como **pré-lançamento** | **Entregar um APK de teste aos testadores** (substitui o zip numerado do Nextcloud) |
+| **Tag com sufixo** (`v0.3.1-rc1`) | O mesmo, mas o release sai como **pré-lançamento** | **Entregar um APK de teste aos testadores** (substitui o zip numerado do Nextcloud, que deixou de ser usado) |
 | **Sob demanda** (Actions → release → Run workflow) | APK de **teste** com chave descartável de 3 dias, só como artefato do job (baixar exige entrar no GitHub). **Mesmo com os segredos cadastrados, esta execução nunca vê a chave de envio**: só as tags usam os segredos | Conferir o que está na `main` ou numa branch |
 
 A cada PR ou push o `ci.yml` roda (tipos, testes, e2e, Rust). O release **não** roda a cada push (leva uns 15 minutos).
@@ -79,10 +79,10 @@ Os APKs do GitHub saem **sem hinos embutidos** (o `BM_PACOTE` nunca entra no CI)
 - O alinhamento de 16 KB das bibliotecas nativas (exigido pela Play Store em Android 15 ou mais) é **conferido com um aviso** (`zipalign -c -P 16 4`), que não derruba o release; o fluxo manual dos APKs de teste já alinha com `zipalign -P 16 4`.
 - iOS **não** entra neste fluxo: depende da conta paga da Apple e de um Mac (ver `docs/roadmap-pendencias.md`, seção 2).
 
-## Para ligar (o que falta, em ordem)
+## Para ligar (estado e o que falta)
 
-1. Gerar a chave de envio e cadastrar os segredos (acima), **conferindo** que nenhum ficou vazio.
-2. Rodar **Actions → release → Run workflow** na `main` (APK de teste, sem tag): valida a compilação no GitHub sem gerar release.
-3. Subir a versão para `0.3.1` e criar a tag `v0.3.1-rc1`: valida a assinatura, a conferência do APK baixado (`sha256sum -c SHA256SUMS`, `apksigner verify --print-certs`, `aapt dump badging`) e a página de pré-lançamento.
-4. Só então a tag `v0.3.1` e, se for o caso, `ENVIAR_PLAY_STORE=true` (o primeiro envio à Play é manual: o app precisa existir no Play Console).
-5. Quando isso funcionar, o zip numerado no Nextcloud deixa de ser necessário e `docs/apk-de-teste.md` passa a descrever só a entrega pelo GitHub.
+1. **Feito (2026-11-24):** chave de envio gerada e 4 segredos cadastrados (`~/.android/bibliotecamusical-upload.jks` e `.senha`, só do responsável; **guardar cópia num cofre**), nenhum vazio.
+2. **Feito:** execução sob demanda na `main` (APK de teste) e a tag `v0.3.0-rc1` (APK + AAB assinados, `SHA256SUMS`, pré-lançamento) passaram no GitHub. Na primeira execução sob demanda apareceu um bug (o passo de conferência caía sem AAB), corrigido na PR #157.
+3. **Falta:** instalar o APK do release no aparelho e testar (downloads de hinário, partituras e sons pelo GitHub; navegação com o SvelteKit 3). Quem tem um APK de teste antigo precisa **desinstalar antes** (a chave é outra).
+4. **Falta:** a tag `v0.3.0` final e, se for o caso, `ENVIAR_PLAY_STORE=true` (o primeiro envio à Play é manual: o app precisa existir no Play Console, e é preciso o segredo `PLAY_SERVICE_ACCOUNT_JSON`).
+5. **Feito:** o zip numerado no Nextcloud deixou de ser o caminho; `docs/apk-de-teste.md` descreve a entrega pelo GitHub.
