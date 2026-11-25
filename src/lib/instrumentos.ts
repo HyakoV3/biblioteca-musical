@@ -19,7 +19,7 @@ export const INSTRUMENTOS = {
   orgao_principal: { harmonicos: [0, 1, 0.5, 0.35, 0.25, 0.15, 0.1, 0.07], ataque: 0.03, solta: 0.09, nivel: 0.2 },
   orgao_pleno: { harmonicos: [0, 1, 0.8, 0.6, 0.5, 0.4, 0.3, 0.25, 0.2, 0.15, 0.1, 0.07, 0.05], ataque: 0.03, solta: 0.1, nivel: 0.12 },
   // Soprano
-  // Flautas: a doce e a transversal (2026-11-25). Os harmônicos daqui valem fora da faixa medida; dentro dela vale o timbre de timbres.json.
+  // Flautas: a doce e a transversal (2026-11-25). Com timbre medido (timbres.json) esta tabela só serve de referência de volume (`nivel`); fora da faixa medida vale a âncora da ponta.
   flauta_doce: { harmonicos: [0, 1, 0.05, 0.02], ataque: 0.05, solta: 0.1, nivel: 0.3, vibrato: { hz: 5, cents: 6, atraso: 0.3 } },
   flauta: { harmonicos: [0, 1, 0.55, 0.15, 0.12, 0.05, 0.02], ataque: 0.06, solta: 0.1, nivel: 0.28, vibrato: { hz: 5.2, cents: 7, atraso: 0.3 } },
   violino: { harmonicos: [0, 1, 0.7, 0.55, 0.45, 0.35, 0.3, 0.25, 0.2, 0.15, 0.12, 0.1], ataque: 0.06, solta: 0.1, nivel: 0.14, vibrato: { hz: 5.5, cents: 14, atraso: 0.15 } },
