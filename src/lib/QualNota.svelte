@@ -6,6 +6,7 @@
   import { DESLOCAMENTO_ESCRITO, classeDe, palavraDeAfinacao, posicaoNaTrilha, type Transposicao } from "./afinador";
   import { lerInstrumento, salvarInstrumento } from "./afinadorPrefs";
   import { Estabilizador, type Estado } from "./detector";
+  import { SuavizadorDeCents, type Suave } from "./suavizador";
   import { Escuta } from "./escuta";
   import { emCurso } from "./gravacaoEmCurso.svelte";
   import { i18n } from "./i18n/index.svelte";
@@ -25,9 +26,12 @@
 
   const escuta = new Escuta();
   const estabilizador = new Estabilizador();
+  /** A posição da bola e o número calmos (I-41): o `estabilizador` diz qual nota é, este acalma onde a bola fica. */
+  const suavizador = new SuavizadorDeCents();
   /** Começa fechado, como os outros cartões da aba (o resumo mostra a nota enquanto ouve). */
   let aberto = $state(false);
   let estado = $state<Estado>({ tipo: "silencio" });
+  let suave = $state<Suave | null>(null);
   let erro = $state<"negada" | "sem_microfone" | "falhou" | "gravando" | null>(null);
   let instrumento = $state<Transposicao>("concerto");
   let ultimoSom = 0;
@@ -41,7 +45,9 @@
     tentativa++;
     escuta.parar();
     estabilizador.reiniciar();
+    suavizador.reiniciar();
     estado = { tipo: "silencio" };
+    suave = null;
     ouvindo = false;
   }
 
@@ -55,6 +61,7 @@
     reproducao.parar();
     aoComecar();
     estabilizador.reiniciar();
+    suavizador.reiniciar();
     ultimoSom = performance.now();
     ouvindo = true;
     try {
@@ -62,6 +69,7 @@
         (bruta) => {
           const agora = performance.now();
           estado = estabilizador.entrar(agora, bruta);
+          suave = suavizador.entrar(agora, estado);
           if (estado.tipo !== "silencio") ultimoSom = agora;
           else if (agora - ultimoSom > SEM_SOM_MAX_MS) parar(); // esquecida ligada: solta o microfone
         },
@@ -119,9 +127,10 @@
   const desl = $derived(DESLOCAMENTO_ESCRITO[instrumento]);
   /** A nota que a pessoa lê (a que soa, somada à transposição do instrumento). */
   const escrita = $derived(lida ? lida.leitura.midi + desl : null);
-  const cents = $derived(lida ? Math.round(lida.leitura.cents) : 0);
-  const palavra = $derived(lida ? palavraDeAfinacao(lida.leitura.cents) : null);
-  const posicao = $derived(lida ? posicaoNaTrilha(lida.leitura.cents) : 0);
+  // O número, a palavra, o `aria-valuenow` e o `aria-valuetext` vêm TODOS do valor calmo (o mesmo que a tela mostra); só a bola usa o suave contínuo.
+  const cents = $derived(suave ? suave.mostrado : 0);
+  const palavra = $derived(lida && suave ? palavraDeAfinacao(suave.mostrado) : null);
+  const posicao = $derived(suave ? posicaoNaTrilha(suave.suave) : 0);
   const textoCents = $derived(lida ? `${cents > 0 ? "+" : cents < 0 ? "−" : ""}${Math.abs(cents)} ${t("afinador.cents")}` : "");
   const resumo = $derived(ouvindo ? (escrita !== null ? nome(escrita) : t("afinador.escutando")) : "");
 
@@ -171,7 +180,7 @@
         </div>
         <div class="trilha" aria-hidden="true">
           <span class="faixa"></span>
-          {#if lida}<span class="bola" style:left={`${50 + posicao * 50}%`}></span>{/if}
+          {#if lida}<span class="bola bola-afinador" style:left={`${50 + posicao * 50}%`}></span>{/if}
         </div>
       </div>
       <div class="detalhe" aria-hidden="true">

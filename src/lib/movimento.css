@@ -72,6 +72,11 @@ li > a,
   .enchimento {
     transition: clip-path 220ms linear;
   }
+  /* A bola do "Qual nota é essa?" recebe uma leitura a cada 50 ms: uma transição curta e linear (o passo da leitura) só preenche o espaço entre uma e outra, e o movimento fica fluido. Quem pediu
+     menos movimento a vê em pequenos saltos, sem nenhum código a mais. */
+  .bola-afinador {
+    transition: left 60ms linear;
+  }
   /* O karaokê rola a letra até a linha que soa: suave, só para quem não pediu menos movimento. */
   html {
     scroll-behavior: smooth;

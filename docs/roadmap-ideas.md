@@ -636,7 +636,7 @@ pasta deixa de existir. **Ideia ligada:** baixar **o arquivo** e não a pasta, m
 
 ## I-41 — Suavizar o movimento do "Qual nota é essa?"
 
-- **Status:** anotada, **rascunho revisado** (2026-11-25). O texto completo, com o pipeline de hoje, a pesquisa, a proposta, os testes e as perguntas, está em [`ideia-suavizar-afinador.md`](ideia-suavizar-afinador.md).
+- **Status:** **primeira fatia implementada** (2026-11-25): suavizador puro (`suavizador.ts`, `τ` = 150 ms), transição de ~60 ms só na bola, número com zona morta de 1,5 cent e leitor de tela com o mesmo valor calmo. **Falta ajustar os números no aparelho** (APK de teste com o trompete) e, só se ele pedir, a mediana maior e a histerese da palavra. O texto completo, com o pipeline de hoje, a pesquisa, a proposta, os testes e as perguntas, está em [`ideia-suavizar-afinador.md`](ideia-suavizar-afinador.md).
 - **Origem:** o responsável, 2026-11-25: a bola e os números do "Qual nota é essa?" se movem rápido demais, como a barra do gravador. Paga uma dívida do I-35 (que prometia o número de cents suavizado).
 - **Prioridade:** a definir.
 - **Em uma frase:** um suavizador puro com estado (média exponencial simétrica dos cents, `τ` ≈ 150 ms a ajustar no aparelho; salta na troca de nota e na volta do silêncio; segura no "congelada"), mais uma transição curta de CSS só na bola (que já resolve o "reduzir movimento"), o número com zona morta de 1,5 cent e o leitor de tela com o mesmo valor calmo.
