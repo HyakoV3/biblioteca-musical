@@ -618,7 +618,7 @@ pasta deixa de existir. **Ideia ligada:** baixar **o arquivo** e não a pasta, m
 
 ## I-39 — Organizar muitas gravações (busca, filtros, favoritas, paginação)
 
-- **Status:** anotada, **rascunho** (2026-11-25). O texto completo, com a pesquisa, o modelo de dados, a tela e as perguntas, está em [`ideia-organizar-gravacoes.md`](ideia-organizar-gravacoes.md).
+- **Status:** anotada, **rascunho revisado** (2026-11-25). O texto completo, com a pesquisa, o modelo de dados, a tela e as perguntas, está em [`ideia-organizar-gravacoes.md`](ideia-organizar-gravacoes.md).
 - **Origem:** o responsável, 2026-11-25: hoje são 4 gravações, mas com 100 ou 1000 é preciso organizar e paginar.
 - **Prioridade:** a definir.
 - **Em uma frase:** ler todos os metadados (o áudio fica fora), buscar, filtrar, ordenar e agrupar por dia na memória com funções puras, guardar nome, nota e favorita como campos opcionais, e trocar a rolagem infinita por "Mostrar mais (20)" com o total à vista.
