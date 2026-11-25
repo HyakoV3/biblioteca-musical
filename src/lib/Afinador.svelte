@@ -180,8 +180,6 @@
   </button>
   {#if erroAudio}<Aviso tipo="erro">{t("player.erro_audio")}</Aviso>{/if}
 
-  <QualNota {ativa} bind:ouvindo aoComecar={parar} />
-
   <!-- A pílula: o cartão "Outra nota" (nota e frequência na linha de cima) e, na ponta dela, o Play da nota escolhida. O Play fica sempre à vista, com o
        cartão aberto ou fechado: quem usa muito uma nota que não é o Lá a deixa marcada aqui e toca com um toque. -->
   <div class="pilula">
@@ -252,6 +250,8 @@
     </fieldset>
     <p class="meta">{t("afinador.temporizador_vale")}</p>
   </Cartao>
+
+  <QualNota {ativa} bind:ouvindo aoComecar={parar} />
 
   <ListaRecentes
     titulo={t("afinador.recentes")}

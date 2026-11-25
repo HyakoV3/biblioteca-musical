@@ -25,7 +25,8 @@
 
   const escuta = new Escuta();
   const estabilizador = new Estabilizador();
-  let aberto = $state(true);
+  /** Começa fechado, como os outros cartões da aba (o resumo mostra a nota enquanto ouve). */
+  let aberto = $state(false);
   let estado = $state<Estado>({ tipo: "silencio" });
   let erro = $state<"negada" | "sem_microfone" | "falhou" | "gravando" | null>(null);
   let instrumento = $state<Transposicao>("concerto");
@@ -129,7 +130,7 @@
 </script>
 
 <Cartao titulo={t("afinador.qual_nota")} {resumo} bind:aberto grade>
-  <button class="botao primario grande" aria-pressed={ouvindo} onclick={() => (ouvindo ? parar() : iniciar())}>
+  <button class="botao primario ouvir" aria-pressed={ouvindo} onclick={() => (ouvindo ? parar() : iniciar())}>
     <Icone nome={ouvindo ? "stop" : "play"} tamanho={24} />
     {ouvindo ? t("audio.parar") : t("afinador.ouvir")}
   </button>
@@ -185,11 +186,11 @@
     {/each}
   </fieldset>
 
-  <p class="so-leitor" role="status">{anuncio}</p>
+  <p class="so-leitor" aria-live="polite">{anuncio}</p>
 </Cartao>
 
 <style>
-  .grande { min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
+  .ouvir { min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
   .leitura { display: grid; gap: 0.5rem; text-align: center; }
   .esmaecida { opacity: 0.55; }
   .nome { font-size: 3.5rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
