@@ -30,7 +30,7 @@ O código foi escrito do zero: nenhum código ou arquivo de outros aplicativos f
 - **Sons gravados (opcional):** por padrão o som é sintetizado no aparelho. Em Ajustes dá para baixar um pacote de
   instrumentos gravados (GeneralUser GS, de S. Christian Collins, com licença própria que permite redistribuir; ver [`docs/licencas-de-terceiros.md`](docs/licencas-de-terceiros.md)), conferido por SHA-256 e usado offline depois. O pacote não está no
   repositório nem no app. Detalhes em [`docs/pacote-de-sons.md`](docs/pacote-de-sons.md).
-- **Lista de hinos** com busca por número ou título; o **último hino aberto** fica marcado e há o atalho **Continuar de onde parou**.
+- **Lista de hinos** com busca por número, título, autoria, verso ou tom; o **último hino aberto** fica marcado e há o atalho **Continuar de onde parou**.
 - **Letra** com as estrofes (o coro e o final em negrito), em abas na parte de baixo da tela (ao lado, com o celular deitado), com o **karaokê** acendendo cada sílaba.
 - **Partitura** de cada hino (opcional, baixada em Ajustes), com o compasso e a nota que está soando em destaque.
 - **Afinador:** dá o tom (Lá 440 ou outra nota, com temporizador), lembra as últimas notas usadas e, em "Qual nota é essa?", ouve o microfone e diz a nota que você toca, com os cents e as vizinhas (e a nota que se lê em instrumentos que transpõem, como o trompete em Si♭).
@@ -38,7 +38,7 @@ O código foi escrito do zero: nenhum código ou arquivo de outros aplicativos f
 - **Metrônomo:** de 30 a 240 bpm, compassos simples (2, 3, 4) e compostos (6, 9, 12), pêndulo que vai e volta; segue com a tela bloqueada e lembra os últimos usados.
 - **Saída de áudio:** em Ajustes, a saída em uso (alto-falante, fone com fio, USB-C ou Bluetooth) e quatro modos, **Automático e buffer alto, médio e baixo**, guardados por saída, com as medidas do que valeu, para quem ouve estalos no fone ([`docs/saida-de-audio.md`](docs/saida-de-audio.md)).
 - **Tela ligada:** um botão na tela do hino (o olho) mantém a tela acesa enquanto o hino toca.
-- **Aparência:** modo automático, claro ou escuro, combinado com três estilos de cor (Normal, Pergaminho e Marinho e
+- **Aparência:** modo automático, claro, escuro ou alto contraste, combinado com três estilos de cor (Normal, Pergaminho e Marinho e
   ouro), com contraste conferido ([`docs/design-tokens.md`](docs/design-tokens.md)).
 - Interface em português, espanhol e inglês, pronta para novos idiomas ([`docs/TRADUCOES.md`](docs/TRADUCOES.md)).
 - Acessibilidade: alvos de toque de pelo menos 44 px, contraste conferido, respeito a "reduzir movimento".

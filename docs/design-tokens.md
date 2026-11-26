@@ -50,6 +50,7 @@ original (`--borda-controle`, `--ouro-linha`), porque o sand e as bordas claras 
 
 Prévias lado a lado (hino fictício, claro em cima e escuro embaixo, na ordem Normal, Pergaminho e Marinho e ouro):
 [aba Ouvir](../design/identidade/previa-estilos-ouvir.png) e [aba Letra tocando](../design/identidade/previa-estilos-letra.png).
+*Imagens tiradas em 2026-11-15, antes da #198 (controles em pílulas e steppers padrão): servem para as cores, não para o desenho atual dos controles.*
 
 ## Modo alto contraste (I-06)
 
@@ -72,6 +73,7 @@ tem baixa visão**.
 
 Prévias (hino fictício, celular em pé): [aba Ouvir](../design/identidade/previa-alto-contraste-ouvir.png) e
 [aba Letra tocando](../design/identidade/previa-alto-contraste-letra.png), com o karaokê aceso e o miniplayer.
+*Imagens anteriores à #198: servem para as cores, não para o desenho atual dos controles.*
 
 Cuidado de CSS: o escuro "do sistema" de cada estilo tem seletor mais específico que o bloco do modo; por isso os três usam
 `:not([data-tema="claro"], [data-tema="alto-contraste"])`, e o bloco do modo fica no **fim** do `tema.css`. O teste de ponta a ponta

@@ -51,12 +51,12 @@ pub struct Hino {
     /// começando em 0. A interface a toca sozinha ("Introdução") e antes da 1ª vez em "Tocar o hino todo".
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub introducao: Option<Introducao>,
-    /// Tempo de cada sílaba da letra, para o karaokê (opcional). Se estiver malformada, é descartada na leitura:
-    /// o hino continua importando, só sem karaokê.
+    /// Tempo de cada sílaba da letra, para o karaokê (opcional). Se os VALORES estiverem malformados (tempo negativo, `de >= ate`), é descartada
+    /// na leitura: o hino continua importando, só sem karaokê. Um erro de TIPO (texto onde devia haver número) recusa o hinário inteiro.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sincronia: Option<Sincronia>,
-    /// Em que instante cada compasso da partitura começa, em cada fluxo de notas, para destacar o compasso que toca (I-12, fase B). Se
-    /// estiver malformado, é descartado na leitura: o hino continua importando, só sem o destaque na partitura.
+    /// Em que instante cada compasso da partitura começa, em cada fluxo de notas, para destacar o compasso que toca (I-12, fase B). Se os VALORES
+    /// estiverem malformados, é descartado na leitura: o hino continua importando, só sem o destaque. Um erro de TIPO recusa o hinário inteiro.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub compassos: Option<Compassos>,
 }

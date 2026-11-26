@@ -112,18 +112,28 @@ sem ir para o Git.
       estruturas de final diferentes da do 457.
 - [ ] Letras com erros da partitura: o **arquivo de correções** existe (I-05, [`correcoes-da-letra.md`](correcoes-da-letra.md)); falta
       escrevê-lo para os hinos reais, conforme aparecem os defeitos.
-- [ ] Confirmar direitos de letras e partituras com a CCB ou os titulares antes de distribuir.
+- [ ] Direitos: a autorização do transcritor está registrada (`licencas-de-terceiros.md`); faltam os das letras e músicas e os da edição, com a CCB ou os titulares, antes de uma distribuição aberta.
 
 **Pronto quando:** o hinário 5 completo está convertido e validado, com a autorização registrada (feito) e os direitos de letras e músicas decididos.
 
 ---
 
+## Etapa 6 — Ferramentas de estudo: gravador, afinador e metrônomo (entregue)
+
+Pedidas pelo responsável depois do primeiro teste; entraram nos RC 0.3.x e passaram pela auditoria de 2026-11 (ondas 1 a 18 do plano, em `docs/auditoria202611/`).
+
+- [x] **Gravador (I-03):** grava a voz ou o instrumento, com o hino ou o metrônomo no fone; serviço em primeiro plano no Android (segue gravando com a tela bloqueada e com o hino aberto); gravação em pedaços, que se recupera depois de uma queda; filtro de ruído (Android, RNNoise e GTCRN, locais); busca, filtros, favoritas, renomear, compartilhar o áudio e o texto do contexto. **Falta provar no aparelho:** o serviço e a recuperação (roteiro V1 a V16).
+- [x] **Afinador (I-13):** Lá 440 ou outra nota com temporizador, "Qual nota é essa?" (microfone, com cents e vizinhas) e transposição por instrumento.
+- [x] **Metrônomo (I-20):** de 30 a 240 bpm, compassos simples e compostos, pêndulo, segue com a tela bloqueada.
+- [x] Busca de hinos por número, título, autoria, verso ou tom; "Continuar de onde parou"; saída de áudio com buffers (por rota); controles padronizados (pílulas e steppers); três idiomas.
+- [ ] **Auditoria no aparelho:** o que a auditoria só pôde provar com Android (serviço, WebView, CSP) está nos itens "MANUAL" do plano; ver `docs/auditoria202611/00-plano-de-ajustes.md`.
+
+**Pronto quando:** o roteiro V1 a V16 passar num aparelho real.
+
+---
+
 ## Ideias sem etapa ainda
 
-Entram conforme o retorno dos testes: gravador de áudio (I-03, com fone toca o hino no ouvido e grava; sem fone só
-grava), afinador (I-13, dá o tom e mostra num medidor se a nota está baixa ou alta),
-e as ideias novas I-16 (repetir um trecho em laço), I-17 (lembrar o último hino), I-18 (pular uma parte
-inteira) e I-20 (metrônomo embutido); a I-19 (letra) e a I-22 (tela bloqueada) já estão feitas. As abertas estão em [`roadmap-ideas.md`](roadmap-ideas.md).
-Gravador e afinador dividem a detecção de fone e a permissão de microfone: convém decidir os dois juntos. As ideias **já
+Entram conforme o retorno dos testes: repetir um trecho em laço (I-16), pular uma parte inteira (I-18) e outras. A I-19 (letra), a I-22 (tela bloqueada) e as ferramentas da Etapa 6 já estão feitas. As abertas estão em [`roadmap-ideas.md`](roadmap-ideas.md). As ideias **já
 implementadas** (estilos de cor, botão da parte que enche de dourado e outras) estão em
 [`archive/roadmap-implementadas.md`](archive/roadmap-implementadas.md).

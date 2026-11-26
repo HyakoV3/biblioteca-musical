@@ -75,6 +75,9 @@ Qualquer outra estrutura é lida **uma vez, em ordem**, com um aviso: mais de um
 
 - **Repetições e saltos (ritornelo, D.C., coda) não são expandidos**: o conversor avisa e
   lê a partitura uma vez, em ordem.
+- **O final (1ª e 2ª casa) só é reconhecido no formato do MuseScore 2** (`<Volta>` com `endSpanner`, como nos `.mscx` do hinário, `version="2.06"`).
+  Um arquivo salvo no MuseScore 3 ou 4 declara a casa de volta de outro jeito e **não casa com o padrão**: o hino é lido uma vez, em ordem, com o aviso
+  de estrutura não reconhecida. **Pendente (ação A-01 do responsável):** conferir se há `.mscx` do hinário salvo no MuseScore 3 ou 4.
 - **Ligaduras:** o conversor entende as duas marcações. No MuseScore 2 (os `.mscx` do hinário, `version="2.06"`) o início é `<Tie id="N">` dentro
   da nota e o fim é `<endSpanner id="N"/>` dentro da nota seguinte, casando pelo `id` (outros spanners ancorados em nota fecham do mesmo jeito);
   do MuseScore 3 em diante é `<Spanner type="Tie">` com `next`/`prev`.

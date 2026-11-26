@@ -11,12 +11,10 @@ dados **fictícios**, só para mostrar a estrutura:
     {
       "numero": 1,
       "titulo": "Título de exemplo",
-      "armadura": 0,
-      "modo": "maior",
       "tonalidade": "Dó maior",
       "andamento": 90,
       "letra": ["Linha 1 fictícia", "Linha 2 fictícia"],
-      "partitura": "partituras/001.pdf",
+      "partitura": "partituras/hino-1.svg",
       "vozes": [
         { "nome": "Soprano", "notas": [[0, 1, 72], [1, 1, 74]] },
         { "nome": "Baixo",   "notas": [[0, 2, 48]] }
@@ -25,6 +23,9 @@ dados **fictícios**, só para mostrar a estrutura:
   ]
 }
 ```
+
+O app **lê**: `numero`, `titulo`, `tonalidade`, `andamento`, `letra`, `partitura`, `vozes` e os opcionais `final`, `introducao`, `sincronia` e `compassos`
+(descritos abaixo). O conversor `mscx2json` também **gera** `armadura` e `modo`, que o app **não lê**: não precisam estar num pacote escrito à mão.
 
 ## Passadas e final
 
@@ -161,9 +162,11 @@ estrofe, a linha e a sílaba que está soando. O conversor `mscx2json` gera o ca
   `[inicio_em_batidas, de, ate]`: o pedaço `de..ate` da linha começa a ser cantado em `inicio`. As posições contam
   **unidades UTF-16**, como o JavaScript indexa o texto. Uma linha sem trecho naquela passada é uma lista vazia, para o
   índice continuar o da letra.
-- O app **confere a sincronia com a letra** (posições dentro da linha, estrofes existentes). Se a letra foi editada e
-  deixou de combinar, o karaokê fica desligado para aquele hino e a letra aparece normalmente. Na leitura, uma
-  estrutura malformada (tempo negativo, `de >= ate`, estrofe 0) é descartada **sem recusar o hino**.
+- O app **confere a sincronia com a letra** (posições dentro da linha, estrofes existentes). A conferência pega a **letra encurtada ou com estrofes a
+  menos**: se alguma posição passa do fim da linha ou a estrofe não existe mais, o karaokê fica desligado para aquele hino e a letra aparece
+  normalmente. Uma letra trocada por outra **do mesmo tamanho** não é detectada. Na leitura, uma estrutura malformada **de valores** (tempo negativo,
+  `de >= ate`) é descartada **sem recusar o hino**; a estrofe 0 é válida (o coro e o final). Já um erro de **tipo** (um texto onde devia haver número, por
+  exemplo) **recusa o hinário inteiro**, como nos `compassos`.
 - Sem `sincronia`, o hino funciona como sempre e o botão "Karaokê" não aparece.
 
 ### Compassos (destaque na partitura)

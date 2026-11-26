@@ -444,7 +444,7 @@ export const es: Dicionario = {
   "sobre.aviso_concordo": "De acuerdo",
   "sobre.intro": "Biblioteca Musical es una aplicación gratuita para músicos en formación. Reúne la lista de himnos, la letra, la partitura y un reproductor que toca cada voz, para que estudies la tuya. También trae un afinador, una grabadora y un metrónomo.",
   "sobre.fazer_titulo": "Qué se puede hacer",
-  "sobre.fazer_1": "Buscar himnos por número o título y leer la letra por estrofa, con el karaoke iluminando cada sílaba.",
+  "sobre.fazer_1": "Buscar himnos por número, título, autoría, verso o tono y leer la letra por estrofa, con el karaoke iluminando cada sílaba.",
   "sobre.fazer_2": "Escuchar la introducción, cada vez o el himno completo, y seguir en la partitura la nota que está sonando.",
   "sobre.fazer_3": "Silenciar voces, ajustar el volumen, cambiar el tempo y transponer el tono.",
   "sobre.fazer_4": "Elegir el instrumento de cada voz.",

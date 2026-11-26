@@ -21,13 +21,14 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
 ## 2. CI/CD (GitHub Actions)
 
 - [x] **CI** (`.github/workflows/ci.yml`), a cada *pull request*, a cada *push* na `main` e sob demanda, com cache de npm e
-      de cargo. Quatro tarefas: **App** (`npm run check`, `npm test` e os verificadores de tradução, movimento e
-      contraste); **Conversor** (`cargo test` em `tools/mscx2json`); **Leitor** (`cargo test --lib` em `src-tauri`, com as
+      de cargo. Quatro tarefas: **App** (`npm run check`, `npm test`, os verificadores de tradução, movimento e
+      contraste e `pytest tools`); **Conversor** (`cargo test` em `tools/mscx2json`); **Leitor** (`cargo test --lib` em `src-tauri`, com as
       bibliotecas do Tauri instaladas no Ubuntu 24.04); **Karaokê num Chrome de verdade** (`npm run test:e2e`).
 - [x] **Limpeza do Rust e verificações no CI** (2026-11-15). O conversor e o `src-tauri` foram formatados (`cargo fmt`), as
       duas sugestões do clippy sobre `if` juntáveis foram aplicadas, e o CI agora roda `cargo fmt --check` e
       `cargo clippy --all-targets -- -D warnings` nos dois. Se uma versão nova do Rust trouxer um aviso novo do clippy, o CI
       vermelho é esperado: corrija o aviso (ou, se for falso positivo, silencie-o no ponto exato com `#[allow(...)]`).
+- [x] **Android nas PRs (2026-11-26):** `android-pr.yml` compila o APK arm64 (chave descartável) quando a PR muda `src-tauri/**`, e confere as permissões com `tools/conferir-permissoes-apk.sh`, o mesmo script do release.
 - [ ] Se o teste de ponta a ponta ficar lento ou instável, restringi-lo à `main` e ao disparo manual.
 - [x] **Workflow de release escrito (2026-11-24)**, em [`release-e-apk-no-github.md`](release-e-apk-no-github.md): tag `v*` gera APK e AAB assinados, `SHA256SUMS` e o GitHub Release (sufixo `-rc1` vira pré-lançamento); sob demanda gera um APK de teste. Assinatura condicional no Gradle (sem chave, o release sai `unsigned` e o fluxo manual dos APKs de teste não muda), conferência de permissões e de tag, `dependabot.yml` agrupado. Testado **localmente**; **não rodou no GitHub ainda**.
 - [ ] **Ligar o release (depende do responsável):** gerar a chave de envio (`keytool`, fora do repositório, com cópia e senha num cofre) e cadastrar `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` **num terminal normal** (comandos em `release-e-apk-no-github.md`); depois rodar o release sob demanda e a tag `v0.3.1-rc1`.
