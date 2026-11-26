@@ -438,6 +438,36 @@ describe("gravação em pedaços e recuperação (AND-002)", () => {
     expect(await outro.recuperarSessoes()).toEqual([]); // nada ficou órfão
   });
 
+  it("salvar com a sessão guarda a gravação e tira a sessão na mesma transação: nada é recuperado depois", async () => {
+    const fabrica = new IDBFactory();
+    const g = new Gravacoes(() => fabrica);
+    const id = await g.abrirSessao("audio/webm");
+    await g.guardarPedaco(id, 0, pedaco(1, 2, 3));
+    const m = await g.salvar(pedaco(1, 2, 3), "audio/webm", 2, null, id);
+    const depois = new Gravacoes(() => fabrica); // outra abertura do app
+    expect(await depois.recuperarSessoes()).toEqual([]);
+    expect((await depois.listarTodas()).map((x) => x.id)).toEqual([m.id]); // uma cópia só
+  });
+
+  it("uma sessão que não se recupera (erro) não impede as outras, e fica para a próxima abertura", async () => {
+    const fabrica = new IDBFactory();
+    const g = new Gravacoes(() => fabrica);
+    const ruim = await g.abrirSessao("audio/webm");
+    const boa = await g.abrirSessao("audio/webm");
+    await g.guardarPedaco(ruim, 0, pedaco(1));
+    await g.guardarPedaco(boa, 0, pedaco(2, 2));
+    // quebra a recuperação da primeira (por exemplo, sem espaço para a cópia inteira): a outra tem de ser recuperada mesmo assim
+    const outra = new Gravacoes(() => fabrica);
+    const original = (outra as unknown as { recuperarUma: (b: IDBDatabase, s: { id: string }) => Promise<unknown> }).recuperarUma.bind(outra);
+    vi.spyOn(outra as unknown as { recuperarUma: typeof original }, "recuperarUma").mockImplementation(async (b, sessao) => {
+      if (sessao.id === ruim) throw new DOMException("sem espaço", "QuotaExceededError");
+      return original(b, sessao);
+    });
+    const metas = await outra.recuperarSessoes();
+    expect(metas.map((m) => m.bytes)).toEqual([2]); // a boa foi recuperada mesmo com a ruim na frente
+    expect(await new Gravacoes(() => fabrica).recuperarSessoes()).toHaveLength(1); // e a ruim ficou para a próxima abertura
+  });
+
   it("cada sessão vira a sua própria gravação", async () => {
     const g = novo();
     const a = await g.abrirSessao("audio/webm");

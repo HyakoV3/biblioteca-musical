@@ -1368,12 +1368,13 @@ async function principal() {
   await av(`window.__ponte = []; document.getElementById('gravar').click(); 1`);
   await dormir(700);
   await av(`document.getElementById('aba-hinos').click(); 1`);
-  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('a[href="/hino/999"]')`)); ) await dormir(250);
-  await av(`document.querySelector('a[href="/hino/999"]')?.click(); 1`);
-  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('#painel-ouvir button')`)); ) await dormir(250);
+  // A lista dos hinos ainda traz a busca de um teste anterior (só o 998 aparece): serve qualquer hino da lista.
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('#painel-hinos a[href^="/hino/"]')`)); ) await dormir(250);
+  await av(`document.querySelector('#painel-hinos a[href^="/hino/"]')?.click(); 1`);
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`location.pathname.startsWith('/hino/')`)); ) await dormir(250);
   await dormir(1200);
   const hinoGravando = await av(`({ caminho: location.pathname, aviso: !!document.getElementById('gravando-aviso'), ativos: window.__microfones.filter((t) => t.readyState === 'live').length, ponte: window.__ponte.join(',') })`);
-  confere(hinoGravando.caminho === '/hino/999' && hinoGravando.aviso && hinoGravando.ativos === 1 && hinoGravando.ponte === 'ligar', `Gravador: abrir um hino com o serviço do Android NÃO para a gravação, e o aviso "Gravando · Parar" aparece na tela do hino: ${JSON.stringify(hinoGravando)}`);
+  confere(hinoGravando.caminho.startsWith('/hino/') && hinoGravando.aviso && hinoGravando.ativos === 1 && hinoGravando.ponte === 'ligar', `Gravador: abrir um hino com o serviço do Android NÃO para a gravação, e o aviso "Gravando · Parar" aparece na tela do hino: ${JSON.stringify(hinoGravando)}`);
   await av(`document.querySelector('#gravando-aviso button').click(); 1`);
   await dormir(1500);
   const hinoParado = await av(`({ aviso: !!document.getElementById('gravando-aviso'), ativos: window.__microfones.filter((t) => t.readyState === 'live').length, ponte: window.__ponte.join(',') })`);

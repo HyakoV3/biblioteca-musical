@@ -32,6 +32,8 @@
   let filtroFalhou = $state<FiltroDeRuido | null>(null);
   /** Só existe quando a gravação NÃO pôde ser guardada (cota cheia, armazenamento indisponível): fica na tela para a pessoa ouvir antes de perder. */
   let gravacao = $state<Gravacao | null>(null);
+  /** A sessão de recuperação da gravação que está na tela sem ter sido guardada (some se a pessoa a descarta). */
+  let sessaoDaGravacao: Promise<string | null> | null = null;
   /** Todas as gravações guardadas (só os metadados; o áudio fica no banco), da mais nova para a mais antiga. `$state.raw`: a lista é trocada por inteira, por cópia, sem um proxy por registro. */
   let todas = $state.raw<MetaGravacao[]>([]);
   let listaPronta = $state(false);
@@ -81,7 +83,14 @@
   function descartar() {
     if (gravacao) URL.revokeObjectURL(gravacao.url);
     gravacao = null;
+    sessaoDaGravacao = null;
     erroGuardar = false; // o aviso de "não pôde guardar" era sobre esta gravação
+  }
+
+  /** A PESSOA descartou a gravação que não pôde ser guardada (o botão, ou começar outra): a sessão de recuperação dela também sai, senão a gravação voltaria na próxima abertura do app. */
+  function descartarPorEscolha() {
+    emCurso.esquecerSessao(sessaoDaGravacao);
+    descartar();
   }
 
   /** Começar ou parar: o ciclo de vida da gravação mora em `emCurso`; aqui se limpa a tela antes de começar e se mostra o que ele conta. */
@@ -90,7 +99,7 @@
     if (!emCurso.gravando) {
       erro = null;
       filtroFalhou = null;
-      descartar();
+      descartarPorEscolha();
       tocandoId = null; // uma gravação da lista que tocava também: o alto-falante entraria na nova
     }
     const r = await emCurso.alternar(filtro);
@@ -114,6 +123,7 @@
     const nova = r.gravacao;
     erroGuardar = true;
     gravacao = nova;
+    sessaoDaGravacao = r.sessao;
     // Se a escrita terminar depois do limite, a gravação JÁ está guardada: a lista e a contagem precisam saber (ou, se a pessoa já a descartou, ela é apagada de volta).
     void r.depois.then(
       (meta) => {
@@ -446,7 +456,7 @@
       <p class="meta" id="info-gravacao">
         {formatarTempo(gravacao.segundos)} · {formatarTamanho(gravacao.bytes, i18n.idioma)} · {nomeDoFormato(gravacao.tipo)}
       </p>
-      <button id="descartar" class="botao" onclick={descartar}>{t("gravador.descartar")}</button>
+      <button id="descartar" class="botao" onclick={descartarPorEscolha}>{t("gravador.descartar")}</button>
     </section>
   {/if}
 

@@ -112,15 +112,15 @@ describe("gravação em curso", () => {
     expect(pedacos).toEqual([["sessao-1", 0], ["sessao-1", 1]]);
   });
 
-  it("parar guarda a gravação, avisa a tela, apaga a sessão e solta o serviço", async () => {
+  it("parar guarda a gravação JUNTO com a saída da sessão (uma transação só), avisa a tela e solta o serviço", async () => {
     const { c, chamadas, resultados, armazenamento } = montar();
     await c.iniciar("desligado");
     await c.parar();
     expect(c.gravando).toBe(false);
     expect(chamadas).toEqual(["ligar", "desligar"]);
     expect(resultados).toEqual([{ tipo: "guardada", meta: meta() }]);
-    await vi.advanceTimersByTimeAsync(0);
-    expect(armazenamento.descartarSessao).toHaveBeenCalledWith("sessao-1");
+    expect((armazenamento.salvar.mock.calls[0] as unknown[])[4]).toBe("sessao-1");
+    expect(armazenamento.descartarSessao).not.toHaveBeenCalled(); // a sessão já saiu na própria transação de `salvar`
   });
 
   it("sem fone, calar os sons antes de gravar; com fone, não", async () => {
@@ -148,7 +148,7 @@ describe("gravação em curso", () => {
     expect(resultados).toEqual([{ tipo: "vazia" }]);
   });
 
-  it("não guardada: a gravação fica à mão, a sessão NÃO é apagada, e se a escrita termina depois ela é apagada", async () => {
+  it("não guardada: a gravação fica à mão e a sessão NÃO é apagada (a próxima abertura ainda a recupera)", async () => {
     let terminar!: (m: MetaGravacao) => void;
     const { c, resultados, armazenamento } = montar();
     armazenamento.salvar.mockImplementation(() => new Promise<MetaGravacao>((ok) => (terminar = ok)));
@@ -159,6 +159,18 @@ describe("gravação em curso", () => {
     expect(resultados[0]).toMatchObject({ tipo: "nao-guardada", demorou: true });
     expect(armazenamento.descartarSessao).not.toHaveBeenCalled();
     terminar(meta());
+    await vi.advanceTimersByTimeAsync(0);
+    expect(armazenamento.descartarSessao).not.toHaveBeenCalled(); // a escrita atrasada também leva a sessão na mesma transação
+  });
+
+  it("a pessoa descarta a gravação que não foi guardada: a sessão sai, e ela não volta na próxima abertura", async () => {
+    const { c, resultados, armazenamento } = montar();
+    armazenamento.salvar.mockRejectedValue(new Error("cota cheia"));
+    await c.iniciar("desligado");
+    await c.parar();
+    const r = resultados[0];
+    expect(r).toMatchObject({ tipo: "nao-guardada", demorou: false });
+    c.esquecerSessao(r.tipo === "nao-guardada" ? r.sessao : null);
     await vi.advanceTimersByTimeAsync(0);
     expect(armazenamento.descartarSessao).toHaveBeenCalledWith("sessao-1");
   });
@@ -270,6 +282,21 @@ describe("a tela do Gravador sai de cena (GRV-001)", () => {
 });
 
 describe("recuperar (AND-002)", () => {
+  it("não trata como sobra a gravação que acabou de parar e ainda está sendo guardada (senão ficaria duplicada)", async () => {
+    let terminar!: (m: MetaGravacao) => void;
+    const { c, armazenamento } = montar();
+    armazenamento.salvar.mockImplementation(() => new Promise<MetaGravacao>((ok) => (terminar = ok)));
+    await c.iniciar("desligado");
+    const parando = c.parar();
+    await vi.advanceTimersByTimeAsync(0);
+    await c.recuperar(); // a tela do Gravador montou no meio do salvamento
+    expect(armazenamento.recuperarSessoes).toHaveBeenCalledWith(["sessao-1"]);
+    terminar(meta());
+    await parando;
+    await c.recuperar(); // guardada: já não precisa de proteção
+    expect(armazenamento.recuperarSessoes).toHaveBeenLastCalledWith([]);
+  });
+
   it("pede ao armazenamento as sobras, sem a gravação em curso", async () => {
     const { c, armazenamento } = montar();
     armazenamento.recuperarSessoes.mockResolvedValue([meta("a"), meta("b")]);

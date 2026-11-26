@@ -170,7 +170,7 @@ export class Gravacoes {
    * no CI, o `put` de um Blob feito pelo MediaRecorder nunca confirmava (o gravador entregava o arquivo e o armazenamento ficava mudo). A leitura entende os
    * dois formatos, então o que já estava guardado como Blob continua tocando.
    */
-  async salvar(blob: Blob, tipo: string, segundos: number, contexto?: ContextoGravacao | null): Promise<MetaGravacao> {
+  async salvar(blob: Blob, tipo: string, segundos: number, contexto?: ContextoGravacao | null, sessao?: string | null): Promise<MetaGravacao> {
     const comeco = performance.now();
     rastro(`lendo os ${blob.size} bytes do arquivo`);
     const dados = await blob.arrayBuffer();
@@ -185,9 +185,15 @@ export class Gravacoes {
       bytes: blob.size,
       ...(contexto ? { contexto } : {}),
     };
-    await transacao(banco, ["meta", "blobs"], "readwrite", (t) => {
+    // Com `sessao` (a gravação que veio dos pedaços), a sessão sai NA MESMA transação: se o app cair entre uma coisa e outra, a próxima abertura não recupera uma segunda cópia do que já está guardado.
+    if (sessao) this.encerradas.add(sessao);
+    await transacao(banco, sessao ? ["meta", "blobs", "sessoes", "pedacos"] : ["meta", "blobs"], "readwrite", (t) => {
       t.objectStore("meta").put(meta);
       t.objectStore("blobs").put({ dados, tipo }, meta.id);
+      if (sessao) {
+        t.objectStore("sessoes").delete(sessao);
+        t.objectStore("pedacos").delete(globalThis.IDBKeyRange.bound([sessao, 0], [sessao, Infinity]));
+      }
     });
     rastro(`transação confirmada em ${Math.round(performance.now() - comeco)} ms`);
     return meta;
@@ -234,37 +240,47 @@ export class Gravacoes {
     const recuperadas: MetaGravacao[] = [];
     for (const s of sessoes) {
       if (excluir.includes(s.id) || this.encerradas.has(s.id)) continue;
-      const faixa = globalThis.IDBKeyRange.bound([s.id, 0], [s.id, Infinity]);
-      const pedacos = (await transacao(banco, ["pedacos"], "readonly", (t) => pedido(t.objectStore("pedacos").getAll(faixa)))) as { dados: ArrayBuffer }[];
-      const blob = new Blob(
-        pedacos.map((p) => p.dados),
-        { type: s.tipo },
-      );
-      const meta: MetaGravacao | null =
-        blob.size > 0
-          ? {
-              id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-              criadaEm: s.criadaEm,
-              segundos: pedacos.length,
-              tipo: s.tipo,
-              bytes: blob.size,
-              ...(s.contexto ? { contexto: { ...s.contexto, mudouDurante: true } } : {}),
-            }
-          : null;
-      const dados = meta ? await blob.arrayBuffer() : null;
-      // Numa transação só: a gravação entra e a sessão sai (ou nada muda, e a próxima abertura tenta de novo).
-      await transacao(banco, ["meta", "blobs", "sessoes", "pedacos"], "readwrite", (t) => {
-        if (meta && dados) {
-          t.objectStore("meta").put(meta);
-          t.objectStore("blobs").put({ dados, tipo: s.tipo }, meta.id);
-        }
-        t.objectStore("sessoes").delete(s.id);
-        t.objectStore("pedacos").delete(faixa);
-      });
-      this.encerradas.add(s.id);
-      if (meta) recuperadas.push(meta);
+      // Uma sessão que não dá para recuperar (pouco espaço: a cópia inteira precisa de mais lugar que os pedaços) NÃO impede as outras: fica como está e a próxima abertura tenta de novo.
+      try {
+        const meta = await this.recuperarUma(banco, s);
+        if (meta) recuperadas.push(meta);
+      } catch (e) {
+        console.warn(`gravador: não foi possível recuperar a gravação ${s.id}`, e);
+      }
     }
     return recuperadas;
+  }
+
+  private async recuperarUma(banco: IDBDatabase, s: SessaoAberta): Promise<MetaGravacao | null> {
+    const faixa = globalThis.IDBKeyRange.bound([s.id, 0], [s.id, Infinity]);
+    const pedacos = (await transacao(banco, ["pedacos"], "readonly", (t) => pedido(t.objectStore("pedacos").getAll(faixa)))) as { dados: ArrayBuffer }[];
+    const blob = new Blob(
+      pedacos.map((p) => p.dados),
+      { type: s.tipo },
+    );
+    const meta: MetaGravacao | null =
+      blob.size > 0
+        ? {
+            id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+            criadaEm: s.criadaEm,
+            segundos: pedacos.length,
+            tipo: s.tipo,
+            bytes: blob.size,
+            ...(s.contexto ? { contexto: { ...s.contexto, mudouDurante: true } } : {}),
+          }
+        : null;
+    const dados = meta ? await blob.arrayBuffer() : null;
+    // Numa transação só: a gravação entra e a sessão sai (ou nada muda, e a próxima abertura tenta de novo).
+    await transacao(banco, ["meta", "blobs", "sessoes", "pedacos"], "readwrite", (t) => {
+      if (meta && dados) {
+        t.objectStore("meta").put(meta);
+        t.objectStore("blobs").put({ dados, tipo: s.tipo }, meta.id);
+      }
+      t.objectStore("sessoes").delete(s.id);
+      t.objectStore("pedacos").delete(faixa);
+    });
+    this.encerradas.add(s.id);
+    return meta;
   }
 
   /** Uma página da lista, da mais nova para a mais antiga, começando depois de `antes` (ou do começo). `temMais` diz se há outra página. */

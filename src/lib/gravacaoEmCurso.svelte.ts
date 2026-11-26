@@ -34,7 +34,7 @@ export type Resultado =
   /** Nada chegou do microfone: não há o que guardar. */
   | { tipo: "vazia" }
   /** Não deu para guardar dentro do prazo (cota cheia, armazenamento mudo): a gravação fica à mão para ouvir e enviar. `depois` diz se a escrita ainda terminou. */
-  | { tipo: "nao-guardada"; gravacao: Gravacao; demorou: boolean; depois: Promise<MetaGravacao> };
+  | { tipo: "nao-guardada"; gravacao: Gravacao; demorou: boolean; depois: Promise<MetaGravacao>; sessao: Promise<string | null> | null };
 
 export type ResultadoDeIniciar = { cancelada: boolean; erro: MotivoDoErro | null; filtroFalhou: FiltroDeRuido | null };
 
@@ -129,6 +129,8 @@ export class GravacaoEmCurso {
   private contextoDoInicio: ContextoGravacao | null = null;
   /** A sessão de recuperação desta gravação (AND-002): os pedaços vão sendo guardados nela, e uma queda do app deixa o que já foi gravado. Nula se o armazenamento não abriu. */
   private sessao: Promise<string | null> | null = null;
+  /** Sessões de gravações que já pararam mas ainda não foram resolvidas (guardando, ou não guardadas e à mão na tela): `recuperar` não as trata como sobra (viraria uma segunda cópia). */
+  private readonly fechando = new Set<Promise<string | null>>();
   private ouvintes: (() => void)[] = [];
   private deps: Dependencias | null;
 
@@ -224,6 +226,7 @@ export class GravacaoEmCurso {
     const contexto = marcarMudanca(this.contextoDoInicio, d.lerContexto()); // antes de qualquer espera: o que mudar enquanto o arquivo fecha não conta
     const sessao = this.sessao;
     this.sessao = null;
+    if (sessao) this.fechando.add(sessao);
     this.tentativa++;
     this.pararRelogio();
     this.gravando = false;
@@ -233,7 +236,7 @@ export class GravacaoEmCurso {
     const nova = await this.gravador.parar();
     this.gravador.aoPedaco = null;
     if (!nova) {
-      this.descartarSessao(sessao); // nada chegou: não há o que recuperar
+      this.esquecerSessao(sessao); // nada chegou: não há o que recuperar
       this.entregar({ tipo: "vazia" });
       return;
     }
@@ -266,8 +269,9 @@ export class GravacaoEmCurso {
 
   /** Na abertura da tela: toda gravação que ficou pela metade (o app caiu) vira uma gravação guardada. Devolve quantas foram recuperadas. */
   async recuperar(): Promise<number> {
-    const emUso = this.sessao ? await this.sessao : null; // a que está gravando agora não é uma sobra
-    const recuperadas = await this.d.armazenamento.recuperarSessoes(emUso ? [emUso] : []);
+    // Não são sobras: a que está gravando agora e as que já pararam mas ainda estão sendo guardadas (ou esperam na tela).
+    const emUso = (await Promise.all([this.sessao, ...this.fechando])).filter((id): id is string => id !== null);
+    const recuperadas = await this.d.armazenamento.recuperarSessoes(emUso);
     return recuperadas.length;
   }
 
@@ -303,28 +307,35 @@ export class GravacaoEmCurso {
     };
   }
 
-  private descartarSessao(sessao: Promise<string | null> | null) {
-    void sessao?.then((id) => (id ? this.d.armazenamento.descartarSessao(id) : undefined)).catch((e) => console.warn("gravador: não foi possível apagar a sessão de recuperação", e));
+  /** Apaga a sessão de recuperação (e os pedaços dela). Usado quando a gravação está guardada por outro caminho, ou quando a pessoa descarta a que não pôde ser guardada. */
+  esquecerSessao(sessao: Promise<string | null> | null) {
+    if (!sessao) return;
+    void sessao
+      .then((id) => (id ? this.d.armazenamento.descartarSessao(id) : undefined))
+      .catch((e) => console.warn("gravador: não foi possível apagar a sessão de recuperação", e))
+      .finally(() => this.fechando.delete(sessao));
   }
 
   /** Guarda a gravação (com prazo). Se não der, ela fica à mão (na tela do Gravador, se há uma) e a sessão de recuperação NÃO é apagada: a próxima abertura do app ainda a recupera. */
   private async guardar(nova: Gravacao, contexto: ContextoGravacao | null, sessao: Promise<string | null> | null) {
     rastro(`guardando ${nova.bytes} bytes`);
     const comeco = this.d.agora();
-    const r = await guardarComPrazo(this.d.armazenamento.salvar(nova.blob, nova.tipo, nova.segundos, contexto));
+    // A sessão sai na MESMA transação que guarda a gravação (se o app cair no meio, nada fica duplicado na próxima abertura).
+    const idDaSessao = sessao ? await sessao : null;
+    const r = await guardarComPrazo(this.d.armazenamento.salvar(nova.blob, nova.tipo, nova.segundos, contexto, idDaSessao));
     if (r.guardada) {
       rastro(`guardada em ${Math.round(this.d.agora() - comeco)} ms`);
       URL.revokeObjectURL(nova.url); // o arquivo já está no armazenamento; a lista o lê de lá quando a pessoa tocar em Ouvir
-      this.descartarSessao(sessao);
+      if (sessao) this.fechando.delete(sessao);
       this.entregar({ tipo: "guardada", meta: r.meta });
       return;
     }
     console.warn("gravador: não foi possível guardar a gravação", r.demorou ? "(demorou demais)" : "");
     void r.depois.then(
-      () => this.descartarSessao(sessao), // a escrita terminou depois do prazo: a gravação está guardada, a sessão não precisa mais
+      () => sessao && this.fechando.delete(sessao), // a escrita terminou depois do prazo: guardada, e a sessão já saiu na mesma transação
       () => {},
     );
-    this.entregar({ tipo: "nao-guardada", gravacao: nova, demorou: r.demorou, depois: r.depois });
+    this.entregar({ tipo: "nao-guardada", gravacao: nova, demorou: r.demorou, depois: r.depois, sessao });
   }
 
   /** Entrega o resultado à tela do Gravador. Sem ela (a pessoa está em outra tela), o que não foi guardado vira o aviso `perdida`, que a tela inicial mostra. */
