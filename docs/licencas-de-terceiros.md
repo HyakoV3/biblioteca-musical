@@ -54,12 +54,12 @@ desde 2000); (2) não linkar o arquivo dele diretamente, e sim hospedar a própr
 
 Ajustes, "Créditos e licenças" (`src/lib/licencas.ts`, textos em `src/lib/licencas-textos.ts`), com o autor, a licença e o
 texto integral da licença de cada item. A lista: GeneralUser GS, smplr, ícones Google Material (Apache 2.0, texto
-integral), fflate, Svelte e SvelteKit, Tauri, Pitchy (MIT), web-noise-suppressor (MIT), RNNoise (BSD 3-Clause) com rnnoise-wasm (Apache 2.0) e GTCRN com gtcrn-wasm (MIT) (linhas de copyright lidas nos arquivos de licença dos pacotes instalados).
+integral), fflate, Svelte e SvelteKit, Tauri, os crates do Rust do app (zip, roxmltree, base64, serde e serde_json, MIT ou Apache 2.0; linhas de copyright lidas nos arquivos de licença de cada crate), Pitchy (MIT), web-noise-suppressor (MIT), RNNoise (BSD 3-Clause) com rnnoise-wasm (Apache 2.0) e GTCRN com gtcrn-wasm (MIT) (linhas de copyright lidas nos arquivos de licença dos pacotes instalados).
 Os arquivos de som ficam fora do Git (`sons-fonte/`).
 
 - **Biblioteca que toca as amostras:** `smplr`, MIT (campo `license` do pacote e seção "License" do README). O pacote não
   publica arquivo `LICENSE` nem linha de copyright; o app registra "Author: danigb", como o pacote declara.
-- **Fora desta lista, por ora:** as dependências indiretas do JavaScript e os crates do Rust do Tauri (cada uma com o seu
+- **Fora desta lista, por ora:** as dependências indiretas do JavaScript e os crates do Rust que só o Tauri puxa (cada uma com o seu
   aviso). Se o app for publicado em loja, vale gerar essa lista por ferramenta (por exemplo `cargo about` e um gerador
   de avisos do npm), em vez de mantê-la à mão.
 
