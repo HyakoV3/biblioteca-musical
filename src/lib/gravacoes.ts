@@ -19,7 +19,11 @@ export type Resumo = { quantidade: number; bytes: number };
 export const TAMANHO_DA_PAGINA = 10;
 
 export const BANCO = "bm-gravacoes";
-const VERSAO = 1;
+// Versão 2 (AND-002): `sessoes` e `pedacos`, onde a gravação em curso vai sendo guardada, um pedaço por vez, para sobreviver à queda do app.
+const VERSAO = 2;
+
+/** Uma gravação que começou e ainda não foi fechada: se o app cair, é o que `recuperarSessoes` transforma em gravação guardada. */
+export type SessaoAberta = { id: string; criadaEm: number; tipo: string; contexto?: ContextoGravacao };
 
 /** "17/11 10:46" (dia e mês na ordem do idioma, mais hora e minuto); com `comAno`, "17/11/2025 10:46". */
 export function formatarData(criadaEm: number, idioma: string, comAno = false): string {
@@ -67,6 +71,14 @@ const MOTIVO_SEM_RESPOSTA = "o armazenamento não respondeu a esta tentativa de 
 /** Quanto se espera o armazenamento guardar uma gravação antes de desistir e deixá-la na tela (ms). */
 export const LIMITE_PARA_GUARDAR_MS = 10000;
 
+/** O prazo de `comLimite` acabou (a escrita pode ainda terminar): um erro próprio, para quem trata não precisar comparar o texto da mensagem. */
+export class LimiteEstourado extends Error {
+  constructor(motivo: string) {
+    super(motivo);
+    this.name = "LimiteEstourado";
+  }
+}
+
 /**
  * Espera `promessa`, mas rejeita com `motivo` se ela não terminar em `ms`. Uma escrita no IndexedDB que nunca confirma (visto só no CI) deixaria a tela esperando para
  * sempre, sem erro e sem a gravação; assim a tela mostra o erro e deixa a gravação ao alcance (ouvir e enviar). O temporizador é desfeito quando a promessa termina.
@@ -74,13 +86,15 @@ export const LIMITE_PARA_GUARDAR_MS = 10000;
 export function comLimite<T>(promessa: Promise<T>, ms: number, motivo: string): Promise<T> {
   let relogio: ReturnType<typeof setTimeout> | undefined;
   const estouro = new Promise<never>((_, falha) => {
-    relogio = setTimeout(() => falha(new Error(motivo)), ms);
+    relogio = setTimeout(() => falha(new LimiteEstourado(motivo)), ms);
   });
   return Promise.race([promessa, estouro]).finally(() => clearTimeout(relogio));
 }
 
 export class Gravacoes {
   private abrindo: Promise<IDBDatabase> | null = null;
+  /** Sessões já fechadas ou descartadas: um pedaço que chega atrasado para elas não é escrito (ficaria órfão e viraria uma gravação falsa na recuperação). */
+  private readonly encerradas = new Set<string>();
 
   /** `fabrica` devolve o IndexedDB (um falso nos testes). */
   constructor(private readonly fabrica: () => IDBFactory | undefined = () => (typeof indexedDB === "undefined" ? undefined : indexedDB)) {}
@@ -90,11 +104,16 @@ export class Gravacoes {
     return new Promise<IDBDatabase>((ok, falha) => {
       const r = idb.open(BANCO, VERSAO);
       r.onupgradeneeded = () => {
-        rastro("armazenamento: criando o banco");
+        rastro("armazenamento: criando ou atualizando o banco");
         const b = r.result;
-        const meta = b.createObjectStore("meta", { keyPath: "id" });
-        meta.createIndex("porData", ["criadaEm", "id"]); // da mais nova para a mais antiga, com o id desempatando
-        b.createObjectStore("blobs");
+        // Cada depósito só é criado se falta: o mesmo código cria o banco do zero (versão 2) e atualiza o da versão 1, sem tocar nas gravações que já estão lá.
+        if (!b.objectStoreNames.contains("meta")) {
+          const meta = b.createObjectStore("meta", { keyPath: "id" });
+          meta.createIndex("porData", ["criadaEm", "id"]); // da mais nova para a mais antiga, com o id desempatando
+        }
+        if (!b.objectStoreNames.contains("blobs")) b.createObjectStore("blobs");
+        if (!b.objectStoreNames.contains("sessoes")) b.createObjectStore("sessoes", { keyPath: "id" });
+        if (!b.objectStoreNames.contains("pedacos")) b.createObjectStore("pedacos"); // chave: [id da sessão, número do pedaço]
       };
       r.onsuccess = () => {
         const b = r.result;
@@ -151,7 +170,7 @@ export class Gravacoes {
    * no CI, o `put` de um Blob feito pelo MediaRecorder nunca confirmava (o gravador entregava o arquivo e o armazenamento ficava mudo). A leitura entende os
    * dois formatos, então o que já estava guardado como Blob continua tocando.
    */
-  async salvar(blob: Blob, tipo: string, segundos: number, contexto?: ContextoGravacao | null): Promise<MetaGravacao> {
+  async salvar(blob: Blob, tipo: string, segundos: number, contexto?: ContextoGravacao | null, sessao?: string | null): Promise<MetaGravacao> {
     const comeco = performance.now();
     rastro(`lendo os ${blob.size} bytes do arquivo`);
     const dados = await blob.arrayBuffer();
@@ -166,11 +185,101 @@ export class Gravacoes {
       bytes: blob.size,
       ...(contexto ? { contexto } : {}),
     };
-    await transacao(banco, ["meta", "blobs"], "readwrite", (t) => {
+    // Com `sessao` (a gravação que veio dos pedaços), a sessão sai NA MESMA transação: se o app cair entre uma coisa e outra, a próxima abertura não recupera uma segunda cópia do que já está guardado.
+    if (sessao) this.encerradas.add(sessao);
+    await transacao(banco, sessao ? ["meta", "blobs", "sessoes", "pedacos"] : ["meta", "blobs"], "readwrite", (t) => {
       t.objectStore("meta").put(meta);
       t.objectStore("blobs").put({ dados, tipo }, meta.id);
+      if (sessao) {
+        t.objectStore("sessoes").delete(sessao);
+        t.objectStore("pedacos").delete(globalThis.IDBKeyRange.bound([sessao, 0], [sessao, Infinity]));
+      }
     });
     rastro(`transação confirmada em ${Math.round(performance.now() - comeco)} ms`);
+    return meta;
+  }
+
+  /** Abre uma sessão de gravação (AND-002): daqui em diante os pedaços entram por `guardarPedaco`. Devolve o id da sessão. */
+  async abrirSessao(tipo: string, contexto?: ContextoGravacao | null): Promise<string> {
+    const banco = await this.banco();
+    const sessao: SessaoAberta = { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, criadaEm: Date.now(), tipo, ...(contexto ? { contexto } : {}) };
+    await transacao(banco, ["sessoes"], "readwrite", (t) => {
+      t.objectStore("sessoes").put(sessao);
+    });
+    return sessao.id;
+  }
+
+  /** Guarda o pedaço `indice` de uma sessão aberta (como bytes, pelo mesmo motivo de `salvar`). Pedaço para uma sessão já encerrada é ignorado. */
+  async guardarPedaco(sessao: string, indice: number, pedaco: Blob): Promise<void> {
+    const dados = await pedaco.arrayBuffer();
+    if (this.encerradas.has(sessao)) return;
+    const banco = await this.banco();
+    if (this.encerradas.has(sessao)) return; // conferido de novo: a espera pelo banco pode ter passado do fechamento
+    await transacao(banco, ["pedacos"], "readwrite", (t) => {
+      t.objectStore("pedacos").put({ dados }, [sessao, indice]);
+    });
+  }
+
+  /** Encerra uma sessão sem fazer dela uma gravação (a gravação inteira já foi guardada pelo caminho normal): apaga os pedaços e o registro. */
+  async descartarSessao(sessao: string): Promise<void> {
+    this.encerradas.add(sessao);
+    const banco = await this.banco();
+    await transacao(banco, ["sessoes", "pedacos"], "readwrite", (t) => {
+      t.objectStore("sessoes").delete(sessao);
+      t.objectStore("pedacos").delete(globalThis.IDBKeyRange.bound([sessao, 0], [sessao, Infinity]));
+    });
+  }
+
+  /**
+   * Na abertura do app: toda sessão que ficou aberta (o app caiu no meio da gravação) vira uma gravação guardada, montada com os pedaços que chegaram, na ordem. `excluir` é o que está
+   * gravando agora (não é uma sobra). A duração é estimada (um pedaço por segundo). Sessão sem nenhum pedaço é só apagada. Devolve as gravações recuperadas.
+   */
+  async recuperarSessoes(excluir: readonly string[] = []): Promise<MetaGravacao[]> {
+    const banco = await this.banco();
+    const sessoes = (await transacao(banco, ["sessoes"], "readonly", (t) => pedido(t.objectStore("sessoes").getAll()))) as SessaoAberta[];
+    const recuperadas: MetaGravacao[] = [];
+    for (const s of sessoes) {
+      if (excluir.includes(s.id) || this.encerradas.has(s.id)) continue;
+      // Uma sessão que não dá para recuperar (pouco espaço: a cópia inteira precisa de mais lugar que os pedaços) NÃO impede as outras: fica como está e a próxima abertura tenta de novo.
+      try {
+        const meta = await this.recuperarUma(banco, s);
+        if (meta) recuperadas.push(meta);
+      } catch (e) {
+        console.warn(`gravador: não foi possível recuperar a gravação ${s.id}`, e);
+      }
+    }
+    return recuperadas;
+  }
+
+  private async recuperarUma(banco: IDBDatabase, s: SessaoAberta): Promise<MetaGravacao | null> {
+    const faixa = globalThis.IDBKeyRange.bound([s.id, 0], [s.id, Infinity]);
+    const pedacos = (await transacao(banco, ["pedacos"], "readonly", (t) => pedido(t.objectStore("pedacos").getAll(faixa)))) as { dados: ArrayBuffer }[];
+    const blob = new Blob(
+      pedacos.map((p) => p.dados),
+      { type: s.tipo },
+    );
+    const meta: MetaGravacao | null =
+      blob.size > 0
+        ? {
+            id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+            criadaEm: s.criadaEm,
+            segundos: pedacos.length,
+            tipo: s.tipo,
+            bytes: blob.size,
+            ...(s.contexto ? { contexto: { ...s.contexto, mudouDurante: true } } : {}),
+          }
+        : null;
+    const dados = meta ? await blob.arrayBuffer() : null;
+    // Numa transação só: a gravação entra e a sessão sai (ou nada muda, e a próxima abertura tenta de novo).
+    await transacao(banco, ["meta", "blobs", "sessoes", "pedacos"], "readwrite", (t) => {
+      if (meta && dados) {
+        t.objectStore("meta").put(meta);
+        t.objectStore("blobs").put({ dados, tipo: s.tipo }, meta.id);
+      }
+      t.objectStore("sessoes").delete(s.id);
+      t.objectStore("pedacos").delete(faixa);
+    });
+    this.encerradas.add(s.id);
     return meta;
   }
 

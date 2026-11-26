@@ -4,6 +4,7 @@
   import { notacao } from "#lib/notacao.svelte";
   import Abas from "#lib/Abas.svelte";
   import Aviso from "#lib/Aviso.svelte";
+  import AvisoGravando from "#lib/AvisoGravando.svelte";
   import Barra from "#lib/Barra.svelte";
   import { biblioteca } from "#lib/biblioteca.svelte";
   import Estado from "#lib/Estado.svelte";
@@ -316,6 +317,8 @@
   <!-- Na aba Partitura a coluna perde o limite de 40rem (até 64rem): numa tela larga (celular deitado, tablet) a partitura de paisagem usa a
        largura toda, em vez de uma faixa estreita no meio. -->
   <main class="coluna conteudo" class:partitura-larga={aba === "partitura"}>
+    <!-- A gravação do Gravador segue com o hino aberto (o serviço do Android a mantém): o aviso "Gravando · Parar" fica à vista. -->
+    <AvisoGravando />
     <!-- Os dois painéis ficam montados (só um visível): o som não para ao trocar de aba. -->
     <div role="tabpanel" id="painel-letra" aria-labelledby={abas.length > 1 ? "aba-letra" : undefined} hidden={aba !== "letra"}>
       {#if !temAudio}

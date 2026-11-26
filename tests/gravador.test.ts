@@ -189,6 +189,22 @@ describe("Gravador (com um MediaRecorder falso)", () => {
     if (r) URL.revokeObjectURL(r.url);
   });
 
+  it("cada pedaço que chega é avisado, com o número dele, e uma falha de quem guarda não atrapalha a gravação (AND-002)", async () => {
+    preparar();
+    const g = new Gravador();
+    const vistos: [number, number][] = [];
+    g.aoPedaco = (i, b) => {
+      vistos.push([i, b.size]);
+      if (i === 1) throw new Error("armazenamento fora do ar");
+    };
+    await g.iniciar();
+    RecorderFalso.ultimo!.entregar(100);
+    RecorderFalso.ultimo!.entregar(200);
+    RecorderFalso.ultimo!.entregar(300);
+    expect(vistos).toEqual([[0, 100], [1, 200], [2, 300]]);
+    expect((await g.parar())?.bytes).toBe(600); // o arquivo em memória tem tudo, mesmo com a falha no meio
+  });
+
   it("se o MediaRecorder nunca avisa que parou, `parar` entrega o que já foi gravado depois do limite, devolvendo o microfone", async () => {
     vi.useFakeTimers();
     try {

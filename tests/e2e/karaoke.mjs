@@ -1364,6 +1364,30 @@ async function principal() {
   confere(gC.pressionado === 'false' && gC.ativos === 0 && gC.audio === true && avisoSumiu, `O Parar do aviso para a gravação, guarda o gravado, devolve o microfone e o aviso some: ${JSON.stringify(gC)}`);
   await apagarPrimeira();
   await dormir(300);
+  const itensAntesDoHino = (await estadoGravador()).itens; // a lista traz sobras de testes anteriores: o que se confere é UMA gravação a mais
+  // GRV-001: COM o serviço do Android assumindo a gravação, abrir um hino NÃO a para: o aviso "Gravando · Parar" aparece na tela do hino, e o Parar dele guarda a gravação.
+  await av(`window.__ponte = []; document.getElementById('gravar').click(); 1`);
+  await dormir(700);
+  await av(`document.getElementById('aba-hinos').click(); 1`);
+  // A lista dos hinos ainda traz a busca de um teste anterior (só o 998 aparece): serve qualquer hino da lista.
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.querySelector('#painel-hinos a[href^="/hino/"]')`)); ) await dormir(250);
+  await av(`document.querySelector('#painel-hinos a[href^="/hino/"]')?.click(); 1`);
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`location.pathname.startsWith('/hino/')`)); ) await dormir(250);
+  await dormir(1200);
+  const hinoGravando = await av(`({ caminho: location.pathname, aviso: !!document.getElementById('gravando-aviso'), ativos: window.__microfones.filter((t) => t.readyState === 'live').length, ponte: window.__ponte.join(',') })`);
+  confere(hinoGravando.caminho.startsWith('/hino/') && hinoGravando.aviso && hinoGravando.ativos === 1 && hinoGravando.ponte === 'ligar', `Gravador: abrir um hino com o serviço do Android NÃO para a gravação, e o aviso "Gravando · Parar" aparece na tela do hino: ${JSON.stringify(hinoGravando)}`);
+  await av(`document.querySelector('#gravando-aviso button').click(); 1`);
+  await dormir(1500);
+  const hinoParado = await av(`({ aviso: !!document.getElementById('gravando-aviso'), ativos: window.__microfones.filter((t) => t.readyState === 'live').length, ponte: window.__ponte.join(',') })`);
+  confere(!hinoParado.aviso && hinoParado.ativos === 0 && hinoParado.ponte === 'ligar,desligar', `O Parar do aviso na tela do hino para a gravação, devolve o microfone, solta o serviço e o aviso some: ${JSON.stringify(hinoParado)}`);
+  await av(`document.querySelector('button.voltar').click(); 1`);
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-gravador')`)); ) await dormir(250);
+  await av(`document.getElementById('aba-gravador').click(); 1`);
+  await esperarGravacao(itensAntesDoHino + 1);
+  const hinoGuardada = await estadoGravador();
+  confere(hinoGuardada.itens === itensAntesDoHino + 1 && hinoGuardada.ativos === 0, `A gravação parada na tela do hino foi guardada UMA vez e está na lista (antes: ${itensAntesDoHino}): ${JSON.stringify(hinoGuardada)}`);
+  await apagarPrimeira();
+  await dormir(300);
   // Sem fone: ligar o metrônomo para a gravação, que é guardada.
   await av(`window.__fone = false; document.getElementById('gravar').click(); 1`);
   await dormir(700);
@@ -1469,7 +1493,7 @@ async function principal() {
 
   // Paginação e busca (I-39): 25 gravações semeadas direto no armazenamento (o mesmo formato do app, três delas com contexto: hino 10, hino 100 e metrônomo); a lista mostra 20 e o botão "Mostrar mais" traz as outras.
   await av(`new Promise((ok, falha) => {
-    const r = indexedDB.open('bm-gravacoes', 1);
+    const r = indexedDB.open('bm-gravacoes');
     r.onupgradeneeded = () => { const b = r.result; b.createObjectStore('meta', { keyPath: 'id' }).createIndex('porData', ['criadaEm', 'id']); b.createObjectStore('blobs'); };
     r.onerror = () => falha(r.error);
     r.onsuccess = () => {
