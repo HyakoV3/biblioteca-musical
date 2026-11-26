@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buscar, chaveDoHino, indexar, normalizar, numeroDaConsulta, tomDoHino, type ItemBusca } from "../src/lib/busca-hinos";
+import { buscar, chaveDoHino, indexar, indiceDe, normalizar, numeroDaConsulta, tomDoHino, type ItemBusca } from "../src/lib/busca-hinos";
 
 // Hinos FICTÍCIOS (o hinário real é conteúdo de terceiros e não entra no Git). Os números imitam o hinário: de 1 a 480.
 const h = (numero: number, titulo: string, extra: Partial<ItemBusca> = {}): ItemBusca => ({ numero, titulo, letra: [], ...extra });
@@ -351,5 +351,18 @@ describe("robustez", () => {
     expect(buscar(so, "titulo").resultados.map((r) => r.item.numero)).toEqual([5]);
     expect(buscar(so, "sib").resultados).toEqual([]);
     expect(buscar(so, "leila").resultados).toEqual([]);
+  });
+});
+
+describe("indiceDe (guarda o índice por acervo)", () => {
+  it("o mesmo array devolve o mesmo índice, sem refazer", () => {
+    const acervo = [h(1, "A"), h(2, "B")];
+    expect(indiceDe(acervo)).toBe(indiceDe(acervo));
+  });
+
+  it("outro array (um pacote novo) tem índice próprio", () => {
+    const a = [h(1, "A")];
+    const b = [h(1, "A")];
+    expect(indiceDe(a)).not.toBe(indiceDe(b));
   });
 });

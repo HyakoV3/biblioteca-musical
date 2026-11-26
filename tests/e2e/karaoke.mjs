@@ -1024,7 +1024,7 @@ async function principal() {
   // sentido várias vezes e nunca dá um salto grande (um deslizar sempre para a direita voltaria de 1 a 0 de uma vez).
   const amostras = [];
   for (let i = 0; i < 50; i++) {
-    amostras.push(await av(`parseFloat(document.querySelector('#painel-metronomo .pendulo').dataset.posicao)`));
+    amostras.push(await av(`(() => { const t = document.querySelector('#painel-metronomo .trilha'); const b = t.querySelector('.bola'); const x = new DOMMatrix(getComputedStyle(b).transform).m41; return (x + b.offsetWidth / 2) / t.clientWidth; })()`));
     await dormir(40);
   }
   const saltos = amostras.slice(1).map((v, i) => Math.abs(v - amostras[i]));

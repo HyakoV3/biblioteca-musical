@@ -33,6 +33,10 @@
   let aceso = $state<number | null>(null);
   const reduzirMovimento = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   let quadro = 0;
+  // A bolinha anda por `transform` (só composição, sem refazer o layout a cada quadro): precisa das larguras da trilha e dela mesma, medidas pelo Svelte (ResizeObserver).
+  let larguraTrilha = $state(0);
+  let larguraBola = $state(0);
+  const deslocamento = $derived(posicao * larguraTrilha - larguraBola / 2);
 
   function desenhar() {
     const p = metronomo.posicao();
@@ -109,11 +113,11 @@
 
   <!-- O pêndulo: a bolinha vai e volta entre as duas pontas, e cada clique é uma ponta (como num metrônomo de verdade). Embaixo, uma bolinha por tempo do compasso: a do 1º tempo
        (o forte) é maior, e a do tempo atual fica acesa. Decorativo para o leitor de tela (o aviso de status abaixo basta). -->
-  <div class="pendulo" aria-hidden="true" data-aceso={aceso ?? ""} data-posicao={posicao.toFixed(3)}>
-    <div class="trilha">
+  <div class="pendulo" aria-hidden="true" data-aceso={aceso ?? ""}>
+    <div class="trilha" bind:clientWidth={larguraTrilha}>
       <span class="ponta esquerda"></span>
       <span class="ponta direita"></span>
-      <span class="bola" style:left={`${posicao * 100}%`}></span>
+      <span class="bola" bind:clientWidth={larguraBola} style:transform={`translateX(${deslocamento.toFixed(2)}px)`}></span>
     </div>
     <div class="tempos">
       {#each marcas as i (i)}
@@ -142,7 +146,7 @@
   .grupo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.375rem; }
   .compasso .rotulo { color: var(--suave); font-size: 0.9rem; }
 
-  /* O pêndulo: uma trilha com as duas pontas e a bolinha por cima. A posição vem do JavaScript (relógio de áudio); sem transição de CSS, e com movimento reduzido a bolinha só
+  /* O pêndulo: uma trilha com as duas pontas e a bolinha por cima. A posição vem do JavaScript (relógio de áudio) e vira `transform` (sem layout por quadro); sem transição de CSS, e com movimento reduzido a bolinha só
      pula de ponta em ponta. Embaixo, uma bolinha por tempo do compasso (a do 1º é maior, não só de outra cor). */
   .pendulo { display: flex; flex-direction: column; gap: 0.75rem; margin: 0.25rem 0.75rem; }
   .trilha { position: relative; height: 2.5rem; }
@@ -150,7 +154,7 @@
   .ponta { position: absolute; top: calc(50% - 1rem); width: 0.25rem; height: 2rem; background: var(--texto); }
   .ponta.esquerda { left: -0.125rem; }
   .ponta.direita { right: -0.125rem; }
-  .bola { position: absolute; top: calc(50% - 0.75rem); width: 1.5rem; height: 1.5rem; margin-left: -0.75rem; box-sizing: border-box; border-radius: 50%; background: var(--ouro-linha); border: 0.125rem solid var(--texto); }
+  .bola { position: absolute; top: calc(50% - 0.75rem); left: 0; width: 1.5rem; height: 1.5rem; box-sizing: border-box; border-radius: 50%; background: var(--ouro-linha); border: 0.125rem solid var(--texto); }
   .tempos { display: flex; justify-content: center; align-items: center; gap: 0.5rem; min-height: 1.75rem; }
   .tempo { width: 0.75rem; height: 0.75rem; border-radius: 50%; border: 0.125rem solid var(--suave); box-sizing: border-box; }
   .tempo.forte { width: 1.5rem; height: 1.5rem; border-color: var(--texto); }
