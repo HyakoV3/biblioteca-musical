@@ -10,6 +10,7 @@
   import { ehRealista, gravadoEquivalente, realistasDaVoz, sinteticoEquivalente } from "./realista";
   import { sons } from "./sons/pacotes.svelte";
   import { TRANSPOSICAO_MAX, reproducao, vezesDoHino } from "./reproducao.svelte";
+  import Passo from "./Passo.svelte";
   import Icone from "./Icone.svelte";
   import type { IconeNome } from "./icones";
   import { rotuloCurtoDaVez, rotuloDaParte } from "./rotulo-vez";
@@ -163,8 +164,7 @@
   {/if}
 
   <!-- Card 1: tocar e vezes. Fixo e sem cabeçalho: a duração prevista do "hino todo" (no andamento escolhido) vai dentro do
-       próprio botão, entre parênteses. Com o Parar ao lado falta espaço, e o "(04:00)" desce inteiro para a linha de baixo
-       (duas linhas cabem nos 3,5 rem do botão, então ele não muda de altura). -->
+       próprio botão, como um subtítulo menor embaixo do título (que fica no centro). -->
   <section class="cartao" aria-label={t("audio.tocar")}>
     <div class="corpo">
       <div class="principal">
@@ -174,7 +174,8 @@
           onclick={() => reproducao.alternar(hino, "tudo")}
         >
           <Icone nome={icone("tudo")} tamanho={24} />
-          <span class="texto-tocar">{rotuloTudo} <span class="duracao">({formatarTempo(duracaoPrevista)})</span></span>
+          <span class="texto-tocar">{rotuloTudo}</span>
+          <span class="duracao">{formatarTempo(duracaoPrevista)}</span>
         </button>
         {#if !parado}
           <button class="botao parar" onclick={() => reproducao.parar()}><Icone nome="stop" tamanho={22} /> {t("audio.parar")}</button>
@@ -260,21 +261,14 @@
 
       <div class="passo-linha empilhado">
         <span class="rotulo" id="rot-tom">{t("player.transposicao")}</span>
-        <div class="passo" role="group" aria-labelledby="rot-tom">
-          <button
-            aria-label={t("player.diminuir", { item: t("player.transposicao").toLowerCase() })}
-            disabled={!editavel || cfg.transposicao <= -TRANSPOSICAO_MAX}
-            onclick={() => mudarTom(-1)}><Icone nome="menos" tamanho={24} /></button
-          >
-          <output aria-live="polite" class:restauravel={editavel} title={editavel ? t("player.duplo_clique_restaurar") : undefined} ondblclick={() => editavel && (cfg.transposicao = 0)}>
-            {i18n.tn("plural.semitons", Math.abs(cfg.transposicao), { n: sinal(cfg.transposicao) })}
-          </output>
-          <button
-            aria-label={t("player.aumentar", { item: t("player.transposicao").toLowerCase() })}
-            disabled={!editavel || cfg.transposicao >= TRANSPOSICAO_MAX}
-            onclick={() => mudarTom(1)}><Icone nome="mais" tamanho={24} /></button
-          >
-        </div>
+        <Passo
+          rotulo={t("player.transposicao")}
+          esquerda={[{ icone: "menos", aria: t("player.diminuir", { item: t("player.transposicao").toLowerCase() }), desabilitado: !editavel || cfg.transposicao <= -TRANSPOSICAO_MAX, aoClicar: () => mudarTom(-1) }]}
+          direita={[{ icone: "mais", aria: t("player.aumentar", { item: t("player.transposicao").toLowerCase() }), desabilitado: !editavel || cfg.transposicao >= TRANSPOSICAO_MAX, aoClicar: () => mudarTom(1) }]}
+          valor={i18n.tn("plural.semitons", Math.abs(cfg.transposicao), { n: sinal(cfg.transposicao) })}
+          dica={t("player.duplo_clique_restaurar")}
+          aoRestaurar={editavel ? () => (cfg.transposicao = 0) : undefined}
+        />
       </div>
 
       <button class="botao secundario" disabled={!editavel} onclick={restaurarPadrao}>{t("player.restaurar_padrao")}</button>
@@ -384,7 +378,9 @@
   .player { display: grid; gap: 1rem; }
   .principal { display: flex; gap: 0.5rem; }
   .principal :global(.botao) { gap: 0.5rem; }
-  .tocar { flex: 1; min-height: 3.5rem; font-size: 1.15rem; }
+  /* O título fica no centro do botão, como se estivesse sozinho; a duração é um subtítulo menor, deslocado para baixo (sem parênteses), igual antes e durante a reprodução, então o botão não muda quando o Parar aparece. */
+  .tocar { flex: 1; min-height: 3.5rem; font-size: 1.15rem; position: relative; }
+  .tocar .duracao { position: absolute; left: 0; right: 0; bottom: 0.3rem; text-align: center; font-size: 0.75rem; font-weight: 400; line-height: 1; opacity: 0.85; pointer-events: none; }
   .texto-tocar { text-align: center; }
   .duracao { white-space: nowrap; font-variant-numeric: tabular-nums; }
   .parar { min-height: 3.5rem; }
@@ -393,29 +389,20 @@
 
   .passo-linha { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
   .rotulo { font-size: 0.95rem; }
-  .passo { display: flex; align-items: center; gap: 0.4rem; }
-  .passo button {
-    display: inline-flex; align-items: center; justify-content: center; padding: 0;
-    width: 3rem; height: 3rem; font-size: 1.4rem; border-radius: 0.75rem; line-height: 1; cursor: pointer;
-    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
-  }
-  .passo output { min-width: 6.5rem; text-align: center; font-variant-numeric: tabular-nums; }
-  .passo output.restauravel { touch-action: manipulation; user-select: none; cursor: pointer; }
   /* Andamento: rótulo em cima e os cinco itens (−5 −1 valor +1 +5) repartindo a largura toda. Botões de texto. */
   .passo-linha.empilhado { flex-wrap: wrap; }
-  .empilhado .passo { flex: 1 1 100%; justify-content: space-between; }
-  .empilhado .passo button { flex: none; min-width: 3rem; width: auto; padding: 0 0.5rem; font-size: 1.05rem; font-weight: 600; }
-  .empilhado .passo output { flex: 1; min-width: 0; }
   /* Botões compactos ("▶ Intro", "▶ 1ª", "▶ 3ª ⚑") que dividem a linha inteira. O que toca fica em destaque. */
-  .vezes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  /* As partes (Intro, 1ª, 2ª...) na pílula padrão do app (a mesma do `Segmentado`): um contorno com o canto de 0.75rem e, dentro, um respiro e as partes lado a lado. Aqui os segmentos são
+     botões de tocar (não uma escolha): a parte que soa tem um anel, e o dourado do progresso enche DENTRO do segmento dela. Com muitas partes (Intro e até 8 vezes) a pílula quebra em linhas. */
+  .vezes { display: flex; flex-wrap: wrap; gap: 0.15rem; padding: 0.2rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
   /* Cada botão ocupa uma fatia igual da linha (flex: 1 1 0). Com muitas vezes (até 8 + Intro), quebram de linha e
      cada linha também se reparte por inteiro. */
-  .vez { flex: 1 1 0; gap: 0.35rem; min-width: 3rem; padding: 0 0.4rem; position: relative; overflow: hidden; }
+  .vez { flex: 1 1 0; gap: 0.35rem; min-width: 3rem; min-height: 2.6rem; padding: 0 0.4rem; position: relative; overflow: hidden; border: 0; border-radius: 0.55rem; background: transparent; }
   .rotulo-vez { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; }
   /* A parte que soa: base normal (a cor do cartão) com borda dourada, e por cima o dourado enchendo da esquerda para a
      direita. As duas camadas têm o mesmo tamanho e o mesmo rótulo, e a de cima é recortada no quanto já passou, então o
      texto troca de cor exatamente na borda do preenchimento (escuro sobre o dourado, normal sobre o resto). */
-  .vez.tocando { background: var(--superficie); color: var(--texto); }
+  .vez.tocando { background: var(--superficie); color: var(--texto); box-shadow: inset 0 0 0 0.125rem var(--ouro-linha); }
   .enchimento {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
     background: var(--ouro); color: var(--ouro-sobre); pointer-events: none;

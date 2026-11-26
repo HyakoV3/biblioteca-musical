@@ -208,6 +208,7 @@ export const es: Dicionario = {
   "afinador.aviso_grave": "Por debajo de la octava 3, el altavoz del móvil casi no reproduce el sonido. Usa auriculares o elige una octava más alta.",
   "afinador.temporizador": "Temporizador",
   "afinador.ate_parar": "Hasta parar",
+  "afinador.desligado": "Apagado",
   "afinador.parar_sozinho": "Detener solo después de:",
   "afinador.temporizador_vale": "Vale para la nota de referencia y para otra nota.",
   "afinador.segundos": "{n} segundos",

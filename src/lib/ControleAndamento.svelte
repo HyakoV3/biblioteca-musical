@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Icone from "./Icone.svelte";
+  import Passo from "./Passo.svelte";
   import { i18n } from "#lib/i18n/index.svelte";
   import { ANDAMENTO_MAX, ANDAMENTO_MIN } from "./reproducao.svelte";
 
@@ -19,32 +19,17 @@
   const item = $derived(t("player.andamento_rotulo").toLowerCase());
 </script>
 
-<div class="passo" role="group" aria-label={t("player.andamento_rotulo")}>
-  {#each [-PASSO_GROSSO, -PASSO_FINO] as bpm (bpm)}
-    <button
-      aria-label={t("player.diminuir_n", { item, n: -bpm })}
-      disabled={!editavel || cfg.andamento <= min}
-      onclick={() => mudar(bpm)}>{#if -bpm === PASSO_FINO}<Icone nome="menos" tamanho={24} />{:else}−{-bpm}{/if}</button
-    >
-  {/each}
-  <output aria-live="polite" class:restauravel={editavel && padrao !== undefined} title={editavel && padrao !== undefined ? t("player.duplo_clique_restaurar") : undefined} ondblclick={restaurar}>{t("player.bpm", { n: cfg.andamento })}</output>
-  {#each [PASSO_FINO, PASSO_GROSSO] as bpm (bpm)}
-    <button
-      aria-label={t("player.aumentar_n", { item, n: bpm })}
-      disabled={!editavel || cfg.andamento >= max}
-      onclick={() => mudar(bpm)}>{#if bpm === PASSO_FINO}<Icone nome="mais" tamanho={24} />{:else}+{bpm}{/if}</button
-    >
-  {/each}
-</div>
-
-<style>
-  /* Mesmo desenho do controle da aba Ouvir: cinco itens (−5 −1 valor +1 +5) repartindo a largura toda, botões de texto. */
-  .passo { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; width: 100%; }
-  .passo button {
-    display: inline-flex; align-items: center; justify-content: center; flex: none; min-width: 3rem; height: 3rem; width: auto; padding: 0 0.5rem;
-    font-size: 1.05rem; font-weight: 600; border-radius: 0.75rem; line-height: 1; cursor: pointer;
-    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
-  }
-  .passo output { flex: 1; min-width: 0; text-align: center; font-variant-numeric: tabular-nums; }
-  .passo output.restauravel { touch-action: manipulation; user-select: none; cursor: pointer; }
-</style>
+<Passo
+  rotulo={t("player.andamento_rotulo")}
+  esquerda={[
+    { texto: `−${PASSO_GROSSO}`, aria: t("player.diminuir_n", { item, n: PASSO_GROSSO }), desabilitado: !editavel || cfg.andamento <= min, aoClicar: () => mudar(-PASSO_GROSSO) },
+    { icone: "menos", aria: t("player.diminuir_n", { item, n: PASSO_FINO }), desabilitado: !editavel || cfg.andamento <= min, aoClicar: () => mudar(-PASSO_FINO) },
+  ]}
+  direita={[
+    { icone: "mais", aria: t("player.aumentar_n", { item, n: PASSO_FINO }), desabilitado: !editavel || cfg.andamento >= max, aoClicar: () => mudar(PASSO_FINO) },
+    { texto: `+${PASSO_GROSSO}`, aria: t("player.aumentar_n", { item, n: PASSO_GROSSO }), desabilitado: !editavel || cfg.andamento >= max, aoClicar: () => mudar(PASSO_GROSSO) },
+  ]}
+  valor={t("player.bpm", { n: cfg.andamento })}
+  dica={t("player.duplo_clique_restaurar")}
+  aoRestaurar={editavel && padrao !== undefined ? restaurar : undefined}
+/>

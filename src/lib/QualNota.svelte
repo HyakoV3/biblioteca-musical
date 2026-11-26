@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Segmentado from "./Segmentado.svelte";
   import { onMount } from "svelte";
   import Aviso from "./Aviso.svelte";
   import Cartao from "./Cartao.svelte";
@@ -203,28 +204,19 @@
 
   <fieldset class="instrumentos">
     <legend class="meta">{t("afinador.instrumento")}</legend>
-    <div class="tons">
-      {#each TONS as tom (tom.id)}
-        <label class:ativo={instrumento === tom.id}>
-          <input
-            type="radio"
-            name="instrumento"
-            value={tom.id}
-            checked={instrumento === tom.id}
-            aria-label={nomeDaNotaPorExtenso(tom.classe, i18n.idioma, notacao.atual)}
-            onchange={() => {
-              instrumento = tom.id;
-              salvarInstrumento(tom.id);
-            }}
-          />
-          <span>{#if instrumento === tom.id}<Icone nome="ok" tamanho={16} />{/if}{nomeDaNota(tom.classe, i18n.idioma, notacao.atual)}</span>
-        </label>
-      {/each}
-    </div>
+    <Segmentado
+      nome="instrumento"
+      valor={instrumento}
+      opcoes={TONS.map((tom) => ({ valor: tom.id, rotulo: nomeDaNota(tom.classe, i18n.idioma, notacao.atual), aria: nomeDaNotaPorExtenso(tom.classe, i18n.idioma, notacao.atual) }))}
+      aoEscolher={(id) => {
+        instrumento = id;
+        salvarInstrumento(id);
+      }}
+    />
     <ul class="lista-instrumentos" aria-label={t("afinador.neste_tom")}>
       {#each instrumentosDoTom as item (item)}
         {@const clave = item.match(/^(.*?) \[(fa|sol)\]$/)}
-        <li>{clave ? clave[1] : item}{#if clave} <span class="clave" role="img" aria-label={t(`afinador.clave_${clave[2]}` as "afinador.clave_fa")}>{clave[2] === "fa" ? "\uE062" : "\uE050"}</span>{/if}</li>
+        <li>{clave ? clave[1] : item}{#if clave} <span class="clave {clave[2]}" role="img" aria-label={t(`afinador.clave_${clave[2]}` as "afinador.clave_fa")}>{clave[2] === "fa" ? "\uE062" : "\uE050"}</span>{/if}</li>
       {/each}
     </ul>
   </fieldset>
@@ -247,16 +239,13 @@
   .detalhe { font-variant-numeric: tabular-nums; }
   .instrumentos { display: grid; gap: 0.6rem; margin: 0; padding: 0; border: 0; }
   /* Os 4 tons em 2 por linha: [Dó] [Si♭] / [Mi♭] [Fá]. */
-  .tons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
   /* A lista de instrumentos do tom: uma por linha, em até 3 colunas (cada uma com pelo menos 9,5 rem): uma coluna em tela estreita ou com fonte grande, duas no celular em pé e três deitado. */
   .lista-instrumentos { margin: 0; padding: 0 0 0 1.1rem; columns: 9.5rem 3; column-gap: 1rem; }
   /* A clave vem da Leipzig (SMuFL: E050 = clave de sol, E062 = clave de fá), a mesma fonte das partituras; o @font-face aqui garante que ela carregue na tela inicial. */
   @font-face { font-family: "Leipzig"; src: url("./fonts/Leipzig.woff2") format("woff2"); font-display: swap; }
-  .clave { font-family: "Leipzig", serif; font-size: 1.35em; line-height: 1; vertical-align: -0.15em; margin-left: 0.25em; }
+  /* Os glifos da Leipzig se medem em "corpos" e ficam longe da linha do texto: a clave de sol vai de −0,66 a +1,08 e a de fá de −0,58 a +0,25 (a maior parte abaixo da linha de base). Cada uma tem o seu tamanho e a sua subida para ficar centrada na altura das letras; `line-height: 0` impede que a área enorme da fonte (cerca de 3 corpos) aumente a linha do item. */
+  .clave { font-family: "Leipzig", serif; line-height: 0; margin-left: 0.3em; }
+  .clave.sol { font-size: 0.6em; vertical-align: 0.34em; }
+  .clave.fa { font-size: 1em; vertical-align: 0.5em; }
   .lista-instrumentos li { break-inside: avoid; padding: 0.15rem 0; line-height: 1.3; }
-  .instrumentos label { position: relative; }
-  .instrumentos input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-  .instrumentos span { display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 3rem; box-sizing: border-box; padding: 0.3rem 0.75rem; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); line-height: 1.25; }
-  .instrumentos .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
-  .instrumentos input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
 </style>

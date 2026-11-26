@@ -9,6 +9,7 @@
   import { nomeDaNota, nomeDaNotaPorExtenso } from "./notacao";
   import { notacao } from "./notacao.svelte";
   import { adicionarNota, lerAfinador, salvarAfinador, type NotaRecente } from "./afinadorPrefs";
+  import Segmentado from "./Segmentado.svelte";
   import { Contagem, LIMITES, fracaoFeita, type Limite } from "./contagem";
   import { i18n } from "./i18n/index.svelte";
   import { reproducao } from "./reproducao.svelte";
@@ -228,25 +229,18 @@
     </button>
   </div>
 
-  <Cartao id="cartao-temporizador" titulo={t("afinador.temporizador")} resumo={limite === 0 ? t("afinador.ate_parar") : `${limite} s`} bind:aberto={temporizadorAberto} grade>
+  <Cartao id="cartao-temporizador" titulo={t("afinador.temporizador")} resumo={limite === 0 ? t("afinador.desligado") : `${limite} s`} bind:aberto={temporizadorAberto} grade>
     <p class="meta" id="rotulo-limite">{t("afinador.parar_sozinho")}</p>
-    <fieldset class="opcoes tempos" aria-labelledby="rotulo-limite">
-      {#each LIMITES as l (l)}
-        <label class:ativo={limite === l}>
-          <input
-            type="radio"
-            name="limite"
-            value={l}
-            checked={limite === l}
-            aria-label={l === 0 ? t("afinador.ate_parar") : t("afinador.segundos", { n: l })}
-            onchange={() => {
-              limite = l;
-              salvarAfinador({ recentes, limite });
-            }}
-          />
-          <span>{#if limite === l}<Icone nome="ok" tamanho={16} />{/if}{l === 0 ? t("afinador.ate_parar") : `${l} s`}</span>
-        </label>
-      {/each}
+    <fieldset class="tempos" aria-labelledby="rotulo-limite">
+      <Segmentado
+        nome="limite"
+        valor={limite}
+        opcoes={LIMITES.map((l) => ({ valor: l, rotulo: l === 0 ? t("afinador.desligado") : `${l} s`, aria: l === 0 ? t("afinador.ate_parar") : t("afinador.segundos", { n: l }) }))}
+        aoEscolher={(l) => {
+          limite = l;
+          salvarAfinador({ recentes, limite });
+        }}
+      />
     </fieldset>
     <p class="meta">{t("afinador.temporizador_vale")}</p>
   </Cartao>
@@ -277,9 +271,7 @@
 
   /* As 12 notas e as 4 opções de tempo: botões de rádio (teclado e leitor de tela de graça); a escolhida leva "✓", negrito e borda de acento (não só cor). */
   .opcoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--minimo, 4.5rem), 1fr)); gap: 0.4rem; margin: 0; padding: 0; border: 0; }
-  /* As 4 opções de tempo cabem numa linha no celular em pé ("Até parar" quebra em duas linhas); com a fonte do sistema grande passam a 2 por linha. */
-  .tempos { --minimo: 4rem; }
-  .tempos span { text-align: center; line-height: 1.2; }
+  .tempos { margin: 0; padding: 0; border: 0; min-width: 0; }
   .opcoes label { position: relative; }
   .opcoes input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
   .opcoes span {
