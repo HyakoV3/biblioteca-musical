@@ -17,7 +17,7 @@
   import { i18n } from "#lib/i18n/index.svelte";
   import { zerosAEsquerda } from "#lib/numero";
   import { buscar, indexar } from "#lib/busca-hinos";
-  import { goto } from "$app/navigation";
+  import { afterNavigate, goto } from "$app/navigation";
   import { emCurso } from "#lib/gravacaoEmCurso.svelte";
   import { formatarTempo } from "#lib/gravador";
   import { inicio, type AbaInicio } from "#lib/inicio.svelte";
@@ -36,6 +36,7 @@
     inicio.aba = nova;
     await tick();
     window.scrollTo(0, inicio.rolagem[nova]);
+    medirContinuar(); // a rolagem da aba que entra já foi restaurada
   }
 
   // A busca (I-37, motor em `busca-hinos.ts`): número (o exato primeiro e fixo, depois os que começam pelos mesmos dígitos), tom, e texto em título, autoria e letra.
@@ -79,19 +80,37 @@
   // O último hino aberto (I-17), só se o hinário instalado o tem: marca a linha na lista e dá o atalho "Continuar de onde parou".
   const ultimo = $derived(ultimoHino.numero === null ? undefined : biblioteca.hino(ultimoHino.numero));
 
-  // O atalho só aparece quando o último hino NÃO está à vista na tela: se a linha dele já está ali (com o anel dourado), o atalho só repetiria e empurraria a lista. A conferência é feita ao abrir a lista
-  // (e quando muda o último hino ou o resultado), não a cada rolagem: um atalho que pisca enquanto se rola desloca a lista sob o dedo. Sem o atalho a lista fica mais acima, então "à vista" aqui vale também depois.
+  // O atalho só aparece quando o último hino NÃO está à vista na tela: se a linha dele já está ali (com o anel dourado), o atalho só repetiria e empurraria a lista. A conferência é feita ao abrir a lista, ao
+  // voltar de um hino (depois de a rolagem ser restaurada), ao trocar de aba e quando muda o último hino ou o resultado, e NÃO a cada rolagem: um atalho que pisca enquanto se rola desloca a lista sob o dedo.
+  // "À vista" é a faixa entre o fim do cabeçalho e o começo do miniplayer e das abas de baixo; sem o atalho a lista fica mais acima, então o que está à vista aqui continua à vista depois.
   let mostrarContinuar = $state(false);
+  function medirContinuar() {
+    if (!ultimo || biblioteca.busca) {
+      mostrarContinuar = false; // com busca o atalho nem é exibido; zerar aqui evita que ele reapareça com o valor velho ao limpar a busca
+      return;
+    }
+    if (inicio.aba !== "hinos") return; // o painel está oculto (display: none) e não há o que medir; mede de novo ao voltar para a aba
+    const linha = listaEl?.querySelector<HTMLElement>("li > a.ultimo");
+    if (!linha) {
+      mostrarContinuar = true;
+      return;
+    }
+    const css = getComputedStyle(document.documentElement);
+    const embaixo = (parseFloat(css.getPropertyValue("--altura-navegacao")) || 0) + (parseFloat(css.getPropertyValue("--altura-miniplayer")) || 0);
+    const topo = document.querySelector("header.barra")?.getBoundingClientRect().bottom ?? 0;
+    const r = linha.getBoundingClientRect();
+    mostrarContinuar = r.top < topo || r.bottom > window.innerHeight - embaixo;
+  }
   $effect(() => {
     void resultados;
     void ultimo;
-    const linha = listaEl?.querySelector<HTMLElement>("li > a.ultimo");
-    if (!ultimo || !linha) {
-      mostrarContinuar = !!ultimo;
-      return;
-    }
-    const r = linha.getBoundingClientRect();
-    mostrarContinuar = r.top < 0 || r.bottom > window.innerHeight;
+    void inicio.aba;
+    void biblioteca.busca;
+    void tick().then(medirContinuar);
+  });
+  // Ao voltar de um hino, o SvelteKit restaura a rolagem DEPOIS de montar a página: só então a posição da linha vale.
+  afterNavigate(() => {
+    void tick().then(() => requestAnimationFrame(medirContinuar));
   });
 
 </script>

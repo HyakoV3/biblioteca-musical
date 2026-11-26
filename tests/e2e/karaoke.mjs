@@ -1850,8 +1850,10 @@ async function principal() {
   const ult = await av(`(() => { const a = document.querySelector('li > a.ultimo'); const c = document.querySelector('a.continuar'); return { lista: a?.getAttribute('href') ?? null, atual: a?.getAttribute('aria-current') ?? null, continuar: c?.getAttribute('href') ?? null, anel: a ? getComputedStyle(a).boxShadow : '', unico: document.querySelectorAll('li > a.ultimo').length, guardado: localStorage.getItem('prefs.ultimo-hino') }; })()`);
   confere(ult.lista !== null && ult.continuar === null && ult.atual === 'true' && ult.unico === 1 && /rgb/.test(ult.anel) && `/hino/${ult.guardado}` === ult.lista, `o último hino aberto fica marcado na lista (anel e aria-current), sem o atalho "Continuar" porque a linha já está à vista, e o número guardado: ${JSON.stringify(ult)}`);
   await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 260, deviceScaleFactor: 1, mobile: true });
-  await av(`localStorage.setItem('prefs.ultimo-hino', document.querySelector('li:last-child > a').getAttribute('href').split('/').pop()); location.reload(); 1`);
-  for (let fim = Date.now() + 15000; Date.now() < fim && !(await av(`!!document.querySelector('li > a')`)); ) await dormir(250);
+  await av(`window.__antesDoReload = 1; localStorage.setItem('prefs.ultimo-hino', document.querySelector('li:last-child > a').getAttribute('href').split('/').pop()); location.reload(); 1`);
+  let recarregou = false;
+  for (let fim = Date.now() + 15000; Date.now() < fim && !(recarregou = await av(`!window.__antesDoReload && !!document.querySelector('#painel-hinos li > a.ultimo')`)); ) await dormir(250);
+  confere(recarregou, "a lista recarregou depois do reload (o documento novo, e não o antigo)");
   await dormir(600);
   const baixo = await av(`(() => { const c = document.querySelector('a.continuar'); const a = document.querySelector('li > a.ultimo'); const r = a?.getBoundingClientRect(); return { continuar: c?.getAttribute('href') ?? null, lista: a?.getAttribute('href') ?? null, foraDaTela: r ? r.bottom > window.innerHeight : null }; })()`);
   confere(baixo.continuar !== null && baixo.continuar === baixo.lista && baixo.foraDaTela === true, `com o último hino fora da tela, o atalho "Continuar de onde parou" aparece e leva a ele: ${JSON.stringify(baixo)}`);
