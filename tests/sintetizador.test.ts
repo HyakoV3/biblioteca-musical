@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PADRAO } from "../src/lib/instrumentos";
-import { Sintetizador, notasAPartirDe, type Nota, type Voz } from "../src/lib/sintetizador";
+import { Sintetizador, notasAPartirDe, sinteticoParaTocar, type Nota, type Voz } from "../src/lib/sintetizador";
 
 // AudioContext falso: guarda o que o sintetizador pede, para conferir posição, duração e retomada.
 type Registro = { resume: number; suspend: number; osc: { t0?: number }[]; ctxs: FakeCtx[]; filtros: unknown[]; ondas: number };
@@ -207,6 +207,36 @@ describe("Sintetizador", () => {
     ctx.outputLatency = 0.15;
     ctx.state = "suspended"; // na pausa vale o decorrido
     expect(s.audivel()).toBeCloseTo(2, 9);
+  });
+});
+
+describe("sinteticoParaTocar (AUD-003)", () => {
+  it("o gravado que falhou cai no sintetizado equivalente, não no órgão principal", () => {
+    expect(sinteticoParaTocar("real_flauta")).toBe("flauta");
+    expect(sinteticoParaTocar("real_flauta_doce")).toBe("flauta_doce");
+  });
+  it("um sintetizado vale por ele mesmo; desconhecido ou ausente vai ao padrão", () => {
+    expect(sinteticoParaTocar("flauta")).toBe("flauta");
+    expect(sinteticoParaTocar("nao_existe")).toBe(PADRAO);
+    expect(sinteticoParaTocar(undefined)).toBe(PADRAO);
+  });
+});
+
+describe("audivel() na pausa (REP-007)", () => {
+  it("congela o desconto de latência do instante da pausa em vez de zerá-lo", async () => {
+    const s = new Sintetizador();
+    await s.tocar(vozes, op(60));
+    const ctx = reg.ctxs[0];
+    ctx.currentTime = 2.1;
+    ctx.outputLatency = 0.15;
+    await s.pausar();
+    ctx.state = "suspended";
+    expect(s.audivel()).toBeCloseTo(1.85, 9); // o mesmo valor de antes da pausa
+    ctx.outputLatency = 0.4; // a latência medida na pausa não muda o que se mostra
+    expect(s.audivel()).toBeCloseTo(1.85, 9);
+    await s.continuar();
+    ctx.state = "running";
+    expect(s.audivel()).toBeCloseTo(1.6, 9); // rodando de novo: vale a latência de agora (0,4)
   });
 });
 

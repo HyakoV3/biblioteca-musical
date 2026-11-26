@@ -6,7 +6,7 @@ import { FILTRO_PADRAO, lerFiltro, type FiltroDeRuido } from "./filtroDeRuido";
 import { INSTRUMENTOS, ORGAOS, PADRAO, instrumentosDaVoz, tipoDaVoz, type InstrumentoId } from "./instrumentos";
 import { leituraPadrao, normalizarLeitura, type Leitura } from "./leitura";
 import { ZOOM_PADRAO, escalaDoZoom, normalizarZoom } from "./partitura";
-import { IDS_REALISTAS, ehRealista } from "./realista";
+import { ehRealista, realistasDaVoz } from "./realista";
 
 export type PrefVoz = { instrumento: InstrumentoId; volume: number; muda: boolean };
 
@@ -32,7 +32,8 @@ export function lerVoz(nome: string): PrefVoz {
   const salvo = lerTudo()[chaveDaVoz(nome)];
   if (!salvo || typeof salvo !== "object") return p;
   const s = salvo as Record<string, unknown>;
-  const permitidos: string[] = [...ORGAOS, ...instrumentosDaVoz(nome), ...IDS_REALISTAS];
+  // O gravado só vale na voz para a qual ele existe (um baixo não aceita a flauta gravada guardada de outra voz).
+  const permitidos: string[] = [...ORGAOS, ...instrumentosDaVoz(nome), ...realistasDaVoz(tipoDaVoz(nome))];
   if (
     typeof s.instrumento === "string" &&
     (s.instrumento in INSTRUMENTOS || ehRealista(s.instrumento)) &&

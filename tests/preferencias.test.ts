@@ -229,6 +229,12 @@ describe("as duas flautas", () => {
       expect(lerVoz("Soprano").instrumento).toBe(id);
     }
   });
+  it("AUD-006: um gravado guardado de outra voz não vale (um baixo não aceita a flauta gravada)", () => {
+    mem["prefs.vozes"] = JSON.stringify({ baixo: { instrumento: "real_flauta", volume: 0.5, muda: false } });
+    expect(lerVoz("Baixo").instrumento).not.toBe("real_flauta");
+    mem["prefs.vozes"] = JSON.stringify({ soprano: { instrumento: "real_flauta", volume: 0.5, muda: false } });
+    expect(lerVoz("Soprano").instrumento).toBe("real_flauta");
+  });
   it("cada flauta gravada é o par da sua sintetizada", async () => {
     const { gravadoEquivalente, sinteticoEquivalente } = await import("../src/lib/realista");
     expect(gravadoEquivalente("flauta")).toBe("real_flauta");

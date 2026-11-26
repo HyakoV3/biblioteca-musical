@@ -5,7 +5,7 @@
 import { Soundfont } from "smplr";
 import { chaveAtual, criarContexto } from "./saidaAudio";
 import { INSTRUMENTOS, PADRAO, type InstrumentoId, type SinteticoId } from "./instrumentos";
-import { REALISTAS, ehRealista, urlDoRealista, type RealistaId } from "./realista";
+import { REALISTAS, ehRealista, sinteticoEquivalente, urlDoRealista, type RealistaId } from "./realista";
 import { armazenamentoDoSmplr } from "./sons/armazenamento";
 import { perfilDaNota } from "./timbres";
 
@@ -114,6 +114,13 @@ export type Partida = {
 
 /** Antecedência do início, em segundos, para dar tempo de agendar todas as notas. */
 const ATRASO_INICIAL = 0.1;
+
+/** O sintetizado que toca o instrumento pedido: ele mesmo; se é um gravado (que falhou ao carregar), o equivalente dele; sem par, o padrão. */
+export function sinteticoParaTocar(pedido: string | undefined): SinteticoId {
+  if (pedido && pedido in INSTRUMENTOS) return pedido as SinteticoId;
+  if (pedido && ehRealista(pedido)) return sinteticoEquivalente(pedido) ?? PADRAO;
+  return PADRAO;
+}
 
 export class Sintetizador {
   private ctx: AudioContext | null = null;
@@ -229,7 +236,8 @@ export class Sintetizador {
         return;
       }
       const pedido = opcoes.instrumentos[i];
-      const id: SinteticoId = pedido && pedido in INSTRUMENTOS ? (pedido as SinteticoId) : PADRAO;
+      // Gravado que não carregou: cai no sintetizado equivalente (a flauta gravada vira a flauta sintetizada), e só sem par vai ao padrão.
+      const id = sinteticoParaTocar(pedido);
       for (const [t, dur, midi] of notasAPartirDe(voz.notas, aPartirDe)) {
         const ini = inicio + t * seg;
         const duracao = Math.max(dur * seg, 0.05);
@@ -240,6 +248,9 @@ export class Sintetizador {
 
     return this.base + fim;
   }
+
+  /** O atraso de saída que valia no instante da pausa (ver `audivel`). */
+  private latenciaNaPausa = 0;
 
   /** Segundos tocados desde o início do hino (congela durante a pausa). */
   decorrido(): number {
@@ -253,16 +264,21 @@ export class Sintetizador {
   audivel(): number {
     const ctx = this.ctx;
     if (!ctx) return 0;
-    const atraso = ctx.state === "running" && Number.isFinite(ctx.outputLatency) ? Math.max(0, ctx.outputLatency) : 0;
+    const atual = Number.isFinite(ctx.outputLatency) ? Math.max(0, ctx.outputLatency) : 0;
+    // Na pausa o desconto fica CONGELADO no valor de quando pausou (o relógio não anda, e zerá-lo faria o tempo e a parte destacada saltarem).
+    const atraso = ctx.state === "running" ? atual : this.latenciaNaPausa;
     return Math.max(0, this.decorrido() - atraso);
   }
 
   async pausar() {
-    await this.ctx?.suspend();
+    const ctx = this.ctx;
+    if (ctx && ctx.state === "running" && Number.isFinite(ctx.outputLatency)) this.latenciaNaPausa = Math.max(0, ctx.outputLatency);
+    await ctx?.suspend();
   }
 
   async continuar() {
     await this.ctx?.resume();
+    this.latenciaNaPausa = 0;
   }
 
   /** Ajusta o volume de uma voz enquanto toca (0 silencia). */
@@ -298,5 +314,6 @@ export class Sintetizador {
     this.ganhos = [];
     this.mestre?.disconnect();
     this.mestre = null;
+    this.latenciaNaPausa = 0;
   }
 }
