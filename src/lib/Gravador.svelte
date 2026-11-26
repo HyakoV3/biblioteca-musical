@@ -8,6 +8,7 @@
   import { LIMITE_PARA_GUARDAR_MS, comLimite, formatarData, gravacoes, type MetaGravacao, type Mudancas } from "./gravacoes";
   import { PAGINA, SEM_FILTRO, agrupar, chaveDeBusca, filtrar, janela, mesclar, nomeDaGravacao, resumir, type Consulta, type Filtro, type Grupo } from "./organizar";
   import { i18n } from "./i18n/index.svelte";
+  import { apagarCopiasEnviadas } from "./compartilhar";
   import { emCurso } from "./gravacaoEmCurso.svelte";
   import { biblioteca } from "./biblioteca.svelte";
   import { marcarMudanca, montarContexto, type ContextoGravacao } from "./contexto";
@@ -459,6 +460,7 @@
     confirmandoTudo = false;
     try {
       await gravacoes.apagarTodas();
+      apagarCopiasEnviadas(); // as cópias que o "Enviar" deixou no cache do Android também saem
       carga++; // só agora, que apagou: uma leitura em andamento é descartada (traria gravações que já não existem); se apagar falhar, ela segue
       registro = null;
       todas = [];

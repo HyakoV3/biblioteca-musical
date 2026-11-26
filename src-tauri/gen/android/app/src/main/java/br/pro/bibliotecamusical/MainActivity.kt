@@ -34,6 +34,7 @@ class MainActivity : TauriActivity() {
     webView.addJavascriptInterface(nova, "BmServico")
     // A ponte de compartilhar uma gravação (Gravador): `window.BmCompartilhar`, abre a folha de compartilhamento do sistema.
     val outra = PonteCompartilhar(this)
+    outra.limparAntigos() // cópias de gravações enviadas numa sessão anterior não ficam no cache sem prazo
     compartilhar = outra
     webView.addJavascriptInterface(outra, "BmCompartilhar")
   }

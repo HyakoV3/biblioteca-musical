@@ -25,6 +25,31 @@ class PonteCompartilhar(private val atividade: MainActivity) {
 
     private fun pasta() = File(atividade.cacheDir, "compartilhar")
 
+    /** Apaga os envios com mais de uma hora. Chamada ao abrir o app (o cache pode ter ficado de uma sessão anterior que não chegou a começar outro envio). */
+    @Synchronized
+    fun limparAntigos() {
+        try {
+            val agora = System.currentTimeMillis()
+            pasta().listFiles()?.forEach { if (agora - it.lastModified() > umaHora) it.deleteRecursively() }
+        } catch (e: Exception) {
+            android.util.Log.w("bm", "compartilhar: não limpou os envios antigos", e)
+        }
+    }
+
+    /** Apaga TODAS as cópias de gravações enviadas que ficaram no cache (o JavaScript chama ao "Apagar todas" do Gravador). Não mexe no envio em andamento. */
+    @JavascriptInterface
+    @Synchronized
+    fun limparTudo(): Boolean {
+        return try {
+            val emAndamento = arquivo?.parentFile
+            pasta().listFiles()?.forEach { if (it != emAndamento) it.deleteRecursively() }
+            true
+        } catch (e: Exception) {
+            android.util.Log.w("bm", "compartilhar: não limpou as cópias enviadas", e)
+            false
+        }
+    }
+
     /** Começa um novo arquivo, numa subpasta nova. Envios com mais de uma hora são apagados (a pasta não cresce). Devolve false se não deu para criar. */
     @JavascriptInterface
     @Synchronized
@@ -34,7 +59,7 @@ class PonteCompartilhar(private val atividade: MainActivity) {
             val agora = System.currentTimeMillis()
             val raiz = pasta()
             raiz.mkdirs()
-            raiz.listFiles()?.forEach { if (agora - it.lastModified() > umaHora) it.deleteRecursively() }
+            limparAntigos()
             val dir = File(raiz, agora.toString())
             dir.mkdirs()
             val limpo = nome.replace(Regex("[^A-Za-z0-9._-]"), "_").take(80).ifEmpty { "gravacao" }
