@@ -123,7 +123,27 @@ describe("textoDoContexto", () => {
   });
   it("en: texto do hino", () => {
     const c = montarContexto({ ...base, hino: hino() })!;
-    expect(textoDoContexto(c, tr(en), "en")).toContain("Voices in the headphones: soprano, contralto, tenor, and baixo");
+    // o nome da voz vem do hino em português; o texto enviado o diz no idioma da tela (I18N-001)
+    expect(textoDoContexto(c, tr(en), "en")).toContain("Voices in the headphones: soprano, alto, tenor, and bass");
+  });
+  it("en e es: a tonalidade segue o idioma e a notação (Si♭ maior → B♭ major, Si♭ mayor)", () => {
+    const c = montarContexto({ ...base, hino: hino() })!;
+    expect(textoDoContexto(c, tr(en), "en")).toContain("Hymn key: B♭ major");
+    expect(textoDoContexto(c, tr(es), "es")).toContain("Si♭ mayor");
+    // com a notação "letras" também em português
+    expect(textoDoContexto(c, tr(pt), "pt", "letras")).toContain("Tom do hino: B♭ maior");
+  });
+  it("es: as vozes saem em espanhol (bajo)", () => {
+    const c = montarContexto({ ...base, hino: hino() })!;
+    expect(textoDoContexto(c, tr(es), "es")).toContain("bajo");
+  });
+  it("voz com nome fora do padrão fica como está", () => {
+    const c = montarContexto({ ...base, hino: hino({ vozes: [{ nome: "Parte I", muda: false }] }) })!;
+    expect(textoDoContexto(c, tr(en), "en")).toContain("parte i");
+  });
+  it("en: a parte tocada é 'time', não 'verse' (a vez de cantar, não a estrofe)", () => {
+    const c = montarContexto({ ...base, hino: hino({ parte: 2 }) })!;
+    expect(textoDoContexto(c, tr(en), "en")).toContain("Part: time 2");
   });
 });
 

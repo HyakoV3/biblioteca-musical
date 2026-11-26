@@ -363,7 +363,9 @@
     focarItem(primeiro);
   }
   const rotuloDoGrupo = (g: Grupo) =>
-    g.tipo === "hoje" ? t("gravador.grupo_hoje") : g.tipo === "ontem" ? t("gravador.grupo_ontem") : g.tipo === "semana" ? t("gravador.grupo_semana") : new Intl.DateTimeFormat(i18n.idioma, { month: "long", year: "numeric" }).format(new Date(g.ano, g.mes, 1));
+    g.tipo === "hoje" ? t("gravador.grupo_hoje") : g.tipo === "ontem" ? t("gravador.grupo_ontem") : g.tipo === "semana" ? t("gravador.grupo_semana") : inicialMaiuscula(new Intl.DateTimeFormat(i18n.idioma, { month: "long", year: "numeric" }).format(new Date(g.ano, g.mes, 1)));
+  /** "novembro de 2026" em pt e es sai em minúscula, entre "Hoje" e "Ontem" com maiúscula: o grupo do mês também começa por maiúscula. */
+  const inicialMaiuscula = (s: string) => s.charAt(0).toLocaleUpperCase(i18n.idioma) + s.slice(1);
 
   // Um só anúncio ao leitor de tela (quantos resultados e quantos aparecem), com atraso, e não a cada tecla.
   let anuncio = $state("");
@@ -748,7 +750,7 @@
       {#if listaPronta && !erroCarga}
         <!-- Só com a lista completa conhecida: "Apagar todas" apaga TUDO o que está guardado, e o número da confirmação tem de ser o verdadeiro. -->
         <button id="apagar-todas" class="botao" class:perigo={confirmandoTudo} onclick={apagarTodas}>
-          {confirmandoTudo ? t("gravador.apagar_todas_mesmo", { n: resumo.quantidade }) : t("gravador.apagar_todas")}
+          {confirmandoTudo ? i18n.tn("plural.apagar_todas", resumo.quantidade) : t("gravador.apagar_todas")}
         </button>
       {/if}
     {:else if listaPronta && !erroCarga && !erroAcao}

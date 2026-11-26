@@ -43,6 +43,34 @@ describe("traduzirErro (erros do Rust)", () => {
     }
   });
 
+  it("o motivo de recusar a partitura, que vem codificado dentro de outro erro, é traduzido por dentro", () => {
+    const motivo = rust("svg_elemento", "script");
+    expect(tr(rust("partitura_invalida", "5", motivo))).toBe(`erro.rust.partitura_invalida {"numero":"5","motivo":"erro.rust.svg_elemento {\\"nome\\":\\"script\\"}"}`);
+    // a paisagem recusada envolve o motivo de dentro
+    expect(tr(rust("svg_paisagem", motivo))).toContain("erro.rust.svg_elemento");
+    // texto que não é um erro codificado segue como está
+    expect(tr(rust("partitura_invalida", "5", "falha qualquer"))).toContain('"motivo":"falha qualquer"');
+  });
+
+  it("o erro de remover que Ajustes mostra (JSON do Rust) sai traduzido, sem o JSON cru", () => {
+    const texto = tr(rust("remover", "hinario.json: negado"));
+    expect(texto.startsWith("erro.rust.remover")).toBe(true);
+    expect(texto).not.toContain('["remover"');
+  });
+
+  it("nenhum texto erro.rust.* manda pôr hinario.json no zip das partituras (o pacote com hinario.json é recusado)", () => {
+    for (const dic of [pt, es, en] as Record<string, string>[]) {
+      expect(dic["erro.rust.zip_inesperado"]).not.toMatch(/hinario\.json/);
+      expect(dic["erro.rust.zip_inesperado"]).toMatch(/paisagem/);
+    }
+  });
+
+  it("os códigos de partitura (gravar, ler, remover) falam de partituras, não do hinário", () => {
+    for (const dic of [pt, es, en] as Record<string, string>[]) {
+      for (const c of ["partituras_gravar", "partituras_ler", "partituras_remover"]) expect(dic[`erro.rust.${c}`], c).toMatch(/partituras|scores/);
+    }
+  });
+
   it("todo código tem texto nos três idiomas, com exatamente os parâmetros que a função envia", () => {
     for (const [codigo, nomes] of Object.entries(ERROS_DO_RUST)) {
       for (const [idioma, dic] of [["pt", pt], ["es", es], ["en", en]] as const) {
