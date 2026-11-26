@@ -1064,7 +1064,7 @@ async function principal() {
   // de remover partituras; depois, sem pacote publicado (manifesto vazio), não há botão Baixar nem importação manual.
   const card1 = await av(`(() => { const c = document.querySelector('#partituras'); return { achou: !!c, texto: c?.innerText ?? '', botoes: [...(c?.querySelectorAll('button:not(.info)') ?? [])].map((b) => b.textContent.trim()) }; })()`);
   confere(card1.achou && /installed|instaladas|instaladas/i.test(card1.texto) && card1.botoes.length === 1, `card Partituras com partituras instaladas: estado e um só botão (Remover): ${JSON.stringify({ botoes: card1.botoes })}`);
-  await av(`document.querySelector('#partituras button').click(); 1`);
+  await av(`document.querySelector('#partituras button:not(.info)').click(); 1`);
   await dormir(300);
   // Remover pede a confirmação na própria linha (UX-008): só ao confirmar o comando roda.
   await av(`document.querySelector('#partituras .confirma .perigo').click(); 1`);
@@ -2107,7 +2107,7 @@ async function principal() {
   await irParaAjustes(AJ);
   await av(`document.querySelector('#conteudo summary').click(); 1`);
   await dormir(300);
-  const linhaHinario = await av(`(() => { const l = [...document.querySelectorAll('#conteudo .pacote')].find((e) => e.querySelector('strong')?.textContent.trim() === 'Full hymnal'); return { achou: !!l, detalhe: l?.querySelector('.meta')?.textContent.trim() ?? null, remover: l?.querySelector('button')?.textContent.trim() ?? null }; })()`);
+  const linhaHinario = await av(`(() => { const l = [...document.querySelectorAll('#conteudo .pacote')].find((e) => /hymns|hinos|himnos/i.test(e.querySelector('.meta')?.textContent ?? '')); return { achou: !!l, detalhe: l?.querySelector('.meta')?.textContent.trim() ?? null, remover: l?.querySelector('button')?.textContent.trim() ?? null }; })()`);
   confere(linhaHinario.achou && /Installed/.test(linhaHinario.detalhe ?? "") && linhaHinario.remover === 'Remove', `Ajustes → Conteúdo: o hinário aparece como uma linha de pacote (instalado, com Remover): ${JSON.stringify(linhaHinario)}`);
   await av(`document.querySelector('#conteudo summary').click(); 1`);
   await dormir(200);

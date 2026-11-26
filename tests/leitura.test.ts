@@ -39,7 +39,7 @@ describe("normalizarLeitura (o que vem do armazenamento pode ser qualquer coisa)
   });
 
   it("cada campo inválido volta ao padrão, sem perder o outro", () => {
-    expect(normalizarLeitura({ passo: 4, alinhamento: "centro" })).toEqual({ passo: 4, alinhamento: "esquerda" });
+    expect(normalizarLeitura({ passo: 4, alinhamento: "meio" })).toEqual({ passo: 4, alinhamento: "esquerda" });
     expect(normalizarLeitura({ passo: "grande", alinhamento: "direita" })).toEqual({ passo: PASSO_PADRAO, alinhamento: "direita" });
     expect(normalizarLeitura({ passo: 99, alinhamento: "centro" })).toEqual({ passo: 5, alinhamento: "centro" });
     // Quem tinha o antigo "justificado" salvo passa a ver a letra centralizada.
