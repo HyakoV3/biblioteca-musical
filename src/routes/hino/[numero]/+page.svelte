@@ -23,7 +23,7 @@
   import { lerKaraoke, lerLeitura, salvarKaraoke, salvarLeitura } from "#lib/preferencias";
   import { reproducao } from "#lib/reproducao.svelte";
   import { ultimoHino } from "#lib/ultimoHino.svelte";
-  import { untrack } from "svelte";
+  import { tick, untrack } from "svelte";
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const voltar = usarVoltar();
@@ -221,9 +221,21 @@
   // O andamento só tem o que mexer num hino com som, nas abas que mostram a música andando (Letra e Partitura; na Ouvir ele já está na tela).
   const mostrarAndamento = $derived(temAudio && (aba === "letra" || (aba === "partitura" && temPartitura)));
   const mostrarKaraoke = $derived((sincroniaOk && aba === "letra") || (compassosOk && temPartitura && aba === "partitura"));
+  // A rolagem de cada aba (UX-005): os painéis ficam todos montados, então a página é uma só e a rolagem é dela; trocar de aba a guarda e, depois de o
+  // painel novo aparecer, restaura a da aba que entra (o mesmo esquema da tela inicial).
+  let rolagemDasAbas: Partial<Record<Aba, number>> = {};
+  async function trocarAba(id: string) {
+    const nova = id as Aba;
+    if (nova === aba) return;
+    rolagemDasAbas[aba] = window.scrollY;
+    aba = nova;
+    await tick();
+    window.scrollTo(0, rolagemDasAbas[nova] ?? 0);
+  }
   // Ao abrir um hino: Ouvir primeiro (se houver notas para tocar); sem notas, só existe a Letra.
   $effect(() => {
     aba = hino && hino.vozes.length > 0 ? "ouvir" : "letra";
+    rolagemDasAbas = {}; // outro hino: as rolagens guardadas eram do anterior
   });
 
   // Avisa o miniplayer quando o painel Ouvir deste hino está na tela (ele some para não duplicar controles).
@@ -296,6 +308,7 @@
     lang={idiomaConteudo}
     {voltar}
     rotuloVoltar={t("nav.voltar")}
+    quebra="livre"
     acao={mostrarAndamento || mostrarKaraoke || temAudio ? acoesDoTopo : undefined}
   />
 
@@ -375,7 +388,7 @@
     <Abas
       abas={abas.map((id) => ({ id, rotulo: t(ROTULOS[id]) }))}
       selecionada={aba}
-      aoSelecionar={(id) => (aba = id as Aba)}
+      aoSelecionar={trocarAba}
       rotulo={t("hino.abas")}
     />
   {/if}

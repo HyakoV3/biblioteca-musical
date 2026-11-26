@@ -19,6 +19,8 @@
   let { numero, estado, ativa, compassos = null, karaoke = false }: { numero: number; estado: EstadoPartitura; ativa: boolean; compassos?: Compassos | null; karaoke?: boolean } = $props();
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
+  /** Só o pacote de exemplo está instalado (nenhum hinário baixado). */
+  const exemplo = $derived(biblioteca.pacote?.exemplo ?? false);
 
   // --- Zoom: lembrado no aparelho e igual em todos os hinos. ---
   let passo = $state(lerZoomPartitura());
@@ -399,8 +401,9 @@
   <!-- Nenhum pacote com partituras foi importado: a aba existe para dizer isso e levar a quem importa. -->
   <div class="sem-pacote" role="status">
     <h2>{t("partitura.sem_pacote_titulo")}</h2>
-    <p>{t("partitura.sem_pacote_texto")}</p>
-    <a class="botao primario" href="/ajustes?abrir=partituras">{t("partitura.abrir_ajustes")}</a>
+    <!-- Com só o pacote de exemplo as partituras não têm onde entrar (o Baixar delas fica desabilitado em Ajustes): manda baixar o hinário antes. -->
+    <p>{t(exemplo ? "partitura.sem_hinario_texto" : "partitura.sem_pacote_texto")}</p>
+    <a class="botao primario" href={exemplo ? "/ajustes?abrir=hinario" : "/ajustes?abrir=partituras"}>{t("partitura.abrir_ajustes")}</a>
   </div>
 {:else}
   <div class="barra-zoom">

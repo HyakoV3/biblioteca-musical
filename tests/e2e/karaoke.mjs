@@ -894,6 +894,48 @@ async function principal() {
   const h998 = await av(`({ abas: [...document.querySelectorAll('[role="tab"]')].map((t) => t.id), painel: !!document.getElementById('painel-partitura'), barra: !!document.querySelector('[role="tablist"]') })`);
   confere(!h998.painel && h998.abas.length === 0 && !h998.barra, `hino sem partitura, num pacote com partituras: sem aba Partitura: ${JSON.stringify(h998)}`);
 
+  // UX-005: trocar de aba no hino guarda a rolagem de cada uma e a restaura ao voltar (a página é uma só: a rolagem é da janela).
+  confere(await abrirHino(999), "hino 999 carregado para o teste da rolagem por aba");
+  await av(`document.body.style.minHeight = '3000px'; document.getElementById('aba-letra').click(); 1`);
+  await dormir(300);
+  await av(`window.scrollTo(0, 420); 1`);
+  await dormir(200);
+  await av(`document.getElementById('aba-partitura').click(); 1`);
+  await dormir(300);
+  const rolagemAoEntrar = await av(`window.scrollY`);
+  await av(`window.scrollTo(0, 150); 1`);
+  await dormir(200);
+  await av(`document.getElementById('aba-letra').click(); 1`);
+  await dormir(300);
+  const letraVolta = await av(`window.scrollY`);
+  await av(`document.getElementById('aba-partitura').click(); 1`);
+  await dormir(300);
+  const partituraVolta = await av(`window.scrollY`);
+  confere(rolagemAoEntrar <= 2 && Math.abs(letraVolta - 420) <= 2 && Math.abs(partituraVolta - 150) <= 2, `hino: cada aba guarda a própria rolagem (a que entra começa no topo, e ao voltar a anterior é restaurada): ${JSON.stringify({ rolagemAoEntrar, letraVolta, partituraVolta })}`);
+
+  // UX-002 e UX-001 a 320 px: o cabeçalho do hino não fica espremido (a ação desce ou cabe, o título tem largura e o apoio é de uma linha) e as quatro abas da tela inicial cabem.
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 320, height: 915, deviceScaleFactor: 1, mobile: true });
+  confere(await abrirHino(999), "hino 999 carregado a 320 px");
+  await av(`document.getElementById('aba-letra').click(); 1`);
+  await dormir(500);
+  const cab320 = await av(`(() => {
+    const h = document.querySelector('header.barra'); const h1 = h.querySelector('h1'); const acao = h.querySelector('.acao'); const textos = h.querySelector('.textos'); const p = h.querySelector('.textos p');
+    return { semRolagemLateral: document.documentElement.scrollWidth <= window.innerWidth, h1Largura: Math.round(h1.getBoundingClientRect().width),
+      acaoAbaixo: !!acao && acao.getBoundingClientRect().top >= textos.getBoundingClientRect().bottom - 1, acaoDentro: !!acao && acao.getBoundingClientRect().right <= window.innerWidth + 1,
+      apoioUmaLinha: !p || p.getBoundingClientRect().height <= parseFloat(getComputedStyle(p).fontSize) * 1.6 };
+  })()`);
+  confere(cab320.semRolagemLateral && cab320.acaoDentro && cab320.h1Largura >= 110 && cab320.apoioUmaLinha, `a 320 px o cabeçalho do hino não estoura nem espreme o título, e o apoio fica numa linha: ${JSON.stringify(cab320)}`);
+  await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`document.querySelectorAll('[role="tablist"] [role="tab"]').length === 4`)); ) await dormir(250);
+  await dormir(400);
+  const abas320 = await av(`(() => {
+    const bs = [...document.querySelectorAll('[role="tablist"] [role="tab"]')];
+    const umaLinha = (b) => { const r = document.createRange(); r.selectNodeContents(b); return r.getClientRects().length === 1; };
+    return { n: bs.length, cabem: bs.every((b) => b.scrollWidth <= b.clientWidth + 1), umaLinha: bs.every(umaLinha), semRolagemLateral: document.documentElement.scrollWidth <= window.innerWidth, rotulos: bs.map((b) => b.textContent.trim()) };
+  })()`);
+  confere(abas320.n === 4 && abas320.cabem && abas320.umaLinha && abas320.semRolagemLateral, `a 320 px as quatro abas da tela inicial cabem, cada rótulo numa linha: ${JSON.stringify(abas320)}`);
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
+
   // Partitura de um pacote ANTIGO (sem data-t e data-f): sem halo, e o compasso continua com o fundo (o único destaque que ela tem) mais a barra.
   await av("sessionStorage.setItem('e2e-sem-tempo-nas-notas', '1'); 1");
   confere(await abrirHino(999), "hino 999 carregado com a partitura de pacote antigo (sem o tempo das notas)");
@@ -931,6 +973,19 @@ async function principal() {
       svg: !!document.querySelector('#painel-partitura .folha svg'), visivel: !document.getElementById('painel-partitura').hidden };
   })()`);
   confere(aviso.aba && aviso.href === "/ajustes?abrir=partituras" && aviso.botao && !aviso.svg && aviso.visivel, `sem pacote com partituras: a aba aparece com o aviso e o botão para Ajustes: ${JSON.stringify(aviso)}`);
+  // REQ-009: com só o pacote de exemplo (nenhum hinário baixado), o aviso manda baixar o hinário antes e leva ao hinário em Ajustes, com o Conteúdo aberto.
+  await av("sessionStorage.setItem('e2e-exemplo', '1'); 1");
+  confere(await abrirHino(998), "hino 998 carregado só com o pacote de exemplo");
+  await av("document.getElementById('aba-partitura')?.click(); 1");
+  await dormir(400);
+  const avisoExemplo = await av(`(() => { const a = document.querySelector('#painel-partitura .sem-pacote a'); const p = document.querySelector('#painel-partitura .sem-pacote p'); return { href: a?.getAttribute('href') ?? null, texto: p?.textContent ?? '' }; })()`);
+  confere(avisoExemplo.href === "/ajustes?abrir=hinario" && /hymnal first|primeiro o hinário|primero el himnario/i.test(avisoExemplo.texto), `só com o pacote de exemplo: o aviso da aba Partitura manda baixar o hinário antes e leva a ?abrir=hinario: ${JSON.stringify(avisoExemplo)}`);
+  await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes?abrir=hinario` });
+  for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('hinario')`)); ) await dormir(250);
+  await dormir(600);
+  const aoHinario = await av(`(() => { const h = document.getElementById('hinario'); const r = h?.getBoundingClientRect(); return { aberto: document.getElementById('conteudo')?.open === true, visivel: !!r && r.top >= 0 && r.bottom <= window.innerHeight }; })()`);
+  confere(aoHinario.aberto && aoHinario.visivel, `?abrir=hinario abre o Conteúdo e deixa o hinário à vista: ${JSON.stringify(aoHinario)}`);
+  await av("sessionStorage.removeItem('e2e-exemplo'); 1");
   await av("sessionStorage.removeItem('e2e-sem-partituras'); sessionStorage.setItem('e2e-falha-partitura', '1'); 1");
 
   // Falha na leitura da partitura: o aviso de erro traz "Tentar de novo", e ele lê outra vez (não fica preso para sempre).
@@ -1898,6 +1953,25 @@ async function principal() {
   await dormir(300);
   const soltos = await botoesDeRemover();
   confere(livres.length === 2 && livres.every((d) => d === false) && travados.length === 2 && travados.every((d) => d === true) && soltos.every((d) => d === false), `Remover (hinário e partituras) fica desabilitado durante uma instalação e volta depois: ${JSON.stringify({ livres, travados, soltos })}`);
+  // UX-008: remover as partituras pede a confirmação na própria linha (o mesmo desenho do hinário); Cancelar não apaga e devolve o foco a Remover.
+  const linhaDePartituras = `[...document.querySelectorAll('#conteudo .pacote')].find((e) => /scores|partituras|partituras/i.test(e.querySelector('strong')?.textContent ?? ''))`;
+  const botaoRemoverDaLinha = `[...(${linhaDePartituras}).querySelectorAll('button')].find((b) => /Remove|Remover|Quitar/i.test(b.textContent))`;
+  const removidasAntes = await av(`window.__removeu ?? 0`);
+  await av(`(${botaoRemoverDaLinha}).click(); 1`);
+  await dormir(300);
+  const pedeRemover = await av(`(() => { const l = ${linhaDePartituras}; const d = l.querySelector('.confirma[role="alertdialog"]'); return { dialogo: !!d, titulo: d?.querySelector('h3')?.textContent ?? '', foco: document.activeElement?.textContent.trim() ?? '', removidas: window.__removeu ?? 0 }; })()`);
+  confere(pedeRemover.dialogo && /Cancel|Cancelar/.test(pedeRemover.foco) && pedeRemover.removidas === removidasAntes, `Remover as partituras só pede a confirmação na linha (foco em Cancelar, nada apagado): ${JSON.stringify(pedeRemover)}`);
+  await av(`(() => { const d = (${linhaDePartituras}).querySelector('.confirma'); [...d.querySelectorAll('button')].find((b) => /Cancel|Cancelar/.test(b.textContent)).click(); return 1; })()`);
+  await dormir(300);
+  const cancelado = await av(`(() => ({ dialogo: !!(${linhaDePartituras}).querySelector('.confirma'), foco: document.activeElement?.textContent.trim() ?? '', removidas: window.__removeu ?? 0 }))()`);
+  confere(!cancelado.dialogo && /Remove|Remover|Quitar/i.test(cancelado.foco) && cancelado.removidas === removidasAntes, `Cancelar fecha a pergunta, não apaga e devolve o foco a Remover: ${JSON.stringify(cancelado)}`);
+  await av(`(${botaoRemoverDaLinha}).click(); 1`);
+  await dormir(300);
+  await av(`(${linhaDePartituras}).querySelector('.confirma .perigo').click(); 1`);
+  await dormir(500);
+  const confirmado = await av(`window.__removeu ?? 0`);
+  confere(confirmado === removidasAntes + 1, `confirmando, as partituras são removidas: ${confirmado} (antes ${removidasAntes})`);
+  await av(`sessionStorage.removeItem('e2e-sem-partituras'); 1`);
   // PERS-001: se o conteúdo instalado não carrega, Ajustes oferece o Remover (volta ao exemplo) e o erro some depois.
   await av(`sessionStorage.setItem('e2e-falha-carga', '1'); 1`);
   await irParaAjustes(AJ);
