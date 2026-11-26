@@ -1387,6 +1387,15 @@ async function principal() {
   confere(pag2.itens === 25 && pag2.mais === false && foco === "semente-20", `Gravador: "Mostrar mais" traz as 5 que faltam (25), o botão some e o foco vai ao primeiro item novo (semente-20): ${JSON.stringify({ ...pag2, foco })}`);
   const unicas = await av(`new Set([...document.querySelectorAll('.gravacao-item')].map((e) => e.dataset.id)).size`);
   confere(unicas === 25, `Gravador: nenhuma gravação repetida nem pulada (25 únicas): ${unicas}`);
+  // Os filtros no título: três à mão (Todas, Favoritas, Com hino) e o chevron que abre a busca e o "Com metrônomo". Começa fechado; fechado com busca ligada, o chevron ganha o ponto.
+  const estadoFiltros = () => av(`(() => { const b = document.getElementById('mais-filtros'); return { aberto: b?.getAttribute('aria-expanded'), rapidos: [...document.querySelectorAll('#filtro-gravacoes .linha-filtros label')].map((l) => l.textContent.trim()), busca: !!document.getElementById('buscar-gravacoes'), metronomo: !!document.querySelector('#filtro-gravacoes input[value="metronomo"]'), ponto: b?.classList.contains('escondido') ?? null, rotulo: b?.getAttribute('aria-label') ?? null, linhas: new Set([...document.querySelectorAll('#filtro-gravacoes .linha-filtros > *')].map((e) => Math.round(e.getBoundingClientRect().top))).size }; })()`);
+  const filtrosFechados = await estadoFiltros();
+  confere(filtrosFechados.aberto === "false" && JSON.stringify(filtrosFechados.rapidos) === JSON.stringify(["All", "Favorites", "With hymn"]) && !filtrosFechados.busca && !filtrosFechados.metronomo && filtrosFechados.ponto === false && filtrosFechados.linhas === 1, `Gravador: os filtros começam fechados: três à mão e o chevron, numa linha, sem busca nem "Com metrônomo" à vista: ${JSON.stringify(filtrosFechados)}`);
+  await av(`document.getElementById('mais-filtros').click(); 1`);
+  await dormir(300);
+  const filtrosAbertosAgora = await estadoFiltros();
+  const focoNaBusca = await av(`document.activeElement?.id`);
+  confere(filtrosAbertosAgora.aberto === "true" && filtrosAbertosAgora.busca && filtrosAbertosAgora.metronomo && focoNaBusca === "buscar-gravacoes", `Gravador: o chevron abre a busca e o "Com metrônomo" e leva o foco à busca: ${JSON.stringify({ ...filtrosAbertosAgora, focoNaBusca })}`);
   // Busca e filtros (a lista toda está na memória): número de hino, origem, sem resultado e limpar.
   // O texto vai em hexadecimal (só 0-9 e a-f) e é decodificado na página: nada de montar código com um valor escapado à mão.
   const digitar = (v) => av(`(() => { const i = document.getElementById('buscar-gravacoes'); i.value = new TextDecoder().decode(Uint8Array.from('${Buffer.from(v, 'utf8').toString('hex')}'.match(/../g) ?? [], (h) => parseInt(h, 16))); i.dispatchEvent(new Event('input', { bubbles: true })); return 1; })()`);
@@ -1394,6 +1403,16 @@ async function principal() {
   await digitar("10");
   await dormir(300);
   confere(JSON.stringify(await ids()) === JSON.stringify(["semente-03"]), `Gravador: buscar 10 acha só o hino 10 (e não o 100 nem a data): ${JSON.stringify(await ids())}`);
+  // Fechar o painel com a busca ligada: a lista segue filtrada e o chevron ganha o ponto (e o aviso para o leitor de tela); abrir de novo mostra a busca como estava.
+  await av(`document.getElementById('mais-filtros').click(); 1`);
+  await dormir(300);
+  const comPonto = await estadoFiltros();
+  const aindaFiltrada = JSON.stringify(await ids()) === JSON.stringify(["semente-03"]);
+  const avisoDoPonto = await av(`document.querySelector('#mais-filtros .so-leitor')?.textContent.trim() ?? null`);
+  confere(comPonto.aberto === "false" && !comPonto.busca && comPonto.ponto === true && aindaFiltrada && /active/i.test(avisoDoPonto ?? ""), `Gravador: fechado com busca ligada, a lista segue filtrada e o chevron ganha o ponto e o aviso: ${JSON.stringify({ ...comPonto, aindaFiltrada, avisoDoPonto })}`);
+  await av(`document.getElementById('mais-filtros').click(); 1`);
+  await dormir(300);
+  confere((await av(`document.getElementById('buscar-gravacoes')?.value`)) === "10", "Gravador: abrir o painel de novo mostra a busca como estava (10)");
   await digitar("hino 100");
   await dormir(300);
   confere(JSON.stringify(await ids()) === JSON.stringify(["semente-07"]), `Gravador: buscar "hino 100" acha só o hino 100: ${JSON.stringify(await ids())}`);

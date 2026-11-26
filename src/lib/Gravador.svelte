@@ -323,7 +323,17 @@
     return l;
   });
   const consultaAtiva = $derived(consulta.filtro !== "todas" || consulta.busca.trim() !== "");
-  const FILTROS: Filtro[] = ["todas", "favoritas", "hino", "metronomo"];
+  const FILTROS_RAPIDOS: Filtro[] = ["todas", "favoritas", "hino"];
+  /** O painel dos filtros (busca e "Com metrônomo"): começa fechado; fechado, um ponto no chevron avisa que há filtro escondido. */
+  let filtrosAbertos = $state(false);
+  const filtroEscondido = $derived(consulta.busca.trim() !== "" || consulta.filtro === "metronomo");
+  async function alternarFiltros() {
+    filtrosAbertos = !filtrosAbertos;
+    if (filtrosAbertos) {
+      await tick();
+      document.getElementById("buscar-gravacoes")?.focus();
+    }
+  }
 
   function mudouConsulta() {
     mostrando = PAGINA;
@@ -675,19 +685,44 @@
       <button id="tentar-lista" class="botao" onclick={carregarTudo}>{t("erro.tentar")}</button>
     {/if}
     {#if todas.length > 0}
+      <!-- Os filtros no título (I-39): os três mais usados ficam à mão, e o chevron abre a busca e o filtro "Com metrônomo". Tudo é UM grupo de escolha única (os quatro botões de rádio têm o mesmo nome). -->
       <div class="controles">
-        <label class="busca">
-          <span class="meta">{t("gravador.buscar")}</span>
-          <input id="buscar-gravacoes" type="search" autocomplete="off" enterkeyhint="search" value={consulta.busca} oninput={(e) => aoBuscar(e.currentTarget.value)} />
-        </label>
         <fieldset class="filtros" id="filtro-gravacoes">
-          <legend class="meta">{t("gravador.filtro_legenda")}</legend>
-          {#each FILTROS as f (f)}
-            <label class:ativo={consulta.filtro === f}>
-              <input type="radio" name="filtro-gravacoes" value={f} checked={consulta.filtro === f} onchange={() => escolherFiltro(f)} />
-              <span>{#if consulta.filtro === f}<Icone nome="ok" tamanho={16} />{/if}{t(`gravador.filtro_${f}`)}</span>
-            </label>
-          {/each}
+          <legend class="so-leitor">{t("gravador.filtro_legenda")}</legend>
+          <div class="linha-filtros">
+            {#each FILTROS_RAPIDOS as f (f)}
+              <label class:ativo={consulta.filtro === f}>
+                <input type="radio" name="filtro-gravacoes" value={f} checked={consulta.filtro === f} onchange={() => escolherFiltro(f)} />
+                <span>{#if consulta.filtro === f}<Icone nome="ok" tamanho={16} />{/if}{t(`gravador.filtro_${f}`)}</span>
+              </label>
+            {/each}
+            <button
+              type="button"
+              id="mais-filtros"
+              class="mais-filtros"
+              class:escondido={!filtrosAbertos && filtroEscondido}
+              aria-expanded={filtrosAbertos}
+              aria-controls="painel-filtros"
+              aria-label={t("gravador.mais_filtros")}
+              title={t("gravador.mais_filtros")}
+              onclick={alternarFiltros}
+            >
+              <Icone nome={filtrosAbertos ? "fechar" : "abrir"} tamanho={22} />
+              {#if !filtrosAbertos && filtroEscondido}<span class="so-leitor">{t("gravador.filtro_escondido")}</span>{/if}
+            </button>
+          </div>
+          {#if filtrosAbertos}
+            <div class="painel-filtros" id="painel-filtros">
+              <label class="busca">
+                <span class="meta">{t("gravador.buscar")}</span>
+                <input id="buscar-gravacoes" type="search" autocomplete="off" enterkeyhint="search" value={consulta.busca} oninput={(e) => aoBuscar(e.currentTarget.value)} />
+              </label>
+              <label class="so-metronomo" class:ativo={consulta.filtro === "metronomo"}>
+                <input type="radio" name="filtro-gravacoes" value="metronomo" checked={consulta.filtro === "metronomo"} onchange={() => escolherFiltro("metronomo")} />
+                <span>{#if consulta.filtro === "metronomo"}<Icone nome="ok" tamanho={16} />{/if}{t("gravador.filtro_metronomo")}</span>
+              </label>
+            </div>
+          {/if}
         </fieldset>
       </div>
       <!-- UMA lista só, com chave por item: a gravação que toca muda de lugar (da janela para o destaque, de "Hoje" para "Ontem") sem ser desmontada, e o áudio segue. Os cabeçalhos de dia são
@@ -746,13 +781,20 @@
   .controles { display: grid; gap: 0.6rem; }
   .busca { display: grid; gap: 0.25rem; }
   .busca input { box-sizing: border-box; width: 100%; min-height: 3rem; padding: 0 0.75rem; font: inherit; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); color: var(--texto); }
-  .filtros { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; border: 0; }
-  .filtros legend { padding: 0; margin-bottom: 0.25rem; }
+  .filtros { margin: 0; padding: 0; border: 0; min-width: 0; }
+  .linha-filtros { display: flex; gap: 0.4rem; align-items: stretch; }
   .filtros label { position: relative; flex: 1 1 auto; }
-  .filtros input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-  .filtros span { display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 3rem; box-sizing: border-box; padding: 0 0.75rem; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); }
-  .filtros .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
-  .filtros input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
+  .filtros input[type="radio"] { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .filtros label > span:not(.meta) { display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 3rem; box-sizing: border-box; padding: 0 0.5rem; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); }
+  .filtros label.ativo > span:not(.meta) { border: 0.125rem solid var(--acento); font-weight: 700; }
+  .filtros input[type="radio"]:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
+  .mais-filtros { position: relative; flex: 0 0 3rem; min-height: 3rem; display: flex; align-items: center; justify-content: center; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); cursor: pointer; }
+  .mais-filtros:focus-visible { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
+  /* O ponto: há busca ou "Com metrônomo" ligados com o painel fechado. */
+  .mais-filtros.escondido { border: 0.125rem solid var(--acento); }
+  .mais-filtros.escondido::after { content: ""; position: absolute; top: 0.3rem; right: 0.3rem; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--acento); }
+  .painel-filtros { display: grid; gap: 0.6rem; margin-top: 0.6rem; }
+  .so-metronomo { justify-self: start; min-width: 50%; }
   .perigo { border-width: 0.125rem; border-color: var(--perigo); font-weight: 700; }
   /* "Reduzir ruído": uma linha com a caixa e o texto (alvo de toque de 3 rem), e a dica embaixo. */
   /* A pílula do filtro de ruído: 4 opções de escolha única, que quebram de linha em tela estreita. */
