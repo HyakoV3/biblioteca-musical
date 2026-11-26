@@ -23,14 +23,14 @@
     acao?: Snippet;
     /** Idioma do título quando difere da interface (ex.: título de hino em outra língua). */
     lang?: string;
-    /** A ação (à direita) desce para uma 2ª linha, alinhada à direita, quando não cabe ao lado do título; o título não quebra no meio da palavra. Vale para qualquer fonte e tamanho de letra. `"livre"`: o mesmo, mas o título pode quebrar em até 3 linhas (títulos de hino são longos) e as linhas de apoio ficam numa linha só, com reticências. */
-    quebra?: boolean | "livre";
+    /** A ação (à direita) desce para uma 2ª linha, alinhada à direita, quando não cabe ao lado do título; o título não quebra no meio da palavra. Vale para qualquer fonte e tamanho de letra. */
+    quebra?: boolean;
   } = $props();
   const linhas = $derived(subtitulo === undefined ? [] : Array.isArray(subtitulo) ? subtitulo : [subtitulo]);
 </script>
 
 <header class="barra">
-  <div class="coluna linha" class:quebra={quebra === true} class:livre={quebra === "livre"}>
+  <div class="coluna linha" class:quebra>
     {#if voltar}
       <button class="voltar" onclick={voltar} aria-label={rotuloVoltar}><Icone nome="voltar" tamanho={24} /></button>
     {/if}
@@ -61,8 +61,8 @@
   .logo { flex: none; width: 3rem; height: 3rem; border-radius: 0.75rem; }
   .textos { flex: 1; min-width: 0; padding: 0.25rem 0; }
   h1 {
-    margin: 0; font-size: 1.2rem; line-height: 1.25; overflow-wrap: anywhere;
-    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+    margin: 0; font-size: 1.2rem; line-height: 1.25;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   p { margin: 0; font-size: 0.78rem; color: var(--suave); }
   .acao { flex: none; }
@@ -71,9 +71,4 @@
   .quebra .textos { flex: 1 1 auto; min-width: max-content; }
   .quebra h1 { white-space: nowrap; }
   .quebra .acao { flex: 0 1 auto; margin-inline-start: auto; padding-bottom: 0.25rem; }
-  /* Com `livre`: a ação desce do mesmo jeito, mas o título (que cabe na largura) quebra por palavra, e cada linha de apoio vira uma linha com reticências. */
-  .linha.livre { flex-wrap: wrap; row-gap: 0; }
-  .livre .textos { flex: 1 1 auto; }
-  .livre p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .livre .acao { flex: 0 1 auto; margin-inline-start: auto; padding-bottom: 0.25rem; }
 </style>

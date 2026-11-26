@@ -560,15 +560,15 @@ async function principal() {
   await dormir(1200);
   confere(!(await av("!!document.querySelector('.mini')")), "Parar logo depois de soltar o slider para tudo (o miniplayer some)");
   confere(!(await av("!!document.querySelector('.aviso.erro')")), "Parar durante o reagendamento não mostra erro falso");
-  // Aparência da letra (I-04): aumentar o tamanho e justificar mudam a letra na hora e ficam salvos no aparelho.
+  // Aparência da letra (I-04): aumentar o tamanho e centralizar mudam a letra na hora e ficam salvos no aparelho.
   const fonteAntes = await av("parseFloat(getComputedStyle(document.querySelector('.estrofe p')).fontSize)");
   const clicouAparencia = await av(`(() => {
     const botoes = [...document.querySelectorAll('#painel-letra .barra-letra button')];
     const por = (re) => botoes.find((b) => re.test(b.getAttribute('aria-label') ?? ''));
-    const mais = por(/increase/i), justificar = por(/justify/i);
-    if (!mais || !justificar) return false;
+    const mais = por(/increase/i), centralizar = por(/center/i);
+    if (!mais || !centralizar) return false;
     mais.click();
-    justificar.click();
+    centralizar.click();
     return true;
   })()`);
   confere(clicouAparencia, "controles de tamanho e alinhamento da letra encontrados e usados");
@@ -579,8 +579,8 @@ async function principal() {
     salvo: localStorage.getItem('prefs.letra'),
   })`);
   confere(aparencia.fonte > fonteAntes, `aumentar o tamanho cresce a letra: ${fonteAntes} → ${aparencia.fonte} px`);
-  confere(aparencia.alinha === "justify", `justificar muda o alinhamento da letra: ${aparencia.alinha}`);
-  confere(aparencia.salvo === '{"passo":2,"alinhamento":"justificado"}', `a escolha fica salva no aparelho: ${aparencia.salvo}`);
+  confere(aparencia.alinha === "center", `centralizar muda o alinhamento da letra: ${aparencia.alinha}`);
+  confere(aparencia.salvo === '{"passo":2,"alinhamento":"centro"}', `a escolha fica salva no aparelho: ${aparencia.salvo}`);
   // Alto contraste (I-06) com o aparelho no ESCURO: o escuro "do sistema" de cada estilo tem seletor mais específico (0,3,0) que o bloco
   // do modo (0,2,0) e o venceria se o :not(...) não o excluísse. Só um navegador de verdade confere isso (a cascata não é texto).
   await enviar("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
@@ -914,7 +914,7 @@ async function principal() {
   const partituraVolta = await av(`window.scrollY`);
   confere(rolagemAoEntrar <= 2 && Math.abs(letraVolta - 420) <= 2 && Math.abs(partituraVolta - 150) <= 2, `hino: cada aba guarda a própria rolagem (a que entra começa no topo, e ao voltar a anterior é restaurada): ${JSON.stringify({ rolagemAoEntrar, letraVolta, partituraVolta })}`);
 
-  // UX-002 e UX-001 a 320 px: o cabeçalho do hino não fica espremido (a ação desce ou cabe, o título tem largura e o apoio é de uma linha) e as quatro abas da tela inicial cabem.
+  // UX-002 e UX-001 a 320 px: o cabeçalho do hino não estoura (a ação fica sempre à direita, na linha do título, que usa o que sobra e é cortado com reticências; o apoio é de uma linha) e as quatro abas da tela inicial cabem.
   await enviar("Emulation.setDeviceMetricsOverride", { width: 320, height: 915, deviceScaleFactor: 1, mobile: true });
   confere(await abrirHino(999), "hino 999 carregado a 320 px");
   await av(`document.getElementById('aba-letra').click(); 1`);
@@ -922,10 +922,19 @@ async function principal() {
   const cab320 = await av(`(() => {
     const h = document.querySelector('header.barra'); const h1 = h.querySelector('h1'); const acao = h.querySelector('.acao'); const textos = h.querySelector('.textos'); const p = h.querySelector('.textos p');
     return { semRolagemLateral: document.documentElement.scrollWidth <= window.innerWidth, h1Largura: Math.round(h1.getBoundingClientRect().width),
-      acaoAbaixo: !!acao && acao.getBoundingClientRect().top >= textos.getBoundingClientRect().bottom - 1, acaoDentro: !!acao && acao.getBoundingClientRect().right <= window.innerWidth + 1,
+      acaoNaLinha: !!acao && acao.getBoundingClientRect().top < textos.getBoundingClientRect().bottom - 1, acaoDentro: !!acao && acao.getBoundingClientRect().right <= window.innerWidth + 1,
       apoioUmaLinha: !p || p.getBoundingClientRect().height <= parseFloat(getComputedStyle(p).fontSize) * 1.6 };
   })()`);
-  confere(cab320.semRolagemLateral && cab320.acaoDentro && cab320.h1Largura >= 110 && cab320.apoioUmaLinha, `a 320 px o cabeçalho do hino não estoura nem espreme o título, e o apoio fica numa linha: ${JSON.stringify(cab320)}`);
+  confere(cab320.semRolagemLateral && cab320.acaoDentro && cab320.acaoNaLinha && cab320.h1Largura >= 60 && cab320.apoioUmaLinha, `a 320 px o cabeçalho do hino não estoura nem espreme o título, e o apoio fica numa linha: ${JSON.stringify(cab320)}`);
+  // Título MUITO longo (como os de alguns hinos): os ícones da direita ficam na linha do título, sem descer, e o título fica numa linha só, cortado com reticências (a coluna dos ícones é reservada primeiro).
+  const cabLongo = await av(`(() => {
+    const h = document.querySelector('header.barra'); const h1 = h.querySelector('h1'); const acao = h.querySelector('.acao');
+    h1.textContent = '999 · ' + 'Título muito comprido de hino para provar o corte com reticências '.repeat(4);
+    const a = acao.getBoundingClientRect(); const t = h1.getBoundingClientRect();
+    return { acaoNaLinhaDoTitulo: a.top < t.bottom - 1 && a.bottom > t.top + 1, acaoADireita: a.left >= t.right - 1, acaoDentro: a.right <= window.innerWidth + 1,
+      cortado: h1.scrollWidth > h1.clientWidth + 1, reticencias: getComputedStyle(h1).textOverflow === 'ellipsis', umaLinha: h1.getBoundingClientRect().height < parseFloat(getComputedStyle(h1).lineHeight) * 1.5, alturaDoCabecalho: Math.round(h.getBoundingClientRect().height), semRolagemLateral: document.documentElement.scrollWidth <= window.innerWidth };
+  })()`);
+  confere(cabLongo.acaoNaLinhaDoTitulo && cabLongo.acaoADireita && cabLongo.acaoDentro && cabLongo.cortado && cabLongo.reticencias && cabLongo.umaLinha && cabLongo.alturaDoCabecalho <= 100 && cabLongo.semRolagemLateral, `a 320 px, com um título muito longo, os ícones ficam à direita na linha do título e o título fica numa linha só, cortado com reticências: ${JSON.stringify(cabLongo)}`);
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`document.querySelectorAll('[role="tablist"] [role="tab"]').length === 4`)); ) await dormir(250);
   await dormir(400);
