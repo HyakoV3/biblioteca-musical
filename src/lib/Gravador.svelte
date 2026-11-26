@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onDestroy, onMount, tick, untrack } from "svelte";
+  import Segmentado from "./Segmentado.svelte";
   import Aviso from "./Aviso.svelte";
   import Icone from "./Icone.svelte";
   import ItemGravacao from "./ItemGravacao.svelte";
@@ -633,24 +634,16 @@
   <!-- A pílula do filtro de ruído: um grupo de escolha única, de um controle só (Desligado, Baixo, Médio, Alto), travado enquanto grava. O nome técnico do filtro escolhido vem numa linha miúda embaixo. -->
   <fieldset class="ruido" id="filtro-de-ruido" disabled={gravando}>
     <legend class="meta">{t("gravador.reduzir_ruido")}</legend>
-    <div class="opcoes-ruido">
-      {#each FILTROS_DE_RUIDO as f (f)}
-        <label class:ativo={filtro === f}>
-          <input
-            type="radio"
-            name="filtro-de-ruido"
-            value={f}
-            checked={filtro === f}
-            onchange={() => {
-              filtro = f;
-              salvarFiltroDeRuido(f);
-              filtroFalhou = null;
-            }}
-          />
-          <span>{t(`gravador.ruido_${f}`)}</span>
-        </label>
-      {/each}
-    </div>
+    <Segmentado
+      nome="filtro-de-ruido"
+      valor={filtro}
+      opcoes={FILTROS_DE_RUIDO.map((f) => ({ valor: f, rotulo: t(`gravador.ruido_${f}`) }))}
+      aoEscolher={(f) => {
+        filtro = f;
+        salvarFiltroDeRuido(f);
+        filtroFalhou = null;
+      }}
+    />
     <p class="meta ruido-tecnico" id="ruido-tecnico">{t(`gravador.ruido_tec_${filtro}`)}</p>
   </fieldset>
   {#if filtroFalhou}<Aviso tipo="info">{t("gravador.erro_filtro", { filtro: t(`gravador.ruido_tec_${filtroFalhou}`) })}</Aviso>{/if}
@@ -692,12 +685,14 @@
         <fieldset class="filtros" id="filtro-gravacoes">
           <legend class="so-leitor">{t("gravador.filtro_legenda")}</legend>
           <div class="linha-filtros">
-            {#each FILTROS_RAPIDOS as f (f)}
-              <label class:ativo={consulta.filtro === f}>
-                <input type="radio" name="filtro-gravacoes" value={f} checked={consulta.filtro === f} onchange={() => escolherFiltro(f)} />
-                <span>{#if consulta.filtro === f}<Icone nome="ok" tamanho={16} />{/if}{t(`gravador.filtro_${f}`)}</span>
-              </label>
-            {/each}
+            <div class="filtros-rapidos">
+              <Segmentado
+                nome="filtro-gravacoes"
+                valor={consulta.filtro}
+                opcoes={FILTROS_RAPIDOS.map((f) => ({ valor: f, rotulo: t(`gravador.filtro_${f}`) }))}
+                aoEscolher={escolherFiltro}
+              />
+            </div>
             <button
               type="button"
               id="mais-filtros"
@@ -715,13 +710,13 @@
           </div>
           {#if filtrosAbertos}
             <div class="painel-filtros" id="painel-filtros">
-              <label class="busca">
-                <span class="meta">{t("gravador.buscar")}</span>
-                <input id="buscar-gravacoes" bind:this={buscaEl} type="search" autocomplete="off" enterkeyhint="search" value={consulta.busca} oninput={(e) => aoBuscar(e.currentTarget.value)} />
-              </label>
               <label class="so-metronomo" class:ativo={consulta.filtro === "metronomo"}>
                 <input type="radio" name="filtro-gravacoes" value="metronomo" checked={consulta.filtro === "metronomo"} onchange={() => escolherFiltro("metronomo")} />
                 <span>{#if consulta.filtro === "metronomo"}<Icone nome="ok" tamanho={16} />{/if}{t("gravador.filtro_metronomo")}</span>
+              </label>
+              <label class="busca">
+                <span class="meta">{t("gravador.buscar")}</span>
+                <input id="buscar-gravacoes" bind:this={buscaEl} type="search" autocomplete="off" enterkeyhint="search" value={consulta.busca} oninput={(e) => aoBuscar(e.currentTarget.value)} />
               </label>
             </div>
           {/if}
@@ -784,6 +779,7 @@
   .busca input { box-sizing: border-box; width: 100%; min-height: 3rem; padding: 0 0.75rem; font: inherit; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); color: var(--texto); }
   .filtros { margin: 0; padding: 0; border: 0; min-width: 0; }
   .linha-filtros { display: flex; gap: 0.4rem; align-items: stretch; }
+  .filtros-rapidos { flex: 1; min-width: 0; }
   .filtros label { position: relative; flex: 1 1 auto; }
   .filtros input[type="radio"] { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
   .filtros label > span:not(.meta) { display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 3rem; box-sizing: border-box; padding: 0 0.5rem; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); }
@@ -795,20 +791,11 @@
   .mais-filtros.escondido { border: 0.125rem solid var(--acento); }
   .mais-filtros.escondido::after { content: ""; position: absolute; top: 0.3rem; right: 0.3rem; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--acento); }
   .painel-filtros { display: grid; gap: 0.6rem; margin-top: 0.6rem; }
-  .so-metronomo { justify-self: start; min-width: 50%; }
+  .so-metronomo { display: block; }
   .perigo { border-width: 0.125rem; border-color: var(--perigo); font-weight: 700; }
   /* "Reduzir ruído": uma linha com a caixa e o texto (alvo de toque de 3 rem), e a dica embaixo. */
   /* A pílula do filtro de ruído: 4 opções de escolha única, que quebram de linha em tela estreita. */
   .ruido { margin: 0 0 0.75rem; padding: 0; border: 0; min-width: 0; }
   .ruido legend { padding: 0; margin-bottom: 0.25rem; }
-  /* Uma pílula só: as quatro opções coladas, com a escolhida preenchida e com anel (o formato diz "esta", e não só a cor). */
-  .opcoes-ruido { display: flex; border: 0.0625rem solid var(--borda-controle); border-radius: 62.4375rem; overflow: hidden; background: var(--superficie); }
-  .opcoes-ruido label { position: relative; flex: 1 1 0; min-width: 0; }
-  .opcoes-ruido label + label { border-left: 0.0625rem solid var(--borda-controle); }
-  .opcoes-ruido input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-  .opcoes-ruido span { display: flex; align-items: center; justify-content: center; min-height: 3rem; box-sizing: border-box; padding: 0 0.4rem; text-align: center; overflow-wrap: anywhere; }
-  .opcoes-ruido .ativo span { background: color-mix(in srgb, var(--acento) 18%, var(--superficie)); box-shadow: inset 0 0 0 0.125rem var(--acento); font-weight: 700; }
-  .opcoes-ruido input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: -0.1875rem; }
   .ruido-tecnico { margin: 0.35rem 0 0; font-size: 0.8rem; text-align: center; min-height: 1.1rem; }
-  .ruido:disabled .opcoes-ruido span { opacity: 0.6; }
 </style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Segmentado from "./Segmentado.svelte";
   import { onDestroy, onMount } from "svelte";
   import Aviso from "./Aviso.svelte";
   import ControleAndamento from "./ControleAndamento.svelte";
@@ -96,11 +97,12 @@
     {#each GRUPOS as g (g.id)}
       <div class="grupo" role="group" aria-labelledby={`rotulo-${g.id}`}>
         <span class="rotulo" id={`rotulo-${g.id}`}>{t(g.rotulo)}</span>
-        <div class="botoes">
-          {#each g.itens as n (n)}
-            <button class="botao" aria-pressed={metronomo.compasso === n} aria-label={rotuloCompasso(n)} onclick={() => metronomo.mudarCompasso(n)}>{n}</button>
-          {/each}
-        </div>
+        <Segmentado
+          nome="compasso"
+          valor={metronomo.compasso}
+          opcoes={g.itens.map((n) => ({ valor: n, rotulo: String(n), aria: rotuloCompasso(n) }))}
+          aoEscolher={(n) => metronomo.mudarCompasso(n)}
+        />
       </div>
     {/each}
   </div>
@@ -139,9 +141,6 @@
   .compasso { display: flex; gap: 1rem; }
   .grupo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.375rem; }
   .compasso .rotulo { color: var(--suave); font-size: 0.9rem; }
-  .compasso .botoes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
-  .compasso button { min-width: 0; min-height: 3rem; font-variant-numeric: tabular-nums; }
-  .compasso button[aria-pressed="true"] { font-weight: 700; border-color: var(--ouro-linha); }
 
   /* O pêndulo: uma trilha com as duas pontas e a bolinha por cima. A posição vem do JavaScript (relógio de áudio); sem transição de CSS, e com movimento reduzido a bolinha só
      pula de ponta em ponta. Embaixo, uma bolinha por tempo do compasso (a do 1º é maior, não só de outra cor). */

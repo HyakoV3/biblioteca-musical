@@ -208,6 +208,7 @@ export const en: Dicionario = {
   "afinador.aviso_grave": "Below octave 3 the phone speaker barely plays the sound. Use headphones or pick a higher octave.",
   "afinador.temporizador": "Timer",
   "afinador.ate_parar": "Until stopped",
+  "afinador.desligado": "Off",
   "afinador.parar_sozinho": "Stop by itself after:",
   "afinador.temporizador_vale": "Applies to the reference note and to another note.",
   "afinador.segundos": "{n} seconds",

@@ -208,6 +208,7 @@ export const pt = {
   "afinador.aviso_grave": "Abaixo da oitava 3, o alto-falante do celular quase não reproduz o som. Use fone ou escolha uma oitava mais alta.",
   "afinador.temporizador": "Temporizador",
   "afinador.ate_parar": "Até parar",
+  "afinador.desligado": "Desligado",
   "afinador.parar_sozinho": "Parar sozinho depois de:",
   "afinador.temporizador_vale": "Vale para o tom de referência e para outra nota.",
   "afinador.segundos": "{n} segundos",

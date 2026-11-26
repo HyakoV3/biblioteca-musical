@@ -976,8 +976,8 @@ async function principal() {
     return 1; })()`);
   await av(`(() => { const b = [...document.querySelectorAll('#painel-metronomo .passo button')].find((x) => x.textContent.trim() === '+5'); for (let i = 0; i < 36; i++) b.click(); return 1; })()`);
   await dormir(200);
-  const antesMet = await av(`({ painel: !document.getElementById('painel-metronomo').hidden, bpm: document.querySelector('#painel-metronomo .passo output').textContent.trim(), ctxs: window.__ctxs, cliques: window.__cliques.length, botoes: [...document.querySelectorAll('#painel-metronomo .compasso button')].length })`);
-  confere(antesMet.painel && /240/.test(antesMet.bpm) && antesMet.ctxs === 0 && antesMet.cliques === 0 && antesMet.botoes === 6, `Metrônomo: a aba abre, o andamento chega a 240 e NENHUM áudio nasce antes do toque em Iniciar: ${JSON.stringify(antesMet)}`);
+  const antesMet = await av(`({ painel: !document.getElementById('painel-metronomo').hidden, bpm: document.querySelector('#painel-metronomo .passo output').textContent.trim(), ctxs: window.__ctxs, cliques: window.__cliques.length, botoes: [...document.querySelectorAll('#painel-metronomo .compasso input[type=radio][name=compasso]')].length, marcados: [...document.querySelectorAll('#painel-metronomo .compasso input[type=radio]:checked')].map((i) => i.value), pilulas: document.querySelectorAll('#painel-metronomo .compasso .segmentado').length })`);
+  confere(antesMet.painel && /240/.test(antesMet.bpm) && antesMet.ctxs === 0 && antesMet.cliques === 0 && antesMet.botoes === 6 && antesMet.pilulas === 2 && antesMet.marcados.length === 1, `Metrônomo: a aba abre, o andamento chega a 240, os 6 compassos são 2 pílulas de um grupo só (uma opção marcada) e NENHUM áudio nasce antes do toque em Iniciar: ${JSON.stringify(antesMet)}`);
   await av(`document.getElementById('metronomo-iniciar').click(); 1`);
   await dormir(3000);
   const m1 = await av(`window.__cliques.map((c) => ({ w: c.when, a: c.agora, hz: c.hz }))`);
@@ -1509,8 +1509,8 @@ async function principal() {
   for (const f of ["rnnoise", "gtcrn"]) {
     await av(`document.querySelector('#filtro-de-ruido input[value="${f}"]').click(); 1`);
     await dormir(200);
-    const pilula = await av(`(() => { const rotulos = [...document.querySelectorAll('#filtro-de-ruido .opcoes-ruido label')].map((l) => l.textContent.trim()); const caixa = document.querySelector('#filtro-de-ruido .opcoes-ruido'); const r = [...document.querySelectorAll('#filtro-de-ruido .opcoes-ruido label')].map((l) => l.getBoundingClientRect()); return { rotulos, tecnico: document.getElementById('ruido-tecnico')?.textContent.trim(), radius: getComputedStyle(caixa).borderTopLeftRadius, colados: r.every((x, i) => i === 0 || Math.abs(x.left - r[i - 1].right) < 1.5), numaLinha: new Set(r.map((x) => Math.round(x.top))).size === 1 }; })()`);
-    confere(JSON.stringify(pilula.rotulos) === JSON.stringify(["Off", "Low", "Medium", "High"]) && pilula.tecnico === (f === "rnnoise" ? "RNNoise" : "GTCRN") && pilula.colados && pilula.numaLinha && parseFloat(pilula.radius) > 20, `Gravador: o filtro de ruído é uma pílula só (Off, Low, Medium, High, coladas e numa linha) e a linha miúda diz o filtro técnico (${f}): ${JSON.stringify(pilula)}`);
+    const pilula = await av(`(() => { const rotulos = [...document.querySelectorAll('#filtro-de-ruido .segmentado label')].map((l) => l.textContent.trim()); const caixa = document.querySelector('#filtro-de-ruido .segmentado'); const r = [...document.querySelectorAll('#filtro-de-ruido .segmentado label')].map((l) => l.getBoundingClientRect()); return { rotulos, tecnico: document.getElementById('ruido-tecnico')?.textContent.trim(), radius: getComputedStyle(caixa).borderTopLeftRadius, colados: r.every((x, i) => i === 0 || Math.abs(x.left - r[i - 1].right) < 4), numaLinha: new Set(r.map((x) => Math.round(x.top))).size === 1 }; })()`);
+    confere(JSON.stringify(pilula.rotulos) === JSON.stringify(["Off", "Low", "Medium", "High"]) && pilula.tecnico === (f === "rnnoise" ? "RNNoise" : "GTCRN") && pilula.colados && pilula.numaLinha && parseFloat(pilula.radius) >= 8 && parseFloat(pilula.radius) <= 16, `Gravador: o filtro de ruído é uma pílula só (Off, Low, Medium, High, coladas e numa linha) e a linha miúda diz o filtro técnico (${f}): ${JSON.stringify(pilula)}`);
     const n0 = await av(`document.querySelectorAll('.gravacao-item').length`);
     await av(`document.getElementById('gravar').click(); 1`);
     await dormir(2500);
@@ -1588,7 +1588,7 @@ async function principal() {
   const faltam = () => av(`(() => { const s = document.querySelector('#painel-afinador :is(.grande, .tocar-pilula)[aria-pressed="true"] span[aria-hidden="true"]'); const m = s?.textContent.match(/\\d+/); return m ? Number(m[0]) : null; })()`);
   const soando = () => av(`window.__bmTom?.tocando === true`);
   const tmp0 = await estadoTemporizador();
-  confere(tmp0.aberto === false && /Until stopped|Até parar|Hasta parar/.test(tmp0.resumo), `Temporizador: o cartão começa fechado e em "até parar": ${JSON.stringify(tmp0)}`);
+  confere(tmp0.aberto === false && /Off|Desligado|Apagado/.test(tmp0.resumo), `Temporizador: o cartão começa fechado e em "desligado": ${JSON.stringify(tmp0)}`);
 
   // Padrão ("até parar"): o tom NÃO para sozinho, nem depois de mais que o maior tempo oferecido.
   await clicarGrande(0);
@@ -1601,6 +1601,8 @@ async function principal() {
 
   // 10 s: o botão mostra o que falta e o tom para sozinho.
   await av(`document.querySelector('#cartao-temporizador summary').click(); 1`);
+  const pilulaTempo = await av(`(() => { const c = document.querySelector('#cartao-temporizador .segmentado'); const ls = [...c.querySelectorAll('label')]; const r = ls.map((l) => l.getBoundingClientRect()); return { rotulos: ls.map((l) => l.textContent.trim()), radius: getComputedStyle(c).borderTopLeftRadius, numaLinha: new Set(r.map((x) => Math.round(x.top))).size === 1, ativo: c.querySelector('label.ativo')?.textContent.trim() ?? null }; })()`);
+  confere(JSON.stringify(pilulaTempo.rotulos) === JSON.stringify(["Off", "10 s", "20 s", "30 s"]) && pilulaTempo.numaLinha && parseFloat(pilulaTempo.radius) >= 8 && parseFloat(pilulaTempo.radius) <= 16 && pilulaTempo.ativo === "Off", `Temporizador: é uma pílula só (Off, 10 s, 20 s, 30 s, numa linha, com o canto do app) e começa em Off: ${JSON.stringify(pilulaTempo)}`);
   await dormir(300);
   await av(`document.querySelector('#painel-afinador input[name="limite"][value="10"]').click(); 1`);
   await dormir(300);
@@ -1942,7 +1944,7 @@ async function principal() {
   // "Qual nota é essa?": 4 botões só com a nota (Dó, Si♭, Mi♭, Fá), e embaixo a lista dos instrumentos do tom escolhido, em até 3 colunas (2 no celular em pé, 3 deitado).
   await av(`document.querySelector('#painel-afinador details:has(.instrumentos) summary')?.click(); 1`);
   await dormir(300);
-  const tons = await av(`[...document.querySelectorAll('.instrumentos .tons label')].map((l) => l.textContent.trim())`);
+  const tons = await av(`[...document.querySelectorAll('.instrumentos .segmentado label')].map((l) => l.textContent.trim())`);
   confere(JSON.stringify(tons) === JSON.stringify(["C", "B♭", "E♭", "F"]), `Afinador: os 4 botões de tom mostram só a nota (Dó, Si♭, Mi♭, Fá): ${JSON.stringify(tons)}`);
   const listaDoTom = async (nome) => {
     await av(`document.querySelector('.instrumentos input[value="${nome}"]').click(); 1`);
@@ -1955,8 +1957,8 @@ async function principal() {
   confere(emFa.length === 2 && emFa.some((x) => /^horn$/i.test(x)), `Afinador: em Fá só a trompa e o corne inglês: ${JSON.stringify(emFa)}`);
   const emDo = await listaDoTom("concerto");
   confere(emDo.some((x) => /^piano$/i.test(x)) && emDo.some((x) => /^voice$/i.test(x)), `Afinador: em Dó (concerto) a lista traz piano e voz: ${JSON.stringify(emDo)}`);
-  const claves = await av(`(async () => { await document.fonts.load('1em Leipzig', '\uE062'); return { fonte: document.fonts.check('1em Leipzig', '\uE062'), itens: [...document.querySelectorAll('.lista-instrumentos li')].filter((l) => l.querySelector('.clave')).map((l) => ({ texto: l.textContent.trim(), glifo: l.querySelector('.clave').textContent.codePointAt(0).toString(16), rotulo: l.querySelector('.clave').getAttribute('aria-label'), familia: getComputedStyle(l.querySelector('.clave')).fontFamily })), parenteses: [...document.querySelectorAll('.lista-instrumentos li')].some((l) => /[()]/.test(l.textContent)) }; })()`);
-  confere(claves.fonte && claves.itens.length === 2 && claves.itens.every((i) => i.glifo === "e062" && /bass clef/i.test(i.rotulo) && /Leipzig/.test(i.familia)) && !claves.parenteses, `Afinador: em Dó, o bombardino e a tuba levam o símbolo da clave de fá (Leipzig) à direita do nome, com rótulo para o leitor de tela e sem parênteses: ${JSON.stringify(claves)}`);
+  const claves = await av(`(async () => { await document.fonts.load('1em Leipzig', '\uE062'); return { fonte: document.fonts.check('1em Leipzig', '\uE062'), itens: [...document.querySelectorAll('.lista-instrumentos li')].filter((l) => l.querySelector('.clave')).map((l) => ({ texto: l.textContent.trim(), glifo: l.querySelector('.clave').textContent.codePointAt(0).toString(16), rotulo: l.querySelector('.clave').getAttribute('aria-label'), familia: getComputedStyle(l.querySelector('.clave')).fontFamily, borda: getComputedStyle(l.querySelector('.clave')).borderTopWidth, alturaDoItem: Math.round(l.getBoundingClientRect().height) })), parenteses: [...document.querySelectorAll('.lista-instrumentos li')].some((l) => /[()]/.test(l.textContent)) }; })()`);
+  confere(claves.fonte && claves.itens.length === 2 && claves.itens.every((i) => i.glifo === "e062" && /bass clef/i.test(i.rotulo) && /Leipzig/.test(i.familia) && parseFloat(i.borda) === 0 && i.alturaDoItem < (i.texto === "tuba" ? 36 : 56)) && !claves.parenteses, `Afinador: em Dó, o bombardino e a tuba levam o símbolo da clave de fá (Leipzig) à direita do nome, pequeno e SEM caixa de botão (sem borda, altura de texto), com rótulo para o leitor de tela e sem parênteses: ${JSON.stringify(claves)}`);
   const colunas = () => av(`new Set([...document.querySelectorAll('.lista-instrumentos li')].map((l) => Math.round(l.getBoundingClientRect().left))).size`);
   const emPe = await colunas();
   await enviar("Emulation.setDeviceMetricsOverride", { width: 915, height: 412, deviceScaleFactor: 1, mobile: true });
