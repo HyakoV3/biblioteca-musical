@@ -43,7 +43,7 @@ bancos (mesma escala, volume igualado), decidiu trocar todos pelo **GeneralUser 
   formato `<instrumento>-mp3.js` do banco anterior (o app não precisa de carregador novo; conferido no `smplr` real).
   Depois `tools/preparar-sons.py --entrada <saida> --banco GeneralUserGS-2.0.3 --pacote sons-002 --instrumentos ...` por
   grupo e `tools/montar-manifesto-sons.py --link todos=<link>`.
-- **Tamanho:** **38,2 MB** (os 16), contra 29,4 MB do FluidR3 (o MP3 a 80 kbps é mais alto que o do banco anterior, ~65 kbps).
+- **Tamanho:** **38,2 MB** descompactados (os 16), contra 29,4 MB do FluidR3 (o MP3 a 80 kbps é mais alto que o do banco anterior, ~65 kbps). **O download (zip) é menor: 26,6 MB**; o manifesto o guarda em `bytesZip` (gerado por `tools/montar-manifesto-sons.py --zip todos=<zip>`), e é esse o número do botão "Baixar" e da barra de progresso. Sem `bytesZip`, o app mostra a soma dos arquivos (maior que o download).
   Para voltar a ~30 MB basta baixar o `KBPS` do renderizador para 64.
 - **Volume:** `ganho` de cada instrumento recalculado para **todos no mesmo nível médio no ouvido**, −24,6 dB (a mediana de
   antes, então o volume geral não mudou): `python3 tools/analisar-timbres.py --fonte <amostras> --calibrar --escrever`.
@@ -83,7 +83,7 @@ Saem os `*-mp3.js` e um `manifesto.json` (instrumento, notas, bytes e SHA-256 de
   devolveram **sempre a pasta inteira em zip**, ignorando o arquivo pedido.
 - **Listagem:** `.../public/api/resources?path=/&hash=<hash>` devolve o conteúdo em JSON.
 - **Limite de banda do link:** ~500 KB/s no teste de 2026-11-15 (`maxBandwidth: 500`); depois subiu para **750 KB/s**, que é o de hoje (medido: ~0,8 MB/s). Um pacote de 2 MB
-  leva ~4 s; o conjunto todo (~23 MB), ~46 s. Dá para aumentar nas opções do compartilhamento.
+  leva ~4 s; o conjunto todo (~23 MB, na época), ~46 s. Dá para aumentar nas opções do compartilhamento.
 
 **Consequência para o desenho:** o app baixa **um zip por compartilhamento**, então **cada grupo é uma pasta
 compartilhada própria, com o seu link** (Órgão, Madeiras, Metais, Cordas), e não um link só para tudo. O manifesto dentro
@@ -94,7 +94,7 @@ antes de guardar.
 - **Hinário e partituras ficam no servidor** até haver autorização do autor das transcrições (um repositório público é distribuição pública); depois disso, mover para o mesmo repositório e levar as ferramentas de geração (plano na **I-34** de [`roadmap-ideas.md`](roadmap-ideas.md)).
 - O app **baixa pelo lado nativo** (Rust), porque servidores de link público costumam não liberar o acesso do navegador
   interno (CORS); **confere o SHA-256** contra o manifesto que vem dentro do app, então um arquivo trocado no servidor é
-  recusado; e aceita **uma lista de endereços** (espelhos).
+  recusado; e aceita **uma lista de endereços** (espelhos). O download tem **tempo-limite**: a conexão tem 15 s para abrir e, se nenhum pedaço chega por 30 s, o app aborta e mostra o erro de rede (em vez de ficar em "baixando" para sempre).
 
 ## Segurança do formato
 

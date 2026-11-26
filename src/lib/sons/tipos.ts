@@ -15,10 +15,14 @@ export type PacoteSom = {
   id: string;
   /** Endereço de download do zip (link público do File Browser). */
   url: string;
+  /** Tamanho do zip a baixar, em bytes (gerado por tools/montar-manifesto-sons.py quando recebe o zip). Sem ele, vale a soma dos arquivos. */
+  bytesZip?: number;
   arquivos: ArquivoSom[];
 };
 
 export type ManifestoSons = { versao: number; pacotes: PacoteSom[] };
 
-/** Tamanho dos arquivos de um pacote, em bytes (o zip fica um pouco maior). */
+/** Quanto se baixa de um pacote: o tamanho do zip, ou (se o manifesto não o traz) a soma dos arquivos, que é só uma estimativa. */
+export const bytesParaBaixar = (p: PacoteSom): number => p.bytesZip ?? bytesDoPacote(p);
+/** Tamanho dos arquivos de um pacote DESCOMPACTADOS, em bytes (o que ocupam no aparelho). */
 export const bytesDoPacote = (p: PacoteSom): number => p.arquivos.reduce((s, a) => s + a.bytes, 0);

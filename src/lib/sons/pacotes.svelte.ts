@@ -3,9 +3,9 @@
 import { IDS_REALISTAS, arquivoDoRealista, type RealistaId } from "../realista";
 import * as armazenamento from "./armazenamento";
 import { baixarZip } from "./baixar";
-import { ErroPacote, extrairEConferir, type CodigoErro } from "./extrair";
+import { ErroPacote, extrairEConferir, sha256Hex, type CodigoErro } from "./extrair";
 import { MANIFESTO } from "./manifesto";
-import { bytesDoPacote, type PacoteSom } from "./tipos";
+import { bytesParaBaixar, type PacoteSom } from "./tipos";
 
 export type Andamento = {
   fase: "ocioso" | "baixando" | "conferindo" | "instalando" | "erro";
@@ -22,9 +22,14 @@ let instalados = $state<Set<string>>(new Set());
 let carregado = $state(false);
 let andamentos = $state<Record<string, Andamento>>({});
 
+/** O SHA-256 que o manifesto embutido espera de cada arquivo de som (o mesmo nome tem sempre o mesmo conteúdo, em qualquer pacote). */
+const esperado = new Map<string, string>(MANIFESTO.pacotes.flatMap((p) => p.arquivos.map((a) => [a.arquivo, a.sha256] as const)));
+
 async function atualizar() {
   try {
-    instalados = new Set(await armazenamento.listar());
+    // Só conta como instalado o arquivo cujo SHA-256 guardado bate com o do manifesto: um nome igual com outro conteúdo
+    // (cache corrompido, ou resto de uma versão antiga dos sons) fica como não instalado e pode ser baixado de novo.
+    instalados = new Set((await armazenamento.listar()).filter((a) => esperado.get(a.arquivo) === a.sha256).map((a) => a.arquivo));
   } catch {
     instalados = new Set();
   }
@@ -45,13 +50,13 @@ async function baixar(id: string) {
   try {
     if (!armazenamento.disponivel()) throw new ErroPacote("armazenamento", "o aparelho não oferece o Cache API");
     await armazenamento.pedirPersistencia();
-    const zip = await baixarZip(pacote.url, bytesDoPacote(pacote), (f) => (andamentos[id] = { fase: "baixando", progresso: f, erro: "" }));
+    const zip = await baixarZip(pacote.url, bytesParaBaixar(pacote), (f) => (andamentos[id] = { fase: "baixando", progresso: f, erro: "" }));
     andamentos[id] = { fase: "conferindo", progresso: 1, erro: "" };
     const arquivos = await extrairEConferir(zip, pacote);
     andamentos[id] = { fase: "instalando", progresso: 0, erro: "" }; // gravar no Cache API pode demorar em pacote grande
     try {
       for (const [nome, dados] of arquivos) {
-        await armazenamento.guardar(nome, dados);
+        await armazenamento.guardar(nome, dados, esperado.get(nome) ?? (await sha256Hex(dados)));
         gravados.push(nome);
       }
     } catch (e) {
@@ -67,9 +72,14 @@ async function baixar(id: string) {
 
 async function remover(id: string) {
   const pacote = achar(id);
-  await armazenamento.apagar(pacote.arquivos.map((a) => a.arquivo));
-  await atualizar();
-  andamentos[id] = OCIOSO;
+  try {
+    await armazenamento.apagar(pacote.arquivos.map((a) => a.arquivo));
+    andamentos[id] = OCIOSO;
+  } catch {
+    andamentos[id] = { fase: "erro", progresso: 0, erro: "armazenamento" }; // o Cache pode recusar (disco cheio, cota, perfil bloqueado)
+  } finally {
+    await atualizar(); // o que realmente ficou no Cache, com erro ou sem
+  }
 }
 
 export const sons = {
