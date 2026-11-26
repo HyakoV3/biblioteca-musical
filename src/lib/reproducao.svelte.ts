@@ -106,7 +106,7 @@ function pararRelogio() {
 function iniciarRelogio() {
   pararRelogio();
   relogio = setInterval(() => {
-    decorrido = sint.decorrido();
+    decorrido = sint.audivel(); // o que se OUVE: a mesma régua do karaokê (REP-007)
     if (decorrido >= duracao + 0.15) parar(); // terminou sozinho
   }, 200);
 }
@@ -197,7 +197,7 @@ async function pausar() {
   await sint.pausar();
   if (g !== geracao) return; // Parar foi tocado enquanto o áudio suspendia: não ressuscita o estado
   pararRelogio();
-  decorrido = sint.decorrido();
+  decorrido = sint.audivel();
   estado = "pausado";
 }
 
