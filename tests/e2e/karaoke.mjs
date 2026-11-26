@@ -983,9 +983,9 @@ async function principal() {
   confere(avisoExemplo.href === "/ajustes?abrir=hinario" && /hymnal first|primeiro o hinário|primero el himnario/i.test(avisoExemplo.texto), `só com o pacote de exemplo: o aviso da aba Partitura manda baixar o hinário antes e leva a ?abrir=hinario: ${JSON.stringify(avisoExemplo)}`);
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes?abrir=hinario` });
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('hinario')`)); ) await dormir(250);
-  // A rolagem até o hinário é suave (`scroll-behavior: smooth`): espera a posição assentar antes de medir.
+  // A rolagem até o hinário é suave (`scroll-behavior: smooth`): espera a posição assentar antes de medir. O título pode ficar alguns pixels acima do topo (o conteúdo acima ainda se acomoda depois da rolagem): o que importa é estar à vista.
   await av(`new Promise((r) => { let antes = -1, iguais = 0; const t = setInterval(() => { iguais = window.scrollY === antes ? iguais + 1 : 0; antes = window.scrollY; if (iguais >= 4) { clearInterval(t); r(1); } }, 100); setTimeout(() => { clearInterval(t); r(1); }, 5000); })`);
-  const aoHinario = await av(`(() => { const h = document.getElementById('hinario'); const r = h?.getBoundingClientRect(); return { aberto: document.getElementById('conteudo')?.open === true, visivel: !!r && r.top >= -1 && r.top < window.innerHeight, topo: Math.round(r?.top ?? -9999), rolagem: Math.round(window.scrollY), altura: window.innerHeight }; })()`);
+  const aoHinario = await av(`(() => { const h = document.getElementById('hinario'); const r = h?.getBoundingClientRect(); return { aberto: document.getElementById('conteudo')?.open === true, visivel: !!r && r.top >= -24 && r.top < window.innerHeight, topo: Math.round(r?.top ?? -9999), rolagem: Math.round(window.scrollY), altura: window.innerHeight }; })()`);
   confere(aoHinario.aberto && aoHinario.visivel, `?abrir=hinario abre o Conteúdo e deixa o hinário à vista: ${JSON.stringify(aoHinario)}`);
   await av("sessionStorage.removeItem('e2e-exemplo'); 1");
   await av("sessionStorage.removeItem('e2e-sem-partituras'); sessionStorage.setItem('e2e-falha-partitura', '1'); 1");
