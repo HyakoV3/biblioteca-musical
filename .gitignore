@@ -33,3 +33,6 @@ keystore.properties
 
 # Python (ferramentas em tools/)
 __pycache__/
+
+# Resultados das rodadas de auditoria: ficam só na máquina (descrevem riscos de um repositório público)
+/docs/auditoria[0-9]*/
