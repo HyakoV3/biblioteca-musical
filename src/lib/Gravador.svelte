@@ -619,7 +619,7 @@
     {/if}
   </button>
 
-  <!-- A pílula do filtro de ruído: um grupo de escolha única (Desligado, Android, RNNoise, GTCRN), travado enquanto grava. -->
+  <!-- A pílula do filtro de ruído: um grupo de escolha única, de um controle só (Desligado, Baixo, Médio, Alto), travado enquanto grava. O nome técnico do filtro escolhido vem numa linha miúda embaixo. -->
   <fieldset class="ruido" id="filtro-de-ruido" disabled={gravando}>
     <legend class="meta">{t("gravador.reduzir_ruido")}</legend>
     <div class="opcoes-ruido">
@@ -636,12 +636,13 @@
               filtroFalhou = null;
             }}
           />
-          <span>{#if filtro === f}<Icone nome="ok" tamanho={16} />{/if}{t(`gravador.ruido_${f}`)}</span>
+          <span>{t(`gravador.ruido_${f}`)}</span>
         </label>
       {/each}
     </div>
+    <p class="meta ruido-tecnico" id="ruido-tecnico">{t(`gravador.ruido_tec_${filtro}`)}</p>
   </fieldset>
-  {#if filtroFalhou}<Aviso tipo="info">{t("gravador.erro_filtro", { filtro: t(`gravador.ruido_${filtroFalhou}`) })}</Aviso>{/if}
+  {#if filtroFalhou}<Aviso tipo="info">{t("gravador.erro_filtro", { filtro: t(`gravador.ruido_tec_${filtroFalhou}`) })}</Aviso>{/if}
 
   {#if erro}<Aviso tipo="erro">{t(textoErro[erro])}</Aviso>{/if}
   {#if erroGuardar}<Aviso tipo="erro">{t("gravador.erro_guardar")}</Aviso>{/if}
@@ -758,11 +759,14 @@
   /* A pílula do filtro de ruído: 4 opções de escolha única, que quebram de linha em tela estreita. */
   .ruido { margin: 0 0 0.75rem; padding: 0; border: 0; min-width: 0; }
   .ruido legend { padding: 0; margin-bottom: 0.25rem; }
-  .opcoes-ruido { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-  .opcoes-ruido label { position: relative; flex: 1 1 auto; }
+  /* Uma pílula só: as quatro opções coladas, com a escolhida preenchida e com anel (o formato diz "esta", e não só a cor). */
+  .opcoes-ruido { display: flex; border: 0.0625rem solid var(--borda-controle); border-radius: 62.4375rem; overflow: hidden; background: var(--superficie); }
+  .opcoes-ruido label { position: relative; flex: 1 1 0; min-width: 0; }
+  .opcoes-ruido label + label { border-left: 0.0625rem solid var(--borda-controle); }
   .opcoes-ruido input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-  .opcoes-ruido span { display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 3rem; box-sizing: border-box; padding: 0 0.75rem; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); }
-  .opcoes-ruido .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
-  .opcoes-ruido input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
+  .opcoes-ruido span { display: flex; align-items: center; justify-content: center; min-height: 3rem; box-sizing: border-box; padding: 0 0.4rem; text-align: center; overflow-wrap: anywhere; }
+  .opcoes-ruido .ativo span { background: color-mix(in srgb, var(--acento) 18%, var(--superficie)); box-shadow: inset 0 0 0 0.125rem var(--acento); font-weight: 700; }
+  .opcoes-ruido input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: -0.1875rem; }
+  .ruido-tecnico { margin: 0.35rem 0 0; font-size: 0.8rem; text-align: center; min-height: 1.1rem; }
   .ruido:disabled .opcoes-ruido span { opacity: 0.6; }
 </style>
