@@ -42,8 +42,9 @@ class PonteCompartilhar(private val atividade: MainActivity) {
     fun limparTudo(): Boolean {
         return try {
             val emAndamento = arquivo?.parentFile
-            pasta().listFiles()?.forEach { if (it != emAndamento) it.deleteRecursively() }
-            true
+            var tudo = true
+            pasta().listFiles()?.forEach { if (it != emAndamento && !it.deleteRecursively()) tudo = false }
+            tudo
         } catch (e: Exception) {
             android.util.Log.w("bm", "compartilhar: não limpou as cópias enviadas", e)
             false

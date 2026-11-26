@@ -460,7 +460,8 @@
     confirmandoTudo = false;
     try {
       await gravacoes.apagarTodas();
-      apagarCopiasEnviadas(); // as cópias que o "Enviar" deixou no cache do Android também saem
+      // As cópias que o "Enviar" deixou no cache do Android também saem. Se alguma não sair, as gravações do app já foram apagadas: fica só o registro no console.
+      if (!apagarCopiasEnviadas()) console.warn("gravador: não consegui apagar todas as cópias enviadas do cache do aparelho");
       carga++; // só agora, que apagou: uma leitura em andamento é descartada (traria gravações que já não existem); se apagar falhar, ela segue
       registro = null;
       todas = [];
