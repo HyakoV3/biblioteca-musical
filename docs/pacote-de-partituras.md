@@ -62,7 +62,7 @@ O pacote é um `.zip` só com `partituras/hino-<número>.svg` e, opcional, `part
 - **Link do app:** `https://fb.hm.hv2.xyz/public/api/resources/download?hash=<hash do compartilhamento>`, no manifesto do app. Conferido contra os bytes
   reais do servidor: o zip da pasta traz o `BibliotecaMusicalPartituras/partituras-003.zip`, e o app extrai esse zip e confere o tamanho e o SHA-256 do manifesto (verificado de novo depois de apagar o 001 e o 002).
 - **O link está no manifesto, que está no repositório público:** quem lê o código pode baixar as 5 partituras de teste. É o mesmo que já acontece com
-  o link dos sons, mas com um agravante: as partituras são das transcrições do Enéias, que autorizou a distribuição (ver "Direitos" acima); os direitos das letras e músicas seguem sem registro.
+  o link dos sons, com uma diferença: as partituras são das transcrições do Enéias, que autorizou a distribuição (ver "Direitos" acima); os direitos das letras e músicas seguem sem registro.
 
 ## Configuração do compartilhamento (File Browser)
 

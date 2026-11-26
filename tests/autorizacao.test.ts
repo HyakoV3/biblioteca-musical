@@ -15,9 +15,11 @@ describe("autorização para distribuir o hinário e as partituras", () => {
   ] as const;
 
   it.each(manifestos)("o manifesto de %s só aponta para um pacote com a autorização registrada", (_nome, caminho) => {
-    const { pacote } = JSON.parse(ler(caminho)) as { pacote: { url: string } | null };
-    if (pacote === null) return; // sem pacote publicado: nada a registrar
+    const { pacote } = JSON.parse(ler(caminho)) as { pacote?: { url: string } | null };
+    if (pacote == null) return; // sem pacote publicado (null ou ausente): nada a registrar
     const registro = ler("docs/licencas-de-terceiros.md");
+    const repo = new URL(pacote.url).pathname.split("/").slice(1, 3).join("/");
+    expect(registro, `${caminho} aponta para ${repo}, que não aparece em docs/licencas-de-terceiros.md`).toContain(repo);
     expect(registro, `${caminho} aponta para ${pacote.url}, mas docs/licencas-de-terceiros.md não registra a autorização`).toMatch(/\*\*Autorização \(registrada em \d{4}-\d{2}-\d{2}\):\*\*/);
   });
 

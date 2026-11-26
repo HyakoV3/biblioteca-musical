@@ -7,7 +7,7 @@ quem conduz **observa e não ensina**.
 
 - Instale o app no celular da pessoa (ou use o seu), com o hinário **já baixado** (Ajustes → Conteúdo → Hinário completo; o primeiro acesso oferece o download) e, se quiser testar a partitura, as partituras também.
 - Combine: **você não está sendo avaliado, o app está.** Se algo for difícil, o erro é do app.
-- **Consentimento:** antes da tarefa 14, diga que a gravação é da voz dela, que fica só no celular e que será **apagada no fim**. Se ela não quiser gravar, pule as tarefas 14, 18 e 22.
+- **Consentimento:** antes da tarefa 14, diga que a gravação é da voz dela, que fica no celular (na tarefa 18 ela mesma a envia pelo WhatsApp) e que será **apagada no fim**. Se ela não quiser gravar, pule as tarefas 14, 18 e 22 e, na 16, use só o metrônomo.
 - Peça para ela **pensar em voz alta** ("estou procurando o botão de...").
 - Ajuste o som do aparelho antes de começar. Tenha um fone por perto.
 - **Não ajude** nem explique nada durante uma tarefa. Se a pessoa travar por mais de 1 minuto, anote
@@ -68,7 +68,7 @@ Classifique cada problema:
 - **Atrapalha** (conseguiu com dificuldade): entra no próximo ciclo.
 - **Incomoda** (percebeu, mas seguiu): anotar e juntar com outros.
 
-> **No fim da sessão:** apague as gravações feitas no teste (Gravador → **Apagar todas**) antes de devolver ou guardar o celular.
+> **No fim da sessão:** apague as gravações feitas no teste (Gravador → **Apagar todas**) antes de devolver ou guardar o celular. A cópia enviada pelo WhatsApp na tarefa 18 não é apagada por isso: peça que a pessoa a apague da conversa.
 >
 > **Privacidade:** não registre nome, e-mail nem foto da pessoa. Se gravar a tela, apague depois de anotar.
 > O app não coleta nada, e o teste também não deve.

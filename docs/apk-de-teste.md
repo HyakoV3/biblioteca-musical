@@ -7,7 +7,7 @@ O app é **independente e não oficial** (não tem ligação com a Congregação
 1. **Baixe a versão mais nova** na página de [Releases](https://github.com/HyakoV3/biblioteca-musical/releases) do projeto (a de cima da lista).
 2. **Baixe o arquivo que termina em `.apk`** (por exemplo `bibliotecamusical-0.3.7.apk`). Ignore o `.aab` e o `SHA256SUMS`: não são para instalar.
 3. **Permita a instalação de fora da loja** quando o Android perguntar (a opção "Instalar apps desconhecidos" do navegador ou do gerenciador de arquivos) e toque no arquivo para instalar.
-4. **Ao atualizar, instale por cima**: não desinstale. **Desinstalar apaga as gravações guardadas e os pacotes baixados** (o app não exporta as gravações). Se precisar desinstalar, envie antes as gravações que quiser guardar.
+4. **Ao atualizar, instale por cima**: não desinstale. **Desinstalar apaga as gravações guardadas e os pacotes baixados** (o app não faz cópia de segurança das gravações). Se precisar desinstalar, mande antes, pelo botão **Enviar** do Gravador, as gravações que quiser guardar.
 5. **Confira a versão** em Ajustes, "Sobre o app", e diga qual é ao relatar um problema.
 6. **Para relatar:** conte ao responsável que lhe passou o link o que você fez, o que esperava e o que aconteceu, e a versão. Não envie dados pessoais.
 
