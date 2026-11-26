@@ -326,12 +326,13 @@
   const FILTROS_RAPIDOS: Filtro[] = ["todas", "favoritas", "hino"];
   /** O painel dos filtros (busca e "Com metrônomo"): começa fechado; fechado, um ponto no chevron avisa que há filtro escondido. */
   let filtrosAbertos = $state(false);
+  let buscaEl = $state<HTMLInputElement>();
   const filtroEscondido = $derived(consulta.busca.trim() !== "" || consulta.filtro === "metronomo");
   async function alternarFiltros() {
     filtrosAbertos = !filtrosAbertos;
     if (filtrosAbertos) {
       await tick();
-      document.getElementById("buscar-gravacoes")?.focus();
+      buscaEl?.focus();
     }
   }
 
@@ -702,20 +703,20 @@
               class="mais-filtros"
               class:escondido={!filtrosAbertos && filtroEscondido}
               aria-expanded={filtrosAbertos}
-              aria-controls="painel-filtros"
-              aria-label={t("gravador.mais_filtros")}
+              aria-controls={filtrosAbertos ? "painel-filtros" : undefined}
               title={t("gravador.mais_filtros")}
               onclick={alternarFiltros}
             >
               <Icone nome={filtrosAbertos ? "fechar" : "abrir"} tamanho={22} />
-              {#if !filtrosAbertos && filtroEscondido}<span class="so-leitor">{t("gravador.filtro_escondido")}</span>{/if}
+              <!-- O nome do botão vem do conteúdo (um aria-label o substituiria e o aviso do filtro escondido nunca seria lido). -->
+              <span class="so-leitor">{t("gravador.mais_filtros")}{#if !filtrosAbertos && filtroEscondido}{" — "}{t("gravador.filtro_escondido")}{/if}</span>
             </button>
           </div>
           {#if filtrosAbertos}
             <div class="painel-filtros" id="painel-filtros">
               <label class="busca">
                 <span class="meta">{t("gravador.buscar")}</span>
-                <input id="buscar-gravacoes" type="search" autocomplete="off" enterkeyhint="search" value={consulta.busca} oninput={(e) => aoBuscar(e.currentTarget.value)} />
+                <input id="buscar-gravacoes" bind:this={buscaEl} type="search" autocomplete="off" enterkeyhint="search" value={consulta.busca} oninput={(e) => aoBuscar(e.currentTarget.value)} />
               </label>
               <label class="so-metronomo" class:ativo={consulta.filtro === "metronomo"}>
                 <input type="radio" name="filtro-gravacoes" value="metronomo" checked={consulta.filtro === "metronomo"} onchange={() => escolherFiltro("metronomo")} />
