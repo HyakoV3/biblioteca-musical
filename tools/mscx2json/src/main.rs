@@ -203,6 +203,7 @@ struct Trilha {
 }
 
 /// Sílaba da letra com o instante (em batidas) da nota a que pertence.
+#[derive(Clone)]
 struct Silaba {
     t: f64,
     voz: usize,
@@ -1134,6 +1135,22 @@ fn plano_passadas(e: &Estrutura) -> Option<Plano> {
     })
 }
 
+/// A letra de uma partitura sem o plano de final: o refrão com estrofe trocada e o coro depois das estrofes, cada um com o seu aviso.
+fn separar_sem_plano(silabas: &mut [Silaba], avisos: &mut Vec<String>) {
+    let n = refrao_com_estrofe_trocada(silabas);
+    let coro = separar_o_coro(silabas);
+    if coro > 0 {
+        avisos.push(format!(
+            "coro separado: {coro} sílabas depois das estrofes viraram o bloco \"Coro\""
+        ));
+    }
+    if n > 0 && coro == 0 {
+        avisos.push(format!(
+            "refrão com estrofe trocada: {n} sílabas do refrão (depois das estrofes) passaram para a estrofe do restante do refrão"
+        ));
+    }
+}
+
 /// O nome de cada voz de uma pauta: o da parte (ou o da pauta), com o número da voz quando a pauta se divide em várias.
 fn nome_da_voz(base: &str, sufixo: &str, partes: &[&str], r: usize, max: usize) -> String {
     if max == 1 {
@@ -1258,6 +1275,10 @@ pub fn converter_com(
     let mut vozes_final: Vec<Voz> = vec![];
     let mut final_ok = true;
     // Por pauta, as notas antes do recorte do plano: (nome-base, sufixo, camadas).
+    // A letra (sílabas e respirações) depois das correções e antes da separação do final.
+    let mut letra_base: Option<(Vec<Silaba>, Vec<f64>)> = None;
+    // Avisos da leitura recortada pelo plano (notas omitidas): só valem se o final for aceito.
+    let mut avisos_do_recorte: Vec<String> = vec![];
     let mut pautas_guardadas: Vec<(String, String, Vec<Vec<Acorde>>)> = vec![];
     let mut avisos: Vec<String> = vec![];
     let mut letra: Vec<String> = vec![];
@@ -1348,6 +1369,8 @@ pub fn converter_com(
         if letra.is_empty() && !silabas.is_empty() {
             correcoes_tentadas = true;
             avisos.extend(correcoes::aplicar(&mut silabas, numero_hino, ajustes));
+            // Guarda a letra já corrigida, antes de separar o final: se o final for descartado, a letra é refeita sem o plano.
+            letra_base = Some((silabas.clone(), respiracoes.clone()));
             if let Some(&(a2, _)) = plano.as_ref().and_then(|p| p.final_.last()) {
                 let no_final = separar_o_final(&mut silabas, estrutura.inicios[a2]);
                 if no_final > 0 {
@@ -1356,18 +1379,7 @@ pub fn converter_com(
                     ));
                 }
             } else {
-                let n = refrao_com_estrofe_trocada(&mut silabas);
-                let coro = separar_o_coro(&mut silabas);
-                if coro > 0 {
-                    avisos.push(format!(
-                        "coro separado: {coro} sílabas depois das estrofes viraram o bloco \"Coro\""
-                    ));
-                }
-                if n > 0 && coro == 0 {
-                    avisos.push(format!(
-                        "refrão com estrofe trocada: {n} sílabas do refrão (depois das estrofes) passaram para a estrofe do restante do refrão"
-                    ));
-                }
+                separar_sem_plano(&mut silabas, &mut avisos);
             }
             (letra, marcas) = montar_letra(silabas, respiracoes);
         }
@@ -1407,8 +1419,14 @@ pub fn converter_com(
         let nome_da_voz = |r: usize, max: usize| nome_da_voz(&base, &sufixo, &partes, r, max);
 
         let (linhas, omitidos) = dividir_em_vozes(normal, limite);
+        // Com o plano, a contagem é a da leitura recortada: só vale se o final for aceito (ver `final_descartado`).
+        let destino = if plano.is_some() {
+            &mut avisos_do_recorte
+        } else {
+            &mut avisos
+        };
         if omitidos > 0 {
-            avisos.push(format!(
+            destino.push(format!(
                 "{base}{sufixo}: {omitidos} trecho(s) com mais notas simultâneas que vozes; notas do meio omitidas"
             ));
         }
@@ -1423,7 +1441,7 @@ pub fn converter_com(
         if let Some(fc) = final_ {
             let (linhas_f, omitidos_f) = dividir_em_vozes(fc, limite);
             if omitidos_f > 0 {
-                avisos.push(format!(
+                avisos_do_recorte.push(format!(
                     "{base}{sufixo} (passada do final): {omitidos_f} trecho(s) com mais notas simultâneas que vozes; notas do meio omitidas"
                 ));
             }
@@ -1454,6 +1472,9 @@ pub fn converter_com(
     // MSCX-002: com o final descartado (as vozes do final não casam com as da passada normal), a passada normal NÃO pode ficar cortada na 1ª casa:
     // perderia a 2ª casa e o trecho final, que a partitura manda tocar. Refaz as vozes com a leitura única, em ordem, como numa partitura sem plano.
     let final_descartado = plano.is_some() && !(final_ok && !vozes_final.is_empty());
+    if !final_descartado {
+        avisos.append(&mut avisos_do_recorte);
+    }
     if final_descartado {
         plano = None;
         vozes.clear();
@@ -1468,12 +1489,17 @@ pub fn converter_com(
                     notas,
                 });
             }
-            let aviso = format!(
-                "{base}{sufixo}: {omitidos} trecho(s) com mais notas simultâneas que vozes; notas do meio omitidas"
-            );
-            if omitidos > 0 && !avisos.contains(&aviso) {
-                avisos.push(aviso);
+            if omitidos > 0 {
+                avisos.push(format!(
+                    "{base}{sufixo}: {omitidos} trecho(s) com mais notas simultâneas que vozes; notas do meio omitidas"
+                ));
             }
+        }
+        // A letra também volta ao caminho sem plano (coro e refrão trocado, sem o bloco "Final").
+        if let Some((mut sil, resp)) = letra_base.take() {
+            avisos.retain(|a| !a.starts_with("final separado:"));
+            separar_sem_plano(&mut sil, &mut avisos);
+            (letra, marcas) = montar_letra(sil, resp);
         }
         avisos.push(
             "final descartado: a partitura é lida uma vez, em ordem (com a 2ª casa e o trecho final), e não só até a 1ª casa".to_string(),
@@ -1813,7 +1839,23 @@ fn numero_do_arquivo(p: &Path) -> Option<u32> {
     p.file_stem()?.to_str()?.strip_prefix("hino-")?.parse().ok()
 }
 
+/// Roda a conversão. Se `--avisos` foi pedido e a conversão falha, o erro vai para o relatório (que não fica velho nem vazio).
 fn executar(args: Vec<String>) -> Result<(), String> {
+    let relatorio = args
+        .windows(2)
+        .find(|w| w[0] == "--avisos")
+        .map(|w| PathBuf::from(&w[1]))
+        .filter(|c| {
+            !c.to_string_lossy().starts_with("--") && c.extension().is_none_or(|x| x != "mscx")
+        });
+    let resultado = executar_conversao(args);
+    if let (Err(e), Some(c)) = (&resultado, relatorio) {
+        let _ = std::fs::write(c, format!("erro: {e}\n"));
+    }
+    resultado
+}
+
+fn executar_conversao(args: Vec<String>) -> Result<(), String> {
     let (mut id, mut nome, mut entradas) = (None, None, vec![]);
     let mut renomear = true;
     let mut idioma: Option<String> = None;
@@ -1827,8 +1869,21 @@ fn executar(args: Vec<String>) -> Result<(), String> {
             "--nomes-originais" => renomear = false,
             "--idioma" => idioma = it.next(),
             "--avisos" => {
-                let c = it.next().ok_or("--avisos precisa do caminho do arquivo")?;
-                arquivo_avisos = Some(PathBuf::from(c));
+                let c = it
+                    .next()
+                    .filter(|c| !c.starts_with("--"))
+                    .ok_or("--avisos precisa do caminho do arquivo")?;
+                let c = PathBuf::from(c);
+                // É a única opção que GRAVA: nunca sobre uma partitura de origem.
+                if c.extension().is_some_and(|x| x == "mscx") {
+                    return Err(format!(
+                        "--avisos não pode apontar para um .mscx: {}",
+                        c.display()
+                    ));
+                }
+                // Um relatório de uma execução anterior não pode ficar parecendo o desta.
+                let _ = std::fs::remove_file(&c);
+                arquivo_avisos = Some(c);
             }
             "--correcoes" => {
                 let c = it
@@ -1878,6 +1933,10 @@ fn executar(args: Vec<String>) -> Result<(), String> {
                 "aviso: {} ignorado (nome fora do padrão hino-<número>.mscx)",
                 arq.display()
             );
+            avisos_por_arquivo.push((
+                arq.clone(),
+                vec!["ignorado (nome fora do padrão hino-<número>.mscx)".to_string()],
+            ));
             continue;
         };
         let xml = std::fs::read_to_string(&arq).map_err(|e| format!("{}: {e}", arq.display()))?;
@@ -1901,6 +1960,10 @@ fn executar(args: Vec<String>) -> Result<(), String> {
         eprintln!(
             "aviso: há correções para o hino {n}, mas não há arquivo hino-{n}.mscx nesta conversão"
         );
+        avisos_por_arquivo.push((
+            PathBuf::from(format!("hino-{n}.mscx")),
+            vec!["há correções para este hino, mas não há arquivo nesta conversão".to_string()],
+        ));
     }
     if let Some(p) = hinos.windows(2).find(|p| p[0].numero == p[1].numero) {
         return Err(format!("número de hino repetido: {}", p[0].numero));
@@ -1911,14 +1974,13 @@ fn executar(args: Vec<String>) -> Result<(), String> {
         "hinario": cabecalho(&id, &nome, idioma.as_deref()),
         "hinos": hinos.iter().map(para_json).collect::<Vec<_>>(),
     });
-    println!(
-        "{}",
-        serde_json::to_string(&saida).map_err(|e| e.to_string())?
-    );
+    let json = serde_json::to_string(&saida).map_err(|e| e.to_string())?;
+    // O relatório sai ANTES do JSON: se não der para gravá-lo, o erro vem sem que o stdout já tenha recebido uma saída "boa".
     if let Some(c) = &arquivo_avisos {
         std::fs::write(c, relatorio_de_avisos(&avisos_por_arquivo))
             .map_err(|e| format!("{}: {e}", c.display()))?;
     }
+    println!("{json}");
     Ok(())
 }
 
@@ -3842,6 +3904,96 @@ mod testes {
         assert!(para_json(&converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap())["compassos"].get("final").is_none());
     }
 
+    #[test]
+    fn final_descartado_refaz_a_letra_e_nao_deixa_aviso_do_plano() {
+        // Mesma estrutura do teste acima (o último compasso tem 2 notas e o final é descartado), agora com duas estrofes e texto do final escrito
+        // sob a estrofe 1 ("amém", depois da última sílaba da estrofe 2). Com o plano, esse texto virava o bloco "Final". Com o final descartado a letra
+        // volta ao caminho sem plano: sem o bloco "Final" e sem o aviso "final separado".
+        let ly = |v1: &str, v2: &str| {
+            let a = if v1.is_empty() {
+                String::new()
+            } else {
+                format!("<Lyrics><text>{v1}</text></Lyrics>")
+            };
+            let b = if v2.is_empty() {
+                String::new()
+            } else {
+                format!("<Lyrics><no>1</no><text>{v2}</text></Lyrics>")
+            };
+            format!("{a}{b}")
+        };
+        let comp = |extra: &str, pitch: u8, v1: &str, v2: &str| {
+            format!(
+                "<Measure>{extra}<voice>{C44}<Chord>{}<durationType>whole</durationType><Note><pitch>{pitch}</pitch></Note></Chord></voice></Measure>",
+                ly(v1, v2)
+            )
+        };
+        let ultimo = format!(
+            "<Measure><voice>{C44}<Chord><durationType>whole</durationType><Note><pitch>69</pitch></Note><Note><pitch>72</pitch></Note></Chord></voice></Measure>"
+        );
+        let medidas = [
+            comp("<startRepeat/>", 60, "um", "UM"),
+            comp("", 62, "dois", "DOIS"),
+            comp(
+                r#"<endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta>"#,
+                64,
+                "três",
+                "",
+            ),
+            comp(
+                r#"<endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta>"#,
+                65,
+                "fecho",
+                "BIS",
+            ),
+            comp(r#"<endSpanner id="2"/>"#, 67, "amém", ""),
+            ultimo,
+        ]
+        .concat();
+        // Controle: se o final fosse aceito, o texto sob a estrofe 1 viraria o bloco Final (a mesma partitura, sem o compasso de 2 notas).
+        let com_final = converter(
+            &doc(
+                &parte(1, "S"),
+                &pauta(1, &medidas.replace("<Note><pitch>72</pitch></Note>", "")),
+            ),
+            1,
+        )
+        .unwrap();
+        assert!(com_final.passada_final.is_some(), "{:?}", com_final.avisos);
+        assert!(
+            com_final.letra.iter().any(|l| l.starts_with("Final")),
+            "{:?}",
+            com_final.letra
+        );
+        assert!(
+            com_final
+                .avisos
+                .iter()
+                .any(|a| a.contains("final separado")),
+            "{:?}",
+            com_final.avisos
+        );
+
+        let h = converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap();
+        assert!(h.passada_final.is_none(), "{:?}", h.avisos);
+        assert!(
+            !h.avisos.iter().any(|a| a.contains("final separado")),
+            "{:?}",
+            h.avisos
+        );
+        assert!(
+            !h.avisos.iter().any(|a| a.contains("(passada do final)")),
+            "{:?}",
+            h.avisos
+        );
+        assert!(
+            !h.letra.iter().any(|l| l.starts_with("Final")),
+            "a letra não pode ter o bloco Final sem o final: {:?}",
+            h.letra
+        );
+        assert!(h.letra.iter().any(|l| l.contains("amém")), "{:?}", h.letra);
+    }
+
     /// Compasso de uma semibreve com `extra` antes da voz e `liga` dentro da nota (`<Tie/>` abre, `<endTie/>` fecha).
     fn comp_ligado(extra: &str, pitch: u8, liga: &str) -> String {
         format!(
@@ -4024,10 +4176,29 @@ mod testes {
         );
     }
 
+    /// Pasta temporária de um teste, apagada ao sair do escopo (mesmo se uma conferência falhar).
+    struct PastaTemp(PathBuf);
+    impl PastaTemp {
+        fn nova(nome: &str) -> Self {
+            let d = std::env::temp_dir().join(format!("mscx2json-{nome}-{}", std::process::id()));
+            std::fs::create_dir_all(&d).unwrap();
+            PastaTemp(d)
+        }
+    }
+    impl Drop for PastaTemp {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    fn texto_args(v: &[&str]) -> Vec<String> {
+        v.iter().map(|x| x.to_string()).collect()
+    }
+
     #[test]
     fn avisos_vao_para_o_arquivo_pedido() {
-        let dir = std::env::temp_dir().join(format!("mscx2json-avisos-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
+        let pasta = PastaTemp::nova("avisos");
+        let dir = &pasta.0;
         let medidas = [comp_marcado("<startRepeat/>", 60), comp_marcado("", 62)].concat();
         std::fs::write(
             dir.join("hino-1.mscx"),
@@ -4035,22 +4206,91 @@ mod testes {
         )
         .unwrap();
         let relatorio = dir.join("avisos.txt");
-        executar(vec![
-            "--id".into(),
-            "x".into(),
-            "--nome".into(),
-            "X".into(),
-            "--avisos".into(),
-            relatorio.display().to_string(),
-            dir.display().to_string(),
-        ])
+        executar(texto_args(&[
+            "--id",
+            "x",
+            "--nome",
+            "X",
+            "--avisos",
+            relatorio.to_str().unwrap(),
+            dir.to_str().unwrap(),
+        ]))
         .unwrap();
         let texto = std::fs::read_to_string(&relatorio).unwrap();
         assert!(
             texto.contains("hino-1.mscx") && texto.contains("estrutura não reconhecida"),
             "{texto}"
         );
-        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn avisos_recusa_o_que_nao_e_caminho_de_relatorio() {
+        // o valor seguinte é outra opção, e não um caminho
+        let e = executar(texto_args(&["--avisos", "--id", "x", "--nome", "X", "."])).unwrap_err();
+        assert!(e.contains("--avisos precisa do caminho"), "{e}");
+        // nunca grava sobre uma partitura
+        let e = executar(texto_args(&[
+            "--id",
+            "x",
+            "--nome",
+            "X",
+            "--avisos",
+            "hino-1.mscx",
+            "hino-1.mscx",
+        ]))
+        .unwrap_err();
+        assert!(e.contains(".mscx"), "{e}");
+    }
+
+    #[test]
+    fn avisos_registra_o_erro_e_nao_deixa_relatorio_velho() {
+        let pasta = PastaTemp::nova("avisos-erro");
+        let dir = &pasta.0;
+        let relatorio = dir.join("avisos.txt");
+        std::fs::write(&relatorio, "velho").unwrap();
+        std::fs::write(dir.join("hino-1.mscx"), "isto não é xml").unwrap();
+        let e = executar(texto_args(&[
+            "--id",
+            "x",
+            "--nome",
+            "X",
+            "--avisos",
+            relatorio.to_str().unwrap(),
+            dir.to_str().unwrap(),
+        ]))
+        .unwrap_err();
+        let texto = std::fs::read_to_string(&relatorio).unwrap();
+        assert_eq!(texto, format!("erro: {e}\n"));
+    }
+
+    #[test]
+    fn avisos_registra_arquivo_ignorado_e_correcao_sem_hino() {
+        let pasta = PastaTemp::nova("avisos-ignorado");
+        let dir = &pasta.0;
+        let medidas = comp_marcado("", 60);
+        std::fs::write(
+            dir.join("coro-1.mscx"),
+            doc(&parte(1, "S"), &pauta(1, &medidas)),
+        )
+        .unwrap();
+        let relatorio = dir.join("avisos.txt");
+        // todos os arquivos ignorados: não há hino algum e o relatório não pode dizer "sem avisos"
+        let _ = executar(texto_args(&[
+            "--id",
+            "x",
+            "--nome",
+            "X",
+            "--avisos",
+            relatorio.to_str().unwrap(),
+            dir.join("coro-1.mscx").to_str().unwrap(),
+        ]));
+        let texto = std::fs::read_to_string(&relatorio).unwrap();
+        assert!(
+            texto.contains("coro-1.mscx") && texto.contains("ignorado")
+                || texto.starts_with("erro: "),
+            "{texto}"
+        );
+        assert!(!texto.contains("sem avisos"), "{texto}");
     }
 
     #[test]
