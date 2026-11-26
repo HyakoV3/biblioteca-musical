@@ -6,7 +6,7 @@
 
 ## Como usar
 
-1. Coloque os arquivos `.md` em uma pasta do projeto, por exemplo `auditoria/personas/`, ou entregue a persona pertinente a cada auditor/assistente.
+1. Os perfis `.md` ficam em `docs/auditoria/` (não os mova: os caminhos dos briefings dependem disso). Entregue a persona pertinente a cada auditor/assistente; os relatórios vão para `docs/auditoriaAAAAMM/` (ignorado pelo Git).
 2. Inicie pelo **00 — Coordenador geral**, que define escopo, ambiente, prioridade e divisão sem duplicação.
 3. Para cada área, entregue o respectivo `.md` como instrução de trabalho e forneça acesso **somente aos arquivos necessários**, sem credenciais ou conteúdo protegido.
 4. Exija um relatório `.md` independente por persona, obedecendo ao `MODELO-RELATORIO.md`; valide evidências e consolide com o coordenador.
@@ -42,7 +42,7 @@
 
 ## Ordem recomendada de trabalho
 
-**Primeira passagem (código e documentação):** 00, 01, 06, 07, 09, 10, 12, 13, 14, 15, 19, 20, 21.
+**Primeira passagem (código e documentação):** 00, 01, 06, 07, 09, 10, 11, 12, 13, 14, 15, 19, 20, 21.
 
 **Segunda passagem (UX e aparelho real):** 02, 03, 04, 05, 08, 16, 17, 18, 22. O resultado desta fase depende de APK/ambiente e dados fictícios ou autorizados.
 
@@ -80,7 +80,7 @@ Exija rastreabilidade de arquivo:linha ou teste e status epistemicamente correto
 
 ## Neste repositório
 
-- **Quem faz esta auditoria:** o kit e as rodadas são conduzidos com o **Claude (Anthropic)**, em até 22 perspectivas (uma por persona), com a ferramenta de análise estática **Tezcat** como entrada de apoio. O responsável do projeto define o escopo, decide o que aceitar, revisa e aprova cada correção e responde pelo app. A auditoria **lê código e roda testes**: o que só se prova num aparelho Android (serviço em primeiro plano, WebView, áudio real, leitor de tela) fica como **risco a verificar** e entra no roteiro de teste manual (`docs/teste-de-uso.md`). Auditoria feita por IA não substitui o teste com pessoas.
+- **Quem faz esta auditoria:** o kit e as rodadas são conduzidos com o **Claude (Anthropic)**, em 23 perspectivas (22 especialistas e o coordenador 00), com a ferramenta de análise estática **Tezcat** como entrada de apoio. O responsável do projeto define o escopo, decide o que aceitar, revisa e aprova cada correção e responde pelo app. A auditoria **lê código e roda testes**: o que só se prova num aparelho Android (serviço em primeiro plano, WebView, áudio real, leitor de tela) fica como **risco a verificar** e entra no roteiro de teste manual (`docs/teste-de-uso.md`). Auditoria feita por IA não substitui o teste com pessoas.
 - **Onde ficam os perfis:** nesta pasta, `docs/auditoria/`. Eles não trazem versão fixa: o `MODELO-BRIEFING.md` é preenchido a cada rodada com o commit e a versão auditados.
 - **Onde ficam os resultados:** cada rodada vira uma pasta `docs/auditoriaAAAAMM/` (`AAAA` ano, `MM` mês; uma segunda rodada no mesmo mês leva `-2`), com um relatório por persona, o relatório do coordenador (00), o plano de ajustes e as decisões do responsável. **Os resultados NÃO são versionados:** o `.gitignore` ignora `docs/auditoria[0-9]*/`, porque os relatórios descrevem riscos de um repositório público. O que o responsável quiser guardar além da máquina fica em `docs/privado/`, também fora do Git.
 - **O repositório é público:** os perfis e este README seguem a regra do kit (nada de hino, letra, partitura ou áudio reais, dados pessoais, tokens ou material de teste fechado).

@@ -7,7 +7,7 @@
 ## Qué se audita
 
 - **Copia de trabajo (solo lectura):** `<ruta de la worktree>`, en `main` en el commit **`<sha>`** (app **`<versión>`**).
-- **Dónde escribir:** solo **su** informe, en `docs/auditoriaAAAAMM/NN-<slug>-relatorio.md` (el `<slug>` es el del nombre de su perfil).
+- **Dónde escribir:** solo **su** informe, en `<ruta absoluta>/docs/auditoriaAAAAMM/NN-<slug>-relatorio.md` (la carpeta de la ronda en el repositorio del responsable; el `<slug>` es el del nombre de su perfil). **Esa carpeta es la ÚNICA excepción a las reglas 1 y 2:** allí usted crea su informe y nada más.
 - Los perfiles del kit pueden citar rutas antiguas: **confirme cada una antes de usarla** y registre lo que ya no existe.
 - **Alcance de la ronda:** `<completa | reducida: personas NN, NN, NN>`.
 
@@ -27,7 +27,7 @@ Puntos de partida para leer el estado real: `README.md`, `docs/roadmap-pendencia
 ## Reglas de ejecución (valen por encima del perfil)
 
 1. **No altere el código, no haga commit, no cambie de rama, no use `git stash`.** El único archivo que usted crea es su informe.
-2. **No toque** la carpeta principal del responsable. Solo lea la copia de trabajo de arriba.
+2. **No toque** la carpeta principal del responsable (salvo para crear su informe en la carpeta de la ronda, indicada arriba). Solo lea la copia de trabajo de arriba.
 3. **No ejecute** el e2e, compilaciones, instalaciones, ni nada que abra puertos, use la red o descargue de servidores. Las pruebas y la compilación ya están en `evidencias/`. Se permite una verificación **corta y sin efectos secundarios** (`npx vitest run <archivo>`).
 4. **Nada de contenido de terceros:** el repositorio solo tiene datos ficticios. No pegue letras, partituras ni muestras reales.
 5. **El repositorio es público.** En hallazgos de seguridad, describa la **clase del problema, la evidencia y la corrección**, sin paso a paso de explotación funcional.

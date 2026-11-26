@@ -8,7 +8,7 @@
 
 ## How to use
 
-1. Put the `.md` files in a project folder, for example `auditoria/personas/`, or hand the relevant persona to each auditor/assistant.
+1. The `.md` profiles live in `docs/auditoria/` (do not move them: the briefings' paths depend on it). Hand the relevant persona to each auditor/assistant; the reports go to `docs/auditoriaYYYYMM/` (ignored by Git).
 2. Start with **00 — General coordinator**, which defines scope, environment, priority and the split of work without duplication.
 3. For each area, hand over the matching `.md` as the work instruction and give access **only to the files that are needed**, with no credentials or protected content.
 4. Require an independent `.md` report per persona, following `MODELO-RELATORIO.md`; validate the evidence and consolidate with the coordinator.
@@ -44,7 +44,7 @@
 
 ## Recommended order of work
 
-**First pass (code and documentation):** 00, 01, 06, 07, 09, 10, 12, 13, 14, 15, 19, 20, 21.
+**First pass (code and documentation):** 00, 01, 06, 07, 09, 10, 11, 12, 13, 14, 15, 19, 20, 21.
 
 **Second pass (UX and real device):** 02, 03, 04, 05, 08, 16, 17, 18, 22. The outcome of this phase depends on an APK/environment and on fictional or authorized data.
 
@@ -82,7 +82,7 @@ Demand traceability to a file:line or a test, and an epistemically correct statu
 
 ## In this repository
 
-- **Who runs this audit:** the kit and the rounds are conducted with **Claude (Anthropic)**, across up to 22 perspectives (one per persona), with the static-analysis tool **Tezcat** as a supporting input. The project owner defines the scope, decides what to accept, reviews and approves every fix, and answers for the app. The audit **reads code and runs tests**: whatever can only be proven on an Android device (foreground service, WebView, real audio, screen reader) stays as a **risk to verify** and goes into the manual test script (`docs/teste-de-uso.md`). An audit done by AI does not replace testing with people.
+- **Who runs this audit:** the kit and the rounds are conducted with **Claude (Anthropic)**, across 23 perspectives (22 specialists and coordinator 00), with the static-analysis tool **Tezcat** as a supporting input. The project owner defines the scope, decides what to accept, reviews and approves every fix, and answers for the app. The audit **reads code and runs tests**: whatever can only be proven on an Android device (foreground service, WebView, real audio, screen reader) stays as a **risk to verify** and goes into the manual test script (`docs/teste-de-uso.md`). An audit done by AI does not replace testing with people.
 - **Where the profiles live:** in this folder, `docs/auditoria/`. They carry no fixed version: `MODELO-BRIEFING.md` is filled in each round with the audited commit and version.
 - **Where the results live:** each round becomes a folder `docs/auditoriaYYYYMM/` (`YYYY` year, `MM` month; a second round in the same month gets `-2`), with one report per persona, the coordinator's report (00), the adjustment plan and the owner's decisions. **The results are NOT versioned:** `.gitignore` ignores `docs/auditoria[0-9]*/`, because the reports describe risks of a public repository. Whatever the owner wants to keep beyond the machine goes in `docs/privado/`, also outside Git.
 - **The repository is public:** the profiles and this README follow the kit's rule (no real hymns, lyrics, scores or audio, personal data, tokens or closed-test material).

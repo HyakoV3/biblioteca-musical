@@ -2,7 +2,7 @@
 
 # Modelo de informe individual de auditoría
 
-> Copie este modelo a `RELATORIO-<id>-<slug>.md`. Es solo una plantilla; sustituya los campos por las evidencias reales.
+> Copie este modelo a `docs/auditoriaAAAAMM/NN-<slug>-relatorio.md`. Es solo una plantilla; sustituya los campos por las evidencias reales.
 
 ## Identificación
 

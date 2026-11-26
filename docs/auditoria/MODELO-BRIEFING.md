@@ -7,7 +7,7 @@
 ## O que se audita
 
 - **Cópia de trabalho (somente leitura):** `<caminho da worktree>`, na `main` no commit **`<sha>`** (app **`<versão>`**).
-- **Onde escrever:** só o **seu** relatório, em `docs/auditoriaAAAAMM/NN-<slug>-relatorio.md` (o `<slug>` é o do nome do seu perfil).
+- **Onde escrever:** só o **seu** relatório, em `<caminho absoluto>/docs/auditoriaAAAAMM/NN-<slug>-relatorio.md` (a pasta da rodada no repositório do responsável; o `<slug>` é o do nome do seu perfil). **Essa pasta é a ÚNICA exceção às regras 1 e 2:** nela você cria o seu relatório e mais nada.
 - Os perfis do kit podem citar caminhos antigos: **confirme cada um antes de usar** e registre o que não existe mais.
 - **Escopo da rodada:** `<completa | reduzida: personas NN, NN, NN>`.
 
@@ -27,7 +27,7 @@ Pontos de partida para ler o estado real: `README.md`, `docs/roadmap-pendencias.
 ## Regras de execução (valem acima do perfil)
 
 1. **Não altere o código, não faça commit, não troque de branch, não use `git stash`.** O único arquivo que você cria é o seu relatório.
-2. **Não toque** na pasta principal do responsável. Só leia a cópia de trabalho acima.
+2. **Não toque** na pasta principal do responsável (exceto criar o seu relatório na pasta da rodada, indicada acima). Só leia a cópia de trabalho acima.
 3. **Não rode** o e2e, builds, instalações, nem nada que abra portas, use a rede ou baixe de servidores. Os testes e o build já estão em `evidencias/`. Uma verificação **curta e sem efeito colateral** (`npx vitest run <arquivo>`) é permitida.
 4. **Nada de conteúdo de terceiros:** o repositório só tem dados fictícios. Não cole letra, partitura ou amostra real.
 5. **O repositório é público.** Em achados de segurança, descreva a **classe do problema, a evidência e a correção**, sem passo a passo de exploração funcional.

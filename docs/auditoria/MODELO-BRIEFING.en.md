@@ -7,7 +7,7 @@
 ## What is audited
 
 - **Working copy (read-only):** `<worktree path>`, on `main` at commit **`<sha>`** (app **`<version>`**).
-- **Where to write:** only **your** report, in `docs/auditoriaYYYYMM/NN-<slug>-relatorio.md` (the `<slug>` is the one in your profile's name).
+- **Where to write:** only **your** report, in `<absolute path>/docs/auditoriaYYYYMM/NN-<slug>-relatorio.md` (the round's folder in the owner's repository; the `<slug>` is the one in your profile's name). **That folder is the ONLY exception to rules 1 and 2:** you create your report there and nothing else.
 - The kit's profiles may cite old paths: **confirm each one before using it** and record what no longer exists.
 - **Scope of the round:** `<full | reduced: personas NN, NN, NN>`.
 
@@ -27,7 +27,7 @@ Starting points for reading the real state: `README.md`, `docs/roadmap-pendencia
 ## Execution rules (they override the profile)
 
 1. **Do not change the code, do not commit, do not switch branches, do not use `git stash`.** The only file you create is your report.
-2. **Do not touch** the owner's main folder. Only read the working copy above.
+2. **Do not touch** the owner's main folder (except to create your report in the round's folder, given above). Only read the working copy above.
 3. **Do not run** the e2e, builds, installs, or anything that opens ports, uses the network or downloads from servers. The tests and the build are already in `evidencias/`. One **short check with no side effects** (`npx vitest run <file>`) is allowed.
 4. **No third-party content:** the repository only has fictional data. Do not paste real lyrics, scores or samples.
 5. **The repository is public.** For security findings, describe the **class of problem, the evidence and the fix**, with no step-by-step working exploit.

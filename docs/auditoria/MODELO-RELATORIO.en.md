@@ -2,7 +2,7 @@
 
 # Individual audit report template
 
-> Copy this template to `RELATORIO-<id>-<slug>.md`. It is only a template; replace the fields with the real evidence.
+> Copy this template to `docs/auditoriaYYYYMM/NN-<slug>-relatorio.md`. It is only a template; replace the fields with the real evidence.
 
 ## Identification
 
