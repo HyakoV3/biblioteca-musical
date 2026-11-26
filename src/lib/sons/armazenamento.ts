@@ -27,20 +27,34 @@ export async function guardar(arquivo: string, dados: Uint8Array, sha256: string
   await cache.put(chave(arquivo), new Response(new Blob([dados as BlobPart]), { headers: { "content-type": "text/javascript", [CABECALHO_SHA]: sha256 } }));
 }
 
-/** Um arquivo guardado e o SHA-256 dele. Guardado por uma versão antiga do app (sem o cabeçalho), o SHA é calculado do conteúdo. */
+/** Um arquivo guardado e o SHA-256 dele ("" se não deu para ler). */
 export type Guardado = { arquivo: string; sha256: string };
 
+/**
+ * Os arquivos guardados e o SHA-256 de cada um. Um guardado por versão antiga do app (sem o cabeçalho) tem o SHA calculado do
+ * conteúdo UMA vez e regravado com o cabeçalho, uma entrada por vez (para não segurar tudo na memória). Uma entrada que não
+ * dá para ler fica com SHA vazio (não conta como instalada) sem derrubar a leitura das outras.
+ */
 export async function listar(): Promise<Guardado[]> {
   if (!disponivel()) return [];
   const cache = await caches.open(NOME);
-  return Promise.all(
-    (await cache.keys()).map(async (r) => {
+  const saida: Guardado[] = [];
+  for (const r of await cache.keys()) {
+    const arquivo = arquivoDaChave(r.url);
+    try {
       const resposta = await cache.match(r);
-      const gravado = resposta?.headers.get(CABECALHO_SHA);
-      const sha256 = gravado ?? (resposta ? await sha256Hex(new Uint8Array(await resposta.arrayBuffer())) : "");
-      return { arquivo: arquivoDaChave(r.url), sha256 };
-    }),
-  );
+      let sha256 = resposta?.headers.get(CABECALHO_SHA) ?? "";
+      if (resposta && !sha256) {
+        const dados = new Uint8Array(await resposta.arrayBuffer());
+        sha256 = await sha256Hex(dados);
+        await guardar(arquivo, dados, sha256); // da próxima vez o cabeçalho já está lá
+      }
+      saida.push({ arquivo, sha256 });
+    } catch {
+      saida.push({ arquivo, sha256: "" });
+    }
+  }
+  return saida;
 }
 
 export async function apagar(arquivos: string[]): Promise<void> {

@@ -21,6 +21,7 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 GRUPOS = ("orgao", "madeiras", "metais", "cordas")
+LIMITE_ZIP = 100 * 1024 * 1024  # o mesmo de LIMITE_ZIP em src/lib/sons/extrair.ts: acima disso o app recusa o download
 
 
 def montar_pacotes(por_grupo, links, tamanhos_zip=None):
@@ -75,9 +76,18 @@ def main():
     tamanhos_zip = {}
     for item in args.zip:
         id_, _, caminho = item.partition("=")
+        if not id_ or not caminho:
+            sys.exit(f"--zip {item!r}: use ID=ARQUIVO")
+        if id_ in tamanhos_zip:
+            sys.exit(f"--zip {id_}: o id aparece duas vezes")
         if not Path(caminho).is_file():
             sys.exit(f"--zip {id_}: o arquivo {caminho!r} não existe")
-        tamanhos_zip[id_] = Path(caminho).stat().st_size
+        tamanho = Path(caminho).stat().st_size
+        if tamanho == 0:
+            sys.exit(f"--zip {id_}: o arquivo {caminho!r} está vazio")
+        if tamanho > LIMITE_ZIP:
+            sys.exit(f"--zip {id_}: {tamanho} bytes passam do limite de {LIMITE_ZIP} que o app aceita baixar (LIMITE_ZIP em src/lib/sons/extrair.ts)")
+        tamanhos_zip[id_] = tamanho
     pacotes = montar_pacotes(por_grupo, args.link, tamanhos_zip)
 
     args.saida.parent.mkdir(parents=True, exist_ok=True)

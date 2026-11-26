@@ -23,6 +23,6 @@ export type PacoteSom = {
 export type ManifestoSons = { versao: number; pacotes: PacoteSom[] };
 
 /** Quanto se baixa de um pacote: o tamanho do zip, ou (se o manifesto não o traz) a soma dos arquivos, que é só uma estimativa. */
-export const bytesParaBaixar = (p: PacoteSom): number => p.bytesZip ?? bytesDoPacote(p);
+export const bytesParaBaixar = (p: PacoteSom): number => p.bytesZip && p.bytesZip > 0 ? p.bytesZip : bytesDoPacote(p);
 /** Tamanho dos arquivos de um pacote DESCOMPACTADOS, em bytes (o que ocupam no aparelho). */
 export const bytesDoPacote = (p: PacoteSom): number => p.arquivos.reduce((s, a) => s + a.bytes, 0);

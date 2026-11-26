@@ -109,4 +109,26 @@ describe("baixarZip", () => {
     const r = await baixarZip("https://exemplo.invalid/a.zip", 4, undefined, 80); // dura ~150 ms, mas nunca fica 80 ms parado
     expect(r.length).toBe(4);
   });
+
+  it("sem corpo em stream: o relógio conta só os dados, não a conexão, e o tamanho recebido também é limitado", async () => {
+    const semStream = (corpoBytes: Uint8Array) => {
+      const r = new Response(corpoBytes as BodyInit);
+      Object.defineProperty(r, "body", { value: null });
+      return r;
+    };
+    nativo.fetch.mockImplementation(async () => {
+      await new Promise((r) => setTimeout(r, 60)); // a conexão demora mais que semDadosMs (50)
+      return semStream(bytes(3));
+    });
+    expect((await baixarZip("https://exemplo.invalid/a.zip", 1, undefined, 100)).length).toBe(3);
+    nativo.fetch.mockResolvedValue(semStream(bytes(LIMITE_ZIP + 1)));
+    expect(await codigoDe(baixarZip("https://exemplo.invalid/a.zip", 1))).toBe("tamanho");
+  });
+
+  it("a mensagem diferencia 'sem resposta do servidor' de 'sem dados'", async () => {
+    nativo.fetch.mockImplementation(() => new Promise(() => {}));
+    await expect(baixarZip("https://exemplo.invalid/a.zip", 1, undefined, 30)).rejects.toThrow(/sem resposta do servidor/);
+    nativo.fetch.mockResolvedValue(new Response(corpo([bytes(1)], true)));
+    await expect(baixarZip("https://exemplo.invalid/a.zip", 1, undefined, 30)).rejects.toThrow(/sem dados/);
+  });
 });

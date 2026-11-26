@@ -21,9 +21,12 @@ export async function baixarZip(
 ): Promise<Uint8Array> {
   const controle = new AbortController();
   let relogio: ReturnType<typeof setTimeout> | undefined;
+  let comResposta = false; // a mensagem diz se o servidor nunca respondeu ou se respondeu e parou de mandar dados
   // Rejeita quando o tempo estoura: serve de corrida contra `fetch` e `read`, que podem nunca responder.
   const estouro = new Promise<never>((_, rejeitar) => {
-    controle.signal.addEventListener("abort", () => rejeitar(new ErroPacote("rede", `sem dados por ${semDadosMs / 1000} s`)));
+    controle.signal.addEventListener("abort", () =>
+      rejeitar(new ErroPacote("rede", comResposta ? `sem dados por ${semDadosMs / 1000} s` : `sem resposta do servidor em ${semDadosMs / 1000} s`)),
+    );
   });
   estouro.catch(() => {}); // sem ninguém esperando, a rejeição não pode virar erro solto
   const armar = () => {
@@ -32,9 +35,10 @@ export async function baixarZip(
   };
   armar();
   try {
-    return await baixarComControle(url, estimativa, aoProgredir, controle.signal, estouro, armar);
+    return await baixarComControle(url, estimativa, aoProgredir, controle.signal, estouro, armar, () => (comResposta = true));
   } finally {
     clearTimeout(relogio);
+    controle.abort(); // solta a conexão em qualquer saída (erro de HTTP, tamanho recusado...); depois de um download completo não tem efeito
   }
 }
 
@@ -45,6 +49,7 @@ async function baixarComControle(
   signal: AbortSignal,
   estouro: Promise<never>,
   armar: () => void,
+  aoResponder: () => void,
 ): Promise<Uint8Array> {
   let resposta: Response;
   try {
@@ -53,6 +58,7 @@ async function baixarComControle(
     if (e instanceof ErroPacote) throw e;
     throw new ErroPacote("rede", String(e));
   }
+  aoResponder();
   if (!resposta.ok) throw new ErroPacote("rede", `HTTP ${resposta.status}`);
 
   const declarado = Number(resposta.headers.get("content-length") ?? 0);
@@ -61,7 +67,9 @@ async function baixarComControle(
 
   const leitor = resposta.body?.getReader();
   if (!leitor) {
+    armar(); // o relógio das respostas é o de "nenhum dado": recomeça aqui, em vez de contar a conexão junto
     const tudo = new Uint8Array(await Promise.race([resposta.arrayBuffer(), estouro]));
+    if (tudo.length > LIMITE_ZIP) throw new ErroPacote("tamanho", `zip passou de ${LIMITE_ZIP} bytes`);
     aoProgredir?.(1);
     return tudo;
   }

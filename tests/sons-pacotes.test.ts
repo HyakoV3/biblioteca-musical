@@ -4,7 +4,7 @@ import type { PacoteSom } from "../src/lib/sons/tipos";
 // O store dos sons gravados, com o download, a conferência e o Cache trocados por falsos: o que se testa é a MÁQUINA DE ESTADOS (duplo toque,
 // rollback, remoção que falha, o que conta como instalado), não o Cache do navegador.
 const dados = new TextEncoder().encode("conteudo");
-const SHA = "a".repeat(64);
+const SHA = [...new Uint8Array(await crypto.subtle.digest("SHA-256", dados))].map((b) => b.toString(16).padStart(2, "0")).join(""); // o app grava o hash REAL dos bytes
 const pacote: PacoteSom = {
   id: "teste",
   url: "https://exemplo.invalid/teste.zip",
@@ -22,6 +22,7 @@ const falsos = vi.hoisted(() => ({
   guardar: vi.fn(),
   apagar: vi.fn(),
   disponivel: vi.fn(() => true),
+  listar: vi.fn(async () => [...falsos.guardados].map(([arquivo, sha256]) => ({ arquivo, sha256 }))),
 }));
 
 vi.mock("../src/lib/sons/manifesto", () => ({ MANIFESTO: { versao: 1, pacotes: [pacote] } }));
@@ -35,7 +36,7 @@ vi.mock("../src/lib/sons/armazenamento", () => ({
   pedirPersistencia: async () => {},
   guardar: falsos.guardar,
   apagar: falsos.apagar,
-  listar: async () => [...falsos.guardados].map(([arquivo, sha256]) => ({ arquivo, sha256 })),
+  listar: () => falsos.listar(),
 }));
 
 const { sons } = await import("../src/lib/sons/pacotes.svelte");
@@ -122,12 +123,26 @@ describe("sons: baixar", () => {
 
 describe("sons: instalado só se o SHA guardado bate com o manifesto", () => {
   it("mesmo nome, outro conteúdo: não conta como instalado", async () => {
-    falsos.guardados.set("flute-mp3.js", "b".repeat(64));
+    falsos.guardados.set("flute-mp3.js", "b".repeat(64)); // o nome está no manifesto, o conteúdo guardado é outro
     falsos.guardados.set("drawbar_organ-mp3.js", SHA);
     await sons.atualizar();
     expect(sons.pacoteInstalado(pacote)).toBe(false);
     expect(sons.instalado("real_orgao_tirantes")).toBe(true);
     expect(sons.instalado("real_flauta")).toBe(false);
+  });
+});
+
+describe("sons: atualizar", () => {
+  it("uma leitura lenta que termina depois de uma mais nova não desfaz o resultado dela", async () => {
+    await sons.baixar("teste");
+    const antiga = [...falsos.guardados].map(([arquivo, sha256]) => ({ arquivo, sha256 })); // o que havia ANTES da remoção
+    let soltar!: () => void;
+    falsos.listar.mockImplementationOnce(() => new Promise((r) => (soltar = () => r(antiga))));
+    const lenta = sons.atualizar(); // a leitura do início do app, ainda esperando o Cache
+    await sons.remover("teste"); // apaga e lê de novo (rápido): nada instalado
+    soltar();
+    await lenta;
+    expect(sons.pacoteInstalado(pacote)).toBe(false);
   });
 });
 
@@ -137,6 +152,19 @@ describe("sons: remover", () => {
     await sons.remover("teste");
     expect(sons.pacoteInstalado(pacote)).toBe(false);
     expect(sons.andamento("teste").fase).toBe("ocioso");
+  });
+
+  it("remover durante um download do mesmo pacote é ignorado (e um id desconhecido não vira rejeição)", async () => {
+    let terminar!: (z: Uint8Array) => void;
+    falsos.baixarZip.mockReturnValue(new Promise<Uint8Array>((r) => (terminar = r)));
+    const a = sons.baixar("teste");
+    await sons.remover("teste");
+    expect(falsos.apagar).not.toHaveBeenCalled();
+    expect(sons.andamento("teste").fase).toBe("baixando");
+    terminar(new Uint8Array(1));
+    await a;
+    expect(sons.pacoteInstalado(pacote)).toBe(true);
+    await expect(sons.remover("nao-existe")).resolves.toBeUndefined();
   });
 
   it("o Cache recusa apagar: mostra o erro (sem rejeição solta) e relê o que ficou", async () => {
