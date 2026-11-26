@@ -11,7 +11,7 @@ The app is **independent and unofficial** (it has no connection with the Christi
 1. **Download the newest version** from the project's [Releases](https://github.com/HyakoV3/biblioteca-musical/releases) page (the one at the top of the list).
 2. **Download the file that ends in `.apk`** (for example `bibliotecamusical-0.3.7.apk`). Ignore the `.aab` and the `SHA256SUMS`: they are not for installing.
 3. **Allow installation from outside the store** when Android asks (the "Install unknown apps" option of the browser or the file manager) and tap the file to install it.
-4. **When updating, install over the top**: do not uninstall. **Uninstalling deletes the saved recordings and the downloaded packages** (the app does not back up recordings). If you must uninstall, first send, with the Recorder's **Send** button, the recordings you want to keep.
+4. **When updating, install over the top**: do not uninstall. **Uninstalling deletes the saved recordings and the downloaded packages** (the app does not back up recordings). If you must uninstall, first share, with the Recorder's **Share** button, the recordings you want to keep.
 5. **Check the version** in Settings, "About the app", and say which one it is when reporting a problem.
 6. **To report:** tell the person who gave you the link what you did, what you expected and what happened, and the version. Do not send personal data.
 
