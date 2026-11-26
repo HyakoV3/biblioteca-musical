@@ -26,7 +26,7 @@
 
 {#snippet pilula(botoes: Botao[])}
   <div class="pilula">
-    {#each botoes as b (b.aria)}
+    {#each botoes as b, i (i)}
       <button type="button" aria-label={b.aria} disabled={b.desabilitado} onclick={b.aoClicar}>{#if b.icone}<Icone nome={b.icone} tamanho={24} />{:else}{b.texto}{/if}</button>
     {/each}
   </div>

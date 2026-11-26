@@ -255,12 +255,12 @@
     {#snippet resumo()}{resumoAjustes}{/snippet}
       <!-- Andamento e transposição têm o mesmo desenho: o rótulo em cima e os controles numa linha inteira embaixo. No andamento são dois passos de cada lado (−5 −1 [valor] +1 +5), e quatro botões não cabem ao lado do rótulo; na transposição, − [n semitons] +. -->
       <div class="passo-linha empilhado">
-        <span class="rotulo" id="rot-andamento">{t("player.andamento_rotulo")}</span>
+        <span class="rotulo">{t("player.andamento_rotulo")}</span>
         <ControleAndamento {cfg} {editavel} padrao={padraoAndamento} />
       </div>
 
       <div class="passo-linha empilhado">
-        <span class="rotulo" id="rot-tom">{t("player.transposicao")}</span>
+        <span class="rotulo">{t("player.transposicao")}</span>
         <Passo
           rotulo={t("player.transposicao")}
           esquerda={[{ icone: "menos", aria: t("player.diminuir", { item: t("player.transposicao").toLowerCase() }), desabilitado: !editavel || cfg.transposicao <= -TRANSPOSICAO_MAX, aoClicar: () => mudarTom(-1) }]}
@@ -379,7 +379,7 @@
   .principal { display: flex; gap: 0.5rem; }
   .principal :global(.botao) { gap: 0.5rem; }
   /* O título fica no centro do botão, como se estivesse sozinho; a duração é um subtítulo menor, deslocado para baixo (sem parênteses), igual antes e durante a reprodução, então o botão não muda quando o Parar aparece. */
-  .tocar { flex: 1; min-height: 3.5rem; font-size: 1.15rem; position: relative; }
+  .tocar { flex: 1; min-height: 3.5rem; padding-block: 1.1rem; font-size: 1.15rem; position: relative; }
   .tocar .duracao { position: absolute; left: 0; right: 0; bottom: 0.3rem; text-align: center; font-size: 0.75rem; font-weight: 400; line-height: 1; opacity: 0.85; pointer-events: none; }
   .texto-tocar { text-align: center; }
   .duracao { white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -397,7 +397,7 @@
   .vezes { display: flex; flex-wrap: wrap; gap: 0.15rem; padding: 0.2rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
   /* Cada botão ocupa uma fatia igual da linha (flex: 1 1 0). Com muitas vezes (até 8 + Intro), quebram de linha e
      cada linha também se reparte por inteiro. */
-  .vez { flex: 1 1 0; gap: 0.35rem; min-width: 3rem; min-height: 2.6rem; padding: 0 0.4rem; position: relative; overflow: hidden; border: 0; border-radius: 0.55rem; background: transparent; }
+  .vez { flex: 1 1 0; gap: 0.35rem; min-width: 3rem; min-height: 2.75rem; padding: 0 0.4rem; position: relative; overflow: hidden; border: 0; border-radius: 0.55rem; background: transparent; }
   .rotulo-vez { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; }
   /* A parte que soa: base normal (a cor do cartão) com borda dourada, e por cima o dourado enchendo da esquerda para a
      direita. As duas camadas têm o mesmo tamanho e o mesmo rótulo, e a de cima é recortada no quanto já passou, então o

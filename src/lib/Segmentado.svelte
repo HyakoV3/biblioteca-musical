@@ -26,11 +26,11 @@
 </div>
 
 <style>
-  .segmentado { display: flex; gap: 0.15rem; padding: 0.2rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
-  label { position: relative; flex: 1 1 0; min-width: 0; }
+  .segmentado { display: flex; flex-wrap: wrap; gap: 0.15rem; padding: 0.2rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
+  label { position: relative; flex: 1 1 0; min-width: min-content; }
   input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
   /* Cada opção tem o seu canto (0.55rem = o da pílula menos o respiro de dentro): a selecionada é um retângulo arredondado inteiro, e não um bloco de cantos retos. */
-  span { display: flex; align-items: center; justify-content: center; min-height: 2.6rem; box-sizing: border-box; padding: 0 0.4rem; border-radius: 0.55rem; text-align: center; line-height: 1.2; overflow-wrap: anywhere; color: var(--texto); }
+  span { display: flex; align-items: center; justify-content: center; min-height: 2.75rem; box-sizing: border-box; padding: 0 0.4rem; border-radius: 0.55rem; text-align: center; line-height: 1.2; overflow-wrap: break-word; color: var(--texto); }
   .ativo span { background: color-mix(in srgb, var(--acento) 18%, var(--superficie)); box-shadow: inset 0 0 0 0.125rem var(--acento); font-weight: 700; }
   input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.0625rem; }
   input:disabled + span { opacity: 0.6; }
