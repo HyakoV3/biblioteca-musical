@@ -98,6 +98,7 @@ notas de cada voz. Cada nota é `[inicio, duracao, midi]`:
 
 - `inicio` e `duracao` em **batidas** (o `andamento` em bpm converte para segundos);
 - `midi` é o número da nota MIDI (60 = Dó central, 69 = Lá 440 Hz).
+- **Faixa válida:** `inicio` finito e ≥ 0, `duracao` finita e > 0, `midi` de 0 a 127 e `andamento` de 20 a 300. O conversor falha, citando o arquivo, com qualquer valor fora disso, e o app **recusa o hinário inteiro** (erros `nota_invalida` e `andamento_invalido`).
 
 O player permite silenciar vozes, mudar o andamento e transpor em semitons.
 `letra` é uma lista de linhas. Uma linha vazia (`""`) separa as estrofes, e a primeira linha

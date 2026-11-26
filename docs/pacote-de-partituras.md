@@ -88,6 +88,12 @@ mv partituras.zip partituras-$(sha256sum partituras.zip | cut -c1-8).zip   # o n
 python3 tools/montar-manifesto-partituras.py <link público da pasta> partituras-<sha8>.zip
 ```
 
+**Conferir os compassos antes de publicar (PART-001):** o hinário traz o índice do compasso a acender e a partitura é que desenha os compassos. Este verificador compara, hino a hino e nas duas versões, o maior índice de `compassos` com o número de `g.measure` do SVG, e confere que o retrato e a paisagem têm o mesmo número. **Rode antes de publicar o hinário ou as partituras** (a pasta dos SVG do passo 1 ou o zip do passo 2):
+
+```sh
+python3 tools/verificar-compassos.py <hinario.json> <pasta dos svg ou partituras-<sha8>.zip>
+```
+
 **Conferir um pacote real antes de publicar (sem celular):** o teste `conteudo_real` do `src-tauri/src/pacote.rs` passa o hinário e o zip **reais** pelo mesmo leitor e pela mesma limpeza de SVG do app, e falha se alguma partitura for recusada ou não puder ser lida de volta (retrato e paisagem):
 
 ```sh

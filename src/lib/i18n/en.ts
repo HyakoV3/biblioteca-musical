@@ -11,6 +11,8 @@ export const en: Dicionario = {
   "erro.rust.versao": "This hymnal is version {versao}, and this app understands version {esperado}.",
   "erro.rust.vozes_final": "Hymn {hino}: the voices of the ending ({outras}) do not match those of the normal pass ({normal}).",
   "erro.rust.vozes_intro": "Hymn {hino}: the voices of the introduction ({outras}) do not match those of the normal pass ({normal}).",
+  "erro.rust.nota_invalida": "Hymn {hino}: the voice \"{voz}\" has a note with an invalid time, duration or pitch.",
+  "erro.rust.andamento_invalido": "Hymn {hino}: the tempo {andamento} is outside the range of 20 to 300 beats per minute.",
   "erro.rust.grande_demais": "The file is too large (limit 20 MB).",
   "erro.rust.vazio": "The hymnal has no hymns.",
   "erro.rust.repetido": "Two hymns have the same number: {numero}.",

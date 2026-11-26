@@ -187,7 +187,7 @@ fn liga_fim(nota: Node) -> bool {
     })
 }
 
-/// Um acorde lido da partitura: notas como (midi, termina_ligadura, começa_ligadura).
+/// Um acorde lido da partitura: notas como (midi, termina_ligadura, começa_ligadura). Sem notas, é uma PAUSA escrita da camada.
 #[derive(Clone)]
 struct Acorde {
     inicio: f64,
@@ -326,6 +326,14 @@ fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
             "Rest" => {
                 let dur = duracao(c, est.compasso)? * est.tuplos.iter().product::<f64>();
                 fecha_asterisco(est, *t, *t + dur);
+                // MUS-003: a pausa escrita fica registrada como um acorde SEM notas. Quem divide as camadas em vozes (`dividir_em_vozes`) a usa para
+                // não repetir a nota da outra camada na voz que a partitura manda calar.
+                let voz = voz_do(c, est);
+                est.saida.entry(voz).or_default().push(Acorde {
+                    inicio: *t,
+                    dur,
+                    notas: vec![],
+                });
                 *t += dur;
             }
             "Chord" => {
@@ -395,17 +403,27 @@ fn registrar(tr: &mut Trilha, inicio: f64, dur: f64, midi: u8, fim_liga: bool, i
 /// grave e (se couberem) as intermediárias mais próximas; devolve também quantos trechos
 /// tiveram notas omitidas.
 fn dividir_em_vozes(camadas: Vec<Vec<Acorde>>, limite: Option<usize>) -> (Vec<Vec<Evento>>, usize) {
+    let chave = |x: f64| (x * 10000.0).round() as i64;
     let mut eventos: Vec<Evento> = vec![];
-    for acordes in camadas {
+    // As pausas escritas de cada camada que tem notas (camada, de, até), em décimos de milésimo de batida.
+    let mut pausas: Vec<(usize, i64, i64)> = vec![];
+    for (c, acordes) in camadas.into_iter().enumerate() {
         let mut tr = Trilha::default();
+        let mut pausas_da_camada = vec![];
         for a in &acordes {
+            if a.notas.is_empty() {
+                pausas_da_camada.push((c, chave(a.inicio), chave(a.inicio + a.dur)));
+                continue;
+            }
             for &(midi, fim, ini) in &a.notas {
                 registrar(&mut tr, a.inicio, a.dur, midi, fim, ini);
             }
         }
+        if !tr.notas.is_empty() {
+            pausas.extend(pausas_da_camada); // camada só de pausas não conta: não tem voz a calar
+        }
         eventos.extend(tr.notas);
     }
-    let chave = |x: f64| (x * 10000.0).round() as i64;
     let mut cortes: Vec<i64> = eventos
         .iter()
         .flat_map(|e| [chave(e.inicio), chave(e.inicio + e.dur)])
@@ -413,23 +431,34 @@ fn dividir_em_vozes(camadas: Vec<Vec<Acorde>>, limite: Option<usize>) -> (Vec<Ve
     cortes.sort_unstable();
     cortes.dedup();
 
-    let mut intervalos: Vec<(i64, i64, Vec<usize>)> = vec![];
+    // Por intervalo: (início, fim, notas ativas SEM repetir a altura, TODAS as ativas, camadas em pausa escrita).
+    type Intervalo = (i64, i64, Vec<usize>, Vec<usize>, usize);
+    let mut intervalos: Vec<Intervalo> = vec![];
     for w in cortes.windows(2) {
         let (a, b) = (w[0], w[1]);
-        let mut ativos: Vec<usize> = (0..eventos.len())
+        let mut todos: Vec<usize> = (0..eventos.len())
             .filter(|&i| {
                 chave(eventos[i].inicio) <= a && chave(eventos[i].inicio + eventos[i].dur) >= b
             })
             .collect();
-        if ativos.is_empty() {
+        if todos.is_empty() {
             continue;
         }
-        ativos.sort_by(|&x, &y| eventos[y].midi.cmp(&eventos[x].midi).then(x.cmp(&y)));
-        ativos.dedup_by_key(|i| eventos[*i].midi);
-        intervalos.push((a, b, ativos));
+        todos.sort_by(|&x, &y| eventos[y].midi.cmp(&eventos[x].midi).then(x.cmp(&y)));
+        let mut distintos = todos.clone();
+        distintos.dedup_by_key(|i| eventos[*i].midi);
+        let mut em_pausa: Vec<usize> = pausas
+            .iter()
+            .filter(|&&(_, de, ate)| de <= a && ate >= b)
+            .map(|&(c, _, _)| c)
+            .collect();
+        em_pausa.sort_unstable();
+        em_pausa.dedup();
+        intervalos.push((a, b, distintos, todos, em_pausa.len()));
     }
 
     let mut max = intervalos.iter().map(|i| i.2.len()).max().unwrap_or(0);
+    let vozes_total = max;
     let mut omitidos = 0;
     if let Some(l) = limite.filter(|&l| l > 0 && l < max) {
         omitidos = intervalos.iter().filter(|i| i.2.len() > l).count();
@@ -439,14 +468,30 @@ fn dividir_em_vozes(camadas: Vec<Vec<Acorde>>, limite: Option<usize>) -> (Vec<Ve
     for r in 0..max {
         let mut evs: Vec<Evento> = vec![];
         let mut ultimo: Option<(usize, i64)> = None; // (nota de origem, fim)
-        for (a, b, ativos) in &intervalos {
+        for (a, b, ativos, todos, em_pausa) in &intervalos {
             let n = ativos.len();
+            // MUS-003: com camadas em pausa ESCRITA neste trecho, as vozes que passam das notas que soam e dos lugares que as pausas não ocupam ficam
+            // em silêncio, em vez de repetirem a nota da outra camada. Sem pausa escrita (a camada nem foi escrita), o uníssono segue repetido nas
+            // vozes de baixo. A voz calada é a de baixo: a altura não diz de qual camada era a nota que soa.
+            if r >= n && r >= vozes_total.saturating_sub(*em_pausa) {
+                ultimo = None;
+                continue;
+            }
             let pos = if n > max && max > 1 {
                 (r * (n - 1) + (max - 1) / 2) / (max - 1)
             } else {
                 r.min(n - 1)
             };
-            let id = ativos[pos];
+            let mut id = ativos[pos];
+            // MSCX-005: de duas notas de mesma altura (camadas em uníssono), vale a que a voz já vinha tocando: trocar de id no meio de uma nota
+            // longa a reataca (de `[(0,1,64)]` ficava `[(0,1,64),(1,1,64)]`).
+            if let Some((i, fim)) = ultimo
+                && fim == *a
+                && eventos[i].midi == eventos[id].midi
+                && todos.contains(&i)
+            {
+                id = i;
+            }
             if matches!(ultimo, Some((i, fim)) if i == id && fim == *a) {
                 let e = evs.last_mut().unwrap();
                 e.dur = *b as f64 / 10000.0 - e.inicio;
@@ -1840,6 +1885,68 @@ fn numero_do_arquivo(p: &Path) -> Option<u32> {
 }
 
 /// Roda a conversão. Se `--avisos` foi pedido e a conversão falha, o erro vai para o relatório (que não fica velho nem vazio).
+/// MSCX-007: confere a saída ANTES de gravar. Todo tempo e toda duração têm de ser finitos (tempo >= 0, duração > 0), todo MIDI de 0 a 127 e o
+/// andamento de 20 a 300: o leitor do app recusa o hinário inteiro por qualquer um desses (ver `hinario.rs`), então é melhor falhar aqui, com o
+/// nome do hino, a voz e a nota, do que publicar um pacote que o app não abre.
+pub fn validar(h: &Hino) -> Result<(), String> {
+    if let Some(a) = h.andamento
+        && !(20..=300).contains(&a)
+    {
+        return Err(format!("hino {}: andamento {a} fora de 20 a 300", h.numero));
+    }
+    let faixas = [
+        ("vozes", Some(&h.vozes)),
+        ("passada do final", h.passada_final.as_ref()),
+        ("introdução", h.introducao.as_ref()),
+    ];
+    for (onde, vozes) in faixas {
+        for voz in vozes.into_iter().flatten() {
+            for (i, e) in voz.notas.iter().enumerate() {
+                if !e.inicio.is_finite() || e.inicio < 0.0 {
+                    return Err(format!(
+                        "hino {}, {onde}, \"{}\", nota {i}: tempo inválido ({})",
+                        h.numero, voz.nome, e.inicio
+                    ));
+                }
+                if !e.dur.is_finite() || e.dur <= 0.0 {
+                    return Err(format!(
+                        "hino {}, {onde}, \"{}\", nota {i}: duração inválida ({})",
+                        h.numero, voz.nome, e.dur
+                    ));
+                }
+                if e.midi > 127 {
+                    return Err(format!(
+                        "hino {}, {onde}, \"{}\", nota {i}: MIDI {} fora de 0 a 127",
+                        h.numero, voz.nome, e.midi
+                    ));
+                }
+            }
+        }
+    }
+    let mut tempos: Vec<f64> = vec![];
+    if let Some(s) = &h.sincronia {
+        for e in s.normal.iter().chain(s.passada_final.iter().flatten()) {
+            tempos.extend(e.linhas.iter().flatten().map(|t| t.0));
+        }
+    }
+    if let Some(c) = &h.compassos {
+        for lista in [
+            Some(&c.normal),
+            c.passada_final.as_ref(),
+            c.introducao.as_ref(),
+        ] {
+            tempos.extend(lista.into_iter().flatten().map(|x| x.0));
+        }
+    }
+    if let Some(t) = tempos.iter().find(|t| !t.is_finite() || **t < 0.0) {
+        return Err(format!(
+            "hino {}: tempo inválido na sincronia ou nos compassos ({t})",
+            h.numero
+        ));
+    }
+    Ok(())
+}
+
 fn executar(args: Vec<String>) -> Result<(), String> {
     let relatorio = args
         .windows(2)
@@ -1943,6 +2050,7 @@ fn executar_conversao(args: Vec<String>) -> Result<(), String> {
         let ajustes = correcoes.get(&n).map(Vec::as_slice).unwrap_or(&[]);
         let mut h =
             converter_com(&xml, n, ajustes).map_err(|e| format!("{}: {e}", arq.display()))?;
+        validar(&h).map_err(|e| format!("{}: {e}", arq.display()))?;
         if renomear {
             nomes_satb(&mut h);
         }
@@ -3456,6 +3564,118 @@ mod testes {
         .concat();
         let h = converter(&doc(&parte(1, "S"), &pauta(1, &tres)), 1).unwrap();
         assert!(h.passada_final.is_none());
+    }
+
+    fn nota_acorde(inicio: f64, dur: f64, midi: u8) -> Acorde {
+        Acorde {
+            inicio,
+            dur,
+            notas: vec![(midi, false, false)],
+        }
+    }
+
+    fn pausa_acorde(inicio: f64, dur: f64) -> Acorde {
+        Acorde {
+            inicio,
+            dur,
+            notas: vec![],
+        }
+    }
+
+    fn triplas(v: &[Evento]) -> Vec<(f64, f64, u8)> {
+        v.iter().map(|e| (e.inicio, e.dur, e.midi)).collect()
+    }
+
+    #[test]
+    fn pausa_escrita_de_uma_camada_cala_a_voz_em_vez_de_repetir_a_nota_da_outra() {
+        // MUS-003: a camada 1 canta 64 por 2 batidas; a camada 2 tem uma pausa escrita na 1ª batida e canta 60 na 2ª.
+        let c1 = vec![nota_acorde(0.0, 2.0, 64)];
+        let c2 = vec![pausa_acorde(0.0, 1.0), nota_acorde(1.0, 1.0, 60)];
+        let (v, _) = dividir_em_vozes(vec![c1, c2], Some(2));
+        assert_eq!(triplas(&v[0]), vec![(0.0, 2.0, 64)]);
+        assert_eq!(triplas(&v[1]), vec![(1.0, 1.0, 60)]); // sem a pausa escrita, a voz 2 repetiria o 64 na 1ª batida
+    }
+
+    #[test]
+    fn sem_pausa_escrita_o_unissono_continua_repetido_nas_vozes_de_baixo() {
+        let c1 = vec![nota_acorde(0.0, 2.0, 64)];
+        let c2 = vec![nota_acorde(1.0, 1.0, 60)];
+        let (v, _) = dividir_em_vozes(vec![c1, c2], Some(2));
+        assert_eq!(triplas(&v[1]), vec![(0.0, 1.0, 64), (1.0, 1.0, 60)]);
+    }
+
+    #[test]
+    fn camada_so_de_pausas_nao_cala_voz_nenhuma() {
+        let c1 = vec![nota_acorde(0.0, 2.0, 64)];
+        let c2 = vec![pausa_acorde(0.0, 2.0)];
+        let c3 = vec![nota_acorde(1.0, 1.0, 60)];
+        let (v, _) = dividir_em_vozes(vec![c1, c2, c3], Some(2));
+        assert_eq!(triplas(&v[1]), vec![(0.0, 1.0, 64), (1.0, 1.0, 60)]);
+    }
+
+    #[test]
+    fn unissono_que_se_divide_nao_reataca_a_nota_longa() {
+        // MSCX-005: a camada 1 só tem a nota curta (64, na 2ª batida); a 2 tem a nota longa (64, 0 a 2). A curta vem ANTES na ordem dos eventos,
+        // então a escolha por ordem trocava de nota no meio e a voz reatacava: [(0,1,64),(1,1,64)].
+        let c1 = vec![nota_acorde(1.0, 1.0, 64)];
+        let c2 = vec![nota_acorde(0.0, 2.0, 64)];
+        let (v, _) = dividir_em_vozes(vec![c1, c2], Some(1));
+        assert_eq!(triplas(&v[0]), vec![(0.0, 2.0, 64)]);
+    }
+
+    #[test]
+    fn pausa_escrita_na_segunda_camada_deixa_a_voz_em_silencio_no_arquivo_inteiro() {
+        // MUS-003 de ponta a ponta: duas camadas (<voice>) numa pauta "Soprano e Contralto"; a 2ª tem pausa escrita na 1ª metade do compasso.
+        let v1 = format!("{C44}{}{}", acorde("half", 64), acorde("half", 64));
+        let v2 = format!(
+            "<Rest><durationType>half</durationType></Rest>{}",
+            acorde("half", 60)
+        );
+        let xml = format!("<Measure><voice>{v1}</voice><voice>{v2}</voice></Measure>");
+        let h = converter(&doc(&parte(1, "Soprano e Contralto"), &pauta(1, &xml)), 1).unwrap();
+        assert_eq!(h.vozes.len(), 2);
+        assert_eq!(notas(&h, 0), vec![(0.0, 2.0, 64), (2.0, 2.0, 64)]);
+        assert_eq!(notas(&h, 1), vec![(2.0, 2.0, 60)]); // antes: (0, 2, 64) a mais, a nota da outra voz
+    }
+
+    fn hino_com_nota(inicio: f64, dur: f64, midi: u8) -> Hino {
+        let corpo = format!("{C44}{}", acorde("whole", 60));
+        let mut h = converter(&doc(&parte(1, "S"), &pauta(1, &compasso(&corpo))), 1).unwrap();
+        h.vozes = vec![Voz {
+            nome: "S".into(),
+            notas: vec![Evento { inicio, dur, midi }],
+        }];
+        h
+    }
+
+    #[test]
+    fn validar_aceita_a_saida_boa_e_recusa_tempo_duracao_e_midi_invalidos() {
+        assert!(validar(&hino_com_nota(0.0, 1.0, 60)).is_ok());
+        assert!(
+            validar(&hino_com_nota(-1.0, 1.0, 60))
+                .unwrap_err()
+                .contains("tempo inválido")
+        );
+        assert!(
+            validar(&hino_com_nota(f64::NAN, 1.0, 60))
+                .unwrap_err()
+                .contains("tempo inválido")
+        );
+        assert!(
+            validar(&hino_com_nota(0.0, 0.0, 60))
+                .unwrap_err()
+                .contains("duração inválida")
+        );
+        assert!(
+            validar(&hino_com_nota(0.0, f64::INFINITY, 60))
+                .unwrap_err()
+                .contains("duração inválida")
+        );
+        let e = validar(&hino_com_nota(0.0, 1.0, 200)).unwrap_err();
+        assert!(e.contains("MIDI 200") && e.contains("hino 1"), "{e}");
+        let mut h = hino_com_nota(0.0, 1.0, 60);
+        h.andamento = Some(400);
+        assert!(validar(&h).unwrap_err().contains("andamento 400"));
     }
 
     #[test]

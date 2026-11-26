@@ -11,6 +11,8 @@ export const es: Dicionario = {
   "erro.rust.versao": "Este himnario está en la versión {versao}, y esta app entiende la versión {esperado}.",
   "erro.rust.vozes_final": "Himno {hino}: las voces del final ({outras}) no coinciden con las de la pasada normal ({normal}).",
   "erro.rust.vozes_intro": "Himno {hino}: las voces de la introducción ({outras}) no coinciden con las de la pasada normal ({normal}).",
+  "erro.rust.nota_invalida": "Himno {hino}: la voz \"{voz}\" tiene una nota con tiempo, duración o altura no válidos.",
+  "erro.rust.andamento_invalido": "Himno {hino}: el tempo {andamento} está fuera del intervalo de 20 a 300 pulsos por minuto.",
   "erro.rust.grande_demais": "El archivo es demasiado grande (límite de 20 MB).",
   "erro.rust.vazio": "El himnario no tiene ningún himno.",
   "erro.rust.repetido": "Hay dos himnos con el mismo número: {numero}.",
