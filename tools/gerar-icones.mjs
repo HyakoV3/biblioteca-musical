@@ -47,7 +47,7 @@ const NOMES = {
   tela_ligada: "baseline-visibility",
   alinhar_esquerda: "outline-format-align-left",
   alinhar_direita: "outline-format-align-right",
-  justificar: "outline-format-align-justify",
+  centralizar: "outline-format-align-center",
 };
 // Só tags de desenho: o corpo do SVG é inserido na página com {@html}, então nada além disso pode passar.
 const TAGS_PERMITIDAS = new Set(["path", "g", "circle", "rect", "ellipse", "line", "polyline", "polygon"]);

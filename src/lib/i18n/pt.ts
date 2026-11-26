@@ -78,7 +78,7 @@ export const pt = {
   "letra.alinhamento": "Alinhamento da letra",
   "letra.alinhar_esquerda": "Alinhar à esquerda",
   "letra.alinhar_direita": "Alinhar à direita",
-  "letra.justificar": "Justificar",
+  "letra.alinhar_centro": "Centralizar",
 
   "player.titulo": "Player",
   "player.vozes": "Vozes",

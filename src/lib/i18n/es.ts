@@ -78,7 +78,7 @@ export const es: Dicionario = {
   "letra.alinhamento": "Alineación de la letra",
   "letra.alinhar_esquerda": "Alinear a la izquierda",
   "letra.alinhar_direita": "Alinear a la derecha",
-  "letra.justificar": "Justificar",
+  "letra.alinhar_centro": "Centrar",
 
   "player.titulo": "Reproductor",
   "player.vozes": "Voces",

@@ -41,7 +41,9 @@ describe("normalizarLeitura (o que vem do armazenamento pode ser qualquer coisa)
   it("cada campo inválido volta ao padrão, sem perder o outro", () => {
     expect(normalizarLeitura({ passo: 4, alinhamento: "centro" })).toEqual({ passo: 4, alinhamento: "esquerda" });
     expect(normalizarLeitura({ passo: "grande", alinhamento: "direita" })).toEqual({ passo: PASSO_PADRAO, alinhamento: "direita" });
-    expect(normalizarLeitura({ passo: 99, alinhamento: "justificado" })).toEqual({ passo: 5, alinhamento: "justificado" });
+    expect(normalizarLeitura({ passo: 99, alinhamento: "centro" })).toEqual({ passo: 5, alinhamento: "centro" });
+    // Quem tinha o antigo "justificado" salvo passa a ver a letra centralizada.
+    expect(normalizarLeitura({ passo: 2, alinhamento: "justificado" })).toEqual({ passo: 2, alinhamento: "centro" });
   });
 
   it("não é objeto: padrão", () => {
@@ -70,8 +72,8 @@ describe("preferência salva no aparelho", () => {
   });
 
   it("salva e lê de volta (sobrevive a fechar o app)", () => {
-    salvarLeitura({ passo: 4, alinhamento: "justificado" });
-    expect(lerLeitura()).toEqual({ passo: 4, alinhamento: "justificado" });
+    salvarLeitura({ passo: 4, alinhamento: "centro" });
+    expect(lerLeitura()).toEqual({ passo: 4, alinhamento: "centro" });
   });
 
   it("JSON quebrado, valor estranho ou armazenamento indisponível: padrão, sem erro", () => {
