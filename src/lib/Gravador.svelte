@@ -720,7 +720,6 @@
     {/if}
     <p class="so-leitor" aria-live="polite">{anuncio}</p>
   </section>
-  <p class="meta">{t("gravador.privacidade")}</p>
 </div>
 
 <style>

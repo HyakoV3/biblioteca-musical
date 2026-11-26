@@ -1934,6 +1934,8 @@ async function principal() {
   confere(emFa.length === 2 && emFa.some((x) => /^horn$/i.test(x)), `Afinador: em Fá só a trompa e o corne inglês: ${JSON.stringify(emFa)}`);
   const emDo = await listaDoTom("concerto");
   confere(emDo.some((x) => /^piano$/i.test(x)) && emDo.some((x) => /^voice$/i.test(x)), `Afinador: em Dó (concerto) a lista traz piano e voz: ${JSON.stringify(emDo)}`);
+  const claves = await av(`(async () => { await document.fonts.load('1em Leipzig', '\uE062'); return { fonte: document.fonts.check('1em Leipzig', '\uE062'), itens: [...document.querySelectorAll('.lista-instrumentos li')].filter((l) => l.querySelector('.clave')).map((l) => ({ texto: l.textContent.trim(), glifo: l.querySelector('.clave').textContent.codePointAt(0).toString(16), rotulo: l.querySelector('.clave').getAttribute('aria-label'), familia: getComputedStyle(l.querySelector('.clave')).fontFamily })), parenteses: [...document.querySelectorAll('.lista-instrumentos li')].some((l) => /[()]/.test(l.textContent)) }; })()`);
+  confere(claves.fonte && claves.itens.length === 2 && claves.itens.every((i) => i.glifo === "e062" && /bass clef/i.test(i.rotulo) && /Leipzig/.test(i.familia)) && !claves.parenteses, `Afinador: em Dó, o bombardino e a tuba levam o símbolo da clave de fá (Leipzig) à direita do nome, com rótulo para o leitor de tela e sem parênteses: ${JSON.stringify(claves)}`);
   const colunas = () => av(`new Set([...document.querySelectorAll('.lista-instrumentos li')].map((l) => Math.round(l.getBoundingClientRect().left))).size`);
   const emPe = await colunas();
   await enviar("Emulation.setDeviceMetricsOverride", { width: 915, height: 412, deviceScaleFactor: 1, mobile: true });
