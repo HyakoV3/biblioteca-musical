@@ -20,7 +20,7 @@ SUFIXOS_PLURAL = ("zero", "um", "dois", "poucos", "muitos", "outros")
 
 def ler(codigo):
     texto = (PASTA / f"{codigo}.ts").read_text(encoding="utf-8")
-    return dict(re.findall(r'^\s*"?([\w.]+)"?:\s*"((?:[^"\\]|\\.)*)"', texto, re.M))
+    return dict(re.findall(r'^\s*"?([\w.\-]+)"?:\s*"((?:[^"\\]|\\.)*)"', texto, re.M))
 
 
 def parametros(texto):
@@ -48,7 +48,7 @@ def main():
             if f"{b}.outros" not in d:
                 problemas.append(f"{c}: a chave de plural {b!r} não tem a forma '.outros'")
 
-    print(f"idiomas: {', '.join(codigos)} | chaves em {REFERENCIA}: {len(ref)}")
+    print(f"idiomas: {', '.join(codigos)} | chaves por idioma: {', '.join(f'{c} {len(d)}' for c, d in dicts.items())}")
     if problemas:
         print(f"\n{len(problemas)} problema(s):")
         for p in problemas:

@@ -94,7 +94,10 @@ const STUB = `window.__TAURI_INTERNALS__ = {
       }
       throw JSON.stringify(["sem_partitura", String(args.numero)]);
     }
-    return null;
+    // Comandos dos plugins do Tauri (eventos, janela) não têm o que simular: devolvem nulo. Qualquer outro nome desconhecido falha, como falharia o Rust
+    // (um comando renomeado no app e esquecido aqui não pode passar em silêncio).
+    if (cmd.startsWith("plugin:")) return null;
+    throw new Error("comando desconhecido no stub do e2e: " + cmd);
   },
   transformCallback: () => 0,
   metadata: { currentWindow: { label: "main" }, currentWebview: { label: "main", windowLabel: "main" } },
@@ -234,6 +237,10 @@ async function principal() {
         const id = ++n;
         espera.set(id, r);
         ws.send(JSON.stringify({ id, method, params }));
+        // Sem resposta do Chrome em 30 s, o e2e falha com o nome do método em vez de ficar parado até o tempo esgotado do job.
+        setTimeout(() => {
+          if (espera.delete(id)) r({ error: { message: `sem resposta do Chrome a ${method} em 30 s` } });
+        }, 30000).unref?.();
       });
     const av = async (expressao) => {
       const r = await enviar("Runtime.evaluate", { expression: expressao, returnByValue: true, awaitPromise: true });
@@ -277,6 +284,7 @@ async function principal() {
       /* o perfil é temporário: se não der para apagar agora, a limpeza final tenta */
     }
   }
+  if (!(await sondaDoBanco(sessao.av))) throw new Error("o banco do app (bm-gravacoes) não abriu em 3 tentativas de Chrome: o e2e não tem como seguir");
   const { ws, enviar, av } = sessao;
 
   await enviar("Page.enable");

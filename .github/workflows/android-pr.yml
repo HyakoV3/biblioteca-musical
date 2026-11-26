@@ -1,0 +1,72 @@
+name: android-pr
+
+# Compila o APK de teste (arm64, chave descartável) nas PRs que mexem no Android ou no Rust do app, para o Kotlin, o Gradle, o manifesto e os plugins
+# não quebrarem só na hora do release. Confere as permissões com o mesmo script do release. Não publica nada e nunca vê os segredos de assinatura.
+on:
+  pull_request:
+    paths:
+      - "src-tauri/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tools/conferir-permissoes-apk.sh"
+      - ".github/workflows/android-pr.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NDK_VERSION: 30.0.16248370
+  ANDROID_PLATFORM: android-37.0
+  ANDROID_BUILD_TOOLS: 36.0.0
+
+jobs:
+  android:
+    name: Android (sem assinatura de envio)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22   # sem `cache: npm`, como no release
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Rust (stable) e alvo do Android
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+          rustup target add aarch64-linux-android
+
+      - name: SDK e NDK do Android
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;$ANDROID_PLATFORM" "build-tools;$ANDROID_BUILD_TOOLS" "ndk;$NDK_VERSION"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/build-tools/$ANDROID_BUILD_TOOLS" >> "$GITHUB_PATH"
+
+      - run: npm ci
+      - name: Chave descartável (só para o APK instalar)
+        run: keytool -genkeypair -keystore "$RUNNER_TEMP/assinatura.jks" -storepass teste-descartavel -keypass teste-descartavel -alias teste -keyalg RSA -keysize 2048 -validity 3 -dname "CN=Biblioteca Musical teste" > /dev/null
+
+      - name: Compilar o APK (arm64)
+        env:
+          BM_KEYSTORE: ${{ runner.temp }}/assinatura.jks
+          BM_KEYSTORE_PASSWORD: teste-descartavel
+          BM_KEY_ALIAS: teste
+          BM_KEY_PASSWORD: teste-descartavel
+        run: npm run tauri -- android build --apk --target aarch64 --ci
+
+      - name: Conferir as permissões
+        run: |
+          apk=$(find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' | head -1)
+          [ -n "$apk" ] || { echo "::error::APK não encontrado"; exit 1; }
+          tools/conferir-permissoes-apk.sh "$apk"
