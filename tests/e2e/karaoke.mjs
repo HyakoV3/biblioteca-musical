@@ -1033,16 +1033,36 @@ async function principal() {
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('conteudo')`)); ) await dormir(250);
   // Os blocos de Ajustes são cartões fechados de saída, com o estado na linha de cima (I-24): o Conteúdo mostra o hinário, as partituras e os sons.
   const resumoFechado = await av(`(() => { const d = document.getElementById('conteudo'); return { aberto: d.open, resumo: d.querySelector('summary').innerText.replace(/\\s+/g, ' ') }; })()`);
-  confere(!resumoFechado.aberto && /\d+\s+(scores?|partituras?)/i.test(resumoFechado.resumo), `Ajustes: o cartão Conteúdo começa fechado e mostra o estado na linha de cima: ${JSON.stringify(resumoFechado)}`);
+  confere(!resumoFechado.aberto && /\d+\s+(scores?|partituras?|hymns?\/scores?|hinos?\/partituras?|himnos?\/partituras?)/i.test(resumoFechado.resumo), `Ajustes: o cartão Conteúdo começa fechado e mostra o estado na linha de cima: ${JSON.stringify(resumoFechado)}`);
   // O texto de um cartão fechado não é renderizado: abre o Conteúdo antes de ler o que há dentro (hinário, partituras, sons).
   await av("document.getElementById('conteudo').open = true; 1");
   await dormir(400);
   const semArquivo = await av(`document.querySelectorAll('input[type="file"]').length`);
   confere(semArquivo === 0, `Ajustes não tem mais o botão de importar hinário de arquivo: ${semArquivo} seletores`);
 
+  // Conteúdo: o resumo traz só as QUANTIDADES (sem o nome do hinário) e cada bloco diz quantos itens tem, o tamanho e o estado; com o conteúdo instalado a explicação
+  // de cada seção some (não ocupa espaço) e o ⓘ ao lado a mostra de volta; sem ele (os sons, aqui) a explicação aparece sozinha.
+  const blocoB = await av(`(() => {
+    const resumo = document.querySelector('#conteudo summary .resumo').innerText.replace(/\\s+/g, ' ').trim();
+    const linhas = [...document.querySelectorAll('#conteudo .pacote')].map((l) => l.innerText.replace(/\\s+/g, ' ').trim());
+    const infos = [...document.querySelectorAll('#conteudo button.info')];
+    return { resumo, linhas, nInfo: infos.length, expandidos: infos.map((b) => b.getAttribute('aria-expanded')), controles: infos.map((b) => b.getAttribute('aria-controls')),
+      explicaHinario: !!document.getElementById('explica-hinario'), explicaPartituras: !!document.getElementById('explica-partituras'), explicaSons: !!document.getElementById('explica-sons') };
+  })()`);
+  confere(/^\d+\s+(hymns?|hinos?|himnos?)\b/i.test(blocoB.resumo) && !/Hin[áa]rio\s+\d|Hymnal\s+\d/i.test(blocoB.resumo), `Conteúdo: o resumo do cartão traz só as quantidades, sem o nome do hinário: ${JSON.stringify(blocoB.resumo)}`);
+  confere(/\d+\s+(hymns?|hinos?|himnos?)\s·.*\s·\s(Installed|Instalado)/i.test(blocoB.linhas[0] ?? "") && /\d+\s+(scores?|partituras?)\s·.*\s·\s(Installed|Instaladas)/i.test(blocoB.linhas[1] ?? "") && /\d+\s+(instruments?|instrumentos?)\s·.*\s·\s/i.test(blocoB.linhas[2] ?? ""), `Conteúdo: cada bloco diz a quantidade, o tamanho e o estado numa linha: ${JSON.stringify(blocoB.linhas)}`);
+  confere(!blocoB.explicaHinario && !blocoB.explicaPartituras && blocoB.explicaSons && blocoB.nInfo === 2 && blocoB.expandidos.every((e) => e === "false") && blocoB.controles.every((c) => c === null), `Conteúdo: instalados, a explicação do hinário e das partituras some e o ⓘ aparece fechado (sem aria-controls); os sons, não instalados, mantêm a explicação: ${JSON.stringify(blocoB)}`);
+  await av(`document.querySelector('#conteudo button.info').click(); 1`);
+  await dormir(200);
+  const infoAberto = await av(`(() => { const b = document.querySelector('#conteudo button.info'); const p = document.getElementById('explica-hinario'); return { expandido: b.getAttribute('aria-expanded'), controla: b.getAttribute('aria-controls'), texto: !!p && p.innerText.length > 20 }; })()`);
+  await av(`document.querySelector('#conteudo button.info').click(); 1`);
+  await dormir(200);
+  const infoFechado = await av(`({ expandido: document.querySelector('#conteudo button.info').getAttribute('aria-expanded'), texto: !!document.getElementById('explica-hinario') })`);
+  confere(infoAberto.expandido === "true" && infoAberto.controla === "explica-hinario" && infoAberto.texto && infoFechado.expandido === "false" && !infoFechado.texto, `Conteúdo: o ⓘ mostra a explicação do hinário e esconde de novo: ${JSON.stringify({ infoAberto, infoFechado })}`);
+
   // O card Partituras (no molde dos sons gravados): com partituras instaladas mostra "Instaladas" e Remover; remover chama só o comando
   // de remover partituras; depois, sem pacote publicado (manifesto vazio), não há botão Baixar nem importação manual.
-  const card1 = await av(`(() => { const c = document.querySelector('#partituras'); return { achou: !!c, texto: c?.innerText ?? '', botoes: [...(c?.querySelectorAll('button') ?? [])].map((b) => b.textContent.trim()) }; })()`);
+  const card1 = await av(`(() => { const c = document.querySelector('#partituras'); return { achou: !!c, texto: c?.innerText ?? '', botoes: [...(c?.querySelectorAll('button:not(.info)') ?? [])].map((b) => b.textContent.trim()) }; })()`);
   confere(card1.achou && /installed|instaladas|instaladas/i.test(card1.texto) && card1.botoes.length === 1, `card Partituras com partituras instaladas: estado e um só botão (Remover): ${JSON.stringify({ botoes: card1.botoes })}`);
   await av(`document.querySelector('#partituras button').click(); 1`);
   await dormir(300);

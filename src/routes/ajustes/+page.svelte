@@ -103,9 +103,11 @@
 
   // --- Hinário: baixar do servidor (o texto e a música dos hinos não vão dentro do app) e remover, no molde das partituras. ---
   const hinarioInstalado = $derived(biblioteca.pacote !== null && !biblioteca.pacote.exemplo);
+  // Cada bloco diz, numa linha só, quantos itens tem, o tamanho e o estado: "480 hinos · 4,1 MB · Instalado".
+  const quantosHinos = $derived(hinarioInstalado && biblioteca.pacote ? biblioteca.pacote.hinario.hinos.length : 0);
   const estadoHinario = $derived.by(() => {
     const estado = hinarioInstalado ? t("hinario.instalado") : hinario.disponivel ? t("hinario.nao_instalado") : t("hinario.indisponivel");
-    return hinario.disponivel ? `${formatarMB(hinario.bytes, i18n.idioma)} · ${estado}` : estado;
+    return [hinarioInstalado ? i18n.tn("plural.hinos", quantosHinos) : null, hinario.disponivel ? formatarMB(hinario.bytes, i18n.idioma) : null, estado].filter(Boolean).join(" · ");
   });
   const erroDoHinario = $derived.by(() => {
     const e = hinario.andamento.erro;
@@ -116,16 +118,14 @@
 
   // --- Partituras (I-08): baixar do servidor e remover, no molde dos sons gravados. ---
   const instaladas = $derived(biblioteca.pacote?.partituras.length ?? 0);
-  // "0,2 MB · Não instaladas" (o tamanho só aparece quando há pacote publicado).
+  // "480 partituras · 19,4 MB · Instaladas" ou "0,2 MB · Não instaladas" (o tamanho só aparece quando há pacote publicado).
   const estadoPartituras = $derived.by(() => {
-    const estado =
-      instaladas > 0
-        ? t("partituras.instaladas", { total: i18n.tn("plural.partituras", instaladas) })
-        : partituras.disponivel
-          ? t("partituras.nao_instaladas")
-          : t("partituras.indisponivel");
-    return partituras.disponivel ? `${formatarMB(partituras.bytes, i18n.idioma)} · ${estado}` : estado;
+    const estado = instaladas > 0 ? t("partituras.instaladas") : partituras.disponivel ? t("partituras.nao_instaladas") : t("partituras.indisponivel");
+    return [instaladas > 0 ? i18n.tn("plural.partituras", instaladas) : null, partituras.disponivel ? formatarMB(partituras.bytes, i18n.idioma) : null, estado].filter(Boolean).join(" · ");
   });
+  // A explicação de cada seção aparece enquanto o conteúdo NÃO está instalado (é a hora em que ela serve) e some depois; o ⓘ a traz de volta.
+  let explicacoes = $state({ hinario: false, partituras: false, sons: false });
+  const algumSomInstalado = $derived(sons.pacotes.some((p) => sons.pacoteInstalado(p)));
   // O erro do download: código do pacote (rede, integridade...) ou texto do Rust (JSON de códigos), traduzido.
   const erroDasPartituras = $derived.by(() => {
     const e = partituras.andamento.erro;
@@ -162,10 +162,19 @@
       const texto = ativo.fase === "baixando" ? t("sons.baixando", { n: porcentagemTotal(ativo.fase, ativo.progresso) }) : ativo.fase === "conferindo" ? t("sons.conferindo") : t("sons.instalando");
       return { texto: `${t("sons.titulo")}: ${texto}`, alerta: false };
     }
-    const nomeDoHinario = !biblioteca.pacote ? "…" : biblioteca.pacote.exemplo ? t("ajustes.resumo_exemplo") : biblioteca.pacote.hinario.hinario.nome;
-    const parts = instaladas > 0 ? i18n.tn("plural.partituras", instaladas) : t("ajustes.resumo_sem_partituras");
-    const algumSom = sons.pacotes.some((p) => sons.pacoteInstalado(p));
-    return { texto: `${nomeDoHinario} · ${parts} · ${algumSom ? t("ajustes.resumo_sons") : t("ajustes.resumo_sem_sons")}`, alerta: false };
+    // Só as quantidades (o nome do hinário já está no bloco dele): "480 hinos · 480 partituras · sons gravados". Quando há tantas partituras quanto hinos,
+    // junta: "480 hinos/partituras · sons gravados".
+    const sonsTexto = algumSomInstalado ? t("ajustes.resumo_sons") : t("ajustes.resumo_sem_sons");
+    if (!biblioteca.pacote) return { texto: `… · ${sonsTexto}`, alerta: false };
+    if (biblioteca.pacote.exemplo) {
+      return { texto: `${t("ajustes.resumo_exemplo")} · ${instaladas > 0 ? i18n.tn("plural.partituras", instaladas) : t("ajustes.resumo_sem_partituras")} · ${sonsTexto}`, alerta: false };
+    }
+    const hinos = quantosHinos;
+    const juntas = instaladas > 0 && instaladas === hinos;
+    const partes = juntas
+      ? [i18n.tn("plural.hinos_partituras", hinos)]
+      : [i18n.tn("plural.hinos", hinos), instaladas > 0 ? i18n.tn("plural.partituras", instaladas) : t("ajustes.resumo_sem_partituras")];
+    return { texto: [...partes, sonsTexto].join(" · "), alerta: false };
   });
 
   async function remover() {
@@ -182,6 +191,25 @@
 <svelte:head><title>{t("ajustes.titulo")} · Biblioteca Musical</title></svelte:head>
 
 <!-- "Em nome do Senhor Jesus": ao lado do título quando cabe e, se não couber (tela estreita, letra grande), na linha de baixo, à direita (`quebra`): o título não quebra no meio da palavra. -->
+<!-- O título de uma seção do Conteúdo. Instalada a seção, a explicação some e o ⓘ ao lado a mostra ou esconde (aria-controls só enquanto o texto existe). -->
+{#snippet cabecalho(chave: "hinario" | "partituras" | "sons", titulo: string, instalado: boolean, id?: string)}
+  <div class="cab-secao">
+    <h3 class="sub" class:primeiro={chave === "hinario"} {id}>{titulo}</h3>
+    {#if instalado}
+      <button
+        type="button"
+        class="info"
+        aria-expanded={explicacoes[chave]}
+        aria-controls={explicacoes[chave] ? `explica-${chave}` : undefined}
+        aria-label={t("ajustes.explicacao", { secao: titulo })}
+        onclick={() => (explicacoes[chave] = !explicacoes[chave])}
+      >
+        <Icone nome="info" tamanho={20} />
+      </button>
+    {/if}
+  </div>
+{/snippet}
+
 <Barra titulo={t("ajustes.titulo")} {voltar} rotuloVoltar={t("nav.voltar")} quebra>
   {#snippet acao()}<span class="nome-senhor">{t("sobre.nome_titulo")}</span>{/snippet}
 </Barra>
@@ -271,14 +299,16 @@
   <section>
     <Cartao id="conteudo" titulo={t("ajustes.conteudo")} bind:aberto={conteudoAberto} aoAlternar={lembrar("conteudo")}>
       {#snippet resumo()}{#if resumoConteudo.alerta}<Icone nome="alerta" tamanho={16} /> {/if}{resumoConteudo.texto}{/snippet}
-      <h3 class="sub primeiro" id="hinario">{t("ajustes.hinario")}</h3>
-      <p class="hinario-info">
-        <strong>{!biblioteca.pacote ? "…" : biblioteca.pacote.exemplo ? t("ajustes.hinario_exemplo") : biblioteca.pacote.hinario.hinario.nome}</strong>
-        <span class="meta">{!biblioteca.pacote ? "" : biblioteca.pacote.exemplo ? t("biblioteca.aviso_exemplo") : i18n.tn("plural.hinos", biblioteca.pacote.hinario.hinos.length)}</span>
-      </p>
-      <p class="meta">{t("hinario.explica")}</p>
+      {@render cabecalho("hinario", t("ajustes.hinario"), hinarioInstalado, "hinario")}
+      {#if !hinarioInstalado}
+        <p class="hinario-info">
+          <strong>{!biblioteca.pacote ? "…" : t("ajustes.hinario_exemplo")}</strong>
+          <span class="meta">{!biblioteca.pacote ? "" : t("biblioteca.aviso_exemplo")}</span>
+        </p>
+      {/if}
+      {#if !hinarioInstalado || explicacoes.hinario}<p class="meta" id="explica-hinario">{t("hinario.explica")}</p>{/if}
       <LinhaPacote
-        titulo={t("hinario.pacote")}
+        titulo={hinarioInstalado && biblioteca.pacote ? biblioteca.pacote.hinario.hinario.nome : t("hinario.pacote")}
         detalhe={estadoHinario}
         fase={hinario.andamento.fase === "baixando" || hinario.andamento.fase === "conferindo" || hinario.andamento.fase === "instalando" ? hinario.andamento.fase : "ocioso"}
         progresso={hinario.andamento.progresso}
@@ -304,8 +334,8 @@
       {#if resultado}<Aviso tipo={resultado.tipo}>{resultado.texto}</Aviso>{/if}
 
       <div id="partituras">
-        <h3 class="sub">{t("partituras.titulo")}</h3>
-        <p class="meta">{t("partituras.explica")}</p>
+        {@render cabecalho("partituras", t("partituras.titulo"), instaladas > 0)}
+        {#if instaladas === 0 || explicacoes.partituras}<p class="meta" id="explica-partituras">{t("partituras.explica")}</p>{/if}
         <LinhaPacote
           titulo={t("partituras.pacote")}
           detalhe={estadoPartituras}
@@ -346,15 +376,15 @@
       </div>
 
       <div>
-        <h3 class="sub">{t("sons.titulo")}</h3>
-        <p class="meta">{t("sons.explica")}</p>
+        {@render cabecalho("sons", t("sons.titulo"), algumSomInstalado)}
+        {#if !algumSomInstalado || explicacoes.sons}<p class="meta" id="explica-sons">{t("sons.explica")}</p>{/if}
         {#each sons.pacotes as p (p.id)}
           {@const and = sons.andamento(p.id)}
           {@const instalado = sons.pacoteInstalado(p)}
           {@const tamanho = formatarMB(bytesDoPacote(p), i18n.idioma)}
           <LinhaPacote
             titulo={t(`sons.pacote_${p.id}` as Chave)}
-            detalhe={`${tamanho} · ${instalado ? t("sons.instalado") : t("sons.nao_instalado")}`}
+            detalhe={`${i18n.tn("plural.instrumentos", p.arquivos.length)} · ${tamanho} · ${instalado ? t("sons.instalado") : t("sons.nao_instalado")}`}
             fase={and.fase === "baixando" || and.fase === "conferindo" || and.fase === "instalando" ? and.fase : "ocioso"}
             progresso={and.progresso}
             textoBaixando={t("sons.baixando", { n: porcentagemTotal(and.fase, and.progresso) })}
@@ -452,6 +482,13 @@
   }
   .licenca summary::-webkit-details-marker { display: none; }
   .licenca pre { margin: 0.4rem 0 0.8rem; font: 0.78rem/1.45 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+  /* O título da seção e o ⓘ na mesma linha; o botão tem alvo de 2,75 rem, mas a margem negativa o deixa sem aumentar a linha. */
+  .cab-secao { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .info {
+    flex: none; min-width: 2.75rem; min-height: 2.75rem; margin: -0.7rem -0.6rem -0.7rem 0; display: grid; place-items: center;
+    background: transparent; border: 0; border-radius: 0.75rem; color: var(--suave); cursor: pointer;
+  }
+  .info[aria-expanded="true"] { color: var(--ouro-linha); }
   .sub { margin: 1.1rem 0 0.2rem; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--suave); }
   .sub.primeiro { margin-top: 0.4rem; }
   select {

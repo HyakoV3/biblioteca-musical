@@ -34,6 +34,7 @@ const NOMES = {
   menos: "outline-remove",
   restaurar: "outline-restart-alt", // seta circular: volta ao tamanho normal (letra e partitura)
   alerta: "outline-error-outline", // círculo com "!": o resumo de um cartão mostra que houve um erro (não só pela cor)
+  info: "outline-info", // círculo com "i": mostra a explicação de uma seção de Ajustes, que some depois de instalada
   abrir: "outline-expand-more",
   fechar: "outline-expand-less",
   menu: "outline-menu", // hambúrguer (três linhas)
