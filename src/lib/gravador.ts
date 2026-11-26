@@ -192,11 +192,13 @@ export class Gravador {
       throw e;
     }
     try {
+      const mic = this.fluxo;
       // O que o gravador grava: o microfone direto, ou a saída do filtro neural.
-      let aGravar: MediaStream = this.fluxo;
+      let aGravar: MediaStream = mic;
       let aplicado: FiltroDeRuido = filtro;
       if (ehNeural(filtro)) {
         const ligado = await this.ligarFiltro(filtro);
+        if (this.fluxo !== mic) throw new DOMException("cancelado", "AbortError"); // `soltar` aconteceu enquanto o filtro carregava
         if (ligado) aGravar = ligado;
         else aplicado = "desligado";
       }
@@ -217,7 +219,10 @@ export class Gravador {
       };
       this.gravador.onerror = interrompida;
       // `stop()` da trilha (o nosso) não dispara "ended"; este evento só chega quando o SISTEMA tira o microfone.
-      this.fluxo.getTracks().forEach((t) => t.addEventListener("ended", interrompida));
+      mic.getTracks().forEach((t) => t.addEventListener("ended", interrompida));
+      // Com filtro, o gravador depende do contexto de áudio: se ele parar (ligação, perda de foco), a gravação sairia muda sem o microfone cair.
+      const ctx = this.contexto;
+      if (ctx && this.nos) ctx.onstatechange = () => ctx.state !== "running" && interrompida();
       this.gravador.start(1000); // um pedaço por segundo: uma queda no meio ainda deixa o que já foi gravado
       this.inicio = performance.now();
       rastro(`gravando (${this.tipo || "formato do navegador"}, filtro ${aplicado})`);
@@ -239,15 +244,24 @@ export class Gravador {
       console.warn("gravador: sem contexto de 48 kHz para o filtro de ruído; gravando sem filtro");
       return null;
     }
+    let filtro: Awaited<ReturnType<typeof import("./ruido").criarFiltro>> | undefined;
+    let fonte: MediaStreamAudioSourceNode | undefined;
     try {
       const { criarFiltro } = await import("./ruido");
-      const filtro = await criarFiltro(ctx, qual);
+      filtro = await criarFiltro(ctx, qual);
       if (this.fluxo !== mic || this.contexto !== ctx) {
         // `soltar` aconteceu enquanto o filtro carregava: não deixa nada ligado.
         filtro.destroy();
         return null;
       }
-      const fonte = ctx.createMediaStreamSource(mic);
+      // O contexto precisa estar rodando, senão a gravação sairia muda: espera um pouco e, se não der, grava o microfone direto.
+      if (ctx.state !== "running") await Promise.race([ctx.resume().catch(() => {}), new Promise((r) => setTimeout(r, 1500))]);
+      if (this.fluxo !== mic || this.contexto !== ctx) {
+        filtro.destroy();
+        return null;
+      }
+      if (ctx.state !== "running") throw new Error("o contexto de áudio não está rodando");
+      fonte = ctx.createMediaStreamSource(mic);
       const destino = ctx.createMediaStreamDestination();
       fonte.connect(filtro);
       filtro.connect(destino);
@@ -256,6 +270,13 @@ export class Gravador {
       return destino.stream;
     } catch (e) {
       console.warn(`gravador: não foi possível ligar o filtro de ruído ${qual}; gravando sem filtro`, e);
+      try {
+        fonte?.disconnect();
+        filtro?.disconnect();
+        filtro?.destroy();
+      } catch {
+        /* já desligado */
+      }
       return null;
     }
   }
@@ -389,6 +410,7 @@ export class Gravador {
     }
     this.analisador = null;
     this.amostras = null;
+    if (this.contexto) this.contexto.onstatechange = null;
     void this.contexto?.close().catch(() => {});
     this.contexto = null;
   }

@@ -156,8 +156,9 @@
     tocandoId = null; // e uma gravação da lista que tocava também: o alto-falante entraria na nova
     try {
       filtroFalhou = null;
-      const aplicado = await gravador.iniciar({ filtro });
-      if (aplicado !== filtro && minha === tentativa) filtroFalhou = filtro; // o filtro neural não carregou: a gravação segue sem filtro
+      const pedido = filtro; // fixa a escolha antes do await: a pessoa pode mexer nela enquanto o microfone e o filtro carregam
+      const aplicado = await gravador.iniciar({ filtro: pedido });
+      if (aplicado !== pedido && minha === tentativa) filtroFalhou = pedido; // o filtro neural não carregou: a gravação segue sem filtro
     } catch (e) {
       if (minha === tentativa) erro = motivoDoErro(e);
       console.warn("gravador: não foi possível gravar", e);
