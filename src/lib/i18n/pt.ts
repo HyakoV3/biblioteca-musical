@@ -401,7 +401,7 @@ export const pt = {
   "creditos.uso.ruido": "Carrega os filtros de ruído do gravador no aparelho.",
   "creditos.uso.rnnoise": "Filtro de ruído RNNoise do gravador (tudo no aparelho).",
   "creditos.uso.gtcrn": "Filtro de ruído GTCRN do gravador (tudo no aparelho).",
-  "creditos.uso.rust": "Lê o pacote baixado, o XML dos hinos e o JSON, dentro do app.",
+  "creditos.uso.rust": "Lê o pacote baixado, as partituras (SVG) e o JSON dos hinos, dentro do app.",
   "creditos.uso.tauri": "Estrutura do aplicativo no celular e no computador.",
   "sobre.nome_titulo": "Em nome do Senhor Jesus",
   "sobre.aviso_titulo": "Aplicativo independente",

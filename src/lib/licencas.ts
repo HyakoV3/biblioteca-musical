@@ -123,23 +123,23 @@ export const CREDITOS: readonly Credito[] = [
     textos: [{ tipo: "mit", direitos: "Copyright (c) 2024 Xiaobin Rong (GTCRN)\nCopyright (c) sapphi-red (gtcrn-wasm)" }],
   },
   {
-    // Os crates do Rust que o app compila dentro do binário (Cargo.toml): leitura do pacote baixado (zip), do XML do MuseScore (roxmltree), de arquivos em base64 e do JSON (serde). Todos são MIT ou Apache 2.0; vale o MIT.
+    // Os crates do Rust que o app compila dentro do binário (Cargo.toml): leitura do pacote baixado (zip, que a interface manda em base64), do SVG das partituras (roxmltree) e do JSON do hinário (serde). O zip é MIT; os demais, MIT ou Apache 2.0.
     id: "rust",
     nome: "Crates do Rust: zip, roxmltree, base64, serde e serde_json",
-    autoria: "Mathijs van de Nes; Yevhenii Reizner; Alice Maz e Marshall Pierce; Erick Tryzelaar e David Tolnay",
-    licenca: "MIT ou Apache 2.0",
+    autoria: "Mathijs van de Nes (zip); Yevhenii Reizner (roxmltree); Alice Maz e Marshall Pierce (base64); Erick Tryzelaar e David Tolnay (serde)",
+    licenca: "MIT (zip); MIT ou Apache 2.0 (os demais)",
     url: "https://crates.io",
     textos: [
       {
         tipo: "mit",
         direitos:
-          "zip: Copyright (c) 2014 Mathijs van de Nes\nroxmltree: Copyright (c) 2018 Yevhenii Reizner\nbase64: Copyright (c) 2025 Alice Maz, Marshall Pierce\nserde e serde_json: Authors: Erick Tryzelaar, David Tolnay (as declared in the crates, which publish no copyright line)",
+          "zip: Copyright (c) 2014 Mathijs van de Nes\nroxmltree: Copyright (c) 2018 Yevhenii Reizner\nbase64: Copyright (c) 2025 Alice Maz, Marshall Pierce\nserde: Authors: Erick Tryzelaar, David Tolnay (as declared in the crate, which publishes no copyright line)\nserde_json: the crate declares no author or copyright line",
       },
     ],
   },
   {
     id: "tauri",
-    nome: "Tauri",
+    nome: "Tauri e os plugins opener e http",
     autoria: "Tauri Apps Contributors",
     licenca: "MIT ou Apache 2.0",
     url: "https://github.com/tauri-apps/tauri",

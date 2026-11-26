@@ -401,7 +401,7 @@ export const es: Dicionario = {
   "creditos.uso.ruido": "Carga los filtros de ruido de la grabadora en el dispositivo.",
   "creditos.uso.rnnoise": "Filtro de ruido RNNoise de la grabadora (todo en el dispositivo).",
   "creditos.uso.gtcrn": "Filtro de ruido GTCRN de la grabadora (todo en el dispositivo).",
-  "creditos.uso.rust": "Lee el paquete descargado, el XML de los himnos y el JSON, dentro de la app.",
+  "creditos.uso.rust": "Lee el paquete descargado, las partituras (SVG) y el JSON de los himnos, dentro de la app.",
   "creditos.uso.tauri": "Estructura de la aplicación en el celular y en la computadora.",
   "sobre.nome_titulo": "En el nombre del Señor Jesús",
   "sobre.aviso_titulo": "Aplicación independiente",

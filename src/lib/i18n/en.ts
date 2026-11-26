@@ -401,7 +401,7 @@ export const en: Dicionario = {
   "creditos.uso.ruido": "Loads the recorder noise filters on the device.",
   "creditos.uso.rnnoise": "RNNoise noise filter of the recorder (all on the device).",
   "creditos.uso.gtcrn": "GTCRN noise filter of the recorder (all on the device).",
-  "creditos.uso.rust": "Reads the downloaded package, the hymn XML and JSON, inside the app.",
+  "creditos.uso.rust": "Reads the downloaded package, the sheet music (SVG) and the hymn JSON, inside the app.",
   "creditos.uso.tauri": "The app's framework on phone and desktop.",
   "sobre.nome_titulo": "In the name of the Lord Jesus",
   "sobre.aviso_titulo": "Independent app",
