@@ -8,7 +8,7 @@ Verovio em que cada compasso é um `<g class="measure">`. O app acende o compass
 SVG desenhou, o destaque some em silêncio. Nada mais confere os dois pacotes entre si: rode isto ANTES de publicar o hinário ou as partituras.
 
 PASTA_OU_ZIP_DAS_PARTITURAS: a pasta com hino-N.svg e hino-N-paisagem.svg (a mesma que o montar-pacote.py lê), ou o zip montado por ele.
-Falha (saída 1) se, em qualquer hino com `compassos`: o maior índice + 1 for maior que o número de `g.measure` do SVG (retrato ou paisagem), ou se o
+Saída 1: problema nos compassos; saída 2: uso incorreto ou entrada que não abre. Falha (saída 1) se, em qualquer hino com `compassos`: o maior índice + 1 for maior que o número de `g.measure` do SVG (retrato ou paisagem), ou se o
 retrato e a paisagem tiverem números diferentes de compassos (o `compassos` vale para as duas versões). Hino sem SVG ou sem `compassos` só é contado.
 """
 import json
@@ -30,10 +30,10 @@ def ler_svgs(origem: Path) -> dict:
     """{(número, paisagem): texto do SVG} de uma pasta ou de um zip."""
     svgs = {}
     if origem.is_dir():
-        itens = ((p.name, p.read_text(encoding="utf-8")) for p in sorted(origem.iterdir()) if p.is_file())
+        itens = ((p.name, p.read_text(encoding="utf-8")) for p in sorted(origem.iterdir()) if p.is_file() and NOME.search(p.name))
     else:
         with zipfile.ZipFile(origem) as z:
-            itens = [(n, z.read(n).decode("utf-8")) for n in z.namelist()]
+            itens = [(n, z.read(n).decode("utf-8")) for n in z.namelist() if NOME.search(n)]
     for nome, texto in itens:
         m = NOME.search(nome)
         if m:
@@ -77,8 +77,15 @@ def main(argv):
     if len(argv) != 3:
         print(__doc__, file=sys.stderr)
         return 2
-    hinario = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
-    problemas, conferidos, sem_svg = verificar(hinario, ler_svgs(Path(argv[2])))
+    # Entrada que não abre (arquivo ausente, JSON ruim, zip corrompido, SVG que não é UTF-8) é erro de uso (2), e não "achei problemas" (1):
+    # quem checa o código de saída num passo de publicação precisa distinguir os dois.
+    try:
+        hinario = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
+        svgs = ler_svgs(Path(argv[2]))
+    except (OSError, ValueError, zipfile.BadZipFile) as e:
+        print(f"erro: não consegui ler a entrada: {e}", file=sys.stderr)
+        return 2
+    problemas, conferidos, sem_svg = verificar(hinario, svgs)
     print(f"hinos conferidos: {conferidos} | com `compassos` e sem SVG: {sem_svg}")
     if problemas:
         print(f"\n{len(problemas)} problema(s):")

@@ -80,3 +80,20 @@ def test_main_devolve_1_com_problema_e_0_sem(tmp_path):
     bom.write_text(json.dumps(hinario((1, {"normal": [[0, 0], [1, 1]]}))), encoding="utf-8")
     assert mod.main(["x", str(ruim), str(pasta)]) == 1
     assert mod.main(["x", str(bom), str(pasta)]) == 0
+
+
+def test_ignora_arquivo_que_nao_e_svg_e_devolve_2_para_entrada_ruim(tmp_path):
+    pasta = tmp_path / "svg"
+    pasta.mkdir()
+    (pasta / "hino-1.svg").write_text(svg(1), encoding="utf-8")
+    (pasta / "imagem.png").write_bytes(b"\x89PNG\xff\xfe\x00")  # não é UTF-8, mas também não é SVG de hino: nem é lido
+    assert set(mod.ler_svgs(pasta)) == {(1, False)}
+    bom = tmp_path / "bom.json"
+    bom.write_text('{"hinos": []}', encoding="utf-8")
+    assert mod.main(["x", str(tmp_path / "nao-existe.json"), str(pasta)]) == 2
+    ruim = tmp_path / "ruim.json"
+    ruim.write_text("{", encoding="utf-8")
+    assert mod.main(["x", str(ruim), str(pasta)]) == 2
+    falso_zip = tmp_path / "p.zip"
+    falso_zip.write_text("não é zip", encoding="utf-8")
+    assert mod.main(["x", str(bom), str(falso_zip)]) == 2

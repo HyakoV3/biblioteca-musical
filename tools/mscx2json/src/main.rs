@@ -1884,7 +1884,6 @@ fn numero_do_arquivo(p: &Path) -> Option<u32> {
     p.file_stem()?.to_str()?.strip_prefix("hino-")?.parse().ok()
 }
 
-/// Roda a conversão. Se `--avisos` foi pedido e a conversão falha, o erro vai para o relatório (que não fica velho nem vazio).
 /// MSCX-007: confere a saída ANTES de gravar. Todo tempo e toda duração têm de ser finitos (tempo >= 0, duração > 0), todo MIDI de 0 a 127 e o
 /// andamento de 20 a 300: o leitor do app recusa o hinário inteiro por qualquer um desses (ver `hinario.rs`), então é melhor falhar aqui, com o
 /// nome do hino, a voz e a nota, do que publicar um pacote que o app não abre.
@@ -1947,6 +1946,7 @@ pub fn validar(h: &Hino) -> Result<(), String> {
     Ok(())
 }
 
+/// Roda a conversão. Se `--avisos` foi pedido e a conversão falha, o erro vai para o relatório (que não fica velho nem vazio).
 fn executar(args: Vec<String>) -> Result<(), String> {
     let relatorio = args
         .windows(2)
