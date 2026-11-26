@@ -315,6 +315,7 @@ fn importar_zip_com_progresso(
             hinario,
             exemplo: false,
             partituras: instaladas,
+            partituras_erro: None,
         },
         recusadas,
     })
@@ -457,36 +458,65 @@ pub fn remover_partituras(dir: &Path) -> Result<(), String> {
 }
 
 /// O SVG (já limpo na importação, e limpo de novo aqui: o arquivo fica numa pasta que o app não é o único a poder tocar) do hino
-/// `numero`, na versão da tela: `paisagem` pede a versão larga, e se o pacote não a trouxe vale a de retrato. O arquivo é aberto uma
-/// vez e lido só até o limite (nada de olhar o tamanho e ler depois: ele pode mudar entre as duas coisas).
+/// `numero`, na versão da tela: `paisagem` pede a versão larga, e se o pacote não a trouxe, ou se ela não passa na conferência (grande demais, não
+/// é UTF-8, SVG recusado), vale a de retrato (o motivo vai ao log: a tela larga é um extra, e sem ela o hino ainda abre). O retrato recusado é erro.
+/// O arquivo é aberto uma vez e lido só até o limite (nada de olhar o tamanho e ler depois: ele pode mudar entre as duas coisas).
 pub fn ler_partitura(dir: &Path, numero: u32, paisagem: bool) -> Result<String, String> {
-    let limite = Limites::default().svg;
     let ordem: &[Variante] = if paisagem {
         &[Variante::Paisagem, Variante::Retrato]
     } else {
         &[Variante::Retrato]
     };
+    let mut recusada: Option<String> = None;
     for variante in ordem {
-        let arquivo = dir.join("partituras").join(variante.arquivo(numero));
-        let falha = |e: std::io::Error| erro("ler", &[format!("{}: {e}", arquivo.display())]);
-        let aberto = match std::fs::File::open(&arquivo) {
-            Ok(f) => f,
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => continue,
-            Err(e) => return Err(falha(e)),
-        };
-        let invalida = |motivo: String| erro("partitura_invalida", &[numero.to_string(), motivo]);
-        let mut bytes = Vec::new();
-        aberto
-            .take(limite + 1)
-            .read_to_end(&mut bytes)
-            .map_err(falha)?;
-        if bytes.len() as u64 > limite {
-            return Err(invalida(format!("passa de {} MiB", limite / MIB)));
+        match ler_variante(dir, numero, *variante)? {
+            None => continue,
+            Some(Ok(svg)) => return Ok(svg),
+            Some(Err(motivo)) if *variante == Variante::Paisagem => {
+                eprintln!(
+                    "partitura {numero}: a versão de paisagem foi recusada ({motivo}); usando o retrato"
+                );
+                recusada = Some(motivo);
+            }
+            Some(Err(motivo)) => {
+                return Err(erro("partitura_invalida", &[numero.to_string(), motivo]));
+            }
         }
-        let texto = String::from_utf8(bytes).map_err(|_| invalida("o texto não é UTF-8".into()))?;
-        return svg::limpar(&texto).map_err(invalida);
     }
-    Err(erro("sem_partitura", &[numero.to_string()]))
+    // Só a paisagem existia e foi recusada: sem retrato para cair, o motivo é o erro.
+    match recusada {
+        Some(motivo) => Err(erro("partitura_invalida", &[numero.to_string(), motivo])),
+        None => Err(erro("sem_partitura", &[numero.to_string()])),
+    }
+}
+
+/// Lê uma versão da partitura: `Ok(None)` se o arquivo não existe, `Ok(Some(Ok(svg)))` se passou na conferência, `Ok(Some(Err(motivo)))` se foi
+/// recusada, e `Err` se o disco falhou (esse erro não é "recusada": não cai em outra versão).
+fn ler_variante(
+    dir: &Path,
+    numero: u32,
+    variante: Variante,
+) -> Result<Option<Result<String, String>>, String> {
+    let limite = Limites::default().svg;
+    let arquivo = dir.join("partituras").join(variante.arquivo(numero));
+    let falha = |e: std::io::Error| erro("ler", &[format!("{}: {e}", arquivo.display())]);
+    let aberto = match std::fs::File::open(&arquivo) {
+        Ok(f) => f,
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(e) => return Err(falha(e)),
+    };
+    let mut bytes = Vec::new();
+    aberto
+        .take(limite + 1)
+        .read_to_end(&mut bytes)
+        .map_err(falha)?;
+    if bytes.len() as u64 > limite {
+        return Ok(Some(Err(format!("passa de {} MiB", limite / MIB))));
+    }
+    Ok(Some(match String::from_utf8(bytes) {
+        Ok(texto) => svg::limpar(&texto),
+        Err(_) => Err("o texto não é UTF-8".into()),
+    }))
 }
 
 #[cfg(test)]
@@ -1249,13 +1279,31 @@ mod testes {
             r#"<svg xmlns="http://www.w3.org/2000/svg"><script>x</script></svg>"#,
         )
         .unwrap();
-        let e = ler_partitura(&d, 1, true).unwrap_err();
-        assert_eq!(codigo(&e), "partitura_invalida");
+        // a paisagem recusada não derruba o hino: a leitura cai no retrato
+        assert_eq!(
+            ler_partitura(&d, 1, true).unwrap(),
+            ler_partitura(&d, 1, false).unwrap()
+        );
         std::fs::write(
             d.join("partituras/hino-283-paisagem.svg"),
             vec![b'x'; (Limites::default().svg + 1) as usize],
         )
         .unwrap();
+        assert_eq!(
+            ler_partitura(&d, 283, true).unwrap(),
+            ler_partitura(&d, 283, false).unwrap()
+        );
+        // o retrato recusado continua sendo erro, com o motivo
+        std::fs::write(
+            d.join("partituras/hino-283.svg"),
+            vec![b'x'; (Limites::default().svg + 1) as usize],
+        )
+        .unwrap();
+        let e = ler_partitura(&d, 283, false).unwrap_err();
+        assert_eq!(codigo(&e), "partitura_invalida");
+        assert!(args(&e)[2].contains("passa de"), "{e}");
+        // sem retrato, só a paisagem recusada: o motivo dela é o erro
+        std::fs::remove_file(d.join("partituras/hino-283.svg")).unwrap();
         let e = ler_partitura(&d, 283, true).unwrap_err();
         assert!(args(&e)[2].contains("passa de"), "{e}");
         std::fs::remove_dir_all(&d).ok();

@@ -71,6 +71,8 @@ const INICIO_VEZ2 = BATIDAS_ESTROFE + PAUSA_BATIDAS;
 const STUB = `window.__TAURI_INTERNALS__ = {
   invoke: async (cmd, args) => {
     if (cmd === "carregar_hinario") {
+      // "e2e-falha-carga": a carga do conteúdo instalado falha (um erro do Rust) até que o "Remover" (remover_conteudo) volte ao exemplo.
+      if (sessionStorage.getItem("e2e-falha-carga") === "1") throw JSON.stringify(["ler", "falha simulada"]);
       const sem = sessionStorage.getItem("e2e-sem-partituras") === "1";
       // "e2e-exemplo": o app começa só com o pacote de exemplo (o caso do primeiro acesso, em que oferece baixar o hinário).
       return { hinario: ${JSON.stringify(hinario)}, exemplo: sessionStorage.getItem("e2e-exemplo") === "1", partituras: sem ? [] : [999] };
@@ -79,6 +81,11 @@ const STUB = `window.__TAURI_INTERNALS__ = {
       window.__removeu = (window.__removeu ?? 0) + 1;
       sessionStorage.setItem("e2e-sem-partituras", "1"); // depois de remover, o Rust devolve o pacote sem partituras
       return { hinario: ${JSON.stringify(hinario)}, exemplo: false, partituras: [] };
+    }
+    if (cmd === "remover_conteudo") {
+      sessionStorage.removeItem("e2e-falha-carga");
+      sessionStorage.setItem("e2e-exemplo", "1"); // depois de remover, o Rust devolve o pacote de exemplo
+      return { hinario: ${JSON.stringify(hinario)}, exemplo: true, partituras: [] };
     }
     if (cmd === "ler_partitura") {
       (window.__leituras = window.__leituras ?? []).push(args.paisagem === true); // cada leitura, com a versão pedida
@@ -96,6 +103,8 @@ const STUB = `window.__TAURI_INTERNALS__ = {
     }
     // Comandos dos plugins do Tauri (eventos, janela) não têm o que simular: devolvem nulo. Qualquer outro nome desconhecido falha, como falharia o Rust
     // (um comando renomeado no app e esquecido aqui não pode passar em silêncio).
+    // "e2e-download-pendurado": o download (plugin http do Tauri) nunca responde, para a fase "baixando" durar.
+    if (cmd.startsWith("plugin:http") && sessionStorage.getItem("e2e-download-pendurado") === "1") return new Promise(() => {});
     if (cmd.startsWith("plugin:")) return null;
     throw new Error("comando desconhecido no stub do e2e: " + cmd);
   },
@@ -1834,13 +1843,47 @@ async function principal() {
   await av(`document.querySelector('#conteudo summary').click(); 1`);
   await dormir(400);
   const semHinario = await botoesDeBaixar();
+  // OFF-006: o resumo do cartão (visível com ele fechado) acompanha o download do hinário. O `fetch` fica pendurado, então a fase "baixando" dura.
+  await av(`sessionStorage.setItem('e2e-download-pendurado', '1'); 1`);
+  await av(`(() => { const l = [...document.querySelectorAll('#conteudo .pacote')].find((e) => /hymnal|hinário|himnario/i.test(e.querySelector('strong')?.textContent ?? '')); [...l.querySelectorAll('button')].find((b) => /Download|Baixar|Descargar/i.test(b.textContent)).click(); return 1; })()`);
+  await dormir(500);
+  const resumoBaixando = await av(`document.querySelector('#conteudo summary')?.textContent.replace(/\\s+/g, ' ').trim()`);
+  confere(/Downloading|Baixando|Descargando/i.test(resumoBaixando ?? ""), `o resumo do cartão Conteúdo mostra o download do hinário em andamento: "${resumoBaixando}"`);
   confere(semHinario.hinario === true && semHinario.partituras === false && semHinario.aviso, `só com o pacote de exemplo: o Baixar do hinário vale e o das partituras fica desabilitado, com o aviso do motivo: ${JSON.stringify(semHinario)}`);
-  await av(`sessionStorage.removeItem('e2e-exemplo'); 1`);
+  await av(`sessionStorage.removeItem('e2e-exemplo'); sessionStorage.removeItem('e2e-download-pendurado'); 1`);
   await irParaAjustes(AJ);
   await av(`document.querySelector('#conteudo summary').click(); 1`);
   await dormir(400);
   const comHinario = await botoesDeBaixar();
   confere(comHinario.partituras === true && !comHinario.aviso, `com o hinário instalado o Baixar das partituras vale e o aviso some: ${JSON.stringify(comHinario)}`);
+  // OFF-004: enquanto outro conteúdo é instalado, remover o hinário ou as partituras fica desabilitado (e volta ao normal quando acaba).
+  await av(`sessionStorage.removeItem('e2e-sem-partituras'); 1`);
+  await irParaAjustes(AJ);
+  await av(`document.querySelector('#conteudo summary').click(); 1`);
+  await dormir(400);
+  const botoesDeRemover = () => av(`[...document.querySelectorAll('#conteudo .pacote button')].filter((b) => /Remove|Remover|Quitar/i.test(b.textContent)).map((b) => b.disabled)`);
+  const livres = await botoesDeRemover();
+  await av(`import('/src/lib/instalando.svelte.ts').then((m) => { window.__instalando = m.instalando; m.instalando.ocupar(); return 1; })`);
+  await dormir(300);
+  const travados = await botoesDeRemover();
+  await av(`window.__instalando.liberar(); 1`);
+  await dormir(300);
+  const soltos = await botoesDeRemover();
+  confere(livres.length === 2 && livres.every((d) => d === false) && travados.length === 2 && travados.every((d) => d === true) && soltos.every((d) => d === false), `Remover (hinário e partituras) fica desabilitado durante uma instalação e volta depois: ${JSON.stringify({ livres, travados, soltos })}`);
+  // PERS-001: se o conteúdo instalado não carrega, Ajustes oferece o Remover (volta ao exemplo) e o erro some depois.
+  await av(`sessionStorage.setItem('e2e-falha-carga', '1'); 1`);
+  await irParaAjustes(AJ);
+  await av(`document.querySelector('#conteudo summary').click(); 1`);
+  await dormir(500);
+  const comErro = await av(`(() => { const l = [...document.querySelectorAll('#conteudo .pacote')].find((e) => /hymnal|hinário|himnario/i.test(e.querySelector('strong')?.textContent ?? '')); const b = l && [...l.querySelectorAll('button')].find((x) => /Remove|Remover|Quitar/i.test(x.textContent)); return { remover: !!b, erro: document.getElementById('conteudo')?.textContent.includes('falha simulada') ?? false }; })()`);
+  confere(comErro.remover && comErro.erro, `com a carga do conteúdo falhando, Ajustes mostra o erro e oferece o Remover do hinário: ${JSON.stringify(comErro)}`);
+  await av(`(() => { const l = [...document.querySelectorAll('#conteudo .pacote')].find((e) => /hymnal|hinário|himnario/i.test(e.querySelector('strong')?.textContent ?? '')); [...l.querySelectorAll('button')].find((x) => /Remove|Remover|Quitar/i.test(x.textContent)).click(); return 1; })()`);
+  await dormir(300);
+  await av(`document.querySelector('.confirma .perigo').click(); 1`);
+  await dormir(600);
+  const aposRemover = await av(`({ erro: document.getElementById('conteudo')?.textContent.includes('falha simulada') ?? false, flag: sessionStorage.getItem('e2e-falha-carga') })`);
+  confere(!aposRemover.erro && aposRemover.flag === null, `depois do Remover o erro de carga some e o app volta ao exemplo: ${JSON.stringify(aposRemover)}`);
+  await av(`sessionStorage.removeItem('e2e-exemplo'); sessionStorage.setItem('e2e-sem-partituras', '1'); 1`);
   await av(`${semPartiturasAntes === null ? "sessionStorage.removeItem('e2e-sem-partituras')" : `sessionStorage.setItem('e2e-sem-partituras', '${semPartiturasAntes}')`}; 1`);
 
   // ---- Nomes das notas (Ajustes) e o hino que toca na lista ----

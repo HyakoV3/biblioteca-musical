@@ -162,6 +162,8 @@ pub struct Pacote {
     pub exemplo: bool,
     /// Números dos hinos com partitura (SVG) importada, em ordem. Vazio sem pacote `.zip` importado (ver `pacote.rs`).
     pub partituras: Vec<u32>,
+    /// Por que as partituras não puderam ser listadas (pasta ilegível), como erro traduzível (ver `erro`); `None` se tudo certo. O hinário abre mesmo assim, sem partituras.
+    pub partituras_erro: Option<String>,
 }
 
 /// Erro que a interface traduz: um JSON `["codigo", "arg", ...]` (ver `src/lib/erros.ts`). JSON, e não texto separado por
@@ -231,11 +233,17 @@ pub fn carregar(dir: Option<&Path>) -> Result<Pacote, String> {
             let texto = std::fs::read_to_string(&arquivo)
                 .map_err(|e| erro("ler", &[format!("{}: {e}", arquivo.display())]))?;
             let hinario = ler(&texto)?;
-            let partituras = crate::pacote::numeros(dir, &hinario.hinario.id)?;
+            // Uma pasta `partituras/` ilegível não derruba o hinário: ele abre sem partituras e o motivo vai à parte.
+            let (partituras, partituras_erro) =
+                match crate::pacote::numeros(dir, &hinario.hinario.id) {
+                    Ok(v) => (v, None),
+                    Err(e) => (Vec::new(), Some(e)),
+                };
             return Ok(Pacote {
                 hinario,
                 exemplo: false,
                 partituras,
+                partituras_erro,
             });
         }
     }
@@ -243,6 +251,7 @@ pub fn carregar(dir: Option<&Path>) -> Result<Pacote, String> {
         hinario: ler(EXEMPLO)?,
         exemplo: true,
         partituras: Vec::new(),
+        partituras_erro: None,
     })
 }
 
@@ -326,6 +335,7 @@ pub fn importar(dir: &Path, json: &str) -> Result<Pacote, String> {
         hinario: h,
         exemplo: false,
         partituras,
+        partituras_erro: None,
     })
 }
 
@@ -737,6 +747,21 @@ mod testes {
     }
 
     const VALIDO: &str = r#"{"versao":1,"hinario":{"id":"x","nome":"X"},"hinos":[{"numero":1,"titulo":"A"},{"numero":2,"titulo":"B"}]}"#;
+
+    #[test]
+    fn pasta_de_partituras_ilegivel_nao_derruba_o_hinario() {
+        let d = dir_teste("partituras_ilegiveis");
+        importar(&d, VALIDO).unwrap();
+        // a marca `.hinario` vira uma pasta: ler o arquivo falha por outro motivo que não "não existe"
+        std::fs::create_dir_all(d.join("partituras/.hinario")).unwrap();
+        let p =
+            carregar(Some(&d)).expect("o hinário abre mesmo com a pasta de partituras ilegível");
+        assert!(!p.exemplo && p.hinario.hinos.len() == 2);
+        assert!(p.partituras.is_empty());
+        let motivo = p.partituras_erro.expect("o motivo vai à parte");
+        assert!(motivo.starts_with("[\"ler\""), "{motivo}");
+        std::fs::remove_dir_all(&d).ok();
+    }
 
     #[test]
     fn importar_grava_e_carregar_le() {
