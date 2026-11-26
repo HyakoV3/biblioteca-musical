@@ -11,6 +11,8 @@ type Ponte = {
   /** Com um texto (o contexto em Markdown) que vai junto do áudio. Ponte antiga, sem este método: o texto não vai. */
   enviarComTexto?(titulo: string, texto: string): boolean;
   cancelar(): void;
+  /** Apaga as cópias de gravações enviadas que ficaram no cache do app. Ponte antiga, sem este método: nada a apagar. */
+  limparTudo?(): boolean;
 };
 
 /** Múltiplo de 3 bytes (o base64 de cada pedaço não leva preenchimento no meio); 192 KiB por chamada à ponte. */
@@ -36,6 +38,15 @@ function paraBase64(bytes: Uint8Array): string {
   let s = "";
   for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
   return btoa(s);
+}
+
+/** Apaga as cópias enviadas que o app guardou no cache (usado no "Apagar todas" do Gravador). Sem a ponte do Android, não há cópia: devolve true. */
+export function apagarCopiasEnviadas(): boolean {
+  try {
+    return ponte()?.limparTudo?.() ?? true;
+  } catch {
+    return false;
+  }
 }
 
 export function podeCompartilhar(): boolean {

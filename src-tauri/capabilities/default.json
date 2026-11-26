@@ -5,7 +5,6 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "opener:default",
     {
       "identifier": "http:default",
       "description": "Baixar os pacotes opcionais: hinário, partituras e sons gravados (docs/pacote-do-hinario.md, docs/pacote-de-partituras.md, docs/pacote-de-sons.md). Só um endereço: o GitHub (hinário, partituras e sons, repositório público biblioteca-musical-pacotes); o app não pode pedir nada a outro servidor. O GitHub redireciona o download para outro host, e o plugin só confere o escopo na URL inicial.",

@@ -8,6 +8,7 @@
   import { LIMITE_PARA_GUARDAR_MS, comLimite, formatarData, gravacoes, type MetaGravacao, type Mudancas } from "./gravacoes";
   import { PAGINA, SEM_FILTRO, agrupar, chaveDeBusca, filtrar, janela, mesclar, nomeDaGravacao, resumir, type Consulta, type Filtro, type Grupo } from "./organizar";
   import { i18n } from "./i18n/index.svelte";
+  import { apagarCopiasEnviadas } from "./compartilhar";
   import { emCurso } from "./gravacaoEmCurso.svelte";
   import { biblioteca } from "./biblioteca.svelte";
   import { marcarMudanca, montarContexto, type ContextoGravacao } from "./contexto";
@@ -459,6 +460,8 @@
     confirmandoTudo = false;
     try {
       await gravacoes.apagarTodas();
+      // As cópias que o "Enviar" deixou no cache do Android também saem. Se alguma não sair, as gravações do app já foram apagadas: fica só o registro no console.
+      if (!apagarCopiasEnviadas()) console.warn("gravador: não consegui apagar todas as cópias enviadas do cache do aparelho");
       carga++; // só agora, que apagou: uma leitura em andamento é descartada (traria gravações que já não existem); se apagar falhar, ela segue
       registro = null;
       todas = [];

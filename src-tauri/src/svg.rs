@@ -1,7 +1,7 @@
 //! Limpeza do SVG da partitura (I-08).
 //!
-//! O SVG vem de um pacote importado e é **embutido na página** (para seguir o tema escuro e o alto contraste), e o app roda
-//! com `csp: null`: um SVG malicioso poderia executar script. Por isso o arquivo não é copiado como veio. Ele é lido por um
+//! O SVG vem de um pacote importado e é **embutido na página** (para seguir o tema escuro e o alto contraste): um SVG malicioso
+//! poderia executar script. A CSP do app (`tauri.conf.json`) é a segunda camada; esta limpeza é a primeira. O arquivo não é copiado como veio. Ele é lido por um
 //! parser XML, conferido contra uma **lista de permitidos** (elementos, atributos e valores) e **reescrito** pelo app, que é
 //! quem decide cada byte do que a página vai receber (assim, diferenças entre o parser XML e o do navegador não ajudam quem
 //! ataca). O que não está na lista faz o arquivo ser **recusado**, com o motivo, e não "consertado".
@@ -21,6 +21,7 @@
 //!    `position:fixed`) nem `transform`, e sai sempre com `overflow="hidden"` (o desenho não passa por cima da interface).
 
 use roxmltree::{Document, Node, NodeType, ParsingOptions};
+use std::collections::HashMap;
 
 /// Nós (elementos, textos...) que um SVG pode ter. Um hino grande do Verovio tem cerca de 20 mil.
 pub const LIMITE_NOS: u32 = 300_000;
@@ -135,9 +136,36 @@ fn limpar_com(texto: &str, limite_nos: u32) -> Result<String, String> {
     if raiz.tag_name().name() != "svg" {
         return Err(format!("a raiz é <{}>, não <svg>", raiz.tag_name().name()));
     }
+    sem_use_encadeado(&doc)?;
     let mut saida = String::with_capacity(texto.len());
     escrever(raiz, 0, &mut saida)?;
     Ok(saida)
+}
+
+/// Recusa o `<use>` cujo alvo é, ou contém, outro `<use>`. O navegador resolve cada `<use>` copiando o alvo; um alvo que também usa
+/// outros alvos faz o desenho crescer em cadeia (a conta explode com poucos nós) e trava a página. Os SVGs do Verovio só apontam
+/// para `<symbol>` ou `<g>` sem `<use>` dentro.
+fn sem_use_encadeado(doc: &Document) -> Result<(), String> {
+    let e_use = |n: &Node| n.is_element() && n.tag_name().name() == "use";
+    let mut por_id: HashMap<&str, Node> = HashMap::new();
+    for n in doc.descendants().filter(|n| n.is_element()) {
+        if let Some(id) = n.attribute("id") {
+            por_id.entry(id).or_insert(n);
+        }
+    }
+    for uso in doc.descendants().filter(e_use) {
+        let Some(id) = uso.attribute("href").and_then(|h| h.strip_prefix('#')) else {
+            continue;
+        };
+        if let Some(alvo) = por_id.get(id)
+            && alvo.descendants().any(|n| e_use(&n))
+        {
+            return Err(format!(
+                "<use> aponta para #{id}, que contém outro <use> (referência encadeada)"
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn escrever(no: Node, nivel: usize, saida: &mut String) -> Result<(), String> {
@@ -655,6 +683,31 @@ mod testes {
             ))
             .contains("espaço de nomes")
         );
+    }
+
+    #[test]
+    fn recusa_use_que_aponta_para_alvo_com_outro_use() {
+        // use -> g que contém use (encadeado) e use -> use (o alvo é ele mesmo um <use>)
+        let encadeado = svg(
+            "<defs><symbol id=\"a\"><path d=\"M0 0\"/></symbol><g id=\"b\"><use href=\"#a\"/></g></defs><use href=\"#b\"/>",
+        );
+        assert!(
+            recusa(&encadeado).contains("encadeada"),
+            "{}",
+            recusa(&encadeado)
+        );
+        let direto = svg(
+            "<defs><symbol id=\"a\"><path d=\"M0 0\"/></symbol><use id=\"b\" href=\"#a\"/></defs><use href=\"#b\"/>",
+        );
+        assert!(recusa(&direto).contains("encadeada"));
+    }
+
+    #[test]
+    fn aceita_use_que_aponta_para_symbol_sem_use() {
+        let ok = svg(
+            "<defs><symbol id=\"a\"><path d=\"M0 0\"/></symbol></defs><use href=\"#a\"/><use href=\"#a\"/>",
+        );
+        assert!(limpar(&ok).is_ok());
     }
 
     #[test]

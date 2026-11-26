@@ -139,7 +139,7 @@ export const CREDITOS: readonly Credito[] = [
   },
   {
     id: "tauri",
-    nome: "Tauri e os plugins opener e http",
+    nome: "Tauri e o plugin http",
     autoria: "Tauri Apps Contributors",
     licenca: "MIT ou Apache 2.0",
     url: "https://github.com/tauri-apps/tauri",

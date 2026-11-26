@@ -18,7 +18,8 @@ sem descrever a falha.
   [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md) e [`docs/pacote-de-sons.md`](docs/pacote-de-sons.md).
 - **Microfone:** só o Gravador e o "Qual nota é essa?" do Afinador o usam, com a permissão pedida só ao gravar ou ao tocar em Ouvir (o Afinador não grava nada: lê o som e o descarta); a gravação fica no aparelho e só sai
   quando a pessoa toca em **Enviar** (folha de compartilhamento do sistema). O `FileProvider` que entrega a gravação ao outro app expõe só a
-  pasta de cache e a pasta de arquivos externos do próprio app (`getExternalFilesDir`), e não o armazenamento todo.
+  subpasta `compartilhar/` do cache do próprio app, e não o armazenamento todo.
+- **Defesa em profundidade da janela:** o app tem uma CSP restritiva (`app.security.csp` em `src-tauri/tauri.conf.json`: sem `unsafe-eval`, sem `*`, scripts só do próprio app e `wasm-unsafe-eval` para os filtros de ruído), a janela só navega dentro da origem do app (`on_navigation` em `src-tauri/src/lib.rs`; o app não tem links externos) e o plugin `opener` foi removido (o app não abre links). As cópias de gravações enviadas ficam em `cache/compartilhar/` e são apagadas após uma hora, ao abrir o app e no "Apagar todas" do Gravador. `tests/seguranca.test.ts` fixa a CSP, as permissões e o `FileProvider`.
 - O conteúdo de hinários (letras e partituras) **não fica neste repositório**: só código e dados de teste fictícios.
 
 ## Versões

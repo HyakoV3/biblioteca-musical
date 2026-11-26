@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OPUS_WEBM_AO_VIVO, bytesDe } from "./fixtures/opus";
-import { BYTES_POR_PEDACO, compartilharGravacao, nomeDoArquivo, podeCompartilhar, tipoSemCodec } from "../src/lib/compartilhar";
+import { BYTES_POR_PEDACO, apagarCopiasEnviadas, compartilharGravacao, nomeDoArquivo, podeCompartilhar, tipoSemCodec } from "../src/lib/compartilhar";
 
 afterEach(() => {
   delete (globalThis as Record<string, unknown>).BmCompartilhar;
@@ -129,5 +129,23 @@ describe("limpeza da escolha antiga (.webm | .weba)", () => {
     expect([...m.keys()]).toEqual(["outra"]);
     vi.stubGlobal("localStorage", undefined);
     expect(() => limparEscolhaAntigaDoFormato()).not.toThrow();
+  });
+});
+
+describe("apagar as cópias enviadas (cache do Android)", () => {
+  it("chama a ponte e devolve o resultado dela", () => {
+    const limparTudo = vi.fn(() => true);
+    (globalThis as Record<string, unknown>).BmCompartilhar = { limparTudo };
+    expect(apagarCopiasEnviadas()).toBe(true);
+    expect(limparTudo).toHaveBeenCalledTimes(1);
+  });
+  it("sem a ponte, ou com uma ponte antiga sem o método, não há o que apagar", () => {
+    expect(apagarCopiasEnviadas()).toBe(true);
+    (globalThis as Record<string, unknown>).BmCompartilhar = {};
+    expect(apagarCopiasEnviadas()).toBe(true);
+  });
+  it("se a ponte lança, devolve false em vez de quebrar o Apagar todas", () => {
+    (globalThis as Record<string, unknown>).BmCompartilhar = { limparTudo: () => { throw new Error("x"); } };
+    expect(apagarCopiasEnviadas()).toBe(false);
   });
 });
