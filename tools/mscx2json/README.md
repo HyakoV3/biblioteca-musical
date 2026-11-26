@@ -49,6 +49,7 @@ cargo run --release -- --correcoes correcoes.json --id meu-hinario --nome "Meu h
   `workTitle`, e por último "Hino N"). A autoria junta os textos com estilo `Lyricist` e `Composer`
   (letrista primeiro, sem repetir). Hinos sem esses textos ficam sem `autoria`.
 - **Idioma do conteúdo:** `--idioma pt-BR` declara o idioma de título e letra no hinário gerado.
+- **Relatório de avisos:** `--avisos avisos.txt` grava os avisos de cada hino num arquivo (além do `stderr`, que se perde quando a conversão roda de um script). Guarde-o fora do Git, como o hinário gerado.
 - **Nomes das vozes:** "Parte I", "II", "III" e "IV" viram Soprano, Contralto, Tenor e Baixo.
   Use `--nomes-originais` para manter os nomes do arquivo.
 
@@ -66,7 +67,9 @@ quantos trechos tiveram notas do meio omitidas.
 Reconhece um único padrão de repetição, confirmado no hino 457: início de repetição → fim de repetição junto
 da 1ª casa de volta → 2ª casa de volta → trecho final. Gera `vozes` (uma passada normal) e `final` (a última
 passada), e avisa "estrutura de repetição reconhecida" com os compassos de cada uma. Veja `docs/FORMATO.md`.
-Qualquer outra estrutura de repetição ou salto é lida **uma vez, em ordem**, com um aviso.
+Qualquer outra estrutura é lida **uma vez, em ordem**, com um aviso: mais de uma barra de início, mais de uma de fim, ou qualquer salto (`Jump`) ou marca
+(`Marker`) tira o padrão. Se o final for descartado (as vozes do final não casam com as da passada normal), a passada normal é a **leitura única**, com a
+2ª casa e o trecho final, e não só o trecho até a 1ª casa. Uma ligadura que sairia do fim de um trecho para um trecho que não vem depois dele na partitura é cortada.
 
 ## Limitações conhecidas
 
