@@ -7,9 +7,8 @@ responsável, 2026-11-16: o botão "Importar hinário" vai deixar de existir e a
 O pacote é um `.zip` só com `partituras/hino-<número>.svg` e, opcional, `partituras/hino-<número>-paisagem.svg` (formato e verificações em [`FORMATO.md`](FORMATO.md), seção "Importar").
 
 > **Direitos.** As partituras são geradas das transcrições do Enéias (`eneiasramos/ccb-hinario-5-do`, "todos os direitos reservados", sem
-> licença); a autorização dele **ainda não veio**. **Publicar o pacote num link público é distribuir esse trabalho**: o mecanismo está pronto,
-> mas quem decide quando (e se) publicar é o responsável, depois da resposta dele. Enquanto não houver pacote publicado, o manifesto
-> do app fica `"pacote": null` e o botão Baixar **não aparece**.
+> licença). **Ele autorizou a distribuição** (registro em [`licencas-de-terceiros.md`](licencas-de-terceiros.md), a única fonte). Isso **não cobre** os
+> autores das letras e músicas nem a edição do hinário, que seguem sem registro.
 
 ## Estado publicado (2026-11-22)
 
@@ -63,8 +62,7 @@ O pacote é um `.zip` só com `partituras/hino-<número>.svg` e, opcional, `part
 - **Link do app:** `https://fb.hm.hv2.xyz/public/api/resources/download?hash=<hash do compartilhamento>`, no manifesto do app. Conferido contra os bytes
   reais do servidor: o zip da pasta traz o `BibliotecaMusicalPartituras/partituras-003.zip`, e o app extrai esse zip e confere o tamanho e o SHA-256 do manifesto (verificado de novo depois de apagar o 001 e o 002).
 - **O link está no manifesto, que está no repositório público:** quem lê o código pode baixar as 5 partituras de teste. É o mesmo que já acontece com
-  o link dos sons, mas com um agravante: as partituras são das transcrições do Enéias, cuja autorização ainda não veio (ver "Direitos" acima). Antes
-  de publicar o conjunto completo, esperar a resposta dele.
+  o link dos sons, mas com um agravante: as partituras são das transcrições do Enéias, que autorizou a distribuição (ver "Direitos" acima); os direitos das letras e músicas seguem sem registro.
 
 ## Configuração do compartilhamento (File Browser)
 

@@ -1,4 +1,4 @@
-// Catálogo dos instrumentos "gravados" (I-07): amostras do banco FluidR3_GM (licença MIT) tocadas com a biblioteca smplr,
+// Catálogo dos instrumentos "gravados" (I-07): amostras do banco GeneralUser GS (S. Christian Collins, licença própria que permite redistribuir; ver docs/licencas-de-terceiros.md) tocadas com a biblioteca smplr,
 // no lugar da síntese. São um pacote OPCIONAL, baixado em Ajustes (docs/pacote-de-sons.md): os arquivos ficam no
 // armazenamento do aparelho (src/lib/sons/armazenamento.ts) e só aparecem para escolha depois de baixados.
 import type { SinteticoId, TipoVoz } from "./instrumentos";

@@ -1794,6 +1794,8 @@ async function principal() {
   await dormir(300);
   const ci1 = await av(`({ aviso: !!document.getElementById('aviso-independente'), guardado: localStorage.getItem('prefs.aviso-independente') })`);
   confere(!ci1.aviso && ci1.guardado === '1', `depois do Concordo o aviso some e a escolha é guardada: ${JSON.stringify(ci1)}`);
+  const avisoNoSobre = await av(`(() => { const p = document.getElementById('aviso-sobre'); const c = p?.closest('details'); return { achou: !!p, texto: p?.textContent.replace(/\\s+/g, ' ').trim() ?? '', primeiro: p?.parentElement?.firstElementChild === p }; })()`);
+  confere(avisoNoSobre.achou && avisoNoSobre.primeiro && /independent|independente|no oficial|not official|unofficial/i.test(avisoNoSobre.texto), `o aviso de app não oficial fica fixo, como primeiro parágrafo do cartão Sobre, mesmo depois do Concordo: ${JSON.stringify(avisoNoSobre)}`);
   await av(`(() => { const d = document.querySelector('#cartao-saida'); if (d && !d.open) d.querySelector('summary').click(); return 1; })()`);
   await dormir(300);
   const saida0 = await av(`(() => ({ modos: [...document.querySelectorAll('input[name="modo-saida"]')].map((i) => i.value + ':' + i.checked), medida: document.getElementById('saida-medida')?.textContent ?? '', desc: document.getElementById('saida-descricao')?.textContent ?? '' }))()`);

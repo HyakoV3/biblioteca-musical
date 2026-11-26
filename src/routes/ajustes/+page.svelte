@@ -372,6 +372,8 @@
   <section>
     <Cartao titulo={t("ajustes.sobre")} bind:aberto={sobreAberto}>
       <div class="sobre">
+        <!-- O aviso de app não oficial também mora aqui, fixo: o destaque do topo some depois do "Concordo", mas quem abre o Sobre sempre o encontra. -->
+        <p id="aviso-sobre"><strong>{t("sobre.aviso_titulo")}.</strong> {t("sobre.aviso")}</p>
         <p>{t("sobre.intro")}</p>
 
         <h3>{t("sobre.fazer_titulo")}</h3>
