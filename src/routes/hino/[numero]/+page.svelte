@@ -230,7 +230,8 @@
     rolagemDasAbas[aba] = window.scrollY;
     aba = nova;
     await tick();
-    window.scrollTo(0, rolagemDasAbas[nova] ?? 0);
+    // Instantâneo: o `scroll-behavior: smooth` global faria a página correr do topo até o ponto, em vez de já estar nele.
+    window.scrollTo({ top: rolagemDasAbas[nova] ?? 0, behavior: "instant" });
   }
   // Ao abrir um hino: Ouvir primeiro (se houver notas para tocar); sem notas, só existe a Letra.
   $effect(() => {

@@ -899,12 +899,12 @@ async function principal() {
   // Um calço alto dentro do <main>: a página precisa ser comprida para rolar nas duas abas (a letra do hino de teste é curta).
   await av(`(() => { const calco = document.createElement('div'); calco.style.height = '3000px'; document.querySelector('main').appendChild(calco); document.getElementById('aba-letra').click(); return 1; })()`);
   await dormir(300);
-  await av(`window.scrollTo(0, 420); 1`);
+  await av(`window.scrollTo({ top: 420, behavior: 'instant' }); 1`);
   await dormir(200);
   await av(`document.getElementById('aba-partitura').click(); 1`);
   await dormir(300);
   const rolagemAoEntrar = await av(`window.scrollY`);
-  await av(`window.scrollTo(0, 150); 1`);
+  await av(`window.scrollTo({ top: 150, behavior: 'instant' }); 1`);
   await dormir(200);
   await av(`document.getElementById('aba-letra').click(); 1`);
   await dormir(300);
@@ -983,8 +983,9 @@ async function principal() {
   confere(avisoExemplo.href === "/ajustes?abrir=hinario" && /hymnal first|primeiro o hinário|primero el himnario/i.test(avisoExemplo.texto), `só com o pacote de exemplo: o aviso da aba Partitura manda baixar o hinário antes e leva a ?abrir=hinario: ${JSON.stringify(avisoExemplo)}`);
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes?abrir=hinario` });
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('hinario')`)); ) await dormir(250);
-  await dormir(600);
-  const aoHinario = await av(`(() => { const h = document.getElementById('hinario'); const r = h?.getBoundingClientRect(); return { aberto: document.getElementById('conteudo')?.open === true, visivel: !!r && r.top >= -1 && r.top < window.innerHeight }; })()`);
+  // A rolagem até o hinário é suave (`scroll-behavior: smooth`): espera a posição assentar antes de medir.
+  await av(`new Promise((r) => { let antes = -1, iguais = 0; const t = setInterval(() => { iguais = window.scrollY === antes ? iguais + 1 : 0; antes = window.scrollY; if (iguais >= 4) { clearInterval(t); r(1); } }, 100); setTimeout(() => { clearInterval(t); r(1); }, 5000); })`);
+  const aoHinario = await av(`(() => { const h = document.getElementById('hinario'); const r = h?.getBoundingClientRect(); return { aberto: document.getElementById('conteudo')?.open === true, visivel: !!r && r.top >= -1 && r.top < window.innerHeight, topo: Math.round(r?.top ?? -9999), rolagem: Math.round(window.scrollY), altura: window.innerHeight }; })()`);
   confere(aoHinario.aberto && aoHinario.visivel, `?abrir=hinario abre o Conteúdo e deixa o hinário à vista: ${JSON.stringify(aoHinario)}`);
   await av("sessionStorage.removeItem('e2e-exemplo'); 1");
   await av("sessionStorage.removeItem('e2e-sem-partituras'); sessionStorage.setItem('e2e-falha-partitura', '1'); 1");
