@@ -1,6 +1,6 @@
 import { IDBFactory, IDBKeyRange } from "fake-indexeddb";
 import { describe, expect, it, vi } from "vitest";
-import { ESPERA_AO_ABRIR_MS, Gravacoes, TAMANHO_DA_PAGINA, TENTATIVAS_DE_ABRIR, comLimite, formatarData } from "../src/lib/gravacoes";
+import { ESPERA_AO_ABRIR_MS, Gravacoes, LimiteEstourado, TAMANHO_DA_PAGINA, TENTATIVAS_DE_ABRIR, comLimite, formatarData } from "../src/lib/gravacoes";
 
 // O Node não tem IDBKeyRange; no WebView ele é global.
 vi.stubGlobal("IDBKeyRange", IDBKeyRange);
@@ -55,7 +55,7 @@ describe("gravações guardadas", () => {
     const g = new Gravacoes(() => idb);
     const m = await g.salvar(audio(10), "audio/webm", 1);
     const banco = await new Promise<IDBDatabase>((ok, falha) => {
-      const r = idb.open("bm-gravacoes", 1);
+      const r = idb.open("bm-gravacoes");
       r.onsuccess = () => ok(r.result);
       r.onerror = () => falha(r.error);
     });
@@ -380,6 +380,110 @@ describe("comLimite (a escrita que nunca confirma não prende a tela)", () => {
     try {
       await expect(comLimite(Promise.reject(new Error("cota cheia")), 1000, "demorou")).rejects.toThrow("cota cheia");
       expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("gravação em pedaços e recuperação (AND-002)", () => {
+  const pedaco = (...bytes: number[]) => new Blob([new Uint8Array(bytes)]);
+  const lerBytes = async (b: Blob | null) => [...new Uint8Array((await b?.arrayBuffer()) ?? new ArrayBuffer(0))];
+
+  it("uma sessão que ficou aberta vira uma gravação guardada, com os pedaços na ordem certa", async () => {
+    const fabrica = new IDBFactory();
+    const antes = new Gravacoes(() => fabrica);
+    const id = await antes.abrirSessao("audio/webm;codecs=opus", { v: 1, fone: true, origem: "metronomo", metronomo: { bpm: 60, cliques: 4, familia: "simples", tempos: 4 } });
+    // os pedaços chegam fora de ordem (as escritas terminam em ordens diferentes) e o 10 vem depois do 2 (a ordem é numérica, não de texto)
+    await antes.guardarPedaco(id, 10, pedaco(10));
+    await antes.guardarPedaco(id, 1, pedaco(1));
+    await antes.guardarPedaco(id, 0, pedaco(0));
+    await antes.guardarPedaco(id, 2, pedaco(2));
+    await antes.fechar(); // o app caiu: nada de `descartarSessao`
+
+    const depois = new Gravacoes(() => fabrica);
+    const [meta, ...resto] = await depois.recuperarSessoes();
+    expect(resto).toEqual([]);
+    expect(meta).toMatchObject({ bytes: 4, tipo: "audio/webm;codecs=opus", segundos: 4 });
+    expect(meta.contexto).toMatchObject({ origem: "metronomo", mudouDurante: true });
+    expect(await lerBytes(await depois.blob(meta.id))).toEqual([0, 1, 2, 10]);
+    expect((await depois.listarTodas()).map((m) => m.id)).toEqual([meta.id]);
+    expect(await depois.recuperarSessoes()).toEqual([]); // e não recupera duas vezes
+  });
+
+  it("a gravação em curso (a de `excluir`) não é tratada como sobra", async () => {
+    const g = novo();
+    const id = await g.abrirSessao("audio/webm");
+    await g.guardarPedaco(id, 0, pedaco(1, 2, 3));
+    expect(await g.recuperarSessoes([id])).toEqual([]);
+    expect((await g.recuperarSessoes()).length).toBe(1);
+  });
+
+  it("sessão sem nenhum pedaço é só apagada, sem criar gravação vazia", async () => {
+    const g = novo();
+    await g.abrirSessao("audio/webm");
+    expect(await g.recuperarSessoes()).toEqual([]);
+    expect(await g.listarTodas()).toEqual([]);
+    expect(await g.recuperarSessoes()).toEqual([]);
+  });
+
+  it("descartar a sessão apaga os pedaços, e um pedaço que chega atrasado não é escrito", async () => {
+    const fabrica = new IDBFactory();
+    const g = new Gravacoes(() => fabrica);
+    const id = await g.abrirSessao("audio/webm");
+    await g.guardarPedaco(id, 0, pedaco(1));
+    await g.descartarSessao(id);
+    await g.guardarPedaco(id, 1, pedaco(2)); // atrasado: a gravação já foi fechada
+    const outro = new Gravacoes(() => fabrica);
+    expect(await outro.recuperarSessoes()).toEqual([]); // nada ficou órfão
+  });
+
+  it("cada sessão vira a sua própria gravação", async () => {
+    const g = novo();
+    const a = await g.abrirSessao("audio/webm");
+    const b = await g.abrirSessao("audio/webm");
+    await g.guardarPedaco(a, 0, pedaco(1));
+    await g.guardarPedaco(b, 0, pedaco(2, 2));
+    const metas = await g.recuperarSessoes();
+    expect(metas.map((m) => m.bytes).sort()).toEqual([1, 2]);
+  });
+
+  it("um banco da versão 1 é atualizado sem perder as gravações guardadas", async () => {
+    const fabrica = new IDBFactory();
+    const banco = await new Promise<IDBDatabase>((ok, falha) => {
+      const r = fabrica.open("bm-gravacoes", 1); // o formato antigo: só meta e blobs
+      r.onupgradeneeded = () => {
+        r.result.createObjectStore("meta", { keyPath: "id" }).createIndex("porData", ["criadaEm", "id"]);
+        r.result.createObjectStore("blobs");
+      };
+      r.onsuccess = () => ok(r.result);
+      r.onerror = () => falha(r.error);
+    });
+    await new Promise<void>((ok) => {
+      const t = banco.transaction(["meta", "blobs"], "readwrite");
+      t.objectStore("meta").put({ id: "antiga", criadaEm: 1, segundos: 2, tipo: "audio/webm", bytes: 3 });
+      t.objectStore("blobs").put({ dados: new Uint8Array([7, 8, 9]).buffer, tipo: "audio/webm" }, "antiga");
+      t.oncomplete = () => ok();
+    });
+    banco.close();
+    const g = new Gravacoes(() => fabrica);
+    expect((await g.listarTodas()).map((m) => m.id)).toEqual(["antiga"]);
+    expect(await lerBytes(await g.blob("antiga"))).toEqual([7, 8, 9]);
+    const id = await g.abrirSessao("audio/webm"); // e os depósitos novos existem
+    await g.guardarPedaco(id, 0, pedaco(1));
+    expect((await g.recuperarSessoes()).length).toBe(1);
+  });
+});
+
+describe("LimiteEstourado", () => {
+  it("comLimite estoura com o erro próprio, com a mensagem pedida", async () => {
+    vi.useFakeTimers();
+    try {
+      const p = comLimite(new Promise<number>(() => {}), 1000, "demorou");
+      const visto = expect(p).rejects.toBeInstanceOf(LimiteEstourado);
+      await vi.advanceTimersByTimeAsync(1000);
+      await visto;
+      await expect(comLimite(Promise.reject(new Error("cota cheia")), 1000, "demorou")).rejects.not.toBeInstanceOf(LimiteEstourado);
     } finally {
       vi.useRealTimers();
     }

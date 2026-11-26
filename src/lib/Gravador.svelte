@@ -4,51 +4,32 @@
   import Aviso from "./Aviso.svelte";
   import Icone from "./Icone.svelte";
   import ItemGravacao from "./ItemGravacao.svelte";
-  import { DetectorDeSom, Gravador, corrigirDuracao, formatarTamanho, formatarTempo, motivoDoErro, nivelParaBarra, nomeDoFormato, rastro, suavizarBarra, type Gravacao, type MotivoDoErro } from "./gravador";
-  import { LIMITE_PARA_GUARDAR_MS, comLimite, formatarData, gravacoes, type MetaGravacao, type Mudancas } from "./gravacoes";
+  import { corrigirDuracao, formatarTamanho, formatarTempo, nomeDoFormato, type Gravacao, type MotivoDoErro } from "./gravador";
+  import { formatarData, gravacoes, type MetaGravacao, type Mudancas } from "./gravacoes";
   import { PAGINA, SEM_FILTRO, agrupar, chaveDeBusca, filtrar, janela, mesclar, nomeDaGravacao, resumir, type Consulta, type Filtro, type Grupo } from "./organizar";
   import { i18n } from "./i18n/index.svelte";
   import { apagarCopiasEnviadas } from "./compartilhar";
-  import { emCurso } from "./gravacaoEmCurso.svelte";
-  import { biblioteca } from "./biblioteca.svelte";
-  import { marcarMudanca, montarContexto, type ContextoGravacao } from "./contexto";
-  import { metronomo } from "./metronomo.svelte";
+  import { emCurso, type Resultado } from "./gravacaoEmCurso.svelte";
   import { reproducao } from "./reproducao.svelte";
   import { FILTROS_DE_RUIDO, type FiltroDeRuido } from "./filtroDeRuido";
   import { lerFiltroDeRuido, salvarFiltroDeRuido } from "./preferencias";
-  import { aoFalharServicoDeGravacao, aoPararGravacaoPelaNotificacao, desligarServicoDeGravacao, foneConectado, ligarServicoDeGravacao } from "./servico";
-
+  
   // A aba Gravador (I-03, primeira versão): grava o microfone, ouve de volta e descarta. Nada sai do aparelho. A permissão de microfone é pedida só
   // ao tocar em "Gravar". Gravar para o hino que estiver tocando (o alto-falante entraria no microfone). O microfone é devolvido ao aparelho ao parar,
   // ao sair da aba e ao esconder o app. `ativa` diz se a aba está à vista.
   let { ativa }: { ativa: boolean } = $props();
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
-  const gravador = new Gravador();
+  // O ciclo de vida da gravação mora em `gravacaoEmCurso.svelte.ts` (ele segue vivo mesmo sem esta tela); aqui só se mostra o estado dele.
+  const gravando = $derived(emCurso.gravando);
+  const decorrido = $derived(emCurso.decorrido);
+  const nivel = $derived(emCurso.nivel);
+  const ouviu = $derived(emCurso.ouviu);
+  const semSom = $derived(emCurso.semSom);
   // "Reduzir ruído" (I-29): desligado, o filtro do Android ou uma rede neural (RNNoise, GTCRN); desligado por padrão e lembrado. Vale na PRÓXIMA gravação (o microfone é aberto com ele).
   let filtro = $state<FiltroDeRuido>(lerFiltroDeRuido());
   /** O filtro escolhido não pôde ser ligado na última gravação e ela foi feita sem filtro: a tela avisa. */
   let filtroFalhou = $state<FiltroDeRuido | null>(null);
-  // A gravação parou sozinha (o sistema tirou o microfone, o gravador falhou): guarda o que já foi gravado, em vez de a tela seguir "gravando".
-  gravador.aoInterromper = () => {
-    if (gravando) void parar();
-  };
-
-  let gravando = $state(false);
-  /** No Android o serviço em primeiro plano (microfone) assumiu a gravação: ela segue com a tela bloqueada e o app em segundo plano. */
-  let protegida = false;
-  /** Segundos gravados até agora (a tela só mostra; o tempo certo da gravação é o medido ao parar). */
-  let decorrido = $state(0);
-  let relogio: ReturnType<typeof setInterval> | null = null;
-  /** O medidor de som: lê o nível do microfone várias vezes por segundo e o mostra como uma barra no botão. */
-  let medidor: ReturnType<typeof setInterval> | null = null;
-  const detector = new DetectorDeSom();
-  /** Nível de 0 a 1 que a barra mostra: sobe na hora e desce devagar (senão a barra tremeria a cada sílaba). */
-  let nivel = $state(0);
-  /** Já entrou som nesta gravação (avisa o leitor de tela uma vez). */
-  let ouviu = $state(false);
-  /** Faz tempo demais sem som: o microfone pode estar tapado, mudo ou sem permissão de verdade. */
-  let semSom = $state(false);
   /** Só existe quando a gravação NÃO pôde ser guardada (cota cheia, armazenamento indisponível): fica na tela para a pessoa ouvir antes de perder. */
   let gravacao = $state<Gravacao | null>(null);
   /** Todas as gravações guardadas (só os metadados; o áudio fica no banco), da mais nova para a mais antiga. `$state.raw`: a lista é trocada por inteira, por cópia, sem um proxy por registro. */
@@ -81,11 +62,7 @@
   let confirmandoTudo = $state(false);
   let relogioTudo: ReturnType<typeof setTimeout> | null = null;
   let erro = $state<MotivoDoErro | null>(null);
-  /** Numera os pedidos: uma resposta tardia do microfone não vale se a pessoa já mandou parar ou saiu da aba. */
-  let tentativa = 0;
-  /** Um pedido de microfone ou uma parada está em andamento: os toques em "Gravar" e "Parar" são ignorados até acabar (dois pedidos juntos deixavam um microfone órfão). */
-  let ocupado = false;
-  /** O componente foi desmontado: o que chegar depois não pode criar nada que fique para trás. */
+  /** O componente foi desmontado: o que chegar depois (a escrita atrasada de uma gravação) não pode mexer no que já não existe. */
   let destruido = false;
 
   const textoErro: Record<MotivoDoErro, Parameters<typeof i18n.t>[0]> = {
@@ -101,152 +78,57 @@
     return { destroy: desfazer };
   }
 
-  function pararRelogio() {
-    if (relogio !== null) clearInterval(relogio);
-    relogio = null;
-    if (medidor !== null) clearInterval(medidor);
-    medidor = null;
-    nivel = 0;
-    ouviu = false;
-    semSom = false;
-  }
-
   function descartar() {
     if (gravacao) URL.revokeObjectURL(gravacao.url);
     gravacao = null;
     erroGuardar = false; // o aviso de "não pôde guardar" era sobre esta gravação
   }
 
-  /** O que a pessoa ouve no fone agora (metrônomo ou hino), para guardar com a gravação (I-38). Nulo sem fone ou sem nada tocando. */
-  function lerContexto(): ContextoGravacao | null {
-    const atual = reproducao.atual;
-    const hino = atual && reproducao.estado === "tocando" ? biblioteca.pacote?.hinario.hinos.find((h) => h.numero === atual.numero) : undefined;
-    const c = hino ? reproducao.config(hino) : null;
-    return montarContexto({
-      fone: foneConectado(),
-      metronomo: { ligado: metronomo.ligado, bpm: metronomo.bpm, compasso: metronomo.compasso },
-      hino:
-        atual && hino && c
-          ? {
-              tocando: true,
-              numero: atual.numero,
-              titulo: atual.titulo,
-              tonalidade: hino.tonalidade,
-              transposicao: c.transposicao,
-              andamento: c.andamento,
-              andamentoOriginal: hino.andamento,
-              parte: atual.parte,
-              vozes: hino.vozes.map((v, i) => ({ nome: v.nome, muda: c.mudas[i] ?? false })),
-            }
-          : null,
-    });
-  }
-  /** O contexto do instante em que a gravação começou; no instante de parar (lido ANTES de qualquer espera), vira o contexto guardado, com a marca de que algo mudou, se mudou. */
-  let contextoDoInicio: ContextoGravacao | null = null;
-  const contextoAoParar = () => marcarMudanca(contextoDoInicio, lerContexto());
-
-  async function iniciar() {
-    const minha = ++tentativa;
-    erro = null;
-    emCurso.perdida = null;
-    descartar();
-    // Sem fone, um som de cada vez: o hino que tocava calaria dentro da gravação. Com fone, o hino segue e o microfone só ouve a pessoa.
-    if (!foneConectado()) {
-      reproducao.parar();
-      metronomo.parar(); // o clique do alto-falante entraria na gravação
-    }
-    tocandoId = null; // e uma gravação da lista que tocava também: o alto-falante entraria na nova
-    try {
+  /** Começar ou parar: o ciclo de vida da gravação mora em `emCurso`; aqui se limpa a tela antes de começar e se mostra o que ele conta. */
+  async function alternar() {
+    if (emCurso.ocupado) return;
+    if (!emCurso.gravando) {
+      erro = null;
       filtroFalhou = null;
-      const pedido = filtro; // fixa a escolha antes do await: a pessoa pode mexer nela enquanto o microfone e o filtro carregam
-      const aplicado = await gravador.iniciar({ filtro: pedido });
-      if (aplicado !== pedido && minha === tentativa) filtroFalhou = pedido; // o filtro neural não carregou: a gravação segue sem filtro
-    } catch (e) {
-      if (minha === tentativa) erro = motivoDoErro(e);
-      console.warn("gravador: não foi possível gravar", e);
-      return;
+      descartar();
+      tocandoId = null; // uma gravação da lista que tocava também: o alto-falante entraria na nova
     }
-    if (minha !== tentativa) {
-      gravador.soltar(); // a pessoa já saiu ou mandou parar enquanto o aparelho liberava o microfone
-      return;
+    const r = await emCurso.alternar(filtro);
+    if (r && !r.cancelada) {
+      erro = r.erro;
+      filtroFalhou = r.filtroFalhou;
     }
-    contextoDoInicio = lerContexto();
-    gravando = true;
-    protegida = ligarServicoDeGravacao();
-    decorrido = 0;
-    const comeco = performance.now();
-    relogio = setInterval(() => (decorrido = (performance.now() - comeco) / 1000), 250);
-    detector.reiniciar(performance.now());
-    medidor = setInterval(() => {
-      const atual = gravador.nivel();
-      nivel = suavizarBarra(nivel, nivelParaBarra(atual));
-      const r = detector.atualizar(atual, performance.now());
-      if (r.comSom) ouviu = true;
-      // Sem medidor (sem AudioContext, ou o navegador o deixou suspenso), o nível é sempre 0: isso não prova que não há som, então não avisa.
-      semSom = gravador.medidorAtivo && r.semSom;
-    }, 80);
-    // O app já estava em segundo plano quando o microfone chegou (a permissão já estava dada e a pessoa saiu antes): o evento de esconder já passou.
-    // Espera um instante antes de parar, porque o diálogo de permissão do Android também esconde a página por um momento.
-    if (document.hidden && !protegida) setTimeout(() => (gravando && document.hidden ? void parar() : undefined), 1000);
   }
 
-  async function parar() {
-    if (!gravando) return; // outra parada já está em andamento
-    const contexto = contextoAoParar(); // antes de qualquer espera: o que mudar enquanto o arquivo fecha não conta
-    tentativa++;
-    pararRelogio();
-    gravando = false;
-    protegida = false;
-    desligarServicoDeGravacao();
-    const nova = await gravador.parar();
-    if (destruido) {
-      if (nova) URL.revokeObjectURL(nova.url); // o componente se foi durante a parada: ninguém vai usar esta gravação
-      return;
-    }
+  /** Como a gravação terminou: guardada (entra no topo da lista), vazia (erro) ou não guardada (fica na tela para a pessoa ouvir antes de perder). */
+  function aoTerminar(r: Resultado) {
     descartar(); // uma gravação não guardada anterior, se ainda estava na tela, não fica com a URL presa
-    if (!nova) {
+    if (r.tipo === "vazia") {
       erro = "falhou";
       return;
     }
-    await guardar(nova, contexto);
-  }
-
-  /** Guarda a gravação na lista (no topo). Se não der (cota cheia, armazenamento indisponível), ela fica na tela para a pessoa ouvir e a tela explica. */
-  async function guardar(nova: Gravacao, contexto: ContextoGravacao | null) {
-    erroGuardar = false;
-    rastro(`guardando ${nova.bytes} bytes`);
-    const comeco = performance.now();
-    const salvando = gravacoes.salvar(nova.blob, nova.tipo, nova.segundos, contexto);
-    try {
-      const meta = await comLimite(salvando, LIMITE_PARA_GUARDAR_MS, "o armazenamento demorou demais para guardar a gravação");
-      rastro(`guardada em ${Math.round(performance.now() - comeco)} ms`);
-      URL.revokeObjectURL(nova.url); // o arquivo já está no armazenamento; a lista o lê de lá quando a pessoa tocar em Ouvir
-      if (destruido) return;
-      inserir(meta);
-    } catch (e) {
-      console.warn("gravador: não foi possível guardar a gravação", e);
-      if (destruido) {
-        URL.revokeObjectURL(nova.url);
-        return;
-      }
-      erroGuardar = true;
-      gravacao = nova;
-      // Se a escrita terminar depois do limite, a gravação JÁ está guardada: a lista e a contagem precisam saber (ou, se a pessoa já a descartou, ela é apagada de volta).
-      void salvando.then(
-        (meta) => {
-          console.warn("gravador: a gravação foi guardada depois do limite de espera");
-          if (destruido) return;
-          if (gravacao === nova) {
-            inserir(meta);
-            erroGuardar = false;
-            descartar();
-          } else {
-            void gravacoes.apagar(meta.id).catch(() => {});
-          }
-        },
-        () => {},
-      );
+    if (r.tipo === "guardada") {
+      inserir(r.meta);
+      return;
     }
+    const nova = r.gravacao;
+    erroGuardar = true;
+    gravacao = nova;
+    // Se a escrita terminar depois do limite, a gravação JÁ está guardada: a lista e a contagem precisam saber (ou, se a pessoa já a descartou, ela é apagada de volta).
+    void r.depois.then(
+      (meta) => {
+        console.warn("gravador: a gravação foi guardada depois do limite de espera");
+        if (destruido) return;
+        if (gravacao === nova) {
+          inserir(meta);
+          erroGuardar = false;
+          descartar();
+        } else {
+          void gravacoes.apagar(meta.id).catch(() => {});
+        }
+      },
+      () => {},
+    );
   }
 
   /** Põe uma gravação recém-guardada no topo da lista (e a marca como "nova", para ela não sumir de um filtro que não a inclui). */
@@ -428,7 +310,7 @@
   function aoTocarItem(id: string) {
     tocandoId = id;
     reproducao.parar();
-    if (gravando) void parar();
+    if (emCurso.gravando) void emCurso.parar();
   }
 
   async function apagarUma(id: string) {
@@ -479,45 +361,14 @@
     }
   }
 
-  /** Sai de cena (outra aba): cancela um pedido de microfone que esperava, ou para a gravação, e DEVOLVE o microfone. O que já foi gravado fica. */
-  async function sair() {
-    if (!gravando) {
-      tentativa++;
-      gravador.soltar();
-      return;
-    }
-    await parar();
-  }
-
-  async function alternar() {
-    if (ocupado) return;
-    ocupado = true;
-    try {
-      if (gravando) await parar();
-      else await iniciar();
-    } finally {
-      ocupado = false;
-    }
-  }
-
-  // Espelha a gravação para fora da aba (o aviso das outras abas).
-  $effect(() => {
-    emCurso.gravando = gravando;
-    emCurso.decorrido = decorrido;
-  });
-  // O metrônomo ligou com a gravação em curso: sem fone, o clique do alto-falante entraria nela, então a gravação para; com fone, os dois seguem.
-  $effect(() => {
-    if (metronomo.ligado && gravando && !foneConectado()) void parar();
-  });
-
   $effect(() => {
     if (!ativa) {
       // Com o serviço do Android assumindo a gravação, ela SEGUE ao trocar de aba (gravar com o metrônomo no fone); o aviso das outras abas tem o Parar.
-      if (untrack(() => gravando && protegida)) {
+      if (untrack(() => emCurso.gravando && emCurso.protegida)) {
         tocandoId = null;
         return;
       }
-      void sair();
+      void emCurso.sair(); // cancela um pedido de microfone que esperava, ou para a gravação, e DEVOLVE o microfone: o que já foi gravado fica
       tocandoId = null; // a aba saiu de cena: nenhuma gravação da lista segue tocando
     }
   });
@@ -531,93 +382,19 @@
       document.removeEventListener("visibilitychange", renovar);
     };
   });
-  // Um hino que começa a tocar com a gravação em curso: sem fone, para a gravação (o alto-falante entraria nela); com fone, os dois seguem.
-  $effect(() => {
-    if (reproducao.estado === "tocando" && gravando && !foneConectado()) void parar();
-  });
-  // App em segundo plano: para uma gravação EM CURSO e devolve o microfone, a menos que o Android a tenha assumido com o serviço em primeiro plano
-  // (`protegida`): aí ela segue, mesmo com a tela bloqueada, até a pessoa tocar em "Parar" (no app ou na notificação). Um pedido de permissão que ainda espera NÃO é cancelado: o próprio
-  // diálogo de permissão do Android esconde a página por um instante, e cancelar ali jogava fora o microfone que a pessoa acabava de permitir
-  // (e a mensagem de "permissão negada").
-  $effect(() => {
-    const aoEsconder = () => {
-      if (document.hidden && gravando && !protegida) void parar();
-    };
-    document.addEventListener("visibilitychange", aoEsconder);
-    return () => document.removeEventListener("visibilitychange", aoEsconder);
-  });
   onMount(() => {
-    emCurso.parar = () => void parar();
-    const soltarAviso = aoPararGravacaoPelaNotificacao(() => {
-      if (gravando) void parar();
-    });
-    // O serviço do Android não subiu (a ponte avisa depois de já ter dito que sim): sem ele a gravação não está protegida. Com a página escondida o
-    // microfone já se foi, então para e guarda o que houver, em vez de seguir "gravando" em silêncio.
-    const soltarFalha = aoFalharServicoDeGravacao(() => {
-      protegida = false;
-      if (gravando && document.hidden) void parar();
-    });
-    void carregarTudo();
-    return () => {
-      soltarAviso();
-      soltarFalha();
-      emCurso.parar = null;
-    };
+    emCurso.aoTerminar = aoTerminar;
+    // As gravações que ficaram pela metade (o app caiu no meio) viram gravações guardadas ANTES de a lista ser lida.
+    void emCurso
+      .recuperar()
+      .catch((e) => console.warn("gravador: não foi possível recuperar gravações pela metade", e))
+      .then(carregarTudo);
   });
-  /** A tela inicial se foi (a pessoa abriu um hino) com a gravação seguindo em outra aba: para, GUARDA o que foi gravado e devolve o microfone. */
-  const MOTIVO_DEMORA = "o armazenamento demorou demais para guardar a gravação";
-
-  async function pararEGuardarAoSair() {
-    const contexto = contextoAoParar(); // antes do primeiro await: parar o hino ou o metrônomo durante a espera não conta como mudança
-    try {
-      // `parar()` já tem o seu limite (entrega o que foi gravado se o `stop` não vier): sem um segundo, mais curto ou igual, que descartaria a entrega parcial.
-      const nova = await gravador.parar();
-      if (!nova) {
-        // Gravação vazia (nada chegou do microfone): não há o que guardar e nada falhou, então sem aviso de erro.
-        console.warn("gravador: nada foi gravado ao sair da tela");
-        return;
-      }
-      URL.revokeObjectURL(nova.url);
-      const salvando = gravacoes.salvar(nova.blob, nova.tipo, nova.segundos, contexto);
-      try {
-        // Com o mesmo limite de espera de `guardar()`: um armazenamento lento não deixa a espera pendente para sempre.
-        await comLimite(salvando, LIMITE_PARA_GUARDAR_MS, MOTIVO_DEMORA);
-      } catch (e) {
-        if (!(e instanceof Error && e.message === MOTIVO_DEMORA)) throw e;
-        // Só demorou: a escrita segue e pode terminar. O aviso diz que é incerto, e some se ela terminar bem (ou vira "falhou" se ela falhar).
-        emCurso.perdida = "incerta";
-        console.warn("gravador: o armazenamento demorou para guardar a gravação ao sair da tela");
-        salvando.then(
-          () => {
-            if (emCurso.perdida === "incerta") emCurso.perdida = null;
-          },
-          () => {
-            emCurso.perdida = "falhou";
-          },
-        );
-      }
-    } catch (e) {
-      // A tela do Gravador já se foi: o aviso vai por um estado global, que a tela inicial mostra quando a pessoa voltar a ela.
-      emCurso.perdida = "falhou";
-      console.warn("gravador: não foi possível guardar a gravação ao sair da tela", e);
-    } finally {
-      gravador.soltar();
-    }
-  }
 
   onDestroy(() => {
-    const estavaGravando = gravando;
     destruido = true;
-    protegida = false;
-    gravando = false;
-    emCurso.gravando = false;
-    emCurso.parar = null;
-    desligarServicoDeGravacao();
     if (relogioTudo !== null) clearTimeout(relogioTudo);
-    tentativa++; // um pedido de microfone que ainda espera é jogado fora quando chegar
-    pararRelogio();
-    if (estavaGravando) void pararEGuardarAoSair();
-    else gravador.soltar();
+    emCurso.aoDesmontarATela(); // com o serviço do Android a gravação SEGUE; sem ele, para e guarda
     descartar();
   });
 </script>

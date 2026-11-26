@@ -66,7 +66,7 @@
     }
     reproducao.parar(); // um som de cada vez: o hino que tocava não toca junto do clique
     // Sem fone, o clique do alto-falante entraria na gravação em curso: ela para. Com fone, os dois seguem (estudar gravando com o clique no ouvido).
-    if (emCurso.gravando && !foneConectado()) emCurso.parar?.();
+    if (emCurso.gravando && !foneConectado()) void emCurso.parar();
     void metronomo.iniciar();
   }
 

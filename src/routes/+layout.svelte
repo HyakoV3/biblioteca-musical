@@ -6,7 +6,8 @@
   import { i18n } from "#lib/i18n/index.svelte";
   import Miniplayer from "#lib/Miniplayer.svelte";
   import { reproducao } from "#lib/reproducao.svelte";
-  import { aoPararPelaNotificacao, manterTelaLigada, sincronizarServico } from "#lib/servico";
+  import { aoPararPelaNotificacao, foneConectado, manterTelaLigada, sincronizarServico } from "#lib/servico";
+  import { emCurso } from "#lib/gravacaoEmCurso.svelte";
   import { limparEscolhaAntigaDoFormato } from "#lib/preferencias";
   import { telaLigada } from "#lib/telaLigada.svelte";
   import { metronomo } from "#lib/metronomo.svelte";
@@ -36,6 +37,12 @@
   // Um hino que começa a tocar cala o metrônomo (um som de cada vez).
   $effect(() => {
     if (reproducao.estado === "tocando") metronomo.parar();
+  });
+
+  // Um hino ou o metrônomo que começa com a gravação em curso: sem fone, a gravação para e é guardada (o alto-falante entraria nela); com fone, os dois seguem.
+  // Mora aqui, e não na tela do Gravador, porque a gravação pode seguir com a tela do hino aberta.
+  $effect(() => {
+    if (emCurso.gravando && (reproducao.estado === "tocando" || metronomo.ligado) && !foneConectado()) void emCurso.parar();
   });
 
   // Mantém o atributo lang do documento em sintonia com o idioma escolhido.

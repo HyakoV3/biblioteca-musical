@@ -168,6 +168,8 @@ export class Gravador {
   tipo = "";
   /** Avisa quem usa quando a gravação PARA SOZINHA (ligação, outro app pegou o microfone, permissão revogada, erro do gravador): ele chama `parar` para guardar o que já foi gravado. */
   aoInterromper: (() => void) | null = null;
+  /** Avisa quem usa a cada pedaço que o gravador entrega (um por segundo), com o número dele (de 0): quem guarda cada pedaço a mais deixa a gravação sobreviver a uma queda do app (AND-002). */
+  aoPedaco: ((indice: number, pedaco: Blob) => void) | null = null;
 
   get gravando(): boolean {
     return this.gravador?.state === "recording";
@@ -211,7 +213,14 @@ export class Gravador {
       this.pedacos = [];
       this.fim = 0;
       this.gravador.ondataavailable = (e) => {
-        if (e.data.size > 0) this.pedacos.push(e.data);
+        if (e.data.size === 0) return;
+        const indice = this.pedacos.length;
+        this.pedacos.push(e.data);
+        try {
+          this.aoPedaco?.(indice, e.data);
+        } catch (erro) {
+          console.warn("gravador: quem guarda os pedaços falhou", erro); // a gravação em memória segue igual
+        }
       };
       const interrompida = () => {
         if (this.fim === 0) this.fim = performance.now();

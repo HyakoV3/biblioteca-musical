@@ -5,6 +5,7 @@
   import Gravador from "#lib/Gravador.svelte";
   import Metronomo from "#lib/Metronomo.svelte";
   import Aviso from "#lib/Aviso.svelte";
+  import AvisoGravando from "#lib/AvisoGravando.svelte";
   import AvisoHinario from "#lib/AvisoHinario.svelte";
   import Barra from "#lib/Barra.svelte";
   import { biblioteca } from "#lib/biblioteca.svelte";
@@ -19,7 +20,6 @@
   import { buscar, indiceDe } from "#lib/busca-hinos";
   import { afterNavigate, goto } from "$app/navigation";
   import { emCurso } from "#lib/gravacaoEmCurso.svelte";
-  import { formatarTempo } from "#lib/gravador";
   import { inicio, type AbaInicio } from "#lib/inicio.svelte";
   import { ultimoHino } from "#lib/ultimoHino.svelte";
 
@@ -136,13 +136,7 @@
     <Aviso tipo="erro"><span id="gravacao-perdida">{t(emCurso.perdida === "incerta" ? "gravador.perdida_incerta" : "gravador.perdida")}</span></Aviso>
     <button class="botao" onclick={() => (emCurso.perdida = null)}>{t("gravador.fechar_aviso")}</button>
   {/if}
-  {#if emCurso.gravando && inicio.aba !== "gravador"}
-    <div id="gravando-aviso" class="gravando-aviso" role="status">
-      <span class="ponto" aria-hidden="true"></span>
-      <span class="texto">{t("gravador.em_curso")} <span aria-hidden="true">{formatarTempo(emCurso.decorrido)}</span></span>
-      <button class="botao" onclick={() => emCurso.parar?.()}>{t("gravador.parar")}</button>
-    </div>
-  {/if}
+  <AvisoGravando oculto={inicio.aba === "gravador"} />
   <!-- Os dois painéis ficam montados (só um visível): a busca e a rolagem da lista não se perdem ao trocar de aba. A aba Afinador não depende
        do hinário carregado. -->
   <div role="tabpanel" id="painel-hinos" aria-labelledby="aba-hinos" hidden={inicio.aba !== "hinos"}>
@@ -291,9 +285,4 @@
   .mais { margin-top: 0.6rem; width: 100%; }
   small { color: var(--suave); }
   .fonte { margin-top: 1.2rem; }
-  /* O aviso de gravação em curso nas outras abas: uma faixa com o ponto, o texto e o Parar (o ponto é só enfeite: o texto diz "Gravando"). */
-  .gravando-aviso { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; border: 0.0625rem solid var(--ouro-linha); border-radius: 0.75rem; background: var(--superficie); }
-  .gravando-aviso .ponto { width: 0.9rem; height: 0.9rem; border-radius: 50%; background: currentColor; flex: none; }
-  .gravando-aviso .texto { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
-  .gravando-aviso button { min-height: 3rem; }
 </style>
