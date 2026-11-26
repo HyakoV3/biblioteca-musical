@@ -282,6 +282,8 @@ export const en: Dicionario = {
   "gravador.erro_atualizar": "Could not save the change.",
   "gravador.buscar": "Search recordings (name, hymn or date)",
   "gravador.filtro_legenda": "Show",
+  "gravador.mais_filtros": "Search and more filters",
+  "gravador.filtro_escondido": "A filter is active and hidden",
   "gravador.filtro_todas": "All",
   "gravador.filtro_hino": "With hymn",
   "gravador.filtro_metronomo": "With metronome",

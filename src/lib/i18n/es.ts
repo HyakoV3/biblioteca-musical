@@ -282,6 +282,8 @@ export const es: Dicionario = {
   "gravador.erro_atualizar": "No se pudo guardar el cambio.",
   "gravador.buscar": "Buscar grabaciones (nombre, himno o fecha)",
   "gravador.filtro_legenda": "Mostrar",
+  "gravador.mais_filtros": "Búsqueda y más filtros",
+  "gravador.filtro_escondido": "Hay un filtro activo oculto",
   "gravador.filtro_todas": "Todas",
   "gravador.filtro_hino": "Con himno",
   "gravador.filtro_metronomo": "Con metrónomo",

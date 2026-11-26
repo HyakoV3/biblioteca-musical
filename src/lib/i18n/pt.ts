@@ -282,6 +282,8 @@ export const pt = {
   "gravador.erro_atualizar": "Não foi possível salvar a alteração.",
   "gravador.buscar": "Buscar gravações (nome, hino ou data)",
   "gravador.filtro_legenda": "Mostrar",
+  "gravador.mais_filtros": "Busca e mais filtros",
+  "gravador.filtro_escondido": "Há um filtro ativo escondido",
   "gravador.filtro_todas": "Todas",
   "gravador.filtro_hino": "Com hino",
   "gravador.filtro_metronomo": "Com metrônomo",
