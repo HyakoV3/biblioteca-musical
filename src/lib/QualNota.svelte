@@ -19,7 +19,13 @@
   // ao parar, ao sair da aba, ao ir para segundo plano, quando um hino começa, quando o Gravador começa a gravar e depois de 2 minutos sem som. Nada é gravado e nada sai do aparelho. Um som de cada vez:
   // ouvir cala o tom de referência (`aoComecar`) e o tom, ao começar, desliga esta escuta (o pai muda `ouvindo`). Instrumento que transpõe: a nota mostrada é a que a pessoa LÊ na partitura
   // (a trompete em Si♭ que soa Sol lê Lá); a que soa fica numa linha pequena.
-  let { ativa, ouvindo = $bindable(false), aoComecar }: { ativa: boolean; ouvindo?: boolean; aoComecar: () => void } = $props();
+  // `instrumento` (o tom escolhido) é ligável: o pai o lê para avisar, em "Outra nota", que o tom dele é o som real (concerto), e o aviso acompanha a troca na hora.
+  let {
+    ativa,
+    ouvindo = $bindable(false),
+    instrumento = $bindable<Transposicao>("concerto"),
+    aoComecar,
+  }: { ativa: boolean; ouvindo?: boolean; instrumento?: Transposicao; aoComecar: () => void } = $props();
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const SEM_SOM_MAX_MS = 120_000;
@@ -40,7 +46,6 @@
   let estado = $state<Estado>({ tipo: "silencio" });
   let suave = $state<Suave | null>(null);
   let erro = $state<"negada" | "sem_microfone" | "falhou" | "gravando" | null>(null);
-  let instrumento = $state<Transposicao>("concerto");
   /** Os instrumentos do tom escolhido (só informativos: o app guarda o tom, e não o instrumento), um por linha, em duas colunas quando cabe. */
   const instrumentosDoTom = $derived(t(`afinador.lista_${instrumento}`).split("|"));
   let ultimoSom = 0;

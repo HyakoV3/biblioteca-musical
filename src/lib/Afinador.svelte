@@ -5,8 +5,7 @@
   import Icone from "./Icone.svelte";
   import ListaRecentes from "./ListaRecentes.svelte";
   import QualNota from "./QualNota.svelte";
-  import { lerInstrumento } from "./afinadorPrefs";
-  import { LA_PADRAO, OITAVA_MAX, OITAVA_MIN, OITAVA_PADRAO, frequenciaDe, limitarOitava, midiDe } from "./afinador";
+  import { LA_PADRAO, OITAVA_MAX, OITAVA_MIN, OITAVA_PADRAO, frequenciaDe, limitarOitava, midiDe, type Transposicao } from "./afinador";
   import { nomeDaNota, nomeDaNotaPorExtenso } from "./notacao";
   import { notacao } from "./notacao.svelte";
   import { adicionarNota, lerAfinador, salvarAfinador, type NotaRecente } from "./afinadorPrefs";
@@ -31,12 +30,9 @@
   let oitava = $state(OITAVA_PADRAO);
   /** O cartão "Outra nota" começa fechado e não é lembrado. */
   let outraAberta = $state(false);
-  /** O instrumento escolhido em "Qual nota é essa?" transpõe (Si♭, Mi♭ ou Fá)? Então o tom de "Outra nota" é o som real (concerto), e não a nota escrita no instrumento. Relido ao abrir o cartão e ao voltar para a aba. */
-  const instrumentoTranspoe = $derived.by(() => {
-    void outraAberta;
-    void ativa;
-    return lerInstrumento() !== "concerto";
-  });
+  /** O tom do instrumento escolhido em "Qual nota é essa?" (ligado ao cartão dele). Se transpõe (Si♭, Mi♭ ou Fá), o tom de "Outra nota" é o som real (concerto), e não a nota escrita no instrumento. */
+  let instrumento = $state<Transposicao>("concerto");
+  const instrumentoTranspoe = $derived(instrumento !== "concerto");
   /** O cartão "Temporizador" começa fechado e não é lembrado; o TEMPO escolhido (até parar, 10, 20 ou 30 s) é lembrado neste aparelho. */
   let temporizadorAberto = $state(false);
   let limite = $state<Limite>(0);
@@ -253,7 +249,7 @@
     <p class="meta">{t("afinador.temporizador_vale")}</p>
   </Cartao>
 
-  <QualNota {ativa} bind:ouvindo aoComecar={parar} />
+  <QualNota {ativa} bind:ouvindo bind:instrumento aoComecar={parar} />
 
   <ListaRecentes
     titulo={t("afinador.recentes")}

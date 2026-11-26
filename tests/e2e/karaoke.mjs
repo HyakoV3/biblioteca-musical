@@ -2042,6 +2042,9 @@ async function principal() {
   // "Outra nota" é o som real (concerto): com um instrumento que transpõe, o cartão avisa (AFN-001); em Dó, não.
   const somReal = () => av(`(() => { const c = document.querySelector('#painel-afinador details'); const estava = c.open; if (!estava) c.querySelector('summary').click(); return new Promise((r) => setTimeout(() => { const v = !!document.getElementById('som-real'); if (!estava) c.querySelector('summary').click(); r(v); }, 200)); })()`);
   const somRealEmSi = await somReal();
+  // Com "Outra nota" ABERTO, trocar o instrumento em "Qual nota é essa?" atualiza o aviso na hora (sem fechar e abrir o cartão).
+  const aoVivo = await av(`(async () => { const c = document.querySelector('#painel-afinador details'); if (!c.open) c.querySelector('summary').click(); const espera = () => new Promise((r) => setTimeout(r, 250)); document.querySelector('.instrumentos input[value="concerto"]').click(); await espera(); const emDo = !!document.getElementById('som-real'); document.querySelector('.instrumentos input[value="si_bemol"]').click(); await espera(); const emSi = !!document.getElementById('som-real'); c.querySelector('summary').click(); return { emDo, emSi }; })()`);
+  confere(aoVivo.emDo === false && aoVivo.emSi === true, `Afinador: com "Outra nota" aberto, trocar o instrumento atualiza o aviso do som real na hora: ${JSON.stringify(aoVivo)}`);
   const emFa = await listaDoTom("fa");
   confere(emFa.length === 2 && emFa.some((x) => /^horn$/i.test(x)), `Afinador: em Fá só a trompa e o corne inglês: ${JSON.stringify(emFa)}`);
   const emDo = await listaDoTom("concerto");
