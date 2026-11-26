@@ -171,6 +171,9 @@
   $effect(() => {
     const marcar = () => (rolagemManualEm = performance.now());
     const teclas = (e: KeyboardEvent) => {
+      // Em botão, campo ou elemento editável a tecla não rola a letra (o Espaço aciona o botão; as setas mexem no campo).
+      const alvo = e.target as HTMLElement | null;
+      if (alvo?.closest("button, a, input, textarea, select, [contenteditable], [role='slider']")) return;
       if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(e.key)) marcar();
     };
     window.addEventListener("wheel", marcar, { passive: true });
@@ -193,12 +196,19 @@
     ultimaLinha = chave;
     const el = document.getElementById(`linha-${chave}`);
     if (!el) return;
-    if (performance.now() - rolagemManualEm < ESPERA_ROLAGEM_MANUAL_MS) return;
-    const r = el.getBoundingClientRect();
-    const topo = (document.querySelector("header")?.getBoundingClientRect().bottom ?? 0) + 8;
-    const css = getComputedStyle(document.documentElement);
-    const reservado = (parseFloat(css.getPropertyValue("--altura-miniplayer")) || 0) + (parseFloat(css.getPropertyValue("--altura-navegacao")) || 0);
-    if (r.top < topo || r.bottom > window.innerHeight - reservado - 8) el.scrollIntoView({ block: "center" });
+    const rolar = () => {
+      const r = el.getBoundingClientRect();
+      const topo = (document.querySelector("header")?.getBoundingClientRect().bottom ?? 0) + 8;
+      const css = getComputedStyle(document.documentElement);
+      const reservado = (parseFloat(css.getPropertyValue("--altura-miniplayer")) || 0) + (parseFloat(css.getPropertyValue("--altura-navegacao")) || 0);
+      if (r.top < topo || r.bottom > window.innerHeight - reservado - 8) el.scrollIntoView({ block: "center" });
+    };
+    const restante = ESPERA_ROLAGEM_MANUAL_MS - (performance.now() - rolagemManualEm);
+    if (restante <= 0) return rolar();
+    // A pessoa rolou há pouco: espera o resto da pausa e então leva a tela à linha de AGORA (a de antes já ficou para trás). Se o destaque andar
+    // antes disso, este efeito roda de novo e o temporizador é desfeito.
+    const id = setTimeout(rolar, restante);
+    return () => clearTimeout(id);
   });
 
   function alternarKaraoke() {
