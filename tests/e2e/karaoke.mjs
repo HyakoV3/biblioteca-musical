@@ -233,14 +233,18 @@ async function principal() {
       if (m.id && espera.has(m.id)) espera.get(m.id)(m);
     };
     const enviar = (method, params = {}) =>
-      new Promise((r) => {
+      new Promise((r, rejeitar) => {
         const id = ++n;
-        espera.set(id, r);
+        // Sem resposta do Chrome em 30 s, a chamada rejeita com o nome do método: o e2e falha com mensagem em vez de ficar parado até o tempo esgotado do job.
+        const limite = setTimeout(() => {
+          espera.delete(id);
+          rejeitar(new Error(`sem resposta do Chrome a ${method} em 30 s`));
+        }, 30000);
+        espera.set(id, (m) => {
+          clearTimeout(limite);
+          r(m);
+        });
         ws.send(JSON.stringify({ id, method, params }));
-        // Sem resposta do Chrome em 30 s, o e2e falha com o nome do método em vez de ficar parado até o tempo esgotado do job.
-        setTimeout(() => {
-          if (espera.delete(id)) r({ error: { message: `sem resposta do Chrome a ${method} em 30 s` } });
-        }, 30000).unref?.();
       });
     const av = async (expressao) => {
       const r = await enviar("Runtime.evaluate", { expression: expressao, returnByValue: true, awaitPromise: true });
@@ -256,6 +260,7 @@ async function principal() {
   // banco do APP aparecer em `indexedDB.databases()`, o que só acontece depois de a abertura dele terminar. Se não aparece em 10 s, esse Chrome é descartado e outro sobe.
   const sondaDoBanco = (av) => av(`new Promise((r) => { const ini = Date.now(); let fim = false; const acabar = (v) => { if (!fim) { fim = true; r(v); } }; setTimeout(() => acabar(false), 10000); const olhar = async () => { if (fim) return; try { const lista = await Promise.race([indexedDB.databases(), new Promise((_, rej) => setTimeout(() => rej(new Error('sem resposta')), 2000))]); if (lista.some((d) => d.name === 'bm-gravacoes')) return acabar(true); } catch {} if (Date.now() - ini > 10000) return acabar(false); setTimeout(olhar, 200); }; olhar(); })`);
   let sessao = null;
+  let bancoAbriu = false;
   for (let tentativa = 1; tentativa <= 3; tentativa++) {
     sessao = await abrirChrome();
     await sessao.enviar("Page.enable");
@@ -268,6 +273,7 @@ async function principal() {
     // BM_E2E_FORCAR_REINICIO=1 finge uma sonda sem resposta na 1ª tentativa: serve para conferir, na máquina, que o reinício do Chrome funciona.
     const simulado = process.env.BM_E2E_FORCAR_REINICIO === "1" && tentativa === 1;
     if (idbOk && !simulado) {
+      bancoAbriu = true;
       if (tentativa > 1) console.log(`Chrome com o banco do app funcionando na tentativa ${tentativa}`);
       break;
     }
@@ -284,7 +290,7 @@ async function principal() {
       /* o perfil é temporário: se não der para apagar agora, a limpeza final tenta */
     }
   }
-  if (!(await sondaDoBanco(sessao.av))) throw new Error("o banco do app (bm-gravacoes) não abriu em 3 tentativas de Chrome: o e2e não tem como seguir");
+  if (!bancoAbriu) throw new Error("o banco do app (bm-gravacoes) não abriu em 3 tentativas de Chrome: o e2e não tem como seguir");
   const { ws, enviar, av } = sessao;
 
   await enviar("Page.enable");
