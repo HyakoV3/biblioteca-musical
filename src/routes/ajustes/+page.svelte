@@ -36,7 +36,6 @@
   const voltar = usarVoltar();
 
   let resultado = $state<{ tipo: "sucesso" | "erro"; texto: string } | null>(null);
-  let confirmando = $state(false);
   // Cada bloco é um cartão recolhível, fechado de saída: a linha de resumo ao lado do título mostra o estado sem abrir. Aparência, Idioma e
   // Conteúdo lembram se a pessoa os deixou abertos (`prefs.ajustes`); Sobre e Créditos abrem sempre fechados.
   const lembrado = lerAjustes();
@@ -49,13 +48,14 @@
     salvarAjustes(lembrado);
   };
 
-  // O botão "Abrir Ajustes" da aba Partitura traz `?abrir=partituras`: abre o Conteúdo e rola até as partituras. Essa abertura NÃO é lembrada. Não conto
+  // O botão "Abrir Ajustes" da aba Partitura traz `?abrir=partituras` (ou `?abrir=hinario`, com o pacote de exemplo): abre o Conteúdo e rola até as partituras (ou ao hinário). Essa abertura NÃO é lembrada. Não conto
   // com a abertura automática do <details> ao seguir um #hash (depende da versão da WebView): o cartão é aberto por aqui.
   onMount(async () => {
-    if (page.url.searchParams.get("abrir") !== "partituras") return;
+    const alvo = page.url.searchParams.get("abrir");
+    if (alvo !== "partituras" && alvo !== "hinario") return;
     conteudoAberto = true;
     await tick();
-    document.getElementById("partituras")?.scrollIntoView({ block: "start" });
+    document.getElementById(alvo === "hinario" ? "hinario" : "partituras")?.scrollIntoView({ block: "start" });
   });
   // --- Saída de áudio: o modo do AudioContext, guardado POR rota (alto-falante, fio, USB-C, Bluetooth). A rota é relida ao abrir o cartão e ao voltar ao app
   // (a pessoa pode ligar o fone com o app aberto); as medidas vêm do último contexto criado (hino, metrônomo ou afinador). ---
@@ -169,7 +169,6 @@
   });
 
   async function remover() {
-    confirmando = false;
     try {
       await biblioteca.remover();
       reproducao.limpar();
@@ -272,7 +271,7 @@
   <section>
     <Cartao id="conteudo" titulo={t("ajustes.conteudo")} bind:aberto={conteudoAberto} aoAlternar={lembrar("conteudo")}>
       {#snippet resumo()}{#if resumoConteudo.alerta}<Icone nome="alerta" tamanho={16} /> {/if}{resumoConteudo.texto}{/snippet}
-      <h3 class="sub primeiro">{t("ajustes.hinario")}</h3>
+      <h3 class="sub primeiro" id="hinario">{t("ajustes.hinario")}</h3>
       <p class="hinario-info">
         <strong>{!biblioteca.pacote ? "…" : biblioteca.pacote.exemplo ? t("ajustes.hinario_exemplo") : biblioteca.pacote.hinario.hinario.nome}</strong>
         <span class="meta">{!biblioteca.pacote ? "" : biblioteca.pacote.exemplo ? t("biblioteca.aviso_exemplo") : i18n.tn("plural.hinos", biblioteca.pacote.hinario.hinos.length)}</span>
@@ -288,7 +287,8 @@
         textoInstalando={t("hinario.instalando")}
         instalado={hinarioInstalado || !!biblioteca.erro}
         rotuloRemover={t("hinario.remover")}
-        aoRemover={() => (confirmando = true)}
+        aoRemover={remover}
+        confirmarRemocao={{ titulo: t("ajustes.remover_titulo"), texto: t("ajustes.remover_texto") }}
         desabilitarRemover={instalando.ocupado}
         rotuloBaixar={hinario.disponivel ? t("hinario.baixar", { tamanho: formatarMB(hinario.bytes, i18n.idioma) }) : undefined}
         aoBaixar={() => hinario.baixar()}
@@ -301,17 +301,6 @@
         <!-- O conteúdo instalado não carrega: o botão Remover (acima) volta ao pacote de exemplo, que é a saída quando nem tentar de novo adianta (na tela inicial). -->
         <Aviso tipo="erro">{t("erro.carregar", { erro: traduzirErro(biblioteca.erro, t) })}</Aviso>
       {/if}
-      {#if confirmando}
-        <div class="confirma" role="alertdialog" aria-labelledby="confirma-titulo" aria-describedby="confirma-texto">
-          <h3 id="confirma-titulo">{t("ajustes.remover_titulo")}</h3>
-          <p id="confirma-texto">{t("ajustes.remover_texto")}</p>
-          <div class="acoes">
-            <button class="botao" onclick={() => (confirmando = false)}>{t("ajustes.cancelar")}</button>
-            <button class="botao perigo" onclick={remover}>{t("ajustes.confirmar_remocao")}</button>
-          </div>
-        </div>
-      {/if}
-
       {#if resultado}<Aviso tipo={resultado.tipo}>{resultado.texto}</Aviso>{/if}
 
       <div id="partituras">
@@ -328,6 +317,7 @@
           instalado={instaladas > 0}
           rotuloRemover={t("partituras.remover")}
           aoRemover={() => partituras.remover()}
+          confirmarRemocao={{ titulo: t("partituras.remover_titulo"), texto: t("partituras.remover_texto") }}
           desabilitarRemover={instalando.ocupado}
           rotuloBaixar={partituras.disponivel ? t("partituras.baixar", { tamanho: formatarMB(partituras.bytes, i18n.idioma) }) : undefined}
           aoBaixar={() => partituras.baixar()}
@@ -373,6 +363,7 @@
             {instalado}
             rotuloRemover={t("sons.remover")}
             aoRemover={() => sons.remover(p.id)}
+            confirmarRemocao={{ titulo: t("sons.remover_titulo"), texto: t("sons.remover_texto") }}
             rotuloBaixar={t("sons.baixar", { tamanho: formatarMB(bytesParaBaixar(p), i18n.idioma) })}
             aoBaixar={() => sons.baixar(p.id)}
           />
@@ -486,10 +477,6 @@
   .opcao-tema { display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; }
   .segmentos .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
   .segmentos input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
-  .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.6rem 0; }
   /* Os botões do hinário ficam sempre lado a lado, cada um com metade da linha; o texto quebra em duas linhas quando não cabe. */
   .hinario-info { display: grid; gap: 0.15rem; margin: 0.2rem 0 0.4rem; }
-  .confirma { margin: 0.8rem 0; padding: 1rem; border: 0.0625rem solid var(--perigo); border-radius: 0.75rem; background: var(--superficie); }
-  .confirma h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
-  .confirma p { margin: 0 0 0.6rem; line-height: 1.5; }
 </style>

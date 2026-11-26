@@ -84,8 +84,11 @@
     background: var(--fundo); border-top: 0.0625rem solid var(--borda);
     padding-bottom: env(safe-area-inset-bottom);
   }
+  /* A 320 px quatro abas dividem 80 px cada: o rótulo pode encolher até 0,8125rem e, se ainda assim não couber (fonte do sistema maior), quebra
+     em vez de estourar a largura (`min-width: 0`, recuo menor, `overflow-wrap`). */
   button {
-    flex: 1; min-height: 3.5rem; padding: 0 0.75rem; font-size: 1rem; background: transparent; color: var(--suave);
+    flex: 1; min-width: 0; min-height: 3.5rem; padding: 0 0.25rem; font-size: clamp(0.8125rem, 4.2vw, 1rem); line-height: 1.15;
+    overflow-wrap: anywhere; background: transparent; color: var(--suave);
     border: 0; border-top: 0.1875rem solid transparent; cursor: pointer;
   }
   button[aria-selected="true"] { color: var(--texto); font-weight: 600; border-top-color: var(--ouro-linha); }
@@ -96,6 +99,6 @@
     border-top: 0; border-right: 0.0625rem solid var(--borda);
     padding-bottom: 0; padding-left: env(safe-area-inset-left);
   }
-  .trilho button { flex: none; border-top: 0; border-left: 0.1875rem solid transparent; }
+  .trilho button { flex: none; padding: 0 0.75rem; font-size: 1rem; border-top: 0; border-left: 0.1875rem solid transparent; }
   .trilho button[aria-selected="true"] { border-top-color: transparent; border-left-color: var(--ouro-linha); }
 </style>
