@@ -1,6 +1,6 @@
 [package]
 name = "bibliotecamusical"
-version = "0.3.5"
+version = "0.3.6"
 description = "BibliotecaMusical - app não oficial para músicos em treino"
 authors = []
 license = "MIT"
