@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<museScore version="3.02">
+  <Score>
+    <Division>480</Division>
+    <metaTag name="workTitle">Hino fictício três</metaTag>
+    <Part><Staff id="1"/><trackName>Soprano</trackName></Part>
+    <Part><Staff id="2"/><trackName>Baixo</trackName></Part>
+    <Staff id="1">
+      <Measure><startRepeat/><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Tempo><tempo>1.5</tempo></Tempo><StaffText><text>*</text></StaffText><Chord><Lyrics><text>Um</text></Lyrics><durationType>whole</durationType><Note><pitch>72</pitch></Note></Chord></voice></Measure>
+      <Measure><voice><Chord><Lyrics><text>dois</text></Lyrics><durationType>whole</durationType><Note><pitch>74</pitch></Note></Chord></voice></Measure>
+      <Measure><endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta><voice><Chord><Lyrics><text>três</text></Lyrics><durationType>whole</durationType><Note><pitch>76</pitch></Note></Chord></voice></Measure>
+      <Measure><endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta><voice><Chord><Lyrics><text>fim</text></Lyrics><durationType>whole</durationType><Note><pitch>77</pitch></Note></Chord></voice></Measure>
+      <Measure><endSpanner id="2"/><voice><Chord><Lyrics><text>de</text></Lyrics><durationType>whole</durationType><Note><pitch>79</pitch></Note></Chord></voice></Measure>
+      <Measure><voice><Chord><Lyrics><text>todos</text></Lyrics><durationType>whole</durationType><Note><pitch>81</pitch></Note></Chord></voice></Measure>
+    </Staff>
+    <Staff id="2">
+      <Measure><startRepeat/><voice><TimeSig><sigN>4</sigN><sigD>4</sigD></TimeSig><Chord><durationType>whole</durationType><Note><pitch>48</pitch></Note></Chord></voice></Measure>
+      <Measure><voice><Chord><durationType>whole</durationType><Note><pitch>50</pitch></Note></Chord></voice></Measure>
+      <Measure><endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta><voice><Chord><durationType>whole</durationType><Note><pitch>52</pitch></Note></Chord></voice></Measure>
+      <Measure><endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta><voice><Chord><durationType>whole</durationType><Note><pitch>53</pitch></Note></Chord></voice></Measure>
+      <Measure><endSpanner id="2"/><voice><Chord><durationType>whole</durationType><Note><pitch>55</pitch></Note></Chord></voice></Measure>
+      <Measure><voice><Chord><durationType>whole</durationType><Note><pitch>57</pitch></Note></Chord></voice></Measure>
+    </Staff>
+  </Score>
+</museScore>

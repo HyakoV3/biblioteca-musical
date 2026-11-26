@@ -1059,6 +1059,11 @@ struct Estrutura {
     inicios: Vec<f64>,
     inicio_repeticao: Option<usize>,
     fim_repeticao: Option<usize>,
+    /// Quantas barras de início e de fim de repetição a partitura tem, e quantos saltos (`Jump`) e marcas (`Marker`): o padrão do final
+    /// aceita no máximo uma barra de início, exatamente uma de fim e nenhum salto ou marca.
+    barras_de_inicio: usize,
+    barras_de_fim: usize,
+    saltos: usize,
     /// Casas de volta: (primeiro compasso, compasso onde termina, exclusivo).
     voltas: Vec<(usize, Option<usize>)>,
     ids_volta: Vec<String>,
@@ -1067,8 +1072,15 @@ struct Estrutura {
 fn registrar_marcas(est: &mut Estrutura, compasso: Node, ci: usize) {
     for n in compasso.descendants() {
         match n.tag_name().name() {
-            "startRepeat" => est.inicio_repeticao = Some(ci),
-            "endRepeat" => est.fim_repeticao = Some(ci),
+            "startRepeat" => {
+                est.inicio_repeticao = Some(ci);
+                est.barras_de_inicio += 1;
+            }
+            "endRepeat" => {
+                est.fim_repeticao = Some(ci);
+                est.barras_de_fim += 1;
+            }
+            "Jump" | "Marker" => est.saltos += 1,
             "Volta" => {
                 est.voltas.push((ci, None));
                 est.ids_volta
@@ -1099,10 +1111,11 @@ struct Plano {
 ///   início de repetição no começo · compasso com fim de repetição e 1ª casa de volta · 2ª casa de volta
 ///   logo depois · trecho final até o fim da partitura.
 /// Passada normal = do começo até o fim da 1ª casa. Passada do final = do começo até antes da 1ª casa,
-/// depois a 2ª casa e tudo o que vem a seguir. Qualquer outra estrutura devolve `None`.
+/// depois a 2ª casa e tudo o que vem a seguir. Qualquer outra estrutura devolve `None`: mais de uma repetição, salto ou marca (`Jump`,
+/// `Marker`) faria o plano ignorar um trecho que a partitura manda tocar.
 fn plano_passadas(e: &Estrutura) -> Option<Plano> {
     let n = e.inicios.len().checked_sub(1)?;
-    if e.voltas.len() != 2 {
+    if e.voltas.len() != 2 || e.barras_de_inicio > 1 || e.barras_de_fim != 1 || e.saltos > 0 {
         return None;
     }
     let ((a1, f1), (a2, f2)) = (e.voltas[0], e.voltas[1]);
@@ -1121,6 +1134,17 @@ fn plano_passadas(e: &Estrutura) -> Option<Plano> {
     })
 }
 
+/// O nome de cada voz de uma pauta: o da parte (ou o da pauta), com o número da voz quando a pauta se divide em várias.
+fn nome_da_voz(base: &str, sufixo: &str, partes: &[&str], r: usize, max: usize) -> String {
+    if max == 1 {
+        format!("{base}{sufixo}")
+    } else if partes.len() == max {
+        format!("{}{sufixo}", nome_da_parte(partes, r))
+    } else {
+        format!("{base}{sufixo} ({})", r + 1)
+    }
+}
+
 /// Recorta os acordes que começam em cada intervalo de compassos e os recoloca em sequência, sem buracos.
 fn selecionar(acordes: &[Acorde], inicios: &[f64], segmentos: &[(usize, usize)]) -> Vec<Acorde> {
     const EPS: f64 = 1e-6;
@@ -1128,6 +1152,7 @@ fn selecionar(acordes: &[Acorde], inicios: &[f64], segmentos: &[(usize, usize)])
     let mut acumulado = 0.0;
     for &(de, ate) in segmentos {
         let (t0, t1) = (inicios[de], inicios[ate]);
+        let primeiro = saida.len();
         for a in acordes
             .iter()
             .filter(|a| a.inicio >= t0 - EPS && a.inicio < t1 - EPS)
@@ -1137,9 +1162,32 @@ fn selecionar(acordes: &[Acorde], inicios: &[f64], segmentos: &[(usize, usize)])
             novo.dur = a.dur.min(t1 - a.inicio);
             saida.push(novo);
         }
+        cortar_ligaduras_do_segmento(&mut saida[primeiro..]);
         acumulado += t1 - t0;
     }
     saida
+}
+
+/// Uma ligadura que sai do último acorde de um segmento não continua no próximo segmento (que não é o que vem depois na partitura): sem isto, ela
+/// engoliria a primeira nota igual do trecho seguinte (a 1ª nota da 2ª casa, por exemplo). Tira a marca de "começa ligadura" das notas cujo acorde
+/// seguinte, DENTRO do segmento, não continua a ligadura (ou que não têm acorde seguinte).
+fn cortar_ligaduras_do_segmento(acordes: &mut [Acorde]) {
+    for i in 0..acordes.len() {
+        for k in 0..acordes[i].notas.len() {
+            let (midi, _, comeca) = acordes[i].notas[k];
+            if !comeca {
+                continue;
+            }
+            let continua = acordes.get(i + 1).is_some_and(|prox| {
+                prox.notas
+                    .iter()
+                    .any(|&(m, termina, _)| m == midi && termina)
+            });
+            if !continua {
+                acordes[i].notas[k].2 = false;
+            }
+        }
+    }
 }
 
 /// O instante em que cada compasso dos `segmentos` começa na passada montada por `selecionar`: o mesmo deslocamento de cada intervalo
@@ -1209,6 +1257,8 @@ pub fn converter_com(
     let mut vozes: Vec<Voz> = vec![];
     let mut vozes_final: Vec<Voz> = vec![];
     let mut final_ok = true;
+    // Por pauta, as notas antes do recorte do plano: (nome-base, sufixo, camadas).
+    let mut pautas_guardadas: Vec<(String, String, Vec<Vec<Acorde>>)> = vec![];
     let mut avisos: Vec<String> = vec![];
     let mut letra: Vec<String> = vec![];
     let mut marcas: Vec<Marca> = vec![];
@@ -1334,6 +1384,10 @@ pub fn converter_com(
         let partes: Vec<&str> = base.split(" e ").collect();
         let limite = (partes.len() > 1).then_some(partes.len());
         let camadas: Vec<Vec<Acorde>> = da_pauta.into_values().collect();
+        if plano.is_some() {
+            // Guarda as notas inteiras: se o final for descartado, as vozes são refeitas com a leitura única (ver abaixo).
+            pautas_guardadas.push((base.clone(), sufixo.clone(), camadas.clone()));
+        }
         // Com o padrão de final reconhecido, geramos as notas da passada normal e as da passada do final.
         let (normal, final_) = match &plano {
             Some(p) => (
@@ -1350,15 +1404,7 @@ pub fn converter_com(
             ),
             None => (camadas, None),
         };
-        let nome_da_voz = |r: usize, max: usize| -> String {
-            if max == 1 {
-                format!("{base}{sufixo}")
-            } else if partes.len() == max {
-                format!("{}{sufixo}", nome_da_parte(&partes, r))
-            } else {
-                format!("{base}{sufixo} ({})", r + 1)
-            }
-        };
+        let nome_da_voz = |r: usize, max: usize| nome_da_voz(&base, &sufixo, &partes, r, max);
 
         let (linhas, omitidos) = dividir_em_vozes(normal, limite);
         if omitidos > 0 {
@@ -1405,17 +1451,47 @@ pub fn converter_com(
             ajustes.len()
         ));
     }
+    // MSCX-002: com o final descartado (as vozes do final não casam com as da passada normal), a passada normal NÃO pode ficar cortada na 1ª casa:
+    // perderia a 2ª casa e o trecho final, que a partitura manda tocar. Refaz as vozes com a leitura única, em ordem, como numa partitura sem plano.
+    let final_descartado = plano.is_some() && !(final_ok && !vozes_final.is_empty());
+    if final_descartado {
+        plano = None;
+        vozes.clear();
+        for (base, sufixo, camadas) in std::mem::take(&mut pautas_guardadas) {
+            let partes: Vec<&str> = base.split(" e ").collect();
+            let limite = (partes.len() > 1).then_some(partes.len());
+            let (linhas, omitidos) = dividir_em_vozes(camadas, limite);
+            let max = linhas.len();
+            for (r, notas) in linhas.into_iter().enumerate() {
+                vozes.push(Voz {
+                    nome: nome_da_voz(&base, &sufixo, &partes, r, max),
+                    notas,
+                });
+            }
+            let aviso = format!(
+                "{base}{sufixo}: {omitidos} trecho(s) com mais notas simultâneas que vozes; notas do meio omitidas"
+            );
+            if omitidos > 0 && !avisos.contains(&aviso) {
+                avisos.push(aviso);
+            }
+        }
+        avisos.push(
+            "final descartado: a partitura é lida uma vez, em ordem (com a 2ª casa e o trecho final), e não só até a 1ª casa".to_string(),
+        );
+    }
     if let Some(p) = &plano {
         avisos.push(format!(
             "estrutura de repetição reconhecida: {}",
             p.descricao
         ));
-    } else if doc.descendants().any(|n| {
-        matches!(
-            n.tag_name().name(),
-            "startRepeat" | "endRepeat" | "Jump" | "Volta"
-        )
-    }) {
+    } else if !final_descartado
+        && doc.descendants().any(|n| {
+            matches!(
+                n.tag_name().name(),
+                "startRepeat" | "endRepeat" | "Jump" | "Volta"
+            )
+        })
+    {
         avisos.push(
             "há repetições/saltos numa estrutura não reconhecida: a partitura é lida uma vez, em ordem".to_string(),
         );
@@ -1726,9 +1802,10 @@ fn cabecalho(id: &str, nome: &str, idioma: Option<&str>) -> Value {
     Value::Object(m)
 }
 
-const AJUDA: &str = "Uso: mscx2json [--nomes-originais] [--idioma pt-BR] [--correcoes correcoes.json] --id ID --nome NOME arquivo.mscx|pasta ... > hinario.json\n\
+const AJUDA: &str = "Uso: mscx2json [--nomes-originais] [--idioma pt-BR] [--correcoes correcoes.json] [--avisos avisos.txt] --id ID --nome NOME arquivo.mscx|pasta ... > hinario.json\n\
 --idioma declara o idioma do conteúdo (título e letra) no hinário gerado.\n\
 --correcoes aplica as correções explícitas da letra (formato em docs/correcoes-da-letra.md); cada uma vira um aviso.\n\
+--avisos grava o relatório dos avisos por hino num arquivo (além do stderr); guarde-o fora do Git, como o hinário gerado.\n\
 --nomes-originais mantém \"Parte I..IV\" em vez de Soprano/Contralto/Tenor/Baixo.\n\
 Os arquivos devem se chamar hino-<número>.mscx; os demais são ignorados com um aviso.";
 
@@ -1741,6 +1818,7 @@ fn executar(args: Vec<String>) -> Result<(), String> {
     let mut renomear = true;
     let mut idioma: Option<String> = None;
     let mut arquivo_correcoes: Option<PathBuf> = None;
+    let mut arquivo_avisos: Option<PathBuf> = None;
     let mut it = args.into_iter();
     while let Some(a) = it.next() {
         match a.as_str() {
@@ -1748,6 +1826,10 @@ fn executar(args: Vec<String>) -> Result<(), String> {
             "--nome" => nome = it.next(),
             "--nomes-originais" => renomear = false,
             "--idioma" => idioma = it.next(),
+            "--avisos" => {
+                let c = it.next().ok_or("--avisos precisa do caminho do arquivo")?;
+                arquivo_avisos = Some(PathBuf::from(c));
+            }
             "--correcoes" => {
                 let c = it
                     .next()
@@ -1789,6 +1871,7 @@ fn executar(args: Vec<String>) -> Result<(), String> {
     }
 
     let mut hinos: Vec<Hino> = vec![];
+    let mut avisos_por_arquivo: Vec<(PathBuf, Vec<String>)> = vec![];
     for arq in arquivos {
         let Some(n) = numero_do_arquivo(&arq) else {
             eprintln!(
@@ -1807,6 +1890,7 @@ fn executar(args: Vec<String>) -> Result<(), String> {
         for a in &h.avisos {
             eprintln!("aviso: {}: {a}", arq.display());
         }
+        avisos_por_arquivo.push((arq.clone(), h.avisos.clone()));
         hinos.push(h);
     }
     hinos.sort_by_key(|h| h.numero);
@@ -1831,7 +1915,27 @@ fn executar(args: Vec<String>) -> Result<(), String> {
         "{}",
         serde_json::to_string(&saida).map_err(|e| e.to_string())?
     );
+    if let Some(c) = &arquivo_avisos {
+        std::fs::write(c, relatorio_de_avisos(&avisos_por_arquivo))
+            .map_err(|e| format!("{}: {e}", c.display()))?;
+    }
     Ok(())
+}
+
+/// O relatório dos avisos da conversão, um bloco por hino (só os que têm avisos), para guardar ao lado da saída: no `stderr` eles se perdem
+/// quando a conversão roda de um script.
+fn relatorio_de_avisos(por_arquivo: &[(PathBuf, Vec<String>)]) -> String {
+    let mut saida = String::new();
+    for (arq, avisos) in por_arquivo.iter().filter(|(_, a)| !a.is_empty()) {
+        saida.push_str(&format!("{}\n", arq.display()));
+        for a in avisos {
+            saida.push_str(&format!("  - {a}\n"));
+        }
+    }
+    if saida.is_empty() {
+        saida.push_str("sem avisos\n");
+    }
+    saida
 }
 
 fn main() {
@@ -3705,10 +3809,248 @@ mod testes {
         assert!(c.passada_final.is_none());
         assert_eq!(
             c.normal,
-            vec![(0.0, 0), (4.0, 1), (8.0, 2)],
-            "a passada normal segue com o plano"
+            vec![
+                (0.0, 0),
+                (4.0, 1),
+                (8.0, 2),
+                (12.0, 3),
+                (16.0, 4),
+                (20.0, 5)
+            ],
+            "sem o final, a passada normal é a leitura única, com a 2ª casa e o trecho final"
+        );
+        // As notas acompanham os compassos: a passada normal vai até o último compasso (o de 2 notas), e não para na 1ª casa.
+        let fim_das_notas = h
+            .vozes
+            .iter()
+            .flat_map(|v| v.notas.iter())
+            .map(|n| n.inicio + n.dur)
+            .fold(0.0, f64::max);
+        assert_eq!(fim_das_notas, 24.0, "{:?}", h.vozes);
+        assert!(
+            h.avisos
+                .iter()
+                .any(|a| a.contains("final descartado") && a.contains("lida uma vez")),
+            "{:?}",
+            h.avisos
+        );
+        assert!(
+            !h.avisos.iter().any(|a| a.contains("reconhecida")),
+            "{:?}",
+            h.avisos
         );
         assert!(para_json(&converter(&doc(&parte(1, "S"), &pauta(1, &medidas)), 1).unwrap())["compassos"].get("final").is_none());
+    }
+
+    /// Compasso de uma semibreve com `extra` antes da voz e `liga` dentro da nota (`<Tie/>` abre, `<endTie/>` fecha).
+    fn comp_ligado(extra: &str, pitch: u8, liga: &str) -> String {
+        format!(
+            "<Measure>{extra}<voice>{C44}<Chord><durationType>whole</durationType><Note>{liga}<pitch>{pitch}</pitch></Note></Chord></voice></Measure>"
+        )
+    }
+
+    /// A estrutura do hino com final, com `extra` na 1ª casa e a nota `p1` ligada do compasso antes da 1ª casa para dentro dela.
+    fn estrutura_com_ligadura_na_1a_casa() -> String {
+        [
+            comp_marcado("<startRepeat/>", 60),
+            comp_ligado("", 64, "<Tie/>"),
+            format!(
+                r#"<Measure><endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta><voice>{C44}<Chord><durationType>whole</durationType><Note><endTie/><pitch>64</pitch></Note></Chord></voice></Measure>"#
+            ),
+            comp_ligado(
+                r#"<endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta>"#,
+                64,
+                "<Tie/>",
+            ),
+            comp_ligado(r#"<endSpanner id="2"/>"#, 64, "<endTie/>"),
+            comp_marcado("", 69),
+        ]
+        .concat()
+    }
+
+    #[test]
+    fn ligadura_que_entra_na_1a_casa_nao_engole_a_nota_da_2a_casa_na_passada_do_final() {
+        let h = converter(
+            &doc(
+                &parte(1, "S"),
+                &pauta(1, &estrutura_com_ligadura_na_1a_casa()),
+            ),
+            1,
+        )
+        .unwrap();
+        // Passada normal (compassos 1 a 3): a ligadura junta o 2º e o 3º compasso, numa nota de 8 batidas.
+        assert_eq!(notas(&h, 0), vec![(0.0, 4.0, 60), (4.0, 8.0, 64)]);
+        // Passada do final (1, 2, 4, 5, 6): a ligadura sai do 2º compasso para a 1ª casa, que não toca. A ligadura da 2ª casa para o compasso
+        // seguinte (mesma altura) é outra e NÃO pode ser fechada pela ligadura cortada, que ficaria esperando e a engoliria.
+        let f = h
+            .passada_final
+            .as_ref()
+            .expect("o final deveria ser aceito");
+        assert_eq!(
+            notas_de(f, 0),
+            vec![
+                (0.0, 4.0, 60),
+                (4.0, 4.0, 64),
+                (8.0, 8.0, 64),
+                (16.0, 4.0, 69)
+            ]
+        );
+    }
+
+    #[test]
+    fn cortar_ligaduras_do_segmento_mantem_as_que_continuam_dentro_do_segmento() {
+        let a = |inicio: f64, notas: Vec<(u8, bool, bool)>| Acorde {
+            inicio,
+            dur: 1.0,
+            notas,
+        };
+        let mut v = vec![
+            a(0.0, vec![(60, false, true)]),
+            a(1.0, vec![(60, true, true), (64, false, true)]),
+            a(2.0, vec![(60, true, false)]),
+        ];
+        cortar_ligaduras_do_segmento(&mut v);
+        // 60 → 60 → 60 continua; o 64 do acorde do meio não tem continuação no acorde seguinte e perde a marca.
+        assert_eq!(v[0].notas, vec![(60, false, true)]);
+        assert_eq!(v[1].notas, vec![(60, true, true), (64, false, false)]);
+        // Última nota do segmento com marca de início: a ligadura não tem para onde ir.
+        let mut u = vec![a(0.0, vec![(62, false, true)])];
+        cortar_ligaduras_do_segmento(&mut u);
+        assert_eq!(u[0].notas, vec![(62, false, false)]);
+    }
+
+    #[test]
+    fn mais_de_uma_repeticao_ou_um_salto_nao_reconhece_o_padrao_de_final() {
+        let com = |extra_no_2: &str| {
+            [
+                comp_marcado("<startRepeat/>", 60),
+                comp_marcado(extra_no_2, 62),
+                comp_marcado(
+                    r#"<endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta>"#,
+                    64,
+                ),
+                comp_marcado(
+                    r#"<endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta>"#,
+                    65,
+                ),
+                comp_marcado(r#"<endSpanner id="2"/>"#, 67),
+                comp_marcado("", 69),
+            ]
+            .concat()
+        };
+        let ok = converter(&doc(&parte(1, "S"), &pauta(1, &com(""))), 1).unwrap();
+        assert!(
+            ok.passada_final.is_some(),
+            "o padrão simples segue aceito: {:?}",
+            ok.avisos
+        );
+        for (nome, extra) in [
+            ("2º início de repetição", "<startRepeat/>"),
+            ("2º fim de repetição", "<endRepeat>2</endRepeat>"),
+            ("salto", "<Jump><jumpTo>start</jumpTo></Jump>"),
+            ("marca", "<Marker><label>fine</label></Marker>"),
+        ] {
+            let h = converter(&doc(&parte(1, "S"), &pauta(1, &com(extra))), 1).unwrap();
+            assert!(
+                h.passada_final.is_none(),
+                "{nome}: não deveria reconhecer o final"
+            );
+            assert!(
+                h.avisos
+                    .iter()
+                    .any(|a| a.contains("estrutura não reconhecida")),
+                "{nome}: {:?}",
+                h.avisos
+            );
+        }
+    }
+
+    /// O hinário que `executar` monta a partir das partituras fictícias de `tests/fixtures` (a mesma conversão, sem passar pelo `stdout`).
+    fn hinario_das_fixtures() -> serde_json::Value {
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+        let mut hinos: Vec<Hino> = vec![];
+        for n in [1, 2, 3] {
+            let xml = std::fs::read_to_string(dir.join(format!("hino-{n}.mscx"))).unwrap();
+            let mut h = converter_com(&xml, n, &[]).unwrap();
+            nomes_satb(&mut h);
+            hinos.push(h);
+        }
+        json!({
+            "versao": 1,
+            "hinario": cabecalho("exemplo-conversor", "Fictício (conversor)", None),
+            "hinos": hinos.iter().map(para_json).collect::<Vec<_>>(),
+        })
+    }
+
+    #[test]
+    fn a_saida_do_conversor_bate_com_a_fixture_que_o_leitor_do_app_testa() {
+        // `src-tauri` lê `tests/fixtures/hinario.json` num teste: se o conversor passa a gerar outra coisa (campo novo, final, introdução,
+        // letra, compassos) e a fixture fica velha, o leitor continua "passando" com um JSON que o conversor não gera mais.
+        // Para regenerar de propósito: BM_REGERAR_FIXTURE=1 cargo test a_saida_do_conversor
+        let caminho = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/hinario.json");
+        let atual = hinario_das_fixtures();
+        if std::env::var("BM_REGERAR_FIXTURE").is_ok_and(|v| v == "1") {
+            std::fs::write(&caminho, serde_json::to_string(&atual).unwrap()).unwrap();
+        }
+        let guardada: serde_json::Value =
+            serde_json::from_str(&std::fs::read_to_string(&caminho).unwrap()).unwrap();
+        assert_eq!(
+            atual, guardada,
+            "a fixture hinario.json está velha: regenere com BM_REGERAR_FIXTURE=1 cargo test a_saida_do_conversor"
+        );
+        // O hino 3 exercita o que o app lê além das notas: final, introdução, letra, sincronia e compassos.
+        let h3 = &atual["hinos"][2];
+        for campo in ["final", "introducao", "letra", "sincronia", "compassos"] {
+            assert!(
+                h3.get(campo).is_some(),
+                "o hino 3 da fixture deveria ter {campo}"
+            );
+        }
+    }
+
+    #[test]
+    fn relatorio_de_avisos_lista_por_hino_e_pula_os_sem_aviso() {
+        let r = relatorio_de_avisos(&[
+            (PathBuf::from("hino-1.mscx"), vec![]),
+            (
+                PathBuf::from("hino-2.mscx"),
+                vec!["primeiro".into(), "segundo".into()],
+            ),
+        ]);
+        assert_eq!(r, "hino-2.mscx\n  - primeiro\n  - segundo\n");
+        assert_eq!(
+            relatorio_de_avisos(&[(PathBuf::from("hino-1.mscx"), vec![])]),
+            "sem avisos\n"
+        );
+    }
+
+    #[test]
+    fn avisos_vao_para_o_arquivo_pedido() {
+        let dir = std::env::temp_dir().join(format!("mscx2json-avisos-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let medidas = [comp_marcado("<startRepeat/>", 60), comp_marcado("", 62)].concat();
+        std::fs::write(
+            dir.join("hino-1.mscx"),
+            doc(&parte(1, "S"), &pauta(1, &medidas)),
+        )
+        .unwrap();
+        let relatorio = dir.join("avisos.txt");
+        executar(vec![
+            "--id".into(),
+            "x".into(),
+            "--nome".into(),
+            "X".into(),
+            "--avisos".into(),
+            relatorio.display().to_string(),
+            dir.display().to_string(),
+        ])
+        .unwrap();
+        let texto = std::fs::read_to_string(&relatorio).unwrap();
+        assert!(
+            texto.contains("hino-1.mscx") && texto.contains("estrutura não reconhecida"),
+            "{texto}"
+        );
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]

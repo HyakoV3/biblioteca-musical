@@ -844,9 +844,26 @@ mod testes {
             "../../tools/mscx2json/tests/fixtures/hinario.json"
         ))
         .unwrap();
-        assert_eq!(h.hinos.len(), 2);
+        assert_eq!(h.hinos.len(), 3);
         assert_eq!(h.hinos[0].andamento, Some(80));
         assert_eq!(h.hinos[0].vozes[0].notas[0], Nota(0.0, 1.0, 72));
+        // O hino 3 traz o que o conversor gera além das notas (a fixture é conferida contra o conversor em tools/mscx2json): o leitor tem de
+        // aceitar e manter o final, a introdução, a letra, a sincronia e os compassos.
+        let h3 = &h.hinos[2];
+        assert_eq!(h3.letra, vec!["1. Um dois três fim de todos"]);
+        let final_ = h3.passada_final.as_ref().expect("o hino 3 tem final");
+        assert_eq!(final_.vozes.len(), h3.vozes.len());
+        assert!(h3.introducao.is_some());
+        assert!(
+            h3.sincronia.is_some(),
+            "a sincronia gerada pelo conversor foi descartada pelo leitor"
+        );
+        let compassos = h3
+            .compassos
+            .as_ref()
+            .expect("o leitor descartou os compassos gerados pelo conversor");
+        assert_eq!(compassos.normal.len(), 3);
+        assert!(compassos.passada_final.is_some() && compassos.introducao.is_some());
     }
 
     /// Valida um arquivo real (não versionado): BM_AMOSTRA=caminho cargo test -- --ignored
