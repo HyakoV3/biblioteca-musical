@@ -1490,6 +1490,8 @@ async function principal() {
   for (const f of ["rnnoise", "gtcrn"]) {
     await av(`document.querySelector('#filtro-de-ruido input[value="${f}"]').click(); 1`);
     await dormir(200);
+    const pilula = await av(`(() => { const rotulos = [...document.querySelectorAll('#filtro-de-ruido .opcoes-ruido label')].map((l) => l.textContent.trim()); const caixa = document.querySelector('#filtro-de-ruido .opcoes-ruido'); const r = [...document.querySelectorAll('#filtro-de-ruido .opcoes-ruido label')].map((l) => l.getBoundingClientRect()); return { rotulos, tecnico: document.getElementById('ruido-tecnico')?.textContent.trim(), radius: getComputedStyle(caixa).borderTopLeftRadius, colados: r.every((x, i) => i === 0 || Math.abs(x.left - r[i - 1].right) < 1.5), numaLinha: new Set(r.map((x) => Math.round(x.top))).size === 1 }; })()`);
+    confere(JSON.stringify(pilula.rotulos) === JSON.stringify(["Off", "Low", "Medium", "High"]) && pilula.tecnico === (f === "rnnoise" ? "RNNoise" : "GTCRN") && pilula.colados && pilula.numaLinha && parseFloat(pilula.radius) > 20, `Gravador: o filtro de ruído é uma pílula só (Off, Low, Medium, High, coladas e numa linha) e a linha miúda diz o filtro técnico (${f}): ${JSON.stringify(pilula)}`);
     const n0 = await av(`document.querySelectorAll('.gravacao-item').length`);
     await av(`document.getElementById('gravar').click(); 1`);
     await dormir(2500);
