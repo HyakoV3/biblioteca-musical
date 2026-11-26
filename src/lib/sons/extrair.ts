@@ -46,23 +46,38 @@ export async function extrairEConferir(zip: Uint8Array, pacote: PacoteSom): Prom
   return conferir(porNome, pacote);
 }
 
+/** Quanto o worker pode levar para responder (descompactar ~30 MB leva cerca de 1 s): passado isso, vale a versão síncrona. */
+export const TEMPO_DO_WORKER_MS = 15_000;
+
+class SemWorker extends Error {}
+
 /**
- * Descompacta num Web Worker (`unzip` assíncrono do fflate), para os ~30 MB não travarem a tela. Se o ambiente não deixa criar o worker,
- * cai na versão síncrona: um erro do zip em si (ErroPacote do filtro, zip corrompido) NÃO cai, porque a versão síncrona falharia igual.
+ * Descompacta num Web Worker (`unzip` assíncrono do fflate), para os ~30 MB não travarem a tela. O fflate só escuta o `onmessage` do worker
+ * (não o `onerror`): um worker que a CSP ou o WebView bloqueia depois de criado nunca responde, e a promessa ficaria parada para sempre. Por isso há
+ * um limite de tempo, e um resultado vazio também conta como worker indisponível. Nesses casos, e quando o worker nem pode ser criado, cai na versão
+ * síncrona; um erro do zip em si (ErroPacote do filtro, zip corrompido) NÃO cai, porque a versão síncrona falharia igual.
  */
 async function descompactar(zip: Uint8Array, esperados: Set<string>): Promise<Unzipped> {
   const opcoes = () => ({ filter: filtroDoPacote(esperados) });
+  let relogio: ReturnType<typeof setTimeout> | undefined;
   try {
-    return await new Promise<Unzipped>((resolve, rejeitar) => {
-      try {
-        unzip(zip, opcoes(), (erro, dados) => (erro ? rejeitar(erro) : resolve(dados)));
-      } catch (e) {
-        rejeitar(e); // o filtro roda aqui, na chamada
-      }
-    });
+    return await Promise.race([
+      new Promise<Unzipped>((resolve, rejeitar) => {
+        try {
+          unzip(zip, opcoes(), (erro, dados) => (erro ? rejeitar(erro) : dados ? resolve(dados) : rejeitar(new SemWorker("worker sem resposta"))));
+        } catch (e) {
+          rejeitar(e); // o filtro roda aqui, na chamada
+        }
+      }),
+      new Promise<never>((_, rejeitar) => {
+        relogio = setTimeout(() => rejeitar(new SemWorker(`worker sem resposta em ${TEMPO_DO_WORKER_MS / 1000} s`)), TEMPO_DO_WORKER_MS);
+      }),
+    ]);
   } catch (e) {
-    if (e instanceof ErroPacote || !semWorker(e)) throw e;
+    if (e instanceof ErroPacote || !(e instanceof SemWorker || semWorker(e))) throw e;
     return unzipSync(zip, opcoes());
+  } finally {
+    clearTimeout(relogio);
   }
 }
 
