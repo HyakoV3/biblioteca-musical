@@ -12,7 +12,8 @@
   import { marcarMudanca, montarContexto, type ContextoGravacao } from "./contexto";
   import { metronomo } from "./metronomo.svelte";
   import { reproducao } from "./reproducao.svelte";
-  import { lerReduzirRuido, salvarReduzirRuido } from "./preferencias";
+  import { FILTROS_DE_RUIDO, type FiltroDeRuido } from "./filtroDeRuido";
+  import { lerFiltroDeRuido, salvarFiltroDeRuido } from "./preferencias";
   import { aoFalharServicoDeGravacao, aoPararGravacaoPelaNotificacao, desligarServicoDeGravacao, foneConectado, ligarServicoDeGravacao } from "./servico";
 
   // A aba Gravador (I-03, primeira versão): grava o microfone, ouve de volta e descarta. Nada sai do aparelho. A permissão de microfone é pedida só
@@ -22,8 +23,10 @@
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const gravador = new Gravador();
-  // "Reduzir ruído" (I-29): o filtro do próprio aparelho, desligado por padrão e lembrado. Vale na PRÓXIMA gravação (o microfone é aberto com ele).
-  let reduzirRuido = $state(lerReduzirRuido());
+  // "Reduzir ruído" (I-29): desligado, o filtro do Android ou uma rede neural (RNNoise, GTCRN); desligado por padrão e lembrado. Vale na PRÓXIMA gravação (o microfone é aberto com ele).
+  let filtro = $state<FiltroDeRuido>(lerFiltroDeRuido());
+  /** O filtro escolhido não pôde ser ligado na última gravação e ela foi feita sem filtro: a tela avisa. */
+  let filtroFalhou = $state<FiltroDeRuido | null>(null);
   // A gravação parou sozinha (o sistema tirou o microfone, o gravador falhou): guarda o que já foi gravado, em vez de a tela seguir "gravando".
   gravador.aoInterromper = () => {
     if (gravando) void parar();
@@ -152,7 +155,10 @@
     }
     tocandoId = null; // e uma gravação da lista que tocava também: o alto-falante entraria na nova
     try {
-      await gravador.iniciar({ reduzirRuido });
+      filtroFalhou = null;
+      const pedido = filtro; // fixa a escolha antes do await: a pessoa pode mexer nela enquanto o microfone e o filtro carregam
+      const aplicado = await gravador.iniciar({ filtro: pedido });
+      if (aplicado !== pedido && minha === tentativa) filtroFalhou = pedido; // o filtro neural não carregou: a gravação segue sem filtro
     } catch (e) {
       if (minha === tentativa) erro = motivoDoErro(e);
       console.warn("gravador: não foi possível gravar", e);
@@ -613,10 +619,29 @@
     {/if}
   </button>
 
-  <label class="opcao-ruido">
-    <input type="checkbox" id="reduzir-ruido" checked={reduzirRuido} disabled={gravando} onchange={(e) => { reduzirRuido = e.currentTarget.checked; salvarReduzirRuido(reduzirRuido); }} />
-    <span>{t("gravador.reduzir_ruido")}</span>
-  </label>
+  <!-- A pílula do filtro de ruído: um grupo de escolha única (Desligado, Android, RNNoise, GTCRN), travado enquanto grava. -->
+  <fieldset class="ruido" id="filtro-de-ruido" disabled={gravando}>
+    <legend class="meta">{t("gravador.reduzir_ruido")}</legend>
+    <div class="opcoes-ruido">
+      {#each FILTROS_DE_RUIDO as f (f)}
+        <label class:ativo={filtro === f}>
+          <input
+            type="radio"
+            name="filtro-de-ruido"
+            value={f}
+            checked={filtro === f}
+            onchange={() => {
+              filtro = f;
+              salvarFiltroDeRuido(f);
+              filtroFalhou = null;
+            }}
+          />
+          <span>{#if filtro === f}<Icone nome="ok" tamanho={16} />{/if}{t(`gravador.ruido_${f}`)}</span>
+        </label>
+      {/each}
+    </div>
+  </fieldset>
+  {#if filtroFalhou}<Aviso tipo="info">{t("gravador.erro_filtro", { filtro: t(`gravador.ruido_${filtroFalhou}`) })}</Aviso>{/if}
 
   {#if erro}<Aviso tipo="erro">{t(textoErro[erro])}</Aviso>{/if}
   {#if erroGuardar}<Aviso tipo="erro">{t("gravador.erro_guardar")}</Aviso>{/if}
@@ -730,6 +755,14 @@
   .filtros input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
   .perigo { border-width: 0.125rem; border-color: var(--perigo); font-weight: 700; }
   /* "Reduzir ruído": uma linha com a caixa e o texto (alvo de toque de 3 rem), e a dica embaixo. */
-  .opcao-ruido { display: flex; align-items: center; gap: 0.75rem; min-height: 3rem; margin-bottom: 0.75rem; cursor: pointer; }
-  .opcao-ruido input { width: 1.5rem; height: 1.5rem; accent-color: var(--acento); flex: none; }
+  /* A pílula do filtro de ruído: 4 opções de escolha única, que quebram de linha em tela estreita. */
+  .ruido { margin: 0 0 0.75rem; padding: 0; border: 0; min-width: 0; }
+  .ruido legend { padding: 0; margin-bottom: 0.25rem; }
+  .opcoes-ruido { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .opcoes-ruido label { position: relative; flex: 1 1 auto; }
+  .opcoes-ruido input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .opcoes-ruido span { display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 3rem; box-sizing: border-box; padding: 0 0.75rem; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); }
+  .opcoes-ruido .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
+  .opcoes-ruido input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
+  .ruido:disabled .opcoes-ruido span { opacity: 0.6; }
 </style>

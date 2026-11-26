@@ -1,9 +1,9 @@
 // Créditos e licenças de terceiros mostrados em Ajustes ("Créditos e licenças"). A fonte de cada dado está em
 // docs/licencas-de-terceiros.md. Nomes, autoria e textos de licença ficam no original; só a descrição do uso é traduzida
 // (chave `licencas.uso.<id>`).
-import { TEXTO_APACHE_2, TEXTO_GENERALUSER, TEXTO_MIT, TEXTO_OFL } from "./licencas-textos";
+import { TEXTO_APACHE_2, TEXTO_BSD_3, TEXTO_GENERALUSER, TEXTO_MIT, TEXTO_OFL } from "./licencas-textos";
 
-export type TipoTexto = "mit" | "apache2" | "generaluser" | "ofl" | "reservado";
+export type TipoTexto = "mit" | "bsd3" | "apache2" | "generaluser" | "ofl" | "reservado";
 
 export type Credito = {
   id: string;
@@ -85,6 +85,44 @@ export const CREDITOS: readonly Credito[] = [
     ],
   },
   {
+    id: "pitchy",
+    nome: "Pitchy",
+    autoria: "Ian Johnson",
+    licenca: "MIT",
+    url: "https://github.com/ianprime0509/pitchy",
+    textos: [{ tipo: "mit", direitos: "Copyright 2018-2021 Ian Johnson" }],
+  },
+  {
+    id: "ruido",
+    nome: "web-noise-suppressor",
+    autoria: "sapphi-red",
+    licenca: "MIT",
+    url: "https://github.com/sapphi-red/web-noise-suppressor",
+    textos: [{ tipo: "mit", direitos: "Copyright (c) 2022 翠 / green" }],
+  },
+  {
+    id: "rnnoise",
+    nome: "RNNoise e rnnoise-wasm",
+    autoria: "Jean-Marc Valin, Mozilla, Xiph.Org Foundation; Shiguredo Inc.",
+    licenca: "BSD 3-Clause (RNNoise) e Apache 2.0 (rnnoise-wasm)",
+    url: "https://github.com/xiph/rnnoise",
+    textos: [
+      {
+        tipo: "bsd3",
+        direitos: "Copyright (c) 2017, Mozilla\nCopyright (c) 2007-2017, Jean-Marc Valin\nCopyright (c) 2005-2017, Xiph.Org Foundation\nCopyright (c) 2003-2004, Mark Borgerding",
+      },
+      { tipo: "apache2" },
+    ],
+  },
+  {
+    id: "gtcrn",
+    nome: "GTCRN e gtcrn-wasm",
+    autoria: "Xiaobin Rong; sapphi-red",
+    licenca: "MIT",
+    url: "https://github.com/Xiaobin-Rong/gtcrn",
+    textos: [{ tipo: "mit", direitos: "Copyright (c) 2024 Xiaobin Rong (GTCRN)\nCopyright (c) sapphi-red (gtcrn-wasm)" }],
+  },
+  {
     id: "tauri",
     nome: "Tauri",
     autoria: "Tauri Apps Contributors",
@@ -104,6 +142,8 @@ export function textoDaLicenca(t: Credito["textos"][number]): string {
   switch (t.tipo) {
     case "mit":
       return `MIT License\n\n${t.direitos ?? ""}\n\n${TEXTO_MIT}`;
+    case "bsd3":
+      return `${t.direitos ?? ""}\n\n${TEXTO_BSD_3}`;
     case "apache2":
       return TEXTO_APACHE_2;
     case "generaluser":

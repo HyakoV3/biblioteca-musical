@@ -160,13 +160,18 @@ describe("Gravador (com um MediaRecorder falso)", () => {
       },
     });
     const g = new Gravador();
-    await g.iniciar();
+    expect(await g.iniciar()).toBe("desligado");
     await g.parar();
-    await g.iniciar({ reduzirRuido: true });
+    expect(await g.iniciar({ filtro: "android" })).toBe("android");
+    await g.parar();
+    // Um filtro neural sem contexto de 48 kHz (aqui não há AudioContext) não impede de gravar: segue sem filtro e diz isso.
+    expect(await g.iniciar({ filtro: "rnnoise" })).toBe("desligado");
+    expect(g.gravando).toBe(true);
     await g.parar();
     const audio = (i: number) => pedidos[i]!.audio as MediaTrackConstraints;
     expect(audio(0)).toMatchObject({ echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 });
     expect(audio(1)).toMatchObject({ echoCancellation: false, noiseSuppression: true, autoGainControl: false, channelCount: 1 });
+    expect(audio(2)).toMatchObject({ echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 }); // o filtro neural não liga o do aparelho
   });
 
   it("grava, para e entrega o arquivo, devolvendo o microfone", async () => {

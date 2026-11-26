@@ -2,6 +2,7 @@
 // A chave é o tipo da voz (soprano, contralto, tenor, baixo) ou, se não for reconhecido, o nome.
 // Tudo é validado ao ler e qualquer falha de armazenamento é ignorada (o app segue com o padrão).
 
+import { FILTRO_PADRAO, lerFiltro, type FiltroDeRuido } from "./filtroDeRuido";
 import { INSTRUMENTOS, ORGAOS, PADRAO, instrumentosDaVoz, tipoDaVoz, type InstrumentoId } from "./instrumentos";
 import { leituraPadrao, normalizarLeitura, type Leitura } from "./leitura";
 import { ZOOM_PADRAO, escalaDoZoom, normalizarZoom } from "./partitura";
@@ -250,18 +251,18 @@ export function salvarUltimoHino(numero: number) {
 
 const CHAVE_RUIDO = "prefs.reduzir-ruido";
 
-/** Gravar com a redução de ruído do aparelho (I-29)? Padrão: desligada, para o som sair como foi tocado ou cantado. */
-export function lerReduzirRuido(): boolean {
+/** O filtro de ruído do Gravador (I-29). Padrão: desligado, para o som sair como foi tocado ou cantado. O formato antigo (uma caixa: "1" ligada) vale "android". */
+export function lerFiltroDeRuido(): FiltroDeRuido {
   try {
-    return localStorage.getItem(CHAVE_RUIDO) === "1";
+    return lerFiltro(localStorage.getItem(CHAVE_RUIDO));
   } catch {
-    return false;
+    return FILTRO_PADRAO;
   }
 }
 
-export function salvarReduzirRuido(ligado: boolean) {
+export function salvarFiltroDeRuido(filtro: FiltroDeRuido) {
   try {
-    localStorage.setItem(CHAVE_RUIDO, ligado ? "1" : "0");
+    localStorage.setItem(CHAVE_RUIDO, filtro);
   } catch {
     /* sem armazenamento: vale só nesta sessão */
   }
