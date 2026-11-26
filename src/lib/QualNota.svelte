@@ -222,7 +222,10 @@
       {/each}
     </div>
     <ul class="lista-instrumentos" aria-label={t("afinador.neste_tom")}>
-      {#each instrumentosDoTom as item (item)}<li>{item}</li>{/each}
+      {#each instrumentosDoTom as item (item)}
+        {@const clave = item.match(/^(.*?) \[(fa|sol)\]$/)}
+        <li>{clave ? clave[1] : item}{#if clave} <span class="clave" role="img" aria-label={t(`afinador.clave_${clave[2]}` as "afinador.clave_fa")}>{clave[2] === "fa" ? "\uE062" : "\uE050"}</span>{/if}</li>
+      {/each}
     </ul>
   </fieldset>
 
@@ -247,6 +250,9 @@
   .tons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
   /* A lista de instrumentos do tom: uma por linha, em até 3 colunas (cada uma com pelo menos 9,5 rem): uma coluna em tela estreita ou com fonte grande, duas no celular em pé e três deitado. */
   .lista-instrumentos { margin: 0; padding: 0 0 0 1.1rem; columns: 9.5rem 3; column-gap: 1rem; }
+  /* A clave vem da Leipzig (SMuFL: E050 = clave de sol, E062 = clave de fá), a mesma fonte das partituras; o @font-face aqui garante que ela carregue na tela inicial. */
+  @font-face { font-family: "Leipzig"; src: url("./fonts/Leipzig.woff2") format("woff2"); font-display: swap; }
+  .clave { font-family: "Leipzig", serif; font-size: 1.35em; line-height: 1; vertical-align: -0.15em; margin-left: 0.25em; }
   .lista-instrumentos li { break-inside: avoid; padding: 0.15rem 0; line-height: 1.3; }
   .instrumentos label { position: relative; }
   .instrumentos input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
