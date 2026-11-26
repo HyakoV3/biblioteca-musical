@@ -25,10 +25,13 @@ python3 tools/verificar-movimento.py
 python3 tools/contraste.py
 python3 -m pytest tools             # os testes das ferramentas em Python (o gerador de ícone usa o Pillow; use um ambiente virtual)
 npm run test:e2e                    # karaokê num Chrome de verdade (precisa de Chrome ou Chromium)
+npm run tezcat                      # Tezcat no perfil strict: falha só se a PR piorar a forma do código (precisa do `tzt` instalado)
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test    # em tools/mscx2json
 npm run build                       # o Tauri exige a pasta build/ para compilar o src-tauri
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --lib   # em src-tauri (no Linux, com as bibliotecas do Tauri)
 ```
+
+**Tezcat (forma do código):** o projeto adota o perfil `strict` com uma catraca: `tezcat-baseline.json` congela a dívida conhecida e `npm run tezcat` falha só em violação **nova ou piorada** (função maior, mais ramos, mais aninhamento). Ele roda no computador de quem contribui (o repositório do Tezcat é privado, então não está no CI). Se a sua PR **paga** dívida, rode `tools/tezcat.sh --baseline` e leve o arquivo menor junto; o diff dele só pode encolher. Código novo deve nascer dentro da régua.
 
 O teste de ponta a ponta do Gravador já falhou de vez em quando no CI sem erro na tela (ver [`docs/archive/roadmap-implementadas.md`](docs/archive/roadmap-implementadas.md));
 se o job "Karaokê num Chrome de verdade" cair numa PR que não mexe nisso, rode-o de novo antes de procurar o defeito.

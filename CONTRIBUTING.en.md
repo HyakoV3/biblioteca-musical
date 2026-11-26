@@ -21,10 +21,13 @@ python3 tools/verificar-movimento.py
 python3 tools/contraste.py
 python3 -m pytest tools             # the Python tools' tests (the icon generator uses Pillow; use a virtual env)
 npm run test:e2e                    # karaoke in a real Chrome (needs Chrome or Chromium)
+npm run tezcat                      # Tezcat with the strict profile: fails only if the PR makes the code's shape worse (needs `tzt` installed)
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test    # in tools/mscx2json
 npm run build                       # Tauri requires the build/ folder to compile src-tauri
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --lib   # in src-tauri (on Linux, with the Tauri libraries)
 ```
+
+**Tezcat (code shape):** the project adopts the `strict` profile with a ratchet: `tezcat-baseline.json` freezes the known debt and `npm run tezcat` fails only on a **new or worsened** violation (a longer function, more branches, deeper nesting). It runs on the contributor's own machine (Tezcat's repository is private, so it is not in CI). If your PR **pays down** debt, run `tools/tezcat.sh --baseline` and ship the smaller file with it; its diff can only shrink. New code should be born within the ruler.
 
 The Recorder's end-to-end test has failed now and then in CI with no error on screen (see [`docs/archive/roadmap-implementadas.md`](docs/archive/roadmap-implementadas.md)); if the "Karaokê num Chrome de verdade" job fails on a PR that does not touch that, run it again before hunting for the defect.
 
