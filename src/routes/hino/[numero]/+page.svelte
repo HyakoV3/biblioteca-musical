@@ -146,6 +146,11 @@
       });
       return;
     }
+    // Pausado, a posição só muda quando a pessoa arrasta a barra: relê então (como a partitura). Tocando, o laço de quadros abaixo já lê o relógio.
+    if (estado !== "tocando") {
+      void reproducao.decorrido;
+      void reproducao.revisaoDoPonto;
+    }
     untrack(atualizarKaraoke);
     if (estado !== "tocando") return;
     let id = 0;
@@ -160,6 +165,23 @@
   // Rola até a linha só quando ela muda e só se não estiver à vista (entre a barra de cima e as de baixo). A rolagem
   // é suave só se a pessoa não pediu menos movimento (regra `scroll-behavior` em movimento.css).
   let ultimaLinha = "";
+  // Depois de a pessoa rolar a letra por conta própria (roda, toque ou teclas), a rolagem automática espera um pouco: o destaque segue, a tela não.
+  const ESPERA_ROLAGEM_MANUAL_MS = 4000;
+  let rolagemManualEm = -Infinity;
+  $effect(() => {
+    const marcar = () => (rolagemManualEm = performance.now());
+    const teclas = (e: KeyboardEvent) => {
+      if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(e.key)) marcar();
+    };
+    window.addEventListener("wheel", marcar, { passive: true });
+    window.addEventListener("touchmove", marcar, { passive: true });
+    window.addEventListener("keydown", teclas);
+    return () => {
+      window.removeEventListener("wheel", marcar);
+      window.removeEventListener("touchmove", marcar);
+      window.removeEventListener("keydown", teclas);
+    };
+  });
   $effect(() => {
     const a = aceso;
     if (!a) {
@@ -171,6 +193,7 @@
     ultimaLinha = chave;
     const el = document.getElementById(`linha-${chave}`);
     if (!el) return;
+    if (performance.now() - rolagemManualEm < ESPERA_ROLAGEM_MANUAL_MS) return;
     const r = el.getBoundingClientRect();
     const topo = (document.querySelector("header")?.getBoundingClientRect().bottom ?? 0) + 8;
     const css = getComputedStyle(document.documentElement);

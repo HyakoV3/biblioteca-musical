@@ -100,6 +100,21 @@ describe("notasAPartirDe (função pura)", () => {
 });
 
 describe("Sintetizador", () => {
+  it("pedir um ponto com o hino pausado num contexto que nasceu rodando o suspende (a tela diz pausado)", async () => {
+    const s = new Sintetizador();
+    await s.tocar(vozes, op(120), { aPartirDe: 4, pausado: true });
+    expect(reg.suspend).toBe(1);
+    expect(reg.resume).toBe(0);
+    expect(reg.ctxs[0].state).toBe("running"); // o falso não muda o estado: o que importa é que o pedido de suspensão foi feito
+  });
+  it("pedir um ponto com o hino pausado num contexto já suspenso não suspende de novo", async () => {
+    const s = new Sintetizador();
+    await s.tocar(vozes, op(120));
+    reg.ctxs[0].state = "suspended";
+    reg.suspend = 0;
+    await s.tocar(vozes, op(120), { aPartirDe: 4, pausado: true });
+    expect(reg.suspend).toBe(0);
+  });
   it("o contexto vale enquanto a saída e o modo são os mesmos, e é refeito (o velho fechado) quando a pessoa troca de saída", async () => {
     const guardado = new Map<string, string>();
     vi.stubGlobal("localStorage", { getItem: (k: string) => guardado.get(k) ?? null, setItem: (k: string, v: string) => void guardado.set(k, v) });

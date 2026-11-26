@@ -131,6 +131,7 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
   if (trocando) return;
   trocando = true;
   erro = "";
+  const g = geracao;
   try {
     const c = config(hino);
     const total = vezesDoHino(hino);
@@ -145,11 +146,11 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
           ? vozesDaIntroducao(hino)
           : vozesDaVez(hino, typeof parte === "number" ? parte : 1, total);
     pararRelogio();
-    const g = geracao;
+    // Os ajustes de quando o som foi agendado, em cópia: a configuração é viva e a pessoa pode mexer nela enquanto o áudio carrega.
+    const copia = { andamento: c.andamento, transposicao: c.transposicao, instrumentos: [...c.instrumentos] };
     duracao = await sint.tocar(vozes, {
-      andamento: c.andamento,
-      transposicao: c.transposicao,
-      instrumentos: [...c.instrumentos],
+      ...copia,
+      instrumentos: [...copia.instrumentos],
       volumes: hino.vozes.map((_, i) => efetivo(c, i)),
     });
     if (g !== geracao) {
@@ -166,16 +167,20 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
       andamento: c.andamento,
       marcos: partes.map(({ parte: p, inicio, fim }) => ({ parte: p, inicio, fim })),
     };
-    agendado = {
-      vozes,
-      andamento: c.andamento,
-      transposicao: c.transposicao,
-      instrumentos: [...c.instrumentos],
-    };
+    agendado = { vozes, ...copia };
     decorrido = 0;
     estado = "tocando";
     iniciarRelogio();
+    // Reconcilia com o que a pessoa mexeu durante o carregamento: volume e mudo valem já (o `volumeAoVivo` ignorava a voz enquanto `atual` era nulo)
+    // e, se andamento, tom ou instrumento mudaram, reagenda do começo com os ajustes de agora.
+    hino.vozes.forEach((_, i) => sint.volume(i, efetivo(c, i)));
+    if (mudou(c, agendado)) await reagendar(0, false);
   } catch (e) {
+    // Parar foi tocado enquanto o áudio iniciava: o erro (se houve) é consequência disso, não um problema a mostrar.
+    if (g !== geracao) {
+      sint.parar();
+      return;
+    }
     // O áudio não iniciou (ex.: o sistema bloqueou): volta ao estado parado e mostra o aviso.
     sint.parar();
     estado = "parado";
@@ -188,7 +193,9 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
 
 async function pausar() {
   if (estado !== "tocando" || trocando) return;
+  const g = geracao;
   await sint.pausar();
+  if (g !== geracao) return; // Parar foi tocado enquanto o áudio suspendia: não ressuscita o estado
   pararRelogio();
   decorrido = sint.decorrido();
   estado = "pausado";
@@ -232,6 +239,10 @@ async function reagendar(batida: number, pausado: boolean): Promise<boolean> {
     revisaoDoPonto++;
     return true;
   } catch (e) {
+    if (g !== geracao) {
+      sint.parar();
+      return false;
+    }
     sint.parar();
     parar();
     erro = String(e);
@@ -243,14 +254,22 @@ async function reagendar(batida: number, pausado: boolean): Promise<boolean> {
 
 async function continuar() {
   if (estado !== "pausado" || trocando) return;
+  const g = geracao;
   const c = atual ? configs.get(atual.numero) : undefined;
   if (atual && c && agendado && mudou(c, agendado)) {
     // Instrumento, andamento ou tom mudaram na pausa: reagenda de onde parou, com os ajustes novos.
     if (!(await reagendar((decorrido * agendado.andamento) / 60, true))) return;
   }
   await sint.continuar();
+  if (g !== geracao) return;
   estado = "tocando";
   iniciarRelogio();
+  // Uma busca pedida durante o reagendamento daqui não é descartada: entra pelo mesmo caminho do `irPara`.
+  if (buscaPendente !== null) {
+    const s = buscaPendente;
+    buscaPendente = null;
+    await irPara(s);
+  }
 }
 
 /**

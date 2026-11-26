@@ -79,7 +79,14 @@
   const icone = (parte: Alvo): IconeNome =>
     ativa(parte) && estado === "tocando" ? "pause" : parte !== "tudo" && destacada(parte) && !ativa(parte) ? "musica" : "play";
 
-  const rotuloTudo = $derived(comPartes ? t("vez.tudo") : t("audio.tocar"));
+  // O botão principal diz o que vai fazer ao ser tocado: tocar, pausar ou continuar (no texto visível e, portanto, no nome acessível).
+  const rotuloTudo = $derived(
+    ativa("tudo")
+      ? estado === "tocando"
+        ? t(comPartes ? "vez.tudo_pausar" : "audio.pausar")
+        : t(comPartes ? "vez.tudo_continuar" : "audio.continuar")
+      : t(comPartes ? "vez.tudo" : "audio.tocar"),
+  );
   // Texto completo para leitor de tela (o botão mostra só "1ª", "Intro"...).
   const dicaDaParte = (parte: "intro" | number) => {
     const nome = rotuloDaParte(parte, typeof parte === "number" && parte === totalVezes && comFinalDisponivel);
@@ -170,7 +177,6 @@
       <div class="principal">
         <button
           class="botao tocar primario"
-          aria-pressed={comPartes ? ativa("tudo") : undefined}
           onclick={() => reproducao.alternar(hino, "tudo")}
         >
           <Icone nome={icone("tudo")} tamanho={24} />
