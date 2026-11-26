@@ -92,7 +92,7 @@ Demand traceability to a file:line or a test, and an epistemically correct statu
 A full round is a lot of work. Suggestion: **every quarter** and **before each public version** (final RC or store release); a **reduced** round (only the personas of the area touched) after a big change to audio, the converter, the release or security.
 
 1. Copy `MODELO-BRIEFING.md` to `docs/auditoriaYYYYMM/00-briefing.md` and fill in the commit, the version and what changed since the previous round.
-2. (Optional) run Tezcat with the `strict` profile and put the report in `docs/auditoriaYYYYMM/` as a ready-made input.
+2. Run Tezcat with the `strict` profile: `tools/tezcat.sh --tudo` shows everything; put the output in `docs/auditoriaYYYYMM/` as a ready-made input. Day to day it is `npm run tezcat`, the ratchet with `tezcat-baseline.json`.
 3. Run `npm run check`, `npm test`, the Python verifiers and `cargo test`, and keep the outputs in `docs/auditoriaYYYYMM/evidencias/`.
 4. Launch the personas (order in "Recommended order of work"), one report each, on a **read-only** working copy.
 5. Persona 00 consolidates: `00-coordenador-relatorio.md`, `00-plano-de-ajustes.md` and `00-decisoes-do-responsavel.md`.

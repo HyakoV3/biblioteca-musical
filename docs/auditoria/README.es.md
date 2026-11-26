@@ -92,7 +92,7 @@ Exija trazabilidad de archivo:línea o prueba, y un estado epistémicamente corr
 Una ronda completa da trabajo. Sugerencia: **cada trimestre** y **antes de cada versión pública** (RC final o publicación en la tienda); una ronda **reducida** (solo las personas del área tocada) después de un cambio grande en el audio, el conversor, el release o la seguridad.
 
 1. Copie `MODELO-BRIEFING.md` a `docs/auditoriaAAAAMM/00-briefing.md` y complete el commit, la versión y lo que cambió desde la ronda anterior.
-2. (Opcional) ejecute Tezcat con el perfil `strict` y ponga el informe en `docs/auditoriaAAAAMM/` como entrada lista.
+2. Ejecute Tezcat con el perfil `strict`: `tools/tezcat.sh --tudo` muestra todo; ponga la salida en `docs/auditoriaAAAAMM/` como entrada lista. El día a día es `npm run tezcat`, el trinquete con `tezcat-baseline.json`.
 3. Ejecute `npm run check`, `npm test`, los verificadores en Python y `cargo test`, y guarde las salidas en `docs/auditoriaAAAAMM/evidencias/`.
 4. Lance las personas (orden en "Orden recomendado de trabajo"), un informe cada una, sobre una copia de trabajo **de solo lectura**.
 5. La persona 00 consolida: `00-coordenador-relatorio.md`, `00-plano-de-ajustes.md` y `00-decisoes-do-responsavel.md`.

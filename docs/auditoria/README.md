@@ -90,7 +90,7 @@ Exija rastreabilidade de arquivo:linha ou teste e status epistemicamente correto
 Uma rodada completa dá trabalho. Sugestão: **a cada trimestre** e **antes de cada versão pública** (RC final ou publicação na loja); uma rodada **reduzida** (só as personas da área mexida) depois de uma mudança grande no áudio, no conversor, no release ou na segurança.
 
 1. Copie `MODELO-BRIEFING.md` para `docs/auditoriaAAAAMM/00-briefing.md` e preencha o commit, a versão e o que mudou desde a rodada anterior.
-2. (Opcional) rode o Tezcat no perfil `strict` e ponha o relatório em `docs/auditoriaAAAAMM/` como entrada pronta.
+2. Rode o Tezcat no perfil `strict`: `tools/tezcat.sh --tudo` mostra tudo; ponha a saída em `docs/auditoriaAAAAMM/` como entrada pronta. O dia a dia é `npm run tezcat`, a catraca com `tezcat-baseline.json`.
 3. Rode `npm run check`, `npm test`, os verificadores em Python e `cargo test`, e guarde as saídas em `docs/auditoriaAAAAMM/evidencias/`.
 4. Dispare as personas (ordem de "Ordem recomendada de trabalho"), uma por relatório, em cópia de trabalho **somente leitura**.
 5. A persona 00 consolida: `00-coordenador-relatorio.md`, `00-plano-de-ajustes.md` e `00-decisoes-do-responsavel.md`.

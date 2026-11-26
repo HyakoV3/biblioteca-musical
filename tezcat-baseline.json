@@ -1,0 +1,2494 @@
+{
+  "src-tauri/build.rs::build::Rust/Unwrap::main": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Método::comecar": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Método::enviarComTexto": {
+    "severity": "FAIL",
+    "value": 41
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Nesting::enviarComTexto": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 158
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::SRP::": {
+    "severity": "WARN",
+    "value": 9
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteServico.kt::PonteServico::Clean/Método::ligar": {
+    "severity": "FAIL",
+    "value": 31
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteServico.kt::PonteServico::Clean/Nesting::rotaDeSaida": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteServico.kt::PonteServico::Clean/Nesting::temFone": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteServico.kt::PonteServico::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 227
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteServico.kt::PonteServico::OCP::ligar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteServico.kt::PonteServico::SRP::": {
+    "severity": "FAIL",
+    "value": 13
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::Clean/Método::montarNotificacao": {
+    "severity": "WARN",
+    "value": 26
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::Clean/Método::onStartCommand": {
+    "severity": "FAIL",
+    "value": 51
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::Clean/Params::onStartCommand": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 221
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::OCP::onStartCommand": {
+    "severity": "FAIL",
+    "value": 9
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::SRP::": {
+    "severity": "WARN",
+    "value": 8
+  },
+  "src-tauri/gen/android/buildSrc/src/main/java/br/pro/bibliotecamusical/kotlin/BuildTask.kt::BuildTask::Clean/Método::assemble": {
+    "severity": "WARN",
+    "value": 28
+  },
+  "src-tauri/gen/android/buildSrc/src/main/java/br/pro/bibliotecamusical/kotlin/BuildTask.kt::BuildTask::Clean/Método::runTauriCli": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "src-tauri/gen/android/buildSrc/src/main/java/br/pro/bibliotecamusical/kotlin/BuildTask.kt::BuildTask::Clean/Nesting::assemble": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/hinario.rs::hinario::Clean/Método::carregar": {
+    "severity": "WARN",
+    "value": 29
+  },
+  "src-tauri/src/hinario.rs::hinario::Clean/Método::ler": {
+    "severity": "FAIL",
+    "value": 73
+  },
+  "src-tauri/src/hinario.rs::hinario::Clean/Nesting::carregar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/hinario.rs::hinario::Clean/Nesting::ler": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "src-tauri/src/hinario.rs::hinario::Clean/Nesting::remover": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/hinario.rs::hinario::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 398
+  },
+  "src-tauri/src/hinario.rs::hinario::OCP::ler": {
+    "severity": "FAIL",
+    "value": 9
+  },
+  "src-tauri/src/hinario.rs::hinario::testes::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 584
+  },
+  "src-tauri/src/lib.rs::lib::Clean/Params::importar_partituras": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/lib.rs::lib::Clean/Params::ler_partitura": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Método::classificar": {
+    "severity": "WARN",
+    "value": 22
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Método::importar_zip_com_progresso": {
+    "severity": "FAIL",
+    "value": 105
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Método::ler_partitura": {
+    "severity": "WARN",
+    "value": 28
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Método::ler_variante": {
+    "severity": "FAIL",
+    "value": 30
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Método::numeros": {
+    "severity": "WARN",
+    "value": 24
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Método::preparar": {
+    "severity": "FAIL",
+    "value": 76
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Nesting::classificar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Nesting::importar_zip_com_progresso": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Nesting::ler_partitura": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Nesting::numeros": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Nesting::preparar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Params::importar_base64_com": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Params::importar_base64_com_progresso": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Params::importar_base64_progresso": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Params::importar_zip_com": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Params::importar_zip_com_progresso": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Params::ler_entrada": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Params::ler_partitura": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Params::ler_variante": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Params::preparar": {
+    "severity": "FAIL",
+    "value": 7
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 522
+  },
+  "src-tauri/src/pacote.rs::pacote::OCP::importar_zip_com_progresso": {
+    "severity": "FAIL",
+    "value": 11
+  },
+  "src-tauri/src/pacote.rs::pacote::OCP::ler_partitura": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/pacote.rs::pacote::OCP::ler_variante": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/pacote.rs::pacote::OCP::preparar": {
+    "severity": "FAIL",
+    "value": 10
+  },
+  "src-tauri/src/pacote.rs::pacote::SRP::": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "src-tauri/src/pacote.rs::pacote::testes::Clean/Método::classifica_so_os_nomes_exatos": {
+    "severity": "WARN",
+    "value": 76
+  },
+  "src-tauri/src/pacote.rs::pacote::testes::Clean/Nesting::arquivos": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote.rs::pacote::testes::Clean/Nesting::conteudo_real": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote.rs::pacote::testes::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 1381
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Método::escrever": {
+    "severity": "FAIL",
+    "value": 77
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Método::limpar_com": {
+    "severity": "WARN",
+    "value": 24
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Método::sem_use_encadeado": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Método::valor_final": {
+    "severity": "WARN",
+    "value": 23
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::escapar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::escrever": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::limpar_com": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::sem_use_encadeado": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::valor_final": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Params::escapar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Params::escrever": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 317
+  },
+  "src-tauri/src/svg.rs::svg::OCP::escrever": {
+    "severity": "FAIL",
+    "value": 13
+  },
+  "src-tauri/src/svg.rs::svg::OCP::valor_final": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "src-tauri/src/svg.rs::svg::testes::Clean/Nesting::svgs_gerados_passam_na_limpeza": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/svg.rs::svg::testes::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 497
+  },
+  "src/lib/Abas.svelte::Abas::OCP::teclas": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "src/lib/Afinador.svelte::Afinador::Clean/Nesting::soar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/Afinador.svelte::Afinador::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 169
+  },
+  "src/lib/Afinador.svelte::Afinador::SRP::": {
+    "severity": "WARN",
+    "value": 16
+  },
+  "src/lib/Gravador.svelte::Gravador::Clean/Método::aoTerminar": {
+    "severity": "FAIL",
+    "value": 30
+  },
+  "src/lib/Gravador.svelte::Gravador::Clean/Método::apagarTodas": {
+    "severity": "WARN",
+    "value": 27
+  },
+  "src/lib/Gravador.svelte::Gravador::Clean/Método::atualizarUma": {
+    "severity": "FAIL",
+    "value": 37
+  },
+  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::$effect@L374": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::aoTerminar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::atualizarUma": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::carregarTudo": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::fixadas": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::linhas": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/Gravador.svelte::Gravador::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 410
+  },
+  "src/lib/Gravador.svelte::Gravador::OCP::aoTerminar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/Gravador.svelte::Gravador::OCP::atualizarUma": {
+    "severity": "FAIL",
+    "value": 7
+  },
+  "src/lib/Gravador.svelte::Gravador::OCP::recuperarFoco": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/Gravador.svelte::Gravador::SRP::": {
+    "severity": "FAIL",
+    "value": 35
+  },
+  "src/lib/ItemGravacao.svelte::ItemGravacao::Clean/Método::ouvir": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "src/lib/ItemGravacao.svelte::ItemGravacao::Clean/Método::player": {
+    "severity": "WARN",
+    "value": 22
+  },
+  "src/lib/ItemGravacao.svelte::ItemGravacao::Clean/Nesting::alternarFavorita": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/ItemGravacao.svelte::ItemGravacao::Clean/Nesting::ouvir": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/ItemGravacao.svelte::ItemGravacao::Clean/Nesting::player": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/ItemGravacao.svelte::ItemGravacao::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 229
+  },
+  "src/lib/ItemGravacao.svelte::ItemGravacao::OCP::enviar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/ItemGravacao.svelte::ItemGravacao::OCP::ouvir": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/ItemGravacao.svelte::ItemGravacao::SRP::": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "src/lib/Partitura.svelte::Partitura::Clean/Método::$effect@L360": {
+    "severity": "FAIL",
+    "value": 38
+  },
+  "src/lib/Partitura.svelte::Partitura::Clean/Método::destacar": {
+    "severity": "FAIL",
+    "value": 45
+  },
+  "src/lib/Partitura.svelte::Partitura::Clean/Método::destacarCurvas": {
+    "severity": "FAIL",
+    "value": 82
+  },
+  "src/lib/Partitura.svelte::Partitura::Clean/Método::destacarNotas": {
+    "severity": "WARN",
+    "value": 26
+  },
+  "src/lib/Partitura.svelte::Partitura::Clean/Nesting::$effect@L360": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/Partitura.svelte::Partitura::Clean/Nesting::carregar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/Partitura.svelte::Partitura::Clean/Nesting::destacarCurvas": {
+    "severity": "FAIL",
+    "value": 5
+  },
+  "src/lib/Partitura.svelte::Partitura::Clean/Nesting::destacarNotas": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/Partitura.svelte::Partitura::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 398
+  },
+  "src/lib/Partitura.svelte::Partitura::OCP::$effect@L360": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "src/lib/Partitura.svelte::Partitura::OCP::destacar": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "src/lib/Partitura.svelte::Partitura::OCP::destacarCurvas": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/Partitura.svelte::Partitura::SRP::": {
+    "severity": "FAIL",
+    "value": 24
+  },
+  "src/lib/Player.svelte::Player::Clean/Nesting::$effect@L42": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/Player.svelte::Player::Clean/Params::mudarModo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/Player.svelte::Player::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 166
+  },
+  "src/lib/Player.svelte::Player::SRP::": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "src/lib/QualNota.svelte::QualNota::Clean/Método::iniciar": {
+    "severity": "FAIL",
+    "value": 37
+  },
+  "src/lib/QualNota.svelte::QualNota::Clean/Nesting::iniciar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/QualNota.svelte::QualNota::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 172
+  },
+  "src/lib/QualNota.svelte::QualNota::OCP::iniciar": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "src/lib/QualNota.svelte::QualNota::SRP::": {
+    "severity": "WARN",
+    "value": 17
+  },
+  "src/lib/afinador.ts::afinador::Clean/Nesting::leituraComHisterese": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/afinador.ts::afinador::Clean/Params::leituraComHisterese": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/afinador.ts::afinador::OCP::leituraComHisterese": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/afinadorPrefs.ts::afinadorPrefs::Clean/Nesting::lerAfinador": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/afinadorPrefs.ts::afinadorPrefs::Clean/Nesting::normalizarPref": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/biblioteca.svelte.ts::biblioteca.svelte::Clean/Nesting::importarPartituras": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/busca-hinos.ts::busca-hinos::Clean/Nesting::buscarNumero": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/busca-hinos.ts::busca-hinos::Clean/Nesting::indexar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/busca-hinos.ts::busca-hinos::Clean/Params::buscarNumero": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/busca-hinos.ts::busca-hinos::Clean/Params::destacar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/busca-hinos.ts::busca-hinos::Clean/Params::pontuar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/busca-hinos.ts::busca-hinos::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 356
+  },
+  "src/lib/busca-hinos.ts::busca-hinos::SRP::": {
+    "severity": "FAIL",
+    "value": 32
+  },
+  "src/lib/cabem.ts::cabem::Clean/Params::quantosCabem": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/compartilhar.ts::compartilhar::Clean/Método::enviarAgora": {
+    "severity": "FAIL",
+    "value": 40
+  },
+  "src/lib/compartilhar.ts::compartilhar::Clean/Nesting::enviarAgora": {
+    "severity": "FAIL",
+    "value": 5
+  },
+  "src/lib/compartilhar.ts::compartilhar::Clean/Params::compartilharGravacao": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/compartilhar.ts::compartilhar::Clean/Params::enviarAgora": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/compartilhar.ts::compartilhar::OCP::enviarAgora": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "src/lib/contagem.ts::Contagem::Clean/Nesting::iniciar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/contexto.ts::contexto::Clean/Método::contextoValido": {
+    "severity": "WARN",
+    "value": 25
+  },
+  "src/lib/contexto.ts::contexto::Clean/Método::linhasDoContexto": {
+    "severity": "FAIL",
+    "value": 33
+  },
+  "src/lib/contexto.ts::contexto::Clean/Método::montarContexto": {
+    "severity": "FAIL",
+    "value": 37
+  },
+  "src/lib/contexto.ts::contexto::Clean/Nesting::linhasDoContexto": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "src/lib/contexto.ts::contexto::Clean/Nesting::lista": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/contexto.ts::contexto::Clean/Nesting::marcarMudanca": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/contexto.ts::contexto::Clean/Nesting::montarContexto": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "src/lib/contexto.ts::contexto::Clean/Nesting::resumoDoContexto": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/contexto.ts::contexto::Clean/Params::linhasDoContexto": {
+    "severity": "FAIL",
+    "value": 5
+  },
+  "src/lib/contexto.ts::contexto::Clean/Params::textoDoContexto": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/contexto.ts::contexto::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 217
+  },
+  "src/lib/contexto.ts::contexto::OCP::contextoValido": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/contexto.ts::contexto::OCP::linhasDoContexto": {
+    "severity": "FAIL",
+    "value": 7
+  },
+  "src/lib/detector.ts::Estabilizador::Clean/Método::entrar": {
+    "severity": "WARN",
+    "value": 26
+  },
+  "src/lib/detector.ts::Estabilizador::Clean/Nesting::entrar": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "src/lib/detector.ts::Estabilizador::OCP::entrar": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "src/lib/escuta.ts::Escuta::Clean/Método::iniciar": {
+    "severity": "FAIL",
+    "value": 45
+  },
+  "src/lib/escuta.ts::Escuta::Clean/Nesting::iniciar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/escuta.ts::Escuta::DIP::": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "src/lib/escuta.ts::Escuta::OCP::iniciar": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Método::guardar": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Método::iniciar": {
+    "severity": "FAIL",
+    "value": 53
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Método::parar": {
+    "severity": "WARN",
+    "value": 22
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Nesting::alternar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Nesting::guardar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Nesting::iniciar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Nesting::parar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Params::guardar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 196
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::DIP::": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::OCP::iniciar": {
+    "severity": "FAIL",
+    "value": 8
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::SRP::": {
+    "severity": "FAIL",
+    "value": 16
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::gravacaoEmCurso.svelte::Clean/Método::lerContextoReal": {
+    "severity": "WARN",
+    "value": 23
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::gravacaoEmCurso.svelte::Clean/Nesting::guardarComPrazo": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::gravacaoEmCurso.svelte::Clean/Nesting::lerContextoReal": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacaoEmCurso.svelte.ts::gravacaoEmCurso.svelte::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 362
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Método::abrirUma": {
+    "severity": "FAIL",
+    "value": 36
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Método::atualizar": {
+    "severity": "WARN",
+    "value": 23
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Método::banco": {
+    "severity": "WARN",
+    "value": 27
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Método::recuperarUma": {
+    "severity": "FAIL",
+    "value": 31
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Método::salvar": {
+    "severity": "WARN",
+    "value": 28
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::aberto": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::abrirSessao": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::abrirUma": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::atualizar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::banco": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::blob": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::guardarPedaco": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::listar": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::recuperarSessoes": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::recuperarUma": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::resumo": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::salvar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Params::guardarPedaco": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Params::salvar": {
+    "severity": "FAIL",
+    "value": 5
+  },
+  "src/lib/gravacoes.ts::Gravacoes::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 273
+  },
+  "src/lib/gravacoes.ts::Gravacoes::DIP::": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacoes.ts::Gravacoes::OCP::abrirUma": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/gravacoes.ts::Gravacoes::OCP::atualizar": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "src/lib/gravacoes.ts::Gravacoes::OCP::banco": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/gravacoes.ts::Gravacoes::SRP::": {
+    "severity": "FAIL",
+    "value": 21
+  },
+  "src/lib/gravacoes.ts::LimiteEstourado::DIP::": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacoes.ts::gravacoes::Clean/Método::transacao": {
+    "severity": "WARN",
+    "value": 24
+  },
+  "src/lib/gravacoes.ts::gravacoes::Clean/Nesting::formatarData": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacoes.ts::gravacoes::Clean/Nesting::transacao": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacoes.ts::gravacoes::Clean/Params::comLimite": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacoes.ts::gravacoes::Clean/Params::formatarData": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacoes.ts::gravacoes::Clean/Params::transacao": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/gravacoes.ts::gravacoes::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 397
+  },
+  "src/lib/gravador.ts::DetectorDeSom::DIP::": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "src/lib/gravador.ts::Gravador::Clean/Método::ligarFiltro": {
+    "severity": "FAIL",
+    "value": 43
+  },
+  "src/lib/gravador.ts::Gravador::Clean/Método::parar": {
+    "severity": "FAIL",
+    "value": 35
+  },
+  "src/lib/gravador.ts::Gravador::Clean/Método::soltar": {
+    "severity": "WARN",
+    "value": 29
+  },
+  "src/lib/gravador.ts::Gravador::Clean/Nesting::abrirMedidor": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravador.ts::Gravador::Clean/Nesting::ligarFiltro": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravador.ts::Gravador::Clean/Nesting::parar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravador.ts::Gravador::Clean/Nesting::soltar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravador.ts::Gravador::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 183
+  },
+  "src/lib/gravador.ts::Gravador::DIP::": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "src/lib/gravador.ts::Gravador::OCP::ligarFiltro": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "src/lib/gravador.ts::Gravador::OCP::parar": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "src/lib/gravador.ts::Gravador::SRP::": {
+    "severity": "FAIL",
+    "value": 15
+  },
+  "src/lib/gravador.ts::gravador::Clean/Nesting::corrigirDuracao": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravador.ts::gravador::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 427
+  },
+  "src/lib/gravador.ts::gravador::SRP::": {
+    "severity": "WARN",
+    "value": 15
+  },
+  "src/lib/hinario/hinario.svelte.ts::hinario.svelte::Clean/Método::baixar": {
+    "severity": "WARN",
+    "value": 29
+  },
+  "src/lib/hinario/hinario.svelte.ts::hinario.svelte::Clean/Nesting::baixar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/hinario/hinario.svelte.ts::hinario.svelte::Clean/Nesting::remover": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/hinario/texto.ts::texto::Clean/Nesting::textoDoHinario": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/i18n/en.ts::en::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 547
+  },
+  "src/lib/i18n/es.ts::es::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 547
+  },
+  "src/lib/i18n/index.svelte.ts::index.svelte::Clean/Params::preencher": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/i18n/index.svelte.ts::index.svelte::Clean/Params::t": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/i18n/index.svelte.ts::index.svelte::Clean/Params::tn": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/i18n/pt.ts::pt::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 550
+  },
+  "src/lib/instrumentos.ts::instrumentos::OCP::tipoDaVoz": {
+    "severity": "FAIL",
+    "value": 8
+  },
+  "src/lib/karaoke.ts::karaoke::Clean/Nesting::confere": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/karaoke.ts::karaoke::Clean/Nesting::marcasDaVez": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/letra.ts::letra::Clean/Método::estrofes": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "src/lib/letra.ts::letra::Clean/Nesting::estrofes": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/licencas.ts::licencas::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 172
+  },
+  "src/lib/licencas.ts::licencas::OCP::textoDaLicenca": {
+    "severity": "FAIL",
+    "value": 7
+  },
+  "src/lib/metaGravacao.ts::metaGravacao::Clean/Nesting::normalizarMeta": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/metronomo.svelte.ts::EstadoMetronomo::DIP::": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/metronomo.svelte.ts::EstadoMetronomo::SRP::": {
+    "severity": "FAIL",
+    "value": 12
+  },
+  "src/lib/metronomo.ts::Metronomo::Clean/Método::iniciar": {
+    "severity": "WARN",
+    "value": 28
+  },
+  "src/lib/metronomo.ts::Metronomo::Clean/Método::olharAdiante": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "src/lib/metronomo.ts::Metronomo::Clean/Nesting::cancelarAgendados": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/metronomo.ts::Metronomo::Clean/Nesting::fechar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/metronomo.ts::Metronomo::Clean/Nesting::iniciar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/metronomo.ts::Metronomo::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 152
+  },
+  "src/lib/metronomo.ts::Metronomo::OCP::iniciar": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "src/lib/metronomo.ts::Metronomo::SRP::": {
+    "severity": "FAIL",
+    "value": 18
+  },
+  "src/lib/metronomo.ts::metronomo::Clean/Params::posicaoDoPendulo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/metronomo.ts::metronomo::Clean/Params::progressoNoCompasso": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/metronomo.ts::metronomo::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 370
+  },
+  "src/lib/metronomoPrefs.ts::metronomoPrefs::Clean/Nesting::normalizarPref": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/metronomoPrefs.ts::metronomoPrefs::OCP::normalizarPref": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "src/lib/notacao.ts::notacao::Clean/Params::nomeDaNotaPorExtenso": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/notacao.ts::notacao::Clean/Params::nomeDaTonalidade": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/notas.ts::notas::Clean/Nesting::acesasEm": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/notas.ts::notas::Clean/Nesting::indexarNotas": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/notas.ts::notas::Clean/Params::acesasDoPonto": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/notas.ts::notas::Clean/Params::acesasEm": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/notas.ts::notas::Clean/Params::notasDoPonto": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/notas.ts::notas::Clean/Params::notasEm": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/ogg.ts::ogg::Clean/Método::escreverOgg": {
+    "severity": "FAIL",
+    "value": 31
+  },
+  "src/lib/ogg.ts::ogg::Clean/Método::pagina": {
+    "severity": "WARN",
+    "value": 25
+  },
+  "src/lib/ogg.ts::ogg::Clean/Params::escreverOgg": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/ogg.ts::ogg::Clean/Params::pagina": {
+    "severity": "FAIL",
+    "value": 5
+  },
+  "src/lib/ogg.ts::ogg::OCP::escreverOgg": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/organizar.ts::organizar::Clean/Nesting::agrupar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/organizar.ts::organizar::Clean/Nesting::filtrar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/organizar.ts::organizar::Clean/Params::filtrar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/organizar.ts::organizar::Clean/Params::mesclar": {
+    "severity": "FAIL",
+    "value": 5
+  },
+  "src/lib/organizar.ts::organizar::Clean/Params::nomeDaGravacao": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/partituras/baixar.ts::baixar::Clean/Nesting::extrairDaPastaReal": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/partituras/baixar.ts::baixar::Clean/Params::baixarEInstalar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/partituras/baixar.ts::baixar::Clean/Params::zipConferido": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/partituras/partituras.svelte.ts::partituras.svelte::Clean/Método::baixar": {
+    "severity": "WARN",
+    "value": 24
+  },
+  "src/lib/partituras/partituras.svelte.ts::partituras.svelte::Clean/Nesting::baixar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/partituras/partituras.svelte.ts::partituras.svelte::Clean/Nesting::remover": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/partituras/partituras.svelte.ts::partituras.svelte::OCP::baixar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/preferencias.ts::preferencias::Clean/Nesting::lerAjustes": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/preferencias.ts::preferencias::Clean/Nesting::lerCartoes": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/preferencias.ts::preferencias::Clean/Nesting::lerTudo": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/preferencias.ts::preferencias::Clean/Nesting::salvarAjustes": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/preferencias.ts::preferencias::Clean/Nesting::salvarZoomPartitura": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/preferencias.ts::preferencias::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 272
+  },
+  "src/lib/preferencias.ts::preferencias::OCP::lerVoz": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/preferencias.ts::preferencias::SRP::": {
+    "severity": "FAIL",
+    "value": 28
+  },
+  "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Método::irPara": {
+    "severity": "WARN",
+    "value": 22
+  },
+  "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Método::reagendar": {
+    "severity": "FAIL",
+    "value": 44
+  },
+  "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Método::tocar": {
+    "severity": "FAIL",
+    "value": 63
+  },
+  "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Nesting::reagendar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Nesting::tocar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 413
+  },
+  "src/lib/reproducao.svelte.ts::reproducao.svelte::OCP::continuar": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "src/lib/reproducao.svelte.ts::reproducao.svelte::OCP::irPara": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/reproducao.svelte.ts::reproducao.svelte::OCP::tocar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/reproducao.svelte.ts::reproducao.svelte::SRP::": {
+    "severity": "FAIL",
+    "value": 28
+  },
+  "src/lib/ruido.ts::ruido::Clean/Nesting::criarFiltro": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/saidaAudio.ts::saidaAudio::Clean/Método::criarContexto": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "src/lib/saidaAudio.ts::saidaAudio::Clean/Nesting::criarContexto": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/saidaAudio.ts::saidaAudio::Clean/Nesting::lerModos": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/servico.ts::servico::Clean/Nesting::sincronizarServico": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/servico.ts::servico::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 161
+  },
+  "src/lib/servico.ts::servico::SRP::": {
+    "severity": "WARN",
+    "value": 18
+  },
+  "src/lib/sintetizador.ts::Sintetizador::Clean/Método::parar": {
+    "severity": "WARN",
+    "value": 29
+  },
+  "src/lib/sintetizador.ts::Sintetizador::Clean/Nesting::parar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/sintetizador.ts::Sintetizador::Clean/Nesting::real": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/sintetizador.ts::Sintetizador::Clean/Params::real": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/sintetizador.ts::Sintetizador::SRP::": {
+    "severity": "WARN",
+    "value": 10
+  },
+  "src/lib/sintetizador.ts::sintetizador::Clean/Método::agendarNota": {
+    "severity": "FAIL",
+    "value": 52
+  },
+  "src/lib/sintetizador.ts::sintetizador::Clean/Params::agendarNota": {
+    "severity": "FAIL",
+    "value": 8
+  },
+  "src/lib/sintetizador.ts::sintetizador::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 320
+  },
+  "src/lib/sons/armazenamento.ts::armazenamento::Clean/Método::listar": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "src/lib/sons/armazenamento.ts::armazenamento::Clean/Nesting::guardar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/sons/armazenamento.ts::armazenamento::Clean/Nesting::listar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/sons/armazenamento.ts::armazenamento::Clean/Params::guardar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/sons/baixar.ts::baixar::Clean/Método::baixarComControle": {
+    "severity": "FAIL",
+    "value": 51
+  },
+  "src/lib/sons/baixar.ts::baixar::Clean/Método::baixarZip": {
+    "severity": "WARN",
+    "value": 23
+  },
+  "src/lib/sons/baixar.ts::baixar::Clean/Nesting::baixarComControle": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/sons/baixar.ts::baixar::Clean/Params::baixarComControle": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/sons/baixar.ts::baixar::Clean/Params::baixarZip": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/sons/baixar.ts::baixar::OCP::baixarComControle": {
+    "severity": "FAIL",
+    "value": 8
+  },
+  "src/lib/sons/extrair.ts::ErroPacote::DIP::": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/sons/extrair.ts::SemWorker::DIP::": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/sons/extrair.ts::extrair::Clean/Método::descompactar": {
+    "severity": "WARN",
+    "value": 23
+  },
+  "src/lib/sons/extrair.ts::extrair::Clean/Nesting::descompactar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/sons/extrair.ts::extrair::Clean/Params::conferir": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/sons/pacotes.svelte.ts::pacotes.svelte::Clean/Método::baixar": {
+    "severity": "WARN",
+    "value": 27
+  },
+  "src/lib/sons/pacotes.svelte.ts::pacotes.svelte::Clean/Nesting::baixar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/sons/pacotes.svelte.ts::pacotes.svelte::Clean/Nesting::remover": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/suavizador.ts::SuavizadorDeCents::Clean/Método::entrar": {
+    "severity": "FAIL",
+    "value": 31
+  },
+  "src/lib/suavizador.ts::SuavizadorDeCents::Clean/Nesting::entrar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/suavizador.ts::SuavizadorDeCents::OCP::entrar": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "src/lib/timbres.ts::timbres::Clean/Método::harmonicosEm": {
+    "severity": "FAIL",
+    "value": 32
+  },
+  "src/lib/timbres.ts::timbres::Clean/Nesting::harmonicosEm": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/timbres.ts::timbres::Clean/Nesting::perfilDaNota": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/timbres.ts::timbres::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 172
+  },
+  "src/lib/timbres.ts::timbres::OCP::harmonicosEm": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/timbres.ts::timbres::SRP::": {
+    "severity": "WARN",
+    "value": 16
+  },
+  "src/lib/tom.ts::TomSustentado::Clean/Método::tocar": {
+    "severity": "WARN",
+    "value": 27
+  },
+  "src/lib/tom.ts::TomSustentado::Clean/Nesting::sonda": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/tom.ts::TomSustentado::SRP::": {
+    "severity": "WARN",
+    "value": 8
+  },
+  "src/lib/vezes.ts::vezes::Clean/Nesting::montarTudo": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/vezes.ts::vezes::Clean/Nesting::partesDoTudo": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/vezes.ts::vezes::Clean/Params::ehFinal": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/vezes.ts::vezes::Clean/Params::montarTudo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/vezes.ts::vezes::Clean/Params::parteNaBatida": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/vezes.ts::vezes::Clean/Params::partesDoTudo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/vezes.ts::vezes::Clean/Params::vozesDaVez": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/webm.ts::webm::Clean/Método::lerOpusDoWebm": {
+    "severity": "FAIL",
+    "value": 65
+  },
+  "src/lib/webm.ts::webm::Clean/Nesting::lerOpusDoWebm": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/webm.ts::webm::OCP::lerOpusDoWebm": {
+    "severity": "FAIL",
+    "value": 18
+  },
+  "src/routes/ajustes/+page.svelte::ajustes/+page::Clean/Nesting::remover": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/routes/ajustes/+page.svelte::ajustes/+page::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 180
+  },
+  "src/routes/ajustes/+page.svelte::ajustes/+page::Clean/Template::": {
+    "severity": "WARN",
+    "value": 255
+  },
+  "src/routes/ajustes/+page.svelte::ajustes/+page::SRP::": {
+    "severity": "WARN",
+    "value": 18
+  },
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Método::$effect@L139": {
+    "severity": "WARN",
+    "value": 26
+  },
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Método::$effect@L189": {
+    "severity": "WARN",
+    "value": 25
+  },
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Nesting::$effect@L139": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Nesting::$effect@L189": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Nesting::$effect@L73": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 251
+  },
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::OCP::$effect@L139": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::OCP::$effect@L189": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::OCP::atualizarKaraoke": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::SRP::": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "tests/amostras.ts::amostras::Clean/Nesting::hinoComFinal": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tests/amostras.ts::amostras::Clean/Params::escada": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tests/busca-hinos.test.ts::busca-hinos.test::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 369
+  },
+  "tests/detector.test.ts::detector.test::Clean/Params::som": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tests/estilos.test.ts::estilos.test::Clean/Nesting::executar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tests/gravacaoEmCurso.test.ts::gravacaoEmCurso.test::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 308
+  },
+  "tests/gravacoes.test.ts::gravacoes.test::Clean/Nesting::fabricaMuda": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tests/gravacoes.test.ts::gravacoes.test::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 522
+  },
+  "tests/gravador.test.ts::gravador.test::Clean/Nesting::preparar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tests/gravador.test.ts::gravador.test::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 491
+  },
+  "tests/metronomo.test.ts::metronomo.test::Clean/Nesting::ganhoFalso": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tests/metronomo.test.ts::metronomo.test::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 403
+  },
+  "tests/sintetizador.test.ts::FakeCtx::Clean/Nesting::createBiquadFilter": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tests/sons-baixar.test.ts::sons-baixar.test::Clean/Nesting::corpo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tests/timbres.test.ts::timbres.test::Clean/Params::mix": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Método::analisar_nota": {
+    "severity": "FAIL",
+    "value": 44
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Método::calibrar": {
+    "severity": "WARN",
+    "value": 26
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Método::comparar_niveis": {
+    "severity": "FAIL",
+    "value": 33
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Método::comparar_orgaos": {
+    "severity": "FAIL",
+    "value": 46
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Método::corte_de_abertura": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Método::espectro_harmonico": {
+    "severity": "WARN",
+    "value": 26
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Método::main": {
+    "severity": "FAIL",
+    "value": 59
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Método::medir_distancia": {
+    "severity": "WARN",
+    "value": 28
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Método::nivel_do_instrumento": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Nesting::analisar_nota": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Nesting::calibrar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Nesting::comparar_orgaos": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Nesting::corte_de_abertura": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Nesting::espectro_harmonico": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Nesting::main": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Nesting::medir_distancia": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Nesting::nivel_do_instrumento": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Params::amplitudes_em": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Params::corte_de_abertura": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Params::espectro_harmonico": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Params::nivel_do_instrumento": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Params::rms_janelas": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/analisar-timbres.py::analisar-timbres::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 515
+  },
+  "tools/analisar-timbres.py::analisar-timbres::OCP::analisar_nota": {
+    "severity": "FAIL",
+    "value": 8
+  },
+  "tools/analisar-timbres.py::analisar-timbres::OCP::calibrar": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "tools/analisar-timbres.py::analisar-timbres::OCP::comparar_niveis": {
+    "severity": "FAIL",
+    "value": 9
+  },
+  "tools/analisar-timbres.py::analisar-timbres::OCP::comparar_orgaos": {
+    "severity": "FAIL",
+    "value": 14
+  },
+  "tools/analisar-timbres.py::analisar-timbres::OCP::espectro_harmonico": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "tools/analisar-timbres.py::analisar-timbres::OCP::interpolar": {
+    "severity": "FAIL",
+    "value": 8
+  },
+  "tools/analisar-timbres.py::analisar-timbres::OCP::main": {
+    "severity": "FAIL",
+    "value": 17
+  },
+  "tools/analisar-timbres.py::analisar-timbres::OCP::medir_distancia": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "tools/analisar-timbres.py::analisar-timbres::OCP::nivel_do_instrumento": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "tools/analisar-timbres.py::analisar-timbres::SRP::": {
+    "severity": "FAIL",
+    "value": 23
+  },
+  "tools/baixar-sons-gm.py::baixar-sons-gm::Clean/Método::main": {
+    "severity": "WARN",
+    "value": 24
+  },
+  "tools/baixar-sons-gm.py::baixar-sons-gm::Clean/Nesting::main": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/baixar-sons-gm.py::baixar-sons-gm::OCP::main": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "tools/contraste.py::contraste::Clean/Método::ler_tokens": {
+    "severity": "FAIL",
+    "value": 36
+  },
+  "tools/contraste.py::contraste::Clean/Método::main": {
+    "severity": "FAIL",
+    "value": 86
+  },
+  "tools/contraste.py::contraste::Clean/Nesting::ler_tokens": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/contraste.py::contraste::Clean/Nesting::main": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "tools/contraste.py::contraste::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 186
+  },
+  "tools/contraste.py::contraste::OCP::ler_tokens": {
+    "severity": "FAIL",
+    "value": 7
+  },
+  "tools/contraste.py::contraste::OCP::main": {
+    "severity": "FAIL",
+    "value": 32
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::Clean/Método::gerar": {
+    "severity": "FAIL",
+    "value": 33
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::Clean/Método::principal": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::Clean/Método::separar_camadas": {
+    "severity": "WARN",
+    "value": 22
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::Clean/Nesting::gerar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::Clean/Nesting::principal": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::Clean/Nesting::raio_maximo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::Clean/Nesting::sem_alfa": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::Clean/Params::desenhar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::Clean/Params::gerar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 227
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::OCP::desenhar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::OCP::principal": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "tools/gerar-icone-do-app.py::gerar-icone-do-app::OCP::separar_camadas": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Método::gerar_hino": {
+    "severity": "FAIL",
+    "value": 38
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Método::marcar_notas": {
+    "severity": "FAIL",
+    "value": 65
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Método::principal": {
+    "severity": "FAIL",
+    "value": 44
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Método::tempos_do_desenho": {
+    "severity": "WARN",
+    "value": 24
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Método::tempos_no_compasso": {
+    "severity": "WARN",
+    "value": 23
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Nesting::achar_musescore": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Nesting::gerar_hino": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Nesting::gravar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Nesting::inicios_absolutos": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Nesting::marcar_notas": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Nesting::principal": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Nesting::processar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Nesting::tempos_do_desenho": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Nesting::tempos_no_compasso": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Params::achar_musescore": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Params::gerar_hino": {
+    "severity": "FAIL",
+    "value": 9
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Params::marcar_notas": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Params::mscx_para_musicxml": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Params::processar": {
+    "severity": "FAIL",
+    "value": 8
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Params::tempos_do_desenho": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/gerar-partituras.py::gerar-partituras::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 429
+  },
+  "tools/gerar-partituras.py::gerar-partituras::OCP::achar_musescore": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "tools/gerar-partituras.py::gerar-partituras::OCP::gerar_hino": {
+    "severity": "FAIL",
+    "value": 10
+  },
+  "tools/gerar-partituras.py::gerar-partituras::OCP::gravar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/gerar-partituras.py::gerar-partituras::OCP::marcar_notas": {
+    "severity": "FAIL",
+    "value": 13
+  },
+  "tools/gerar-partituras.py::gerar-partituras::OCP::mscx_para_musicxml": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/gerar-partituras.py::gerar-partituras::OCP::principal": {
+    "severity": "FAIL",
+    "value": 9
+  },
+  "tools/gerar-partituras.py::gerar-partituras::OCP::processar": {
+    "severity": "FAIL",
+    "value": 8
+  },
+  "tools/gerar-partituras.py::gerar-partituras::OCP::tempos_do_desenho": {
+    "severity": "FAIL",
+    "value": 8
+  },
+  "tools/gerar-partituras.py::gerar-partituras::OCP::tempos_no_compasso": {
+    "severity": "FAIL",
+    "value": 7
+  },
+  "tools/gerar-partituras.py::gerar-partituras::SRP::": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "tools/montar-manifesto-hinario.py::montar-manifesto-hinario::Clean/Método::montar": {
+    "severity": "WARN",
+    "value": 23
+  },
+  "tools/montar-manifesto-hinario.py::montar-manifesto-hinario::OCP::montar": {
+    "severity": "FAIL",
+    "value": 7
+  },
+  "tools/montar-manifesto-sons.py::montar-manifesto-sons::Clean/Método::main": {
+    "severity": "FAIL",
+    "value": 46
+  },
+  "tools/montar-manifesto-sons.py::montar-manifesto-sons::Clean/Método::montar_pacotes": {
+    "severity": "WARN",
+    "value": 27
+  },
+  "tools/montar-manifesto-sons.py::montar-manifesto-sons::Clean/Nesting::main": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/montar-manifesto-sons.py::montar-manifesto-sons::Clean/Nesting::montar_pacotes": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/montar-manifesto-sons.py::montar-manifesto-sons::Clean/Params::montar_pacotes": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/montar-manifesto-sons.py::montar-manifesto-sons::OCP::main": {
+    "severity": "FAIL",
+    "value": 13
+  },
+  "tools/montar-manifesto-sons.py::montar-manifesto-sons::OCP::montar_pacotes": {
+    "severity": "FAIL",
+    "value": 12
+  },
+  "tools/montar-pacote.py::montar-pacote::Clean/Método::principal": {
+    "severity": "FAIL",
+    "value": 31
+  },
+  "tools/montar-pacote.py::montar-pacote::Clean/Nesting::escrever_zip": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/montar-pacote.py::montar-pacote::Clean/Nesting::principal": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/montar-pacote.py::montar-pacote::OCP::principal": {
+    "severity": "FAIL",
+    "value": 9
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Método::aplicar": {
+    "severity": "FAIL",
+    "value": 67
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Método::ler": {
+    "severity": "FAIL",
+    "value": 77
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Método::sequencia": {
+    "severity": "WARN",
+    "value": 23
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Nesting::aplicar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Nesting::ler": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Nesting::sequencia": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Params::aplicar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Params::duas_ou_mais": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Params::inteiro_positivo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Params::palavras": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 263
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::OCP::aplicar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::OCP::ler": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::testes::Clean/Params::s": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/correcoes.rs::correcoes::testes::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 341
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::converter_com": {
+    "severity": "FAIL",
+    "value": 390
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::corrigir_silabas": {
+    "severity": "FAIL",
+    "value": 50
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::dividir_em_vozes": {
+    "severity": "FAIL",
+    "value": 106
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::estrofes_da_passada": {
+    "severity": "WARN",
+    "value": 29
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::executar_conversao": {
+    "severity": "FAIL",
+    "value": 129
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::ler_armadura": {
+    "severity": "FAIL",
+    "value": 30
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::modo_pelo_baixo": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::montar_letra": {
+    "severity": "FAIL",
+    "value": 126
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::para_json": {
+    "severity": "FAIL",
+    "value": 47
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::percorrer": {
+    "severity": "FAIL",
+    "value": 108
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::plano_passadas": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::recortar_inicio": {
+    "severity": "WARN",
+    "value": 23
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::refrao_com_estrofe_trocada": {
+    "severity": "WARN",
+    "value": 29
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::registrar_marcas": {
+    "severity": "FAIL",
+    "value": 30
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::selecionar": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::separar_o_coro": {
+    "severity": "FAIL",
+    "value": 59
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::separar_o_final": {
+    "severity": "FAIL",
+    "value": 33
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::texto_de_estilo": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Método::validar": {
+    "severity": "FAIL",
+    "value": 58
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::compassos_da_passada": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::converter_com": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::corrigir_silabas": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::cortar_ligaduras_do_segmento": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::dividir_em_vozes": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::estrofes_da_passada": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::executar_conversao": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::fecha_asterisco": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::fecha_asteriscos_na_respiracao": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::instante_na_passada": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::liga_fim": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::liga_inicio": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::modo_pelo_baixo": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::montar_letra": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::nomes_satb": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::palavra_a_partir": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::para_json": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::percorrer": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::registrar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::registrar_marcas": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::relatorio_de_avisos": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::selecionar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::separar_o_coro": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::separar_o_final": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::texto_completo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::texto_de_estilo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Nesting::validar": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Params::cabecalho": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Params::converter_com": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Params::estrofes_da_passada": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Params::fecha_asterisco": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Params::fecha_asteriscos_na_respiracao": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Params::instante_na_passada": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Params::modo_pelo_baixo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Params::nome_da_voz": {
+    "severity": "FAIL",
+    "value": 5
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Params::percorrer": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Params::registrar": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Params::registrar_marcas": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Params::selecionar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 2117
+  },
+  "tools/mscx2json/src/main.rs::main::OCP::converter_com": {
+    "severity": "FAIL",
+    "value": 30
+  },
+  "tools/mscx2json/src/main.rs::main::OCP::corrigir_silabas": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "tools/mscx2json/src/main.rs::main::OCP::dividir_em_vozes": {
+    "severity": "FAIL",
+    "value": 9
+  },
+  "tools/mscx2json/src/main.rs::main::OCP::executar_conversao": {
+    "severity": "FAIL",
+    "value": 9
+  },
+  "tools/mscx2json/src/main.rs::main::OCP::montar_letra": {
+    "severity": "FAIL",
+    "value": 14
+  },
+  "tools/mscx2json/src/main.rs::main::OCP::para_json": {
+    "severity": "FAIL",
+    "value": 10
+  },
+  "tools/mscx2json/src/main.rs::main::OCP::percorrer": {
+    "severity": "FAIL",
+    "value": 12
+  },
+  "tools/mscx2json/src/main.rs::main::OCP::separar_o_coro": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "tools/mscx2json/src/main.rs::main::OCP::validar": {
+    "severity": "FAIL",
+    "value": 7
+  },
+  "tools/mscx2json/src/main.rs::main::SRP::": {
+    "severity": "FAIL",
+    "value": 61
+  },
+  "tools/mscx2json/src/main.rs::main::testes::Clean/Método::final_descartado_nao_deixa_compassos_do_final": {
+    "severity": "WARN",
+    "value": 68
+  },
+  "tools/mscx2json/src/main.rs::main::testes::Clean/Método::final_descartado_refaz_a_letra_e_nao_deixa_aviso_do_plano": {
+    "severity": "FAIL",
+    "value": 88
+  },
+  "tools/mscx2json/src/main.rs::main::testes::Clean/Nesting::letra_por_estrofe_com_silabas_e_quebra_na_respiracao": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::testes::Clean/Nesting::sincronia_marca_a_posicao_na_linha_e_o_instante_de_cada_silaba": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::testes::Clean/Params::comp_com_silaba": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::testes::Clean/Params::comp_ligado": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::testes::Clean/Params::hino_com_nota": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::testes::Clean/Params::nota_acorde": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::testes::Clean/Params::silaba_de": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::testes::Clean/Params::silaba_em": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/main.rs::main::testes::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 2548
+  },
+  "tools/preparar-sons.py::preparar-sons::Clean/Método::main": {
+    "severity": "FAIL",
+    "value": 52
+  },
+  "tools/preparar-sons.py::preparar-sons::Clean/Nesting::main": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/preparar-sons.py::preparar-sons::OCP::main": {
+    "severity": "FAIL",
+    "value": 12
+  },
+  "tools/test_gerar_icone_do_app.py::Principal::Clean/Nesting::test_svg_que_nao_e_o_esperado_sai_com_codigo_2": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/test_gerar_partituras.py::GerarHino::Clean/Nesting::roda": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/test_gerar_partituras.py::GerarHino::Clean/Nesting::roda_sobre": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/test_gerar_partituras.py::GerarHino::Clean/Params::roda": {
+    "severity": "FAIL",
+    "value": 5
+  },
+  "tools/test_gerar_partituras.py::GerarHino::Clean/Params::roda_sobre": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/test_gerar_partituras.py::Gravar::Clean/Nesting::test_falha_na_escrita_no_meio_nao_deixa_arquivo_nem_temporario": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/test_gerar_partituras.py::MscxParaMusicxml::Clean/Params::falso": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/test_gerar_partituras.py::test_gerar_partituras::Clean/Params::falso": {
+    "severity": "FAIL",
+    "value": 9
+  },
+  "tools/test_gerar_partituras.py::test_gerar_partituras::Clean/Params::run": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/test_gerar_partituras.py::test_gerar_partituras::Clean/Tamanho::": {
+    "severity": "FAIL",
+    "value": 630
+  },
+  "tools/test_montar_manifesto_hinario.py::test_montar_manifesto_hinario::Clean/Params::_hinario": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/test_montar_manifesto_sons.py::test_montar_manifesto_sons::Clean/Params::_rodar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/test_montar_manifesto_sons.py::test_montar_manifesto_sons::Clean/Params::test_zip_mal_formado_e_recusado": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/test_montar_pacote.py::Manifesto::Clean/Nesting::test_erro_nao_escreve_nada": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/test_montar_pacote.py::Manifesto::Clean/Nesting::test_link_ruim_e_arquivo_que_nao_e_zip_dao_erro": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/test_montar_pacote.py::Zip::Clean/Nesting::test_sem_nenhum_svg_ou_pasta_inexistente_da_erro_sem_criar_o_zip": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/verificar-compassos.py::verificar-compassos::Clean/Método::main": {
+    "severity": "WARN",
+    "value": 22
+  },
+  "tools/verificar-compassos.py::verificar-compassos::Clean/Método::verificar": {
+    "severity": "WARN",
+    "value": 25
+  },
+  "tools/verificar-compassos.py::verificar-compassos::Clean/Nesting::ler_svgs": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/verificar-compassos.py::verificar-compassos::Clean/Nesting::main": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/verificar-compassos.py::verificar-compassos::Clean/Nesting::verificar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/verificar-compassos.py::verificar-compassos::OCP::ler_svgs": {
+    "severity": "FAIL",
+    "value": 7
+  },
+  "tools/verificar-compassos.py::verificar-compassos::OCP::main": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/verificar-compassos.py::verificar-compassos::OCP::verificar": {
+    "severity": "FAIL",
+    "value": 12
+  },
+  "tools/verificar-movimento.py::verificar-movimento::Clean/Método::main": {
+    "severity": "FAIL",
+    "value": 30
+  },
+  "tools/verificar-movimento.py::verificar-movimento::Clean/Nesting::blocos": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/verificar-movimento.py::verificar-movimento::Clean/Nesting::main": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/verificar-movimento.py::verificar-movimento::Clean/Nesting::verificar_movimento_css": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/verificar-movimento.py::verificar-movimento::OCP::blocos": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/verificar-movimento.py::verificar-movimento::OCP::main": {
+    "severity": "FAIL",
+    "value": 10
+  },
+  "tools/verificar-movimento.py::verificar-movimento::OCP::verificar_movimento_css": {
+    "severity": "FAIL",
+    "value": 6
+  },
+  "tools/verificar-traducoes.py::verificar-traducoes::Clean/Método::main": {
+    "severity": "WARN",
+    "value": 29
+  },
+  "tools/verificar-traducoes.py::verificar-traducoes::Clean/Nesting::main": {
+    "severity": "FAIL",
+    "value": 4
+  },
+  "tools/verificar-traducoes.py::verificar-traducoes::OCP::main": {
+    "severity": "FAIL",
+    "value": 16
+  }
+}
