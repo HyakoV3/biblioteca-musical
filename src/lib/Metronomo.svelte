@@ -5,7 +5,7 @@
   import ControleAndamento from "./ControleAndamento.svelte";
   import Icone from "./Icone.svelte";
   import ListaRecentes from "./ListaRecentes.svelte";
-  import { BPM_MAX, BPM_MIN, COMPASSOS } from "./metronomo";
+  import { BPM_MAX, BPM_MIN, COMPASSOS, ehComposto } from "./metronomo";
   import { emCurso } from "./gravacaoEmCurso.svelte";
   import { metronomo } from "./metronomo.svelte";
   import { i18n } from "./i18n/index.svelte";
@@ -67,6 +67,7 @@
   }
 
   const marcas = $derived(Array.from({ length: metronomo.compasso }, (_, i) => i));
+  const composto = $derived(ehComposto(metronomo.compasso));
   /** Simples: o tempo se divide em 2 (2, 3 e 4 tempos). Compostos: em 3 (6, 9 e 12). */
   const GRUPOS = [
     { id: "simples", rotulo: "metronomo.simples", itens: COMPASSOS.filter((n) => n <= 4) },
@@ -91,6 +92,7 @@
   {#if metronomo.interrompido}<Aviso tipo="info">{t("metronomo.interrompido")}</Aviso>{/if}
 
   <div class="andamento"><ControleAndamento {cfg} editavel={true} min={BPM_MIN} max={BPM_MAX} /></div>
+  {#if composto}<p class="por-tempo" id="metronomo-por-tempo">{t("metronomo.por_tempo", { porTempo: Math.round(metronomo.bpm / 3) })}</p>{/if}
 
   <!-- O compasso em dois grupos, como na teoria: simples (2, 3 e 4 tempos) e compostos (6, 9 e 12, de 3 em 3). Cada grupo tem 3 botões do mesmo tamanho; os dois dividem a largura. -->
   <div class="compasso" role="group" aria-label={t("metronomo.compasso")}>
@@ -117,7 +119,7 @@
     </div>
     <div class="tempos">
       {#each marcas as i (i)}
-        <span class="tempo" class:forte={i === 0} class:aceso={aceso === i}></span>
+        <span class="tempo" class:forte={i === 0} class:medio={composto && i > 0 && i % 3 === 0} class:novo-grupo={composto && i > 0 && i % 3 === 0} class:aceso={aceso === i}></span>
       {/each}
     </div>
   </div>
@@ -154,6 +156,10 @@
   .tempos { display: flex; justify-content: center; align-items: center; gap: 0.5rem; min-height: 1.75rem; }
   .tempo { width: 0.75rem; height: 0.75rem; border-radius: 50%; border: 0.125rem solid var(--suave); box-sizing: border-box; }
   .tempo.forte { width: 1.5rem; height: 1.5rem; border-color: var(--texto); }
+  /* Compostos: o 1º clique de cada grupo de 3 é de tamanho médio, e os grupos se separam. */
+  .tempo.medio { width: 1.125rem; height: 1.125rem; border-color: var(--texto); }
+  .tempo.novo-grupo { margin-inline-start: 0.5rem; }
+  .por-tempo { margin: 0; text-align: center; color: var(--suave); font-size: 0.875rem; }
   .tempo.aceso { background: var(--ouro-linha); border-color: var(--ouro-linha); }
 
   .grande { min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }

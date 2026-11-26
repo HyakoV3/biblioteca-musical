@@ -227,7 +227,8 @@
 <style>
   .ouvir { min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
   .leitura { display: grid; gap: 0.5rem; text-align: center; }
-  .esmaecida { opacity: 0.55; }
+  /* Esmaecida (sem nota): só o nome e a trilha; o detalhe ("Toque uma nota") fica com opacidade 1 para manter o contraste mínimo de 4,5:1. */
+  .esmaecida .nome, .esmaecida .trilha { opacity: 0.55; }
   .nome { font-size: 3.5rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .soa { margin: 0; }
   .vizinhas { display: flex; justify-content: space-between; font-size: 1.1rem; }

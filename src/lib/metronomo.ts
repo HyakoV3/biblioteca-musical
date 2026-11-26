@@ -138,6 +138,17 @@ function cliqueAtual(fila: readonly Clique[], agora: number): Clique | null {
 /** Timbre do clique: o forte é mais agudo e mais alto (a diferença se confere pelo `hz` no teste, e se ouve). */
 export const CLIQUE_FORTE = { hz: 1600, ganho: 0.7 };
 export const CLIQUE_FRACO = { hz: 1000, ganho: 0.45 };
+/** Nos compostos (6, 9 e 12), o 1º clique de cada grupo de 3 (o tempo pontuado) soa entre o forte e o fraco: sem ele, 6/8 soaria como 6/4 simples. */
+export const CLIQUE_MEDIO = { hz: 1250, ganho: 0.55 };
+
+/** Compasso composto: os cliques (colcheias) vão de 3 em 3. */
+export const ehComposto = (compasso: number): boolean => compasso >= 6 && compasso % 3 === 0;
+
+/** O timbre do clique de `indice` (0 = o 1º tempo do compasso) num compasso de `compasso` cliques. */
+export function perfilDoClique(indice: number, compasso: number) {
+  if (indice === 0) return CLIQUE_FORTE;
+  return ehComposto(compasso) && indice % 3 === 0 ? CLIQUE_MEDIO : CLIQUE_FRACO;
+}
 const ATAQUE = 0.002;
 const DURACAO = 0.05;
 
@@ -313,7 +324,7 @@ export class Metronomo {
   }
 
   private soar(ctx: AudioContext, c: Clique): void {
-    const perfil = c.indice === 0 ? CLIQUE_FORTE : CLIQUE_FRACO;
+    const perfil = perfilDoClique(c.indice, this._compasso);
     const osc = ctx.createOscillator();
     osc.frequency.value = perfil.hz;
     const ganho = ctx.createGain();

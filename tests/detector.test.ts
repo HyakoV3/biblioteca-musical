@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CONGELAR_MS, CONFIRMAR_SALTO, Estabilizador, JANELA, Medidor, leituraValida, rms, type Bruta } from "../src/lib/detector";
+import { CONGELAR_MS, CONFIRMAR_SALTO, SALTO_DE_OITAVA_CENTS, Estabilizador, JANELA, Medidor, leituraValida, rms, type Bruta } from "../src/lib/detector";
 import { frequenciaDe, notaEscrita, notaMaisProxima } from "../src/lib/afinador";
 
 const TAXA = 48000;
@@ -93,6 +93,17 @@ describe("Estabilizador", () => {
     let r = r1;
     for (let i = 0; i < CONFIRMAR_SALTO + 2; i++) r = e.entrar(300 + i * 50, b(440));
     expect(r).toMatchObject({ tipo: "nota", leitura: { midi: 69 } });
+  });
+
+  it("um salto de 7ª menor (melodia, não erro de oitava) vale na hora (AFN-002)", () => {
+    expect(SALTO_DE_OITAVA_CENTS).toBeGreaterThan(1000);
+    expect(SALTO_DE_OITAVA_CENTS).toBeLessThan(1200);
+    const e = new Estabilizador();
+    for (let i = 0; i < 5; i++) e.entrar(i * 50, b(220));
+    // Sol4, uma 7ª menor acima do Lá3, em menos quadros do que CONFIRMAR_SALTO: com o limite antigo (1000 cents) seria tratado como erro de oitava e ignorado.
+    let r = e.entrar(250, b(220 * 2 ** (10 / 12)));
+    for (let i = 1; i < CONFIRMAR_SALTO - 1; i++) r = e.entrar(250 + i * 50, b(220 * 2 ** (10 / 12)));
+    expect(r).toMatchObject({ tipo: "nota", leitura: { midi: 67 } });
   });
 
   it("depois de uma pausa curta, uma nota uma oitava acima vale na hora (a mediana velha não decide)", () => {

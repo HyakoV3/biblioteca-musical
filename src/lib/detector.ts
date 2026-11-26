@@ -18,7 +18,7 @@ export const JANELA_MEDIANA_MS = 200;
 /** Quanto tempo a última nota fica na tela, esmaecida, depois que o som acaba (ms). */
 export const CONGELAR_MS = 1000;
 /** Um salto desta grandeza (cents) em relação à mediana é suspeito de erro de oitava e só vale se persistir. */
-export const SALTO_DE_OITAVA_CENTS = 1000;
+export const SALTO_DE_OITAVA_CENTS = 1150; // perto da oitava (1200): um salto de 7ª (1000) é melodia, não erro de oitava
 /** Quantas leituras seguidas confirmam um salto de oitava. */
 export const CONFIRMAR_SALTO = 5;
 

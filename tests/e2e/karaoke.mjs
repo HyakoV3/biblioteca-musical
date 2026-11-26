@@ -1045,6 +1045,20 @@ async function principal() {
   await dormir(1200);
   const depoisParar = await av(`({ n: window.__cliques.length, pressionado: document.getElementById('metronomo-iniciar').getAttribute('aria-pressed') })`);
   confere(depoisParar.pressionado === 'false' && depoisParar.n === aoParar, `Metrônomo: ao tocar em Parar nenhum clique novo é agendado (${aoParar} → ${depoisParar.n})`);
+  // Compassos compostos (MET-001): o 1º clique de cada grupo de 3 é de tamanho médio, os grupos se separam, e a tela diz quantos tempos pontuados por minuto são (bpm ÷ 3).
+  const compassoAntes = await av(`document.querySelector('#painel-metronomo input[name="compasso"]:checked').value`);
+  const marcasDoCompasso = async (n) => {
+    await av(`document.querySelector('#painel-metronomo input[name="compasso"][value="${n}"]').click(); 1`);
+    await dormir(200);
+    return av(`({ marcas: document.querySelectorAll('#painel-metronomo .tempos .tempo').length, medias: document.querySelectorAll('#painel-metronomo .tempo.medio').length, fortes: document.querySelectorAll('#painel-metronomo .tempo.forte').length, porTempo: document.getElementById('metronomo-por-tempo')?.textContent.trim() ?? null })`);
+  };
+  const m6 = await marcasDoCompasso(6);
+  const m12 = await marcasDoCompasso(12);
+  const m4 = await marcasDoCompasso(4);
+  confere(m6.marcas === 6 && m6.medias === 1 && m6.fortes === 1 && /\d/.test(m6.porTempo ?? "") && m12.marcas === 12 && m12.medias === 3 && m12.porTempo !== null && m4.medias === 0 && m4.porTempo === null, `Metrônomo: nos compostos há uma marca média por grupo de 3 (6/8: 1; 12/8: 3) e a linha dos tempos pontuados; nos simples nenhuma: ${JSON.stringify({ m6, m12, m4 })}`);
+  await av(`document.querySelector('#painel-metronomo input[name="compasso"][value="${compassoAntes}"]').click(); 1`);
+  await dormir(200);
+
   await av(`document.getElementById('aba-hinos').click(); 1`);
   await dormir(300);
 
@@ -1545,6 +1559,8 @@ async function principal() {
     await dormir(200);
     const pilula = await av(`(() => { const rotulos = [...document.querySelectorAll('#filtro-de-ruido .segmentado label')].map((l) => l.textContent.trim()); const caixa = document.querySelector('#filtro-de-ruido .segmentado'); const r = [...document.querySelectorAll('#filtro-de-ruido .segmentado label')].map((l) => l.getBoundingClientRect()); return { rotulos, tecnico: document.getElementById('ruido-tecnico')?.textContent.trim(), radius: getComputedStyle(caixa).borderTopLeftRadius, colados: r.every((x, i) => i === 0 || Math.abs(x.left - r[i - 1].right) < 4), numaLinha: new Set(r.map((x) => Math.round(x.top))).size === 1 }; })()`);
     confere(JSON.stringify(pilula.rotulos) === JSON.stringify(["Off", "Low", "Medium", "High"]) && pilula.tecnico === (f === "rnnoise" ? "RNNoise" : "GTCRN") && pilula.colados && pilula.numaLinha && parseFloat(pilula.radius) >= 8 && parseFloat(pilula.radius) <= 16, `Gravador: o filtro de ruído é uma pílula só (Off, Low, Medium, High, coladas e numa linha) e a linha miúda diz o filtro técnico (${f}): ${JSON.stringify(pilula)}`);
+    const avisoRuido = await av(`document.getElementById('ruido-aviso')?.textContent.trim() ?? null`);
+    confere(avisoRuido !== null && /speech|spoken/i.test(avisoRuido), `Gravador: com ${f} a linha miúda avisa que Médio e Alto são para voz falada e podem abafar instrumento: ${avisoRuido}`);
     const n0 = await av(`document.querySelectorAll('.gravacao-item').length`);
     await av(`document.getElementById('gravar').click(); 1`);
     await dormir(2500);
@@ -2023,9 +2039,14 @@ async function principal() {
   };
   const emSi = await listaDoTom("si_bemol");
   confere(emSi.some((x) => /trumpet/i.test(x)) && emSi.some((x) => /clarinet/i.test(x)) && !emSi.some((x) => /^piano$/i.test(x)), `Afinador: escolher Si♭ lista os instrumentos em Si♭ (trompete, clarinete...): ${JSON.stringify(emSi)}`);
+  // "Outra nota" é o som real (concerto): com um instrumento que transpõe, o cartão avisa (AFN-001); em Dó, não.
+  const somReal = () => av(`(() => { const c = document.querySelector('#painel-afinador details'); const estava = c.open; if (!estava) c.querySelector('summary').click(); return new Promise((r) => setTimeout(() => { const v = !!document.getElementById('som-real'); if (!estava) c.querySelector('summary').click(); r(v); }, 200)); })()`);
+  const somRealEmSi = await somReal();
   const emFa = await listaDoTom("fa");
   confere(emFa.length === 2 && emFa.some((x) => /^horn$/i.test(x)), `Afinador: em Fá só a trompa e o corne inglês: ${JSON.stringify(emFa)}`);
   const emDo = await listaDoTom("concerto");
+  const somRealEmDo = await somReal();
+  confere(somRealEmSi === true && somRealEmDo === false, `Afinador: com o instrumento em Si♭ o cartão "Outra nota" diz que é o som real (concerto); em Dó não diz: ${JSON.stringify({ somRealEmSi, somRealEmDo })}`);
   confere(emDo.some((x) => /^piano$/i.test(x)) && emDo.some((x) => /^voice$/i.test(x)), `Afinador: em Dó (concerto) a lista traz piano e voz: ${JSON.stringify(emDo)}`);
   const claves = await av(`(async () => { await document.fonts.load('1em Leipzig', '\uE062'); return { fonte: document.fonts.check('1em Leipzig', '\uE062'), itens: [...document.querySelectorAll('.lista-instrumentos li')].filter((l) => l.querySelector('.clave')).map((l) => ({ texto: l.textContent.trim(), glifo: l.querySelector('.clave').textContent.codePointAt(0).toString(16), rotulo: l.querySelector('.clave').getAttribute('aria-label'), familia: getComputedStyle(l.querySelector('.clave')).fontFamily, borda: getComputedStyle(l.querySelector('.clave')).borderTopWidth, alturaDoItem: Math.round(l.getBoundingClientRect().height) })), parenteses: [...document.querySelectorAll('.lista-instrumentos li')].some((l) => /[()]/.test(l.textContent)) }; })()`);
   confere(claves.fonte && claves.itens.length === 2 && claves.itens.every((i) => i.glifo === "e062" && /bass clef/i.test(i.rotulo) && /Leipzig/.test(i.familia) && parseFloat(i.borda) === 0 && i.alturaDoItem < (i.texto === "tuba" ? 36 : 56)) && !claves.parenteses, `Afinador: em Dó, o bombardino e a tuba levam o símbolo da clave de fá (Leipzig) à direita do nome, pequeno e SEM caixa de botão (sem borda, altura de texto), com rótulo para o leitor de tela e sem parênteses: ${JSON.stringify(claves)}`);

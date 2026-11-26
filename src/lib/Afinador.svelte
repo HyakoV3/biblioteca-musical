@@ -5,6 +5,7 @@
   import Icone from "./Icone.svelte";
   import ListaRecentes from "./ListaRecentes.svelte";
   import QualNota from "./QualNota.svelte";
+  import { lerInstrumento } from "./afinadorPrefs";
   import { LA_PADRAO, OITAVA_MAX, OITAVA_MIN, OITAVA_PADRAO, frequenciaDe, limitarOitava, midiDe } from "./afinador";
   import { nomeDaNota, nomeDaNotaPorExtenso } from "./notacao";
   import { notacao } from "./notacao.svelte";
@@ -30,6 +31,12 @@
   let oitava = $state(OITAVA_PADRAO);
   /** O cartão "Outra nota" começa fechado e não é lembrado. */
   let outraAberta = $state(false);
+  /** O instrumento escolhido em "Qual nota é essa?" transpõe (Si♭, Mi♭ ou Fá)? Então o tom de "Outra nota" é o som real (concerto), e não a nota escrita no instrumento. Relido ao abrir o cartão e ao voltar para a aba. */
+  const instrumentoTranspoe = $derived.by(() => {
+    void outraAberta;
+    void ativa;
+    return lerInstrumento() !== "concerto";
+  });
   /** O cartão "Temporizador" começa fechado e não é lembrado; o TEMPO escolhido (até parar, 10, 20 ou 30 s) é lembrado neste aparelho. */
   let temporizadorAberto = $state(false);
   let limite = $state<Limite>(0);
@@ -185,6 +192,7 @@
        cartão aberto ou fechado: quem usa muito uma nota que não é o Lá a deixa marcada aqui e toca com um toque. -->
   <div class="pilula">
   <Cartao titulo={t("afinador.outra_nota")} resumo={`${nomeNota} · ${hz(freqNota)} Hz`} bind:aberto={outraAberta} grade>
+    {#if instrumentoTranspoe}<p class="meta som-real" id="som-real">{t("afinador.som_real")}</p>{/if}
     <fieldset class="opcoes" aria-label={t("afinador.outra_nota")}>
       {#each Array.from({ length: 12 }, (_, n) => n) as n (n)}
         <label class:ativo={classe === n}>
