@@ -61,10 +61,10 @@ jobs:
           git fetch --no-tags origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
             || { echo "::error::o commit da tag $GITHUB_REF_NAME não está na main: só se lança o que passou pela revisão"; exit 1; }
-          runs=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100")
+          # --paginate: um commit com mais de 100 check-runs tem o resto na página 2
+          runs=$(gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" --jq '.check_runs[] | [.conclusion, .name] | @tsv')
           for nome in "App (tipos, testes e verificadores)" "Karaokê num Chrome de verdade" "Leitor do hinário (Rust, src-tauri)" "Conversor de partituras (Rust)"; do
-            ok=$(printf '%s' "$runs" | jq -r --arg n "$nome" '[.check_runs[] | select(.name == $n and .conclusion == "success")] | length')
-            [ "$ok" -ge 1 ] || { echo "::error::o check \"$nome\" não passou neste commit (ou ainda roda): espere o CI da main terminar e reexecute"; exit 1; }
+            printf '%s\n' "$runs" | grep -Fxq "success"$'\t'"$nome" || { echo "::error::o check \"$nome\" não passou neste commit (ou ainda roda): espere o CI da main terminar e reexecute"; exit 1; }
           done
 
       - name: Versão (a tag tem que bater com package.json, Cargo.toml e tauri.conf.json)
@@ -111,7 +111,7 @@ jobs:
         run: npm audit --audit-level=high
       - uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2.90.8
         with:
-          tool: cargo-audit
+          tool: cargo-audit@0.23.0   # versão fixada: este passo roda antes da chave de assinatura
       - name: cargo audit (falha em vulnerabilidade; avisos de manutenção não derrubam)
         run: cargo audit --file src-tauri/Cargo.lock
 
@@ -224,8 +224,12 @@ jobs:
           pre=""; case "${GITHUB_REF_NAME}" in *-*) pre="--prerelease";; esac
           # Release imutável: se já existe um com este nome, recusa em vez de sobrescrever os arquivos (--clobber trocaria o APK que as pessoas já baixaram).
           # Se o envio falhou no meio, apague o release e a tag e gere de novo (docs/release-e-apk-no-github.md).
-          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+          # Só "release not found" libera a criação: qualquer outra falha (rede, token, limite de requisições) derruba o job com a mensagem real.
+          if saida=$(gh release view "${GITHUB_REF_NAME}" 2>&1); then
             echo "::error::o release ${GITHUB_REF_NAME} já existe e é imutável: apague o release e a tag para refazê-lo"
+            exit 1
+          elif ! printf '%s' "$saida" | grep -qi "release not found"; then
+            echo "::error::não consegui consultar o release ${GITHUB_REF_NAME}: $saida"
             exit 1
           fi
           gh release create "${GITHUB_REF_NAME}" saida/* --verify-tag --title "Biblioteca Musical ${GITHUB_REF_NAME#v}" --generate-notes $pre
@@ -235,7 +239,8 @@ jobs:
     # Só roda em tag FINAL (a rc tem o mesmo versionCode da final e travaria o envio dela) e com a variável ENVIAR_PLAY_STORE=true;
     # o app precisa já existir no Play Console e o segredo PLAY_SERVICE_ACCOUNT_JSON tem de estar cadastrado (conferido abaixo).
     if: (github.event_name == 'push' && github.ref_type == 'tag') && !contains(github.ref_name, '-') && vars.ENVIAR_PLAY_STORE == 'true'
-    needs: android
+    # Depois do `publicar`: se o GitHub Release for recusado (já existe), o AAB não segue sozinho para a Play Store e os dois canais não divergem.
+    needs: [android, publicar]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:

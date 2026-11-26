@@ -93,7 +93,7 @@ jobs:
       # binário pronto (compilar o cargo-audit do zero passa de 30 minutos)
       - uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2.90.8
         with:
-          tool: cargo-audit
+          tool: cargo-audit@0.23.0
       - name: cargo audit (falha em vulnerabilidade; avisos de manutenção não derrubam)
         run: cargo audit --file src-tauri/Cargo.lock
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
