@@ -7,7 +7,7 @@ TypeScript**. O alvo principal é o **Android**; o desktop funciona para desenvo
 > **Aviso:** projeto **não oficial**, sem vínculo com a Congregação Cristã no Brasil. O app não é vendido e não pode
 > ser usado para vender conteúdo.
 
-**Estado:** em desenvolvimento, em teste fechado com músicos (versão 0.3.5). Ainda não há versão publicada em loja. Quer ajudar? Veja o [`CONTRIBUTING.md`](CONTRIBUTING.md); falhas de segurança, o [`SECURITY.md`](SECURITY.md).
+**Estado:** em desenvolvimento, em teste fechado com músicos (versão 0.3.6). Ainda não há versão publicada em loja. Quer ajudar? Veja o [`CONTRIBUTING.md`](CONTRIBUTING.md); falhas de segurança, o [`SECURITY.md`](SECURITY.md).
 
 ## Sobre o conteúdo
 
