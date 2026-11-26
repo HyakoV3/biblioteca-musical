@@ -36,12 +36,18 @@ export async function extrairEConferir(zip: Uint8Array, pacote: PacoteSom): Prom
   let extraidos: Record<string, Uint8Array>;
   try {
     let total = 0;
+    const vistos = new Set<string>();
     extraidos = unzipSync(zip, {
       // O filtro roda ANTES de descompactar: o que não é esperado nem chega a ser aberto, e o tamanho declarado é
-      // somado para recusar um zip que "explode" na memória.
+      // somado para recusar um zip que "explode" na memória. Soma o MAIOR entre o tamanho declarado e o guardado: numa
+      // entrada sem compressão o declarado pode mentir para menos. Um nome esperado que aparece duas vezes é recusado
+      // (o segundo apagaria o primeiro depois de conferido por nome, e a soma passaria despercebida).
       filter(f) {
-        if (!esperados.has(nomeBase(f.name))) return false;
-        total += f.originalSize;
+        const nome = nomeBase(f.name);
+        if (!esperados.has(nome)) return false;
+        if (vistos.has(nome)) throw new ErroPacote("zip", `arquivo repetido: ${nome}`);
+        vistos.add(nome);
+        total += Math.max(f.size, f.originalSize);
         if (total > LIMITE_EXTRAIDO) throw new ErroPacote("tamanho", `mais de ${LIMITE_EXTRAIDO} bytes descompactados`);
         return true;
       },

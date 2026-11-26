@@ -83,4 +83,10 @@ describe("extrairEConferir", () => {
     expect(bomba.length).toBeLessThan(1_000_000);
     expect(await erroDe(() => extrairEConferir(bomba, c.um))).toBe("tamanho");
   });
+
+  it("recusa o nome esperado que aparece duas vezes (em pastas diferentes)", async () => {
+    const c = await cenario();
+    const zip = zipSync({ ["a/" + c.af.arquivo]: c.flauta, ["b/" + c.af.arquivo]: c.flauta }, { level: 0 });
+    expect(await erroDe(() => extrairEConferir(zip, c.um))).toBe("zip");
+  });
 });

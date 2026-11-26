@@ -5,7 +5,7 @@
   import type { Chave } from "#lib/i18n/pt";
   import { sons } from "#lib/sons/pacotes.svelte";
   import { formatarMB } from "#lib/sons/formato";
-  import { bytesDoPacote } from "#lib/sons/tipos";
+  import { bytesDoPacote, bytesParaBaixar } from "#lib/sons/tipos";
   import Aviso from "#lib/Aviso.svelte";
   import Cartao from "#lib/Cartao.svelte";
   import LinhaPacote from "#lib/LinhaPacote.svelte";
@@ -358,7 +358,7 @@
             {instalado}
             rotuloRemover={t("sons.remover")}
             aoRemover={() => sons.remover(p.id)}
-            rotuloBaixar={t("sons.baixar", { tamanho })}
+            rotuloBaixar={t("sons.baixar", { tamanho: formatarMB(bytesParaBaixar(p), i18n.idioma) })}
             aoBaixar={() => sons.baixar(p.id)}
           />
           {#if and.fase === "erro"}

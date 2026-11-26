@@ -10,6 +10,9 @@ Uso (depois de `python3 tools/preparar-sons.py` ter gerado dist-sons/<grupo>/ e 
 
 O id é o nome do grupo (orgao, madeiras, metais, cordas) ou `todos` (a pasta com todos os grupos). Só entram os ids que
 ganharem um link.
+
+`--zip ID=arquivo.zip` (opcional) grava no manifesto o tamanho do zip (`bytesZip`): é o que o app mostra no botão "Baixar" e usa
+na barra de progresso. Sem ele, o app mostra a soma dos arquivos descompactados, que é maior que o download.
 """
 import argparse
 import json
@@ -18,6 +21,35 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
 GRUPOS = ("orgao", "madeiras", "metais", "cordas")
+LIMITE_ZIP = 100 * 1024 * 1024  # o mesmo de LIMITE_ZIP em src/lib/sons/extrair.ts: acima disso o app recusa o download
+
+
+def montar_pacotes(por_grupo, links, tamanhos_zip=None):
+    """Os pacotes do manifesto: um por `ID=URL`, com os arquivos do grupo e, se `tamanhos_zip` o traz, o `bytesZip`."""
+    tamanhos_zip = tamanhos_zip or {}
+    pacotes = []
+    for item in links:
+        id_, _, url = item.partition("=")
+        if not url.startswith("https://"):
+            sys.exit(f"--link {id_}: o endereço precisa ser https://")
+        if id_ == "todos":
+            arquivos = [a for g in GRUPOS for a in por_grupo[g]]
+        elif id_ in por_grupo:
+            arquivos = por_grupo[id_]
+        else:
+            sys.exit(f"id desconhecido: {id_} (use {', '.join(GRUPOS)} ou todos)")
+        nomes = [a["arquivo"] for a in arquivos]
+        if len(set(nomes)) != len(nomes):
+            sys.exit(f"{id_}: nome de arquivo repetido")
+        pacote = {"id": id_, "url": url}
+        if id_ in tamanhos_zip:
+            pacote["bytesZip"] = tamanhos_zip[id_]
+        pacote["arquivos"] = arquivos
+        pacotes.append(pacote)
+    for id_ in tamanhos_zip:
+        if id_ not in {p["id"] for p in pacotes}:
+            sys.exit(f"--zip {id_}: não há --link com esse id")
+    return pacotes
 
 
 def main():
@@ -25,6 +57,7 @@ def main():
     ap.add_argument("--dist", type=Path, default=RAIZ / "dist-sons")
     ap.add_argument("--saida", type=Path, default=RAIZ / "src" / "lib" / "sons" / "manifesto.json")
     ap.add_argument("--link", action="append", default=[], metavar="ID=URL", required=True)
+    ap.add_argument("--zip", action="append", default=[], metavar="ID=ARQUIVO", help="o zip que esse link entrega (grava o tamanho dele)")
     args = ap.parse_args()
 
     por_grupo = {}
@@ -40,27 +73,29 @@ def main():
                 sys.exit(f"{g}/{a['arquivo']}: o tamanho no disco não bate com o do manifesto do grupo")
         por_grupo[g] = arquivos
 
-    pacotes = []
-    for item in args.link:
-        id_, _, url = item.partition("=")
-        if not url.startswith("https://"):
-            sys.exit(f"--link {id_}: o endereço precisa ser https://")
-        if id_ == "todos":
-            arquivos = [a for g in GRUPOS for a in por_grupo[g]]
-        elif id_ in por_grupo:
-            arquivos = por_grupo[id_]
-        else:
-            sys.exit(f"id desconhecido: {id_} (use {', '.join(GRUPOS)} ou todos)")
-        nomes = [a["arquivo"] for a in arquivos]
-        if len(set(nomes)) != len(nomes):
-            sys.exit(f"{id_}: nome de arquivo repetido")
-        pacotes.append({"id": id_, "url": url, "arquivos": arquivos})
+    tamanhos_zip = {}
+    for item in args.zip:
+        id_, _, caminho = item.partition("=")
+        if not id_ or not caminho:
+            sys.exit(f"--zip {item!r}: use ID=ARQUIVO")
+        if id_ in tamanhos_zip:
+            sys.exit(f"--zip {id_}: o id aparece duas vezes")
+        if not Path(caminho).is_file():
+            sys.exit(f"--zip {id_}: o arquivo {caminho!r} não existe")
+        tamanho = Path(caminho).stat().st_size
+        if tamanho == 0:
+            sys.exit(f"--zip {id_}: o arquivo {caminho!r} está vazio")
+        if tamanho > LIMITE_ZIP:
+            sys.exit(f"--zip {id_}: {tamanho} bytes passam do limite de {LIMITE_ZIP} que o app aceita baixar (LIMITE_ZIP em src/lib/sons/extrair.ts)")
+        tamanhos_zip[id_] = tamanho
+    pacotes = montar_pacotes(por_grupo, args.link, tamanhos_zip)
 
     args.saida.parent.mkdir(parents=True, exist_ok=True)
     args.saida.write_text(json.dumps({"versao": 1, "pacotes": pacotes}, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     for p in pacotes:
         total = sum(a["bytes"] for a in p["arquivos"])
-        print(f"{p['id']:9} {len(p['arquivos']):2} arquivo(s), {total/1e6:5.2f} MB")
+        zip_ = f", zip {p['bytesZip']/1e6:5.2f} MB" if "bytesZip" in p else ""
+        print(f"{p['id']:9} {len(p['arquivos']):2} arquivo(s), {total/1e6:5.2f} MB{zip_}")
     print("gravado em", args.saida)
 
 
