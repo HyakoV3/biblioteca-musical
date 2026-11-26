@@ -169,6 +169,18 @@ type Entrada<T extends ItemBusca> = {
 
 export type Indice<T extends ItemBusca> = { entradas: Entrada<T>[]; maiorNumero: number };
 
+const indices = new WeakMap<readonly ItemBusca[], Indice<ItemBusca>>();
+
+/** O índice do acervo `itens`, guardado por array: voltar à tela inicial (que recria a página) não refaz a normalização de todas as letras, só um pacote novo (outro array) a refaz. */
+export function indiceDe<T extends ItemBusca>(itens: readonly T[]): Indice<T> {
+  let ind = indices.get(itens);
+  if (!ind) {
+    ind = indexar(itens);
+    indices.set(itens, ind);
+  }
+  return ind as Indice<T>;
+}
+
 /** Prepara o acervo uma vez (normaliza título, autoria e letra); cada busca depois só varre. */
 export function indexar<T extends ItemBusca>(itens: readonly T[]): Indice<T> {
   const entradas = itens.map<Entrada<T>>((item) => {

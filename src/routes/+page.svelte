@@ -16,7 +16,7 @@
   import { traduzirErro } from "#lib/erros";
   import { i18n } from "#lib/i18n/index.svelte";
   import { zerosAEsquerda } from "#lib/numero";
-  import { buscar, indexar } from "#lib/busca-hinos";
+  import { buscar, indiceDe } from "#lib/busca-hinos";
   import { afterNavigate, goto } from "$app/navigation";
   import { emCurso } from "#lib/gravacaoEmCurso.svelte";
   import { formatarTempo } from "#lib/gravador";
@@ -40,7 +40,7 @@
   }
 
   // A busca (I-37, motor em `busca-hinos.ts`): número (o exato primeiro e fixo, depois os que começam pelos mesmos dígitos), tom, e texto em título, autoria e letra.
-  const indice = $derived(biblioteca.pacote ? indexar(biblioteca.pacote.hinario.hinos) : null);
+  const indice = $derived(biblioteca.pacote ? indiceDe(biblioteca.pacote.hinario.hinos) : null);
   /** A consulta para a qual "e mais N" foi tocado: mostra todos os hinos que começam pelos dígitos digitados. Mudou a consulta, deixa de valer (voltar a ela reexpande). Derivado, e não resetado num `$effect`, para não calcular a lista inteira uma vez à toa a cada tecla. */
   let expandidoPara = $state<string | null>(null);
   const expandir = $derived(expandidoPara === biblioteca.busca);

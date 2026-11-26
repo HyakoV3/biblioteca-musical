@@ -1,6 +1,6 @@
 // Abre o zip baixado e confere cada arquivo contra o manifesto. Só entra no app o que bate com o tamanho e o SHA-256 do
 // manifesto; um zip adulterado, incompleto ou grande demais é recusado inteiro.
-import { unzipSync } from "fflate";
+import { unzip, unzipSync, type Unzipped, type UnzipFileFilter } from "fflate";
 import type { PacoteSom } from "./tipos";
 
 /** Teto do que pode ser descompactado de um pacote (contra zip malicioso): o conjunto todo tem ~30 MB. */
@@ -33,25 +33,9 @@ const nomeBase = (caminho: string): string => caminho.split("/").pop() ?? "";
  */
 export async function extrairEConferir(zip: Uint8Array, pacote: PacoteSom): Promise<Map<string, Uint8Array>> {
   const esperados = new Set(pacote.arquivos.map((a) => a.arquivo));
-  let extraidos: Record<string, Uint8Array>;
+  let extraidos: Unzipped;
   try {
-    let total = 0;
-    const vistos = new Set<string>();
-    extraidos = unzipSync(zip, {
-      // O filtro roda ANTES de descompactar: o que não é esperado nem chega a ser aberto, e o tamanho declarado é
-      // somado para recusar um zip que "explode" na memória. Soma o MAIOR entre o tamanho declarado e o guardado: numa
-      // entrada sem compressão o declarado pode mentir para menos. Um nome esperado que aparece duas vezes é recusado
-      // (o segundo apagaria o primeiro depois de conferido por nome, e a soma passaria despercebida).
-      filter(f) {
-        const nome = nomeBase(f.name);
-        if (!esperados.has(nome)) return false;
-        if (vistos.has(nome)) throw new ErroPacote("zip", `arquivo repetido: ${nome}`);
-        vistos.add(nome);
-        total += Math.max(f.size, f.originalSize);
-        if (total > LIMITE_EXTRAIDO) throw new ErroPacote("tamanho", `mais de ${LIMITE_EXTRAIDO} bytes descompactados`);
-        return true;
-      },
-    });
+    extraidos = await descompactar(zip, esperados);
   } catch (e) {
     if (e instanceof ErroPacote) throw e;
     throw new ErroPacote("zip", String(e));
@@ -59,7 +43,69 @@ export async function extrairEConferir(zip: Uint8Array, pacote: PacoteSom): Prom
 
   const porNome = new Map<string, Uint8Array>();
   for (const [caminho, dados] of Object.entries(extraidos)) porNome.set(nomeBase(caminho), dados);
+  return conferir(porNome, pacote);
+}
 
+/** Quanto o worker pode levar para responder (descompactar ~30 MB leva cerca de 1 s): passado isso, vale a versão síncrona. */
+export const TEMPO_DO_WORKER_MS = 15_000;
+
+class SemWorker extends Error {}
+
+/**
+ * Descompacta num Web Worker (`unzip` assíncrono do fflate), para os ~30 MB não travarem a tela. O fflate só escuta o `onmessage` do worker
+ * (não o `onerror`): um worker que a CSP ou o WebView bloqueia depois de criado nunca responde, e a promessa ficaria parada para sempre. Por isso há
+ * um limite de tempo, e um resultado vazio também conta como worker indisponível. Nesses casos, e quando o worker nem pode ser criado, cai na versão
+ * síncrona; um erro do zip em si (ErroPacote do filtro, zip corrompido) NÃO cai, porque a versão síncrona falharia igual.
+ */
+async function descompactar(zip: Uint8Array, esperados: Set<string>): Promise<Unzipped> {
+  const opcoes = () => ({ filter: filtroDoPacote(esperados) });
+  let relogio: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      new Promise<Unzipped>((resolve, rejeitar) => {
+        try {
+          unzip(zip, opcoes(), (erro, dados) => (erro ? rejeitar(erro) : dados ? resolve(dados) : rejeitar(new SemWorker("worker sem resposta"))));
+        } catch (e) {
+          rejeitar(e); // o filtro roda aqui, na chamada
+        }
+      }),
+      new Promise<never>((_, rejeitar) => {
+        relogio = setTimeout(() => rejeitar(new SemWorker(`worker sem resposta em ${TEMPO_DO_WORKER_MS / 1000} s`)), TEMPO_DO_WORKER_MS);
+      }),
+    ]);
+  } catch (e) {
+    if (e instanceof ErroPacote || !(e instanceof SemWorker || semWorker(e))) throw e;
+    return unzipSync(zip, opcoes());
+  } finally {
+    clearTimeout(relogio);
+  }
+}
+
+/** O erro de quem não conseguiu criar o worker (ambiente sem Worker ou com a CSP recusando o blob), e não de um zip ruim. */
+function semWorker(e: unknown): boolean {
+  const msg = String(e instanceof Error ? e.message : e);
+  return /worker|blob|securityerror|csp|content security/i.test(msg);
+}
+
+function filtroDoPacote(esperados: Set<string>): UnzipFileFilter {
+  let total = 0;
+  const vistos = new Set<string>();
+  return (f) => {
+    // O filtro roda ANTES de descompactar: o que não é esperado nem chega a ser aberto, e o tamanho declarado é
+    // somado para recusar um zip que "explode" na memória. Soma o MAIOR entre o tamanho declarado e o guardado: numa
+    // entrada sem compressão o declarado pode mentir para menos. Um nome esperado que aparece duas vezes é recusado
+    // (o segundo apagaria o primeiro depois de conferido por nome, e a soma passaria despercebida).
+    const nome = nomeBase(f.name);
+    if (!esperados.has(nome)) return false;
+    if (vistos.has(nome)) throw new ErroPacote("zip", `arquivo repetido: ${nome}`);
+    vistos.add(nome);
+    total += Math.max(f.size, f.originalSize);
+    if (total > LIMITE_EXTRAIDO) throw new ErroPacote("tamanho", `mais de ${LIMITE_EXTRAIDO} bytes descompactados`);
+    return true;
+  };
+}
+
+async function conferir(porNome: Map<string, Uint8Array>, pacote: PacoteSom): Promise<Map<string, Uint8Array>> {
   const saida = new Map<string, Uint8Array>();
   for (const a of pacote.arquivos) {
     const dados = porNome.get(a.arquivo);
