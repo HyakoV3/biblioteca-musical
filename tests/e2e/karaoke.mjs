@@ -1845,9 +1845,17 @@ async function principal() {
   await dormir(500);
   const paus = await av(`(() => { const a = document.querySelector('li > a.pausado'); return a ? { leitor: a.querySelector('.estado .so-leitor')?.textContent.trim(), tocando: !!document.querySelector('li > a.tocando') } : null; })()`);
   confere(paus && /Paused/.test(paus.leitor ?? '') && !paus.tocando, `pausado, a lista mostra o hino com a marca de pausa (e não mais a de tocando): ${JSON.stringify(paus)}`);
-  // O último hino aberto (I-17): a lista o marca com um anel próprio e aria-current, oferece "Continuar de onde parou" e o número fica guardado no aparelho.
+  // O último hino aberto (I-17): a lista o marca com um anel próprio e aria-current e o número fica guardado no aparelho. O atalho "Continuar de onde parou" só aparece quando a linha NÃO está à vista:
+  // aqui ela está (é a primeira da lista), então o atalho não aparece; numa tela baixa, com o último hino lá embaixo, ele aparece e leva ao hino.
   const ult = await av(`(() => { const a = document.querySelector('li > a.ultimo'); const c = document.querySelector('a.continuar'); return { lista: a?.getAttribute('href') ?? null, atual: a?.getAttribute('aria-current') ?? null, continuar: c?.getAttribute('href') ?? null, anel: a ? getComputedStyle(a).boxShadow : '', unico: document.querySelectorAll('li > a.ultimo').length, guardado: localStorage.getItem('prefs.ultimo-hino') }; })()`);
-  confere(ult.lista !== null && ult.lista === ult.continuar && ult.atual === 'true' && ult.unico === 1 && /rgb/.test(ult.anel) && `/hino/${ult.guardado}` === ult.lista, `o último hino aberto fica marcado na lista (anel e aria-current), tem o atalho "Continuar" e o número guardado: ${JSON.stringify(ult)}`);
+  confere(ult.lista !== null && ult.continuar === null && ult.atual === 'true' && ult.unico === 1 && /rgb/.test(ult.anel) && `/hino/${ult.guardado}` === ult.lista, `o último hino aberto fica marcado na lista (anel e aria-current), sem o atalho "Continuar" porque a linha já está à vista, e o número guardado: ${JSON.stringify(ult)}`);
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 260, deviceScaleFactor: 1, mobile: true });
+  await av(`localStorage.setItem('prefs.ultimo-hino', document.querySelector('li:last-child > a').getAttribute('href').split('/').pop()); location.reload(); 1`);
+  for (let fim = Date.now() + 15000; Date.now() < fim && !(await av(`!!document.querySelector('li > a')`)); ) await dormir(250);
+  await dormir(600);
+  const baixo = await av(`(() => { const c = document.querySelector('a.continuar'); const a = document.querySelector('li > a.ultimo'); const r = a?.getBoundingClientRect(); return { continuar: c?.getAttribute('href') ?? null, lista: a?.getAttribute('href') ?? null, foraDaTela: r ? r.bottom > window.innerHeight : null }; })()`);
+  confere(baixo.continuar !== null && baixo.continuar === baixo.lista && baixo.foraDaTela === true, `com o último hino fora da tela, o atalho "Continuar de onde parou" aparece e leva a ele: ${JSON.stringify(baixo)}`);
+  await enviar("Emulation.setDeviceMetricsOverride", { width: 412, height: 915, deviceScaleFactor: 1, mobile: true });
   await irParaInicio();
 
   await irParaAjustes(AJ);

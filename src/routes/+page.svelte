@@ -79,6 +79,21 @@
   // O último hino aberto (I-17), só se o hinário instalado o tem: marca a linha na lista e dá o atalho "Continuar de onde parou".
   const ultimo = $derived(ultimoHino.numero === null ? undefined : biblioteca.hino(ultimoHino.numero));
 
+  // O atalho só aparece quando o último hino NÃO está à vista na tela: se a linha dele já está ali (com o anel dourado), o atalho só repetiria e empurraria a lista. A conferência é feita ao abrir a lista
+  // (e quando muda o último hino ou o resultado), não a cada rolagem: um atalho que pisca enquanto se rola desloca a lista sob o dedo. Sem o atalho a lista fica mais acima, então "à vista" aqui vale também depois.
+  let mostrarContinuar = $state(false);
+  $effect(() => {
+    void resultados;
+    void ultimo;
+    const linha = listaEl?.querySelector<HTMLElement>("li > a.ultimo");
+    if (!ultimo || !linha) {
+      mostrarContinuar = !!ultimo;
+      return;
+    }
+    const r = linha.getBoundingClientRect();
+    mostrarContinuar = r.top < 0 || r.bottom > window.innerHeight;
+  });
+
 </script>
 
 <!-- O título do documento é o que leitores de tela anunciam a cada troca de tela. -->
@@ -133,7 +148,7 @@
       {/if}
     </div>
 
-    {#if ultimo && !biblioteca.busca}
+    {#if ultimo && mostrarContinuar && !biblioteca.busca}
       <a class="continuar" href={`/hino/${ultimo.numero}`}>
         <span class="continuar-rotulo">{t("biblioteca.continuar")}</span>
         <span class="continuar-hino">{ultimo.numero} · {ultimo.titulo}</span>
