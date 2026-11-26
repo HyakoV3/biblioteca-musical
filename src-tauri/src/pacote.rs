@@ -122,7 +122,7 @@ fn invalido(e: impl ToString) -> String {
 }
 
 fn gravar(e: impl ToString) -> String {
-    erro("gravar", &[e.to_string()])
+    erro("partituras_gravar", &[e.to_string()])
 }
 
 enum Falha {
@@ -349,7 +349,7 @@ fn preparar(
             numero: n,
             motivo: match variante {
                 Variante::Retrato => motivo,
-                Variante::Paisagem => format!("(paisagem) {motivo}"),
+                Variante::Paisagem => erro("svg_paisagem", &[motivo]),
             },
         };
         // A paisagem de um hino cujo retrato veio no zip e NÃO entrou (o hinário não tem o hino, ou o retrato foi recusado por outro motivo)
@@ -364,18 +364,21 @@ fn preparar(
             continue;
         }
         if !hinos.contains(&n) {
-            recusadas.push(recusa("o hinário não tem esse hino".into()));
+            recusadas.push(recusa(erro("pacote_sem_hino", &[])));
             continue;
         }
         // Chegou aqui uma paisagem SEM retrato no zip: recusada, e uma vez só.
         if variante == Variante::Paisagem && !aceitas.contains(&n) {
-            recusadas.push(recusa("falta a versão de retrato deste hino".into()));
+            recusadas.push(recusa(erro("pacote_sem_retrato", &[])));
             continue;
         }
         let bytes = match ler_entrada(zip, i, lim.svg) {
             Ok(b) => b,
             Err(Falha::GrandeDemais) => {
-                recusadas.push(recusa(format!("passa de {} MiB", lim.svg / MIB)));
+                recusadas.push(recusa(erro(
+                    "pacote_svg_grande",
+                    &[(lim.svg / MIB).to_string()],
+                )));
                 continue;
             }
             Err(Falha::Zip(e)) => return Err(invalido(e)),
@@ -385,7 +388,7 @@ fn preparar(
             return Err(erro("zip_descompactado_grande", &[]));
         }
         let Ok(texto) = String::from_utf8(bytes) else {
-            recusadas.push(recusa("o texto não é UTF-8".into()));
+            recusadas.push(recusa(erro("pacote_utf8", &[])));
             continue;
         };
         match svg::limpar(&texto) {
@@ -412,7 +415,10 @@ fn ler_marca(pasta: &Path) -> Result<Option<String>, String> {
     match std::fs::read_to_string(&arquivo) {
         Ok(t) => Ok(Some(t)),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(e) => Err(erro("ler", &[format!("{}: {e}", arquivo.display())])),
+        Err(e) => Err(erro(
+            "partituras_ler",
+            &[format!("{}: {e}", hinario::nome_de(&arquivo))],
+        )),
     }
 }
 
@@ -423,7 +429,12 @@ pub fn numeros(dir: &Path, id: &str) -> Result<Vec<u32>, String> {
     if ler_marca(&pasta)?.as_deref() != Some(marca(id).as_str()) {
         return Ok(Vec::new());
     }
-    let falha = |e: std::io::Error| erro("ler", &[format!("{}: {e}", pasta.display())]);
+    let falha = |e: std::io::Error| {
+        erro(
+            "partituras_ler",
+            &[format!("{}: {e}", hinario::nome_de(&pasta))],
+        )
+    };
     let mut v = Vec::new();
     for entrada in std::fs::read_dir(&pasta).map_err(falha)? {
         let nome = entrada.map_err(falha)?.file_name();
@@ -452,7 +463,7 @@ pub fn alinhar(dir: &Path, id: &str) -> Result<(), String> {
 pub fn remover_partituras(dir: &Path) -> Result<(), String> {
     for pasta in ["partituras", "partituras.novo"] {
         sem_erro_se_nao_existe(std::fs::remove_dir_all(dir.join(pasta)))
-            .map_err(|e| erro("remover", &[e.to_string()]))?;
+            .map_err(|e| erro("partituras_remover", &[e.to_string()]))?;
     }
     Ok(())
 }
@@ -499,7 +510,12 @@ fn ler_variante(
 ) -> Result<Option<Result<String, String>>, String> {
     let limite = Limites::default().svg;
     let arquivo = dir.join("partituras").join(variante.arquivo(numero));
-    let falha = |e: std::io::Error| erro("ler", &[format!("{}: {e}", arquivo.display())]);
+    let falha = |e: std::io::Error| {
+        erro(
+            "partituras_ler",
+            &[format!("{}: {e}", hinario::nome_de(&arquivo))],
+        )
+    };
     let aberto = match std::fs::File::open(&arquivo) {
         Ok(f) => f,
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => return Ok(None),
@@ -511,11 +527,14 @@ fn ler_variante(
         .read_to_end(&mut bytes)
         .map_err(falha)?;
     if bytes.len() as u64 > limite {
-        return Ok(Some(Err(format!("passa de {} MiB", limite / MIB))));
+        return Ok(Some(Err(erro(
+            "pacote_svg_grande",
+            &[(limite / MIB).to_string()],
+        ))));
     }
     Ok(Some(match String::from_utf8(bytes) {
         Ok(texto) => svg::limpar(&texto),
-        Err(_) => Err("o texto não é UTF-8".into()),
+        Err(_) => Err(erro("pacote_utf8", &[])),
     }))
 }
 
@@ -919,12 +938,12 @@ mod testes {
         assert_eq!(r.recusadas.len(), 2);
         assert_eq!(r.recusadas[0].numero, 2);
         assert!(
-            r.recusadas[0].motivo.contains("<script>"),
+            r.recusadas[0].motivo.contains("svg_elemento"),
             "{:?}",
             r.recusadas
         );
         assert_eq!(r.recusadas[1].numero, 283);
-        assert!(r.recusadas[1].motivo.contains("XML inválido"));
+        assert!(r.recusadas[1].motivo.contains("svg_xml"));
         assert!(
             !d.join("partituras/hino-2.svg").exists()
                 && !d.join("partituras/hino-283.svg").exists()
@@ -945,7 +964,7 @@ mod testes {
             r.recusadas,
             vec![Recusada {
                 numero: 77,
-                motivo: "o hinário não tem esse hino".into()
+                motivo: erro("pacote_sem_hino", &[])
             }]
         );
         std::fs::remove_dir_all(&d).ok();
@@ -1165,12 +1184,12 @@ mod testes {
         assert_eq!(r.recusadas.len(), 1);
         assert_eq!(r.recusadas[0].numero, 1);
         assert!(
-            r.recusadas[0].motivo.starts_with("(paisagem)"),
+            r.recusadas[0].motivo.starts_with("[\"svg_paisagem\""),
             "{:?}",
             r.recusadas
         );
         assert!(
-            r.recusadas[0].motivo.contains("retrato"),
+            r.recusadas[0].motivo.contains("pacote_sem_retrato"),
             "{:?}",
             r.recusadas
         );
@@ -1192,8 +1211,8 @@ mod testes {
         assert_eq!(r.pacote.partituras, vec![1]);
         assert_eq!(r.recusadas.len(), 1);
         assert!(
-            r.recusadas[0].motivo.starts_with("(paisagem)")
-                && r.recusadas[0].motivo.contains("<script>"),
+            r.recusadas[0].motivo.starts_with("[\"svg_paisagem\"")
+                && r.recusadas[0].motivo.contains("svg_elemento"),
             "{:?}",
             r.recusadas
         );
@@ -1222,7 +1241,7 @@ mod testes {
         // o hino 77 aparece UMA vez (pelo retrato); a paisagem dele é pulada, não contada de novo
         assert_eq!(r.recusadas.len(), 1);
         assert_eq!(r.recusadas[0].numero, 77);
-        assert_eq!(r.recusadas[0].motivo, "o hinário não tem esse hino");
+        assert_eq!(r.recusadas[0].motivo, erro("pacote_sem_hino", &[]));
         std::fs::remove_dir_all(&d).ok();
     }
 
@@ -1239,7 +1258,7 @@ mod testes {
         assert_eq!(r.recusadas[0].numero, 77);
         assert_eq!(
             r.recusadas[0].motivo,
-            "(paisagem) o hinário não tem esse hino"
+            erro("svg_paisagem", &[erro("pacote_sem_hino", &[])])
         );
         std::fs::remove_dir_all(&d).ok();
     }
@@ -1261,8 +1280,8 @@ mod testes {
         assert_eq!(r.recusadas.len(), 1, "{:?}", r.recusadas);
         assert_eq!(r.recusadas[0].numero, 1);
         assert!(
-            r.recusadas[0].motivo.contains("<script>")
-                && !r.recusadas[0].motivo.contains("paisagem"),
+            r.recusadas[0].motivo.contains("svg_elemento")
+                && !r.recusadas[0].motivo.contains("svg_paisagem"),
             "{:?}",
             r.recusadas
         );
@@ -1301,11 +1320,11 @@ mod testes {
         .unwrap();
         let e = ler_partitura(&d, 283, false).unwrap_err();
         assert_eq!(codigo(&e), "partitura_invalida");
-        assert!(args(&e)[2].contains("passa de"), "{e}");
+        assert!(args(&e)[2].contains("pacote_svg_grande"), "{e}");
         // sem retrato, só a paisagem recusada: o motivo dela é o erro
         std::fs::remove_file(d.join("partituras/hino-283.svg")).unwrap();
         let e = ler_partitura(&d, 283, true).unwrap_err();
-        assert!(args(&e)[2].contains("passa de"), "{e}");
+        assert!(args(&e)[2].contains("pacote_svg_grande"), "{e}");
         std::fs::remove_dir_all(&d).ok();
     }
 
@@ -1514,7 +1533,7 @@ mod testes {
         assert_eq!(r.recusadas.len(), 1);
         assert_eq!(r.recusadas[0].numero, 2);
         assert!(
-            r.recusadas[0].motivo.contains("passa de"),
+            r.recusadas[0].motivo.contains("pacote_svg_grande"),
             "{:?}",
             r.recusadas
         );
@@ -1686,13 +1705,16 @@ mod testes {
         importar_zip(&d, &pacote_ok()).unwrap();
         estraga_a_marca(&d);
         // alinhar (importar um JSON de outro hinário) NÃO pode tratar "não consegui ler" como "é de outro hinário"
-        assert_eq!(codigo(&alinhar(&d, "outro").unwrap_err()), "ler");
+        assert_eq!(codigo(&alinhar(&d, "outro").unwrap_err()), "partituras_ler");
         assert!(
             d.join("partituras/hino-1.svg").exists() && d.join("partituras/hino-283.svg").exists()
         );
-        assert_eq!(codigo(&numeros(&d, "x").unwrap_err()), "ler");
+        assert_eq!(codigo(&numeros(&d, "x").unwrap_err()), "partituras_ler");
         let outro = JSON.replace(r#""id":"x""#, r#""id":"y""#);
-        assert_eq!(codigo(&hinario::importar(&d, &outro).unwrap_err()), "ler");
+        assert_eq!(
+            codigo(&hinario::importar(&d, &outro).unwrap_err()),
+            "partituras_ler"
+        );
         assert!(
             d.join("partituras/hino-1.svg").exists(),
             "as partituras continuam lá"
@@ -1728,7 +1750,7 @@ mod testes {
         };
         std::fs::set_permissions(&pasta, std::fs::Permissions::from_mode(0o755)).unwrap();
         if let Some(r) = resultado {
-            assert_eq!(codigo(&r.unwrap_err()), "ler");
+            assert_eq!(codigo(&r.unwrap_err()), "partituras_ler");
         }
         std::fs::remove_dir_all(&d).ok();
     }
@@ -1808,7 +1830,7 @@ mod testes {
 
     #[test]
     fn le_a_partitura_pelo_numero() {
-        let d = dir_com_hinario("ler");
+        let d = dir_com_hinario("partituras_ler");
         importar_zip(&d, &pacote_ok()).unwrap();
         let svg = ler_partitura(&d, 283, false).unwrap();
         assert!(
@@ -1834,7 +1856,7 @@ mod testes {
         let e = ler_partitura(&d, 1, false).unwrap_err();
         let a = args(&e);
         assert_eq!((a[0].as_str(), a[1].as_str()), ("partitura_invalida", "1"));
-        assert!(a[2].contains("<script>"), "{e}");
+        assert!(a[2].contains("svg_elemento"), "{e}");
         // arquivo grande demais
         std::fs::write(
             d.join("partituras/hino-283.svg"),
@@ -1843,7 +1865,7 @@ mod testes {
         .unwrap();
         let e = ler_partitura(&d, 283, false).unwrap_err();
         assert_eq!(codigo(&e), "partitura_invalida");
-        assert!(args(&e)[2].contains("passa de"), "{e}"); // pelo tamanho, antes de tentar ler
+        assert!(args(&e)[2].contains("pacote_svg_grande"), "{e}"); // pelo tamanho, antes de tentar ler
         std::fs::remove_dir_all(&d).ok();
     }
 

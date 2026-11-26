@@ -175,7 +175,7 @@
       reproducao.limpar();
       resultado = { tipo: "sucesso", texto: t("remover.ok") };
     } catch (err) {
-      resultado = { tipo: "erro", texto: t("remover.erro", { erro: String(err) }) };
+      resultado = { tipo: "erro", texto: t("remover.erro", { erro: traduzirErro(String(err), t) }) };
     }
   }
 </script>
@@ -349,7 +349,7 @@
             {t("partituras.recusadas", {
               total: partituras.recusadas.length,
               lista: listaCurta(partituras.recusadas.map((x) => x.numero)),
-              motivo: partituras.recusadas[0].motivo,
+              motivo: traduzirErro(partituras.recusadas[0].motivo, t),
             })}
           </Aviso>
         {/if}

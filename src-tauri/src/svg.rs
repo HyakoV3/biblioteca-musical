@@ -20,6 +20,7 @@
 //!  - o `<svg>` raiz, que é o que o layout da página enxerga, não pode ter `class` (puxaria uma regra do app, por exemplo
 //!    `position:fixed`) nem `transform`, e sai sempre com `overflow="hidden"` (o desenho não passa por cima da interface).
 
+use crate::hinario::erro;
 use roxmltree::{Document, Node, NodeType, ParsingOptions};
 use std::collections::HashMap;
 
@@ -112,7 +113,8 @@ const PROIBIDOS_NO_VALOR: &[&str] = &[
 /// Prefixo dos `id` (e dos `href="#..."`) do SVG, para não colidirem com os da página.
 const PREFIXO_ID: &str = "bm-p-";
 
-/// Confere o SVG e devolve a versão reescrita, ou o motivo de recusar.
+/// Confere o SVG e devolve a versão reescrita, ou o motivo de recusar. O motivo é um erro codificado (`["svg_elemento", "script"]`, ver
+/// `hinario::erro`): a interface o traduz no idioma da pessoa, e o detalhe (o nome do elemento ou do atributo) segue como argumento.
 pub fn limpar(texto: &str) -> Result<String, String> {
     limpar_com(texto, LIMITE_NOS)
 }
@@ -123,18 +125,18 @@ fn limpar_com(texto: &str, limite_nos: u32) -> Result<String, String> {
         nodes_limit: limite_nos,
         ..ParsingOptions::default()
     };
-    let doc =
-        Document::parse_with_options(texto, opcoes).map_err(|e| format!("XML inválido: {e}"))?;
+    let doc = Document::parse_with_options(texto, opcoes)
+        .map_err(|e| erro("svg_xml", &[e.to_string()]))?;
     for no in doc.root().children() {
         match no.node_type() {
-            NodeType::Comment => return Err("tem comentário".into()),
-            NodeType::PI => return Err("tem instrução de processamento".into()),
+            NodeType::Comment => return Err(erro("svg_comentario", &[])),
+            NodeType::PI => return Err(erro("svg_instrucao", &[])),
             _ => {}
         }
     }
     let raiz = doc.root_element();
     if raiz.tag_name().name() != "svg" {
-        return Err(format!("a raiz é <{}>, não <svg>", raiz.tag_name().name()));
+        return Err(erro("svg_raiz", &[raiz.tag_name().name().to_string()]));
     }
     sem_use_encadeado(&doc)?;
     let mut saida = String::with_capacity(texto.len());
@@ -160,9 +162,7 @@ fn sem_use_encadeado(doc: &Document) -> Result<(), String> {
         if let Some(alvo) = por_id.get(id)
             && alvo.descendants().any(|n| e_use(&n))
         {
-            return Err(format!(
-                "<use> aponta para #{id}, que contém outro <use> (referência encadeada)"
-            ));
+            return Err(erro("svg_use_encadeado", &[id.to_string()]));
         }
     }
     Ok(())
@@ -170,14 +170,14 @@ fn sem_use_encadeado(doc: &Document) -> Result<(), String> {
 
 fn escrever(no: Node, nivel: usize, saida: &mut String) -> Result<(), String> {
     if nivel > LIMITE_PROFUNDIDADE {
-        return Err("elementos aninhados fundo demais".into());
+        return Err(erro("svg_fundo", &[]));
     }
     let nome = no.tag_name().name();
     if no.tag_name().namespace() != Some(NS_SVG) {
-        return Err(format!("elemento <{nome}> fora do espaço de nomes do SVG"));
+        return Err(erro("svg_espaco", &[nome.to_string()]));
     }
     if !ELEMENTOS.contains(&nome) {
-        return Err(format!("elemento não permitido: <{nome}>"));
+        return Err(erro("svg_elemento", &[nome.to_string()]));
     }
     saida.push('<');
     saida.push_str(nome);
@@ -189,27 +189,27 @@ fn escrever(no: Node, nivel: usize, saida: &mut String) -> Result<(), String> {
             None => a.name().to_string(),
             Some(NS_XML) => format!("xml:{}", a.name()),
             Some(_) => {
-                return Err(format!(
-                    "atributo {} de outro espaço de nomes em <{nome}>",
-                    a.name()
+                return Err(erro(
+                    "svg_atributo_espaco",
+                    &[a.name().to_string(), nome.to_string()],
                 ));
             }
         };
         if !ATRIBUTOS.contains(&completo.as_str()) {
-            return Err(format!("atributo não permitido: {completo} em <{nome}>"));
+            return Err(erro("svg_atributo", &[completo, nome.to_string()]));
         }
         if nivel == 0 {
             match completo.as_str() {
                 // O overflow do raiz é decidido abaixo, e não pelo pacote.
                 "overflow" => continue,
                 "class" | "transform" => {
-                    return Err(format!("{completo} não é permitido no <svg> raiz"));
+                    return Err(erro("svg_atributo_raiz", &[completo]));
                 }
                 _ => {}
             }
         }
         let valor = valor_final(&completo, a.value())
-            .map_err(|m| format!("{completo} em <{nome}>: {m}"))?;
+            .map_err(|m| erro("svg_valor", &[completo.clone(), nome.to_string(), m]))?;
         saida.push(' ');
         saida.push_str(&completo);
         saida.push_str("=\"");
@@ -232,11 +232,11 @@ fn escrever(no: Node, nivel: usize, saida: &mut String) -> Result<(), String> {
                     // Em <text> e <tspan> o espaço entre os filhos é mantido: faz parte de como o texto é desenhado.
                     escapar(t, false, saida);
                 } else if !t.trim().is_empty() {
-                    return Err(format!("texto solto em <{nome}>"));
+                    return Err(erro("svg_texto", &[nome.to_string()]));
                 }
             }
-            NodeType::Comment => return Err("tem comentário".into()),
-            NodeType::PI => return Err("tem instrução de processamento".into()),
+            NodeType::Comment => return Err(erro("svg_comentario", &[])),
+            NodeType::PI => return Err(erro("svg_instrucao", &[])),
             NodeType::Root => {}
         }
     }
@@ -282,23 +282,21 @@ fn com_prefixo(id: &str) -> String {
 fn valor_final(atributo: &str, valor: &str) -> Result<String, String> {
     match atributo {
         "id" if id_simples(valor) => Ok(com_prefixo(valor)),
-        "id" => Err("só letras, números e _ - . :".into()),
+        "id" => Err(erro("svg_valor_id", &[])),
         "data-t" | "data-f" if tempo_valido(valor) => Ok(valor.to_string()),
-        "data-t" | "data-f" => {
-            Err("só um número de batidas (como 1.5), de até 12 caracteres".into())
-        }
+        "data-t" | "data-f" => Err(erro("svg_valor_tempo", &[])),
         "href" => {
             let id = valor.strip_prefix('#').unwrap_or("");
             if id_simples(id) {
                 Ok(format!("#{}", com_prefixo(id)))
             } else {
-                Err("só aponta para dentro (#id)".into())
+                Err(erro("svg_valor_href", &[]))
             }
         }
         _ => {
             let baixo = valor.to_ascii_lowercase();
             match PROIBIDOS_NO_VALOR.iter().find(|p| baixo.contains(**p)) {
-                Some(p) => Err(format!("contém \"{p}\"")),
+                Some(p) => Err(erro("svg_valor_proibido", &[p.to_string()])),
                 None => Ok(valor.to_string()),
             }
         }
@@ -438,7 +436,7 @@ mod testes {
         ] {
             let motivo = recusa(&svg(el));
             assert!(
-                motivo.contains("não permitido") || motivo.contains("fora do espaço"),
+                motivo.contains("svg_elemento") || motivo.contains("svg_espaco"),
                 "{el} -> {motivo}"
             );
         }
@@ -461,10 +459,7 @@ mod testes {
             r#"tabindex="0""#,
         ] {
             let motivo = recusa(&svg(&format!("<g {attr}/>")));
-            assert!(
-                motivo.contains("atributo não permitido"),
-                "{attr} -> {motivo}"
-            );
+            assert!(motivo.contains("svg_atributo"), "{attr} -> {motivo}");
         }
     }
 
@@ -498,7 +493,7 @@ mod testes {
         let motivo = recusa(
             r##"<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><use xlink:href="#a"/></svg>"##,
         );
-        assert!(motivo.contains("outro espaço de nomes"), "{motivo}");
+        assert!(motivo.contains("svg_atributo_espaco"), "{motivo}");
     }
 
     #[test]
@@ -568,10 +563,7 @@ mod testes {
             r#"type="text/css""#,
         ] {
             let motivo = recusa(&svg(&format!("<g {attr}/>")));
-            assert!(
-                motivo.contains("atributo não permitido"),
-                "{attr} -> {motivo}"
-            );
+            assert!(motivo.contains("svg_atributo"), "{attr} -> {motivo}");
         }
     }
 
@@ -602,7 +594,10 @@ mod testes {
                 r#"<g id="{}"/>"#,
                 id.replace('"', "&quot;").replace('<', "&lt;")
             )));
-            assert!(motivo.contains("id em <g>"), "{id:?} -> {motivo}");
+            assert!(
+                motivo.contains("svg_valor") && motivo.contains("svg_valor_id"),
+                "{id:?} -> {motivo}"
+            );
         }
     }
 
@@ -615,10 +610,7 @@ mod testes {
             let motivo = recusa(&format!(
                 r#"<svg xmlns="http://www.w3.org/2000/svg" {attr}/>"#
             ));
-            assert!(
-                motivo.contains("não é permitido no <svg> raiz"),
-                "{attr} -> {motivo}"
-            );
+            assert!(motivo.contains("svg_atributo_raiz"), "{attr} -> {motivo}");
         }
         // o <svg> de dentro (o do Verovio, "definition-scale") e os outros elementos seguem com os dois
         let s = limpar(&svg(r#"<svg class="definition-scale" viewBox="0 0 1 1"><g class="a" transform="scale(2)"/></svg>"#)).unwrap();
@@ -655,13 +647,15 @@ mod testes {
             r#"<!DOCTYPE svg [<!ENTITY a "x">]><svg xmlns="http://www.w3.org/2000/svg"><text>&a;</text></svg>"#,
         );
         assert!(
-            recusa(r#"<!-- x --><svg xmlns="http://www.w3.org/2000/svg"/>"#).contains("comentário")
+            recusa(r#"<!-- x --><svg xmlns="http://www.w3.org/2000/svg"/>"#)
+                .contains("svg_comentario")
         );
-        assert!(recusa(&svg("<g><!-- x --></g>")).contains("comentário"));
+        assert!(recusa(&svg("<g><!-- x --></g>")).contains("svg_comentario"));
         assert!(
-            recusa(r#"<svg xmlns="http://www.w3.org/2000/svg"/><?pi x?>"#).contains("instrução")
+            recusa(r#"<svg xmlns="http://www.w3.org/2000/svg"/><?pi x?>"#)
+                .contains("svg_instrucao")
         );
-        assert!(recusa(&svg("<g><?pi x?></g>")).contains("instrução"));
+        assert!(recusa(&svg("<g><?pi x?></g>")).contains("svg_instrucao"));
         // a declaração <?xml ...?> do começo é normal e não conta como instrução
         assert!(
             limpar(r#"<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"/>"#).is_ok()
@@ -670,18 +664,17 @@ mod testes {
 
     #[test]
     fn recusa_raiz_e_espaco_de_nomes_errados() {
-        assert!(recusa(r#"<html xmlns="http://www.w3.org/1999/xhtml"/>"#).contains("raiz"));
-        assert!(recusa("<svg/>").contains("espaço de nomes"));
-        assert!(recusa(r#"<svg xmlns="http://evil/ns"/>"#).contains("espaço de nomes"));
+        assert!(recusa(r#"<html xmlns="http://www.w3.org/1999/xhtml"/>"#).contains("svg_raiz"));
+        assert!(recusa("<svg/>").contains("svg_espaco"));
+        assert!(recusa(r#"<svg xmlns="http://evil/ns"/>"#).contains("svg_espaco"));
         assert!(
-            recusa(&svg(r#"<body xmlns="http://www.w3.org/1999/xhtml"/>"#))
-                .contains("espaço de nomes")
+            recusa(&svg(r#"<body xmlns="http://www.w3.org/1999/xhtml"/>"#)).contains("svg_espaco")
         );
         assert!(
             recusa(&svg(
                 r#"<svg xmlns="http://www.w3.org/2000/svg"><g xmlns="http://evil/ns"/></svg>"#
             ))
-            .contains("espaço de nomes")
+            .contains("svg_espaco")
         );
     }
 
@@ -692,14 +685,14 @@ mod testes {
             "<defs><symbol id=\"a\"><path d=\"M0 0\"/></symbol><g id=\"b\"><use href=\"#a\"/></g></defs><use href=\"#b\"/>",
         );
         assert!(
-            recusa(&encadeado).contains("encadeada"),
+            recusa(&encadeado).contains("svg_use_encadeado"),
             "{}",
             recusa(&encadeado)
         );
         let direto = svg(
             "<defs><symbol id=\"a\"><path d=\"M0 0\"/></symbol><use id=\"b\" href=\"#a\"/></defs><use href=\"#b\"/>",
         );
-        assert!(recusa(&direto).contains("encadeada"));
+        assert!(recusa(&direto).contains("svg_use_encadeado"));
     }
 
     #[test]
@@ -712,7 +705,7 @@ mod testes {
 
     #[test]
     fn recusa_texto_solto_fora_de_text() {
-        assert!(recusa(&svg("<g>oi</g>")).contains("texto solto"));
+        assert!(recusa(&svg("<g>oi</g>")).contains("svg_texto"));
         assert!(limpar(&svg("<g>  \n </g>")).is_ok());
     }
 
@@ -724,7 +717,7 @@ mod testes {
             "<svg xmlns=\"http://www.w3.org/2000/svg\">",
             "<svg xmlns=\"http://www.w3.org/2000/svg\"></g>",
         ] {
-            assert!(recusa(t).contains("XML inválido"), "{t}");
+            assert!(recusa(t).contains("svg_xml"), "{t}");
         }
     }
 
@@ -732,14 +725,14 @@ mod testes {
     fn limita_a_profundidade() {
         let fundo = |n: usize| svg(&format!("{}{}", "<g>".repeat(n), "</g>".repeat(n)));
         assert!(limpar(&fundo(LIMITE_PROFUNDIDADE)).is_ok());
-        assert!(recusa(&fundo(LIMITE_PROFUNDIDADE + 1)).contains("fundo demais"));
+        assert!(recusa(&fundo(LIMITE_PROFUNDIDADE + 1)).contains("svg_fundo"));
     }
 
     #[test]
     fn limita_a_quantidade_de_nos() {
         let tres = svg("<g/><g/>");
         assert!(limpar_com(&tres, 100).is_ok());
-        assert!(recusa_com(&tres, 2).contains("XML inválido"));
+        assert!(recusa_com(&tres, 2).contains("svg_xml"));
     }
 
     fn recusa_com(texto: &str, limite: u32) -> String {

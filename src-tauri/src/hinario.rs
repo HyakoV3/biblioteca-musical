@@ -184,6 +184,14 @@ pub(crate) fn erro(codigo: &str, args: &[String]) -> String {
     serde_json::to_string(&v).unwrap_or_else(|_| codigo.to_string())
 }
 
+/// Só o nome do arquivo ou da pasta, para o detalhe de um erro: o caminho absoluto da pasta de dados do app não vai à tela.
+pub(crate) fn nome_de(caminho: &Path) -> String {
+    caminho
+        .file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default()
+}
+
 pub fn ler(json: &str) -> Result<Hinario, String> {
     let mut h: Hinario =
         serde_json::from_str(json).map_err(|e| erro("json_invalido", &[e.to_string()]))?;
@@ -266,7 +274,7 @@ pub fn carregar(dir: Option<&Path>) -> Result<Pacote, String> {
         let arquivo = dir.join("hinario.json");
         if arquivo.is_file() {
             let texto = std::fs::read_to_string(&arquivo)
-                .map_err(|e| erro("ler", &[format!("{}: {e}", arquivo.display())]))?;
+                .map_err(|e| erro("ler", &[format!("{}: {e}", nome_de(&arquivo))]))?;
             let hinario = ler(&texto)?;
             // Uma pasta `partituras/` ilegível não derruba o hinário: ele abre sem partituras e o motivo vai à parte.
             let (partituras, partituras_erro) =
@@ -319,7 +327,7 @@ fn semear(dir: &Path, incluso: &str) -> Result<(), String> {
     }
     importar(dir, incluso)?;
     std::fs::write(&marca, &nova)
-        .map_err(|e| erro("gravar", &[format!("{}: {e}", marca.display())]))
+        .map_err(|e| erro("gravar", &[format!("{}: {e}", nome_de(&marca))]))
 }
 
 pub(crate) const LIMITE_BYTES: usize = 20 * 1024 * 1024;
@@ -359,7 +367,7 @@ pub fn importar(dir: &Path, json: &str) -> Result<Pacote, String> {
     let _tranca = trancar();
     let h = validar(json)?;
     std::fs::create_dir_all(dir)
-        .map_err(|e| erro("gravar", &[format!("{}: {e}", dir.display())]))?;
+        .map_err(|e| erro("gravar", &[format!("{}: {e}", nome_de(dir))]))?;
     let tmp = dir.join("hinario.json.tmp");
     std::fs::write(&tmp, json).map_err(|e| erro("gravar", &[e.to_string()]))?;
     std::fs::rename(&tmp, dir.join("hinario.json"))
@@ -381,7 +389,7 @@ pub(crate) fn instalado(dir: &Path) -> Result<Option<Hinario>, String> {
     match std::fs::read_to_string(&arquivo) {
         Ok(texto) => ler(&texto).map(Some),
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(e) => Err(erro("ler", &[format!("{}: {e}", arquivo.display())])),
+        Err(e) => Err(erro("ler", &[format!("{}: {e}", nome_de(&arquivo))])),
     }
 }
 
@@ -846,7 +854,7 @@ mod testes {
         assert!(!p.exemplo && p.hinario.hinos.len() == 2);
         assert!(p.partituras.is_empty());
         let motivo = p.partituras_erro.expect("o motivo vai à parte");
-        assert!(motivo.starts_with("[\"ler\""), "{motivo}");
+        assert!(motivo.starts_with("[\"partituras_ler\""), "{motivo}");
         std::fs::remove_dir_all(&d).ok();
     }
 

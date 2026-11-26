@@ -6,6 +6,7 @@
   import { gravacoes, type MetaGravacao, type Mudancas } from "./gravacoes";
   import { i18n } from "./i18n/index.svelte";
   import { TITULO_MAX, cortarGrafemas } from "./metaGravacao";
+  import { notacao } from "./notacao.svelte";
   import { nomeDaGravacao } from "./organizar";
 
   // Uma gravação da lista: nome (data e hora), duração, tamanho e formato, "Ouvir", "Enviar" (folha de compartilhamento do sistema) e "Apagar". O arquivo de áudio só é lido do armazenamento quando a pessoa toca
@@ -127,10 +128,10 @@
   let falhouEnvio = $state(false);
   const sePodeEnviar = podeCompartilhar();
   const contexto = $derived(contextoValido(meta.contexto));
-  const textoDoEnvio = $derived(contexto ? textoDoContexto(contexto, tr, i18n.idioma) : "");
+  const textoDoEnvio = $derived(contexto ? textoDoContexto(contexto, tr, i18n.idioma, notacao.atual) : "");
   /** O resumo de uma linha no card e as linhas completas ao abrir (as mesmas do texto enviado, sem a formatação). */
   const resumo = $derived(contexto ? resumoDoContexto(contexto, tr) : "");
-  const linhasContexto = $derived(contexto ? linhasDoContexto(contexto, tr, i18n.idioma) : []);
+  const linhasContexto = $derived(contexto ? linhasDoContexto(contexto, tr, i18n.idioma, false, notacao.atual) : []);
   /** O diálogo de envio só existe no DOM enquanto está aberto (com muitas gravações, um `<dialog>` por item pesaria à toa). */
   let dialogoAberto = $state(false);
   let dialogo = $state<HTMLDialogElement | null>(null);

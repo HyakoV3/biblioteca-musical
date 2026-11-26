@@ -1,6 +1,10 @@
 // O contexto de uma gravação (I-38): o que a pessoa ouvia no fone enquanto gravava (o metrônomo ou um hino). Guarda DADOS (fica junto da gravação, com versão) e gera daí um texto
 // curto em Markdown, no idioma da tela, para ir abaixo do áudio quando a pessoa o envia (ao professor, por exemplo). Tudo aqui é puro e testado; quem lê o estado do app é o Gravador.
 
+import type { Idioma } from "./i18n/index.svelte";
+import { tipoDaVoz } from "./instrumentos";
+import { nomeDaTonalidade, type Notacao } from "./notacao";
+
 export const VERSAO_DO_CONTEXTO = 1;
 
 export type ContextoMetronomo = {
@@ -154,7 +158,7 @@ function lista(nomes: string[], idioma: string): string {
 export type LinhaDoContexto = { texto: string; nota?: string };
 
 /** As linhas do contexto no idioma de `t`, sem formatação nenhuma (a tela do app mostra assim; o texto enviado as põe em Markdown, com `paraMarkdown`). Linhas que não se aplicam não aparecem. */
-export function linhasDoContexto(c: ContextoGravacao, t: Tradutor, idioma: string, paraMarkdown = false): LinhaDoContexto[] {
+export function linhasDoContexto(c: ContextoGravacao, t: Tradutor, idioma: string, paraMarkdown = false, notacao: Notacao = "auto"): LinhaDoContexto[] {
   // Só o texto ENVIADO tira `* _ ~` e crases do título e do tom (os apps de mensagem os leriam como formatação); na tela do app não há Markdown a escapar.
   const limpo = (x: string) => (paraMarkdown ? limparParaMarkdown(x) : x);
   const linhas: LinhaDoContexto[] = [];
@@ -167,13 +171,17 @@ export function linhasDoContexto(c: ContextoGravacao, t: Tradutor, idioma: strin
   if (c.origem === "hino" && c.hino) {
     const h = c.hino;
     linhas.push({ texto: t("ctx.com_hino", { numero: h.numero, titulo: limpo(h.titulo) }) });
-    const nome = (v: { nome: string }) => v.nome.toLocaleLowerCase(idioma);
+    // O nome da voz vem do hino (em português); o texto enviado o diz no idioma da tela. Nome fora do padrão (ex.: "Parte I") fica como está.
+    const nome = (v: { nome: string }) => {
+      const tipo = tipoDaVoz(v.nome);
+      return (tipo ? t(`voz.${tipo}`) : v.nome).toLocaleLowerCase(idioma);
+    };
     const tocando = h.vozes.filter((v) => v.tocando).map(nome);
     const fora = h.vozes.filter((v) => !v.tocando).map(nome);
     if (tocando.length === 0) linhas.push({ texto: t("ctx.sem_vozes") });
     else linhas.push({ texto: t("ctx.vozes", { lista: lista(tocando, idioma) }), ...(fora.length ? { nota: t("ctx.sem", { lista: lista(fora, idioma) }) } : {}) });
     linhas.push({ texto: t("ctx.andamento", { bpm: h.andamento }), ...(h.andamentoOriginal !== undefined ? { nota: t("ctx.original", { bpm: h.andamentoOriginal }) } : {}) });
-    if (h.tonalidade) linhas.push({ texto: t("ctx.tom", { tom: limpo(h.tonalidade) }) });
+    if (h.tonalidade) linhas.push({ texto: t("ctx.tom", { tom: limpo(nomeDaTonalidade(h.tonalidade, idioma as Idioma, notacao)) }) });
     if (h.transposicao !== 0) {
       const n = Math.abs(h.transposicao);
       linhas.push({ texto: t("ctx.transposicao", { n: `${h.transposicao > 0 ? "+" : "−"}${n}`, unidade: t(n === 1 ? "ctx.semitom_um" : "ctx.semitom_varios") }) });
@@ -185,9 +193,9 @@ export function linhasDoContexto(c: ContextoGravacao, t: Tradutor, idioma: strin
 }
 
 /** O texto em Markdown (só `*negrito*`, `_itálico_` e `- ` de lista: o que os apps de mensagem entendem), no idioma de `t`. Linhas que não se aplicam não aparecem. */
-export function textoDoContexto(c: ContextoGravacao, t: Tradutor, idioma: string): string {
+export function textoDoContexto(c: ContextoGravacao, t: Tradutor, idioma: string, notacao: Notacao = "auto"): string {
   const linhas: string[] = [`*${t("ctx.titulo")}*`];
-  for (const l of linhasDoContexto(c, t, idioma, true)) linhas.push(`- ${l.texto}${l.nota ? ` _(${l.nota})_` : ""}`);
+  for (const l of linhasDoContexto(c, t, idioma, true, notacao)) linhas.push(`- ${l.texto}${l.nota ? ` _(${l.nota})_` : ""}`);
   if (c.mudouDurante) linhas.push(`_${t("ctx.mudou")}_`);
   return linhas.join("\n");
 }
