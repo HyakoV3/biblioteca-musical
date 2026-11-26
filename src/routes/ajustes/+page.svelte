@@ -145,9 +145,14 @@
   // porque o progresso e o aviso ficam DENTRO do cartão e não se veriam com ele fechado.
   const resumoConteudo = $derived.by((): { texto: string; alerta: boolean } => {
     const sonsAndamento = sons.pacotes.map((p) => sons.andamento(p.id));
-    if (partituras.andamento.fase === "erro" || sonsAndamento.some((a) => a.fase === "erro")) {
+    if (hinario.andamento.fase === "erro" || partituras.andamento.fase === "erro" || sonsAndamento.some((a) => a.fase === "erro")) {
       return { texto: t("ajustes.resumo_erro"), alerta: true };
     }
+    // O hinário vem antes das partituras e segue a mesma regra: durante o download ele aparece no resumo.
+    const nh = porcentagemTotal(hinario.andamento.fase, hinario.andamento.progresso);
+    if (hinario.andamento.fase === "baixando") return { texto: `${t("ajustes.hinario")}: ${t("hinario.baixando", { n: nh })}`, alerta: false };
+    if (hinario.andamento.fase === "conferindo") return { texto: `${t("ajustes.hinario")}: ${t("hinario.conferindo")}`, alerta: false };
+    if (hinario.andamento.fase === "instalando") return { texto: `${t("ajustes.hinario")}: ${t("hinario.instalando")}`, alerta: false };
     const np = porcentagemTotal(partituras.andamento.fase, partituras.andamento.progresso);
     if (partituras.andamento.fase === "baixando") return { texto: `${t("partituras.titulo")}: ${t("partituras.baixando", { n: np })}`, alerta: false };
     if (partituras.andamento.fase === "conferindo") return { texto: `${t("partituras.titulo")}: ${t("partituras.conferindo")}`, alerta: false };
@@ -157,10 +162,10 @@
       const texto = ativo.fase === "baixando" ? t("sons.baixando", { n: porcentagemTotal(ativo.fase, ativo.progresso) }) : ativo.fase === "conferindo" ? t("sons.conferindo") : t("sons.instalando");
       return { texto: `${t("sons.titulo")}: ${texto}`, alerta: false };
     }
-    const hinario = !biblioteca.pacote ? "…" : biblioteca.pacote.exemplo ? t("ajustes.resumo_exemplo") : biblioteca.pacote.hinario.hinario.nome;
+    const nomeDoHinario = !biblioteca.pacote ? "…" : biblioteca.pacote.exemplo ? t("ajustes.resumo_exemplo") : biblioteca.pacote.hinario.hinario.nome;
     const parts = instaladas > 0 ? i18n.tn("plural.partituras", instaladas) : t("ajustes.resumo_sem_partituras");
     const algumSom = sons.pacotes.some((p) => sons.pacoteInstalado(p));
-    return { texto: `${hinario} · ${parts} · ${algumSom ? t("ajustes.resumo_sons") : t("ajustes.resumo_sem_sons")}`, alerta: false };
+    return { texto: `${nomeDoHinario} · ${parts} · ${algumSom ? t("ajustes.resumo_sons") : t("ajustes.resumo_sem_sons")}`, alerta: false };
   });
 
   async function remover() {
@@ -281,15 +286,20 @@
         textoBaixando={t("hinario.baixando", { n: porcentagemTotal(hinario.andamento.fase, hinario.andamento.progresso) })}
         textoConferindo={t("hinario.conferindo")}
         textoInstalando={t("hinario.instalando")}
-        instalado={hinarioInstalado}
+        instalado={hinarioInstalado || !!biblioteca.erro}
         rotuloRemover={t("hinario.remover")}
         aoRemover={() => (confirmando = true)}
+        desabilitarRemover={instalando.ocupado}
         rotuloBaixar={hinario.disponivel ? t("hinario.baixar", { tamanho: formatarMB(hinario.bytes, i18n.idioma) }) : undefined}
         aoBaixar={() => hinario.baixar()}
         desabilitarBaixar={instalando.ocupado}
       />
       {#if hinario.andamento.fase === "erro"}
         <Aviso tipo="erro">{erroDoHinario}</Aviso>
+      {/if}
+      {#if biblioteca.erro}
+        <!-- O conteúdo instalado não carrega: o botão Remover (acima) volta ao pacote de exemplo, que é a saída quando nem tentar de novo adianta (na tela inicial). -->
+        <Aviso tipo="erro">{t("erro.carregar", { erro: traduzirErro(biblioteca.erro, t) })}</Aviso>
       {/if}
       {#if confirmando}
         <div class="confirma" role="alertdialog" aria-labelledby="confirma-titulo" aria-describedby="confirma-texto">
@@ -318,6 +328,7 @@
           instalado={instaladas > 0}
           rotuloRemover={t("partituras.remover")}
           aoRemover={() => partituras.remover()}
+          desabilitarRemover={instalando.ocupado}
           rotuloBaixar={partituras.disponivel ? t("partituras.baixar", { tamanho: formatarMB(partituras.bytes, i18n.idioma) }) : undefined}
           aoBaixar={() => partituras.baixar()}
           desabilitarBaixar={instalando.ocupado || !hinarioInstalado}
@@ -328,6 +339,10 @@
         {/if}
         {#if partituras.andamento.fase === "erro"}
           <Aviso tipo="erro">{erroDasPartituras}</Aviso>
+        {/if}
+        {#if biblioteca.pacote?.partituras_erro}
+          <!-- A pasta de partituras não pôde ser lida: o hinário abre sem elas e o motivo aparece aqui. -->
+          <Aviso tipo="erro">{traduzirErro(biblioteca.pacote.partituras_erro, t)}</Aviso>
         {/if}
         {#if partituras.recusadas.length > 0}
           <Aviso tipo="info">

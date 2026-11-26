@@ -35,6 +35,8 @@ export type Pacote = {
   exemplo: boolean;
   /** Números dos hinos com partitura (SVG) importada, em ordem. Vazio sem pacote .zip importado. */
   partituras: number[];
+  /** Por que as partituras não puderam ser listadas (pasta ilegível), em erro do Rust (JSON de códigos); o hinário abre mesmo assim, sem partituras. */
+  partituras_erro?: string | null;
 };
 
 /** Uma partitura do .zip que não entrou (não passou na verificação do SVG) e o motivo, em texto do Rust. */
@@ -47,6 +49,13 @@ let pacote = $state<Pacote | null>(null);
 let erro = $state("");
 let busca = $state("");
 let carregando = false;
+
+/** Todo pacote novo vindo do Rust passa por aqui: um pacote que chegou é a prova de que a carga funciona, então o erro antigo (que trocaria a lista por "tentar de novo") some. */
+function definir(novo: Pacote): Pacote {
+  pacote = novo;
+  erro = "";
+  return novo;
+}
 
 export const biblioteca = {
   get pacote() {
@@ -68,7 +77,7 @@ export const biblioteca = {
     carregando = true;
     erro = "";
     try {
-      pacote = await invoke<Pacote>("carregar_hinario");
+      definir(await invoke<Pacote>("carregar_hinario"));
     } catch (e) {
       erro = String(e);
     } finally {
@@ -78,9 +87,9 @@ export const biblioteca = {
 
   /** Lança erro (texto vindo do Rust) se o arquivo for inválido; o conteúdo atual não muda. */
   async importar(json: string) {
-    pacote = await invoke<Pacote>("importar_hinario", { json });
+    const novo = definir(await invoke<Pacote>("importar_hinario", { json }));
     busca = "";
-    return pacote;
+    return novo;
   },
 
   /** Instala o pacote de partituras (zip só com os SVG, já baixado e conferido). Os bytes vão em **base64** (texto): corpo binário não chega
@@ -101,14 +110,13 @@ export const biblioteca = {
     } finally {
       ativo = false;
     }
-    pacote = r.pacote;
+    definir(r.pacote);
     return r;
   },
 
   /** Apaga só as partituras; o hinário fica. */
   async removerPartituras() {
-    pacote = await invoke<Pacote>("remover_partituras");
-    return pacote;
+    return definir(await invoke<Pacote>("remover_partituras"));
   },
 
   /** O SVG (já conferido no Rust) da partitura do hino, na versão da tela (`paisagem` pede a larga; sem ela no pacote vale o retrato).
@@ -118,9 +126,9 @@ export const biblioteca = {
   },
 
   async remover() {
-    pacote = await invoke<Pacote>("remover_conteudo");
+    const novo = definir(await invoke<Pacote>("remover_conteudo"));
     busca = "";
-    return pacote;
+    return novo;
   },
 
   hino(numero: number): Hino | null {

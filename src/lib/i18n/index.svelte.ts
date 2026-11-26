@@ -26,7 +26,7 @@ const SUFIXOS: Record<Intl.LDMLPluralRule, string> = {
   other: "outros",
 };
 
-const ehIdioma = (x: unknown): x is Idioma => typeof x === "string" && x in IDIOMAS;
+const ehIdioma = (x: unknown): x is Idioma => typeof x === "string" && Object.hasOwn(IDIOMAS, x);
 
 function inicial(): Idioma {
   try {

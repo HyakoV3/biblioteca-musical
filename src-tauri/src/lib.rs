@@ -14,13 +14,13 @@ fn pasta_conteudo(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 
 /// Carrega o hinário de `<app_data>/content/hinario.json` ou o pacote de exemplo.
 #[tauri::command]
-fn carregar_hinario(app: tauri::AppHandle) -> Result<hinario::Pacote, String> {
+async fn carregar_hinario(app: tauri::AppHandle) -> Result<hinario::Pacote, String> {
     hinario::carregar(pasta_conteudo(&app).ok().as_deref())
 }
 
 /// Valida e importa o conteúdo de um `hinario.json` escolhido pelo usuário.
 #[tauri::command]
-fn importar_hinario(app: tauri::AppHandle, json: String) -> Result<hinario::Pacote, String> {
+async fn importar_hinario(app: tauri::AppHandle, json: String) -> Result<hinario::Pacote, String> {
     hinario::importar(&pasta_conteudo(&app)?, &json)
 }
 
@@ -48,19 +48,23 @@ async fn importar_partituras(
 
 /// Apaga só as partituras importadas (o hinário fica).
 #[tauri::command]
-fn remover_partituras(app: tauri::AppHandle) -> Result<hinario::Pacote, String> {
+async fn remover_partituras(app: tauri::AppHandle) -> Result<hinario::Pacote, String> {
     hinario::remover_partituras(&pasta_conteudo(&app)?)
 }
 
 /// O SVG da partitura do hino `numero` (já conferido pela limpeza de `svg.rs`), na versão para a tela: `paisagem` pede a larga.
 #[tauri::command]
-fn ler_partitura(app: tauri::AppHandle, numero: u32, paisagem: bool) -> Result<String, String> {
+async fn ler_partitura(
+    app: tauri::AppHandle,
+    numero: u32,
+    paisagem: bool,
+) -> Result<String, String> {
     pacote::ler_partitura(&pasta_conteudo(&app)?, numero, paisagem)
 }
 
 /// Apaga o conteúdo importado e volta ao pacote de exemplo.
 #[tauri::command]
-fn remover_conteudo(app: tauri::AppHandle) -> Result<hinario::Pacote, String> {
+async fn remover_conteudo(app: tauri::AppHandle) -> Result<hinario::Pacote, String> {
     hinario::remover(&pasta_conteudo(&app)?)
 }
 

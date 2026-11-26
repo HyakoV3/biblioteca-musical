@@ -18,6 +18,7 @@
     rotuloBaixar,
     aoBaixar,
     desabilitarBaixar = false,
+    desabilitarRemover = false,
   }: {
     titulo: string;
     detalhe: string;
@@ -36,6 +37,8 @@
     aoBaixar?: () => void;
     /** Outro conteúdo está sendo instalado agora: o botão Baixar fica desabilitado até acabar. */
     desabilitarBaixar?: boolean;
+    /** Outro conteúdo está sendo instalado agora: remover o hinário ou as partituras no meio mudaria o chão do que está sendo instalado. */
+    desabilitarRemover?: boolean;
   } = $props();
 </script>
 
@@ -49,7 +52,7 @@
     <progress value={progressoTotal(fase, progresso)} max="1" aria-label={fase === "baixando" ? textoBaixando : fase === "conferindo" ? textoConferindo : textoInstalando}></progress>
     <span class="meta" role={fase === "baixando" ? undefined : "status"}>{fase === "baixando" ? textoBaixando : fase === "conferindo" ? textoConferindo : textoInstalando}</span>
   {:else if instalado}
-    <button class="botao" onclick={aoRemover}>{rotuloRemover}</button>
+    <button class="botao" disabled={desabilitarRemover} onclick={aoRemover}>{rotuloRemover}</button>
   {:else if rotuloBaixar}
     <button class="botao primario" disabled={desabilitarBaixar} onclick={aoBaixar}>{rotuloBaixar}</button>
   {/if}
