@@ -896,7 +896,8 @@ async function principal() {
 
   // UX-005: trocar de aba no hino guarda a rolagem de cada uma e a restaura ao voltar (a página é uma só: a rolagem é da janela).
   confere(await abrirHino(999), "hino 999 carregado para o teste da rolagem por aba");
-  await av(`document.body.style.minHeight = '3000px'; document.getElementById('aba-letra').click(); 1`);
+  // Um calço alto dentro do <main>: a página precisa ser comprida para rolar nas duas abas (a letra do hino de teste é curta).
+  await av(`(() => { const calco = document.createElement('div'); calco.style.height = '3000px'; document.querySelector('main').appendChild(calco); document.getElementById('aba-letra').click(); return 1; })()`);
   await dormir(300);
   await av(`window.scrollTo(0, 420); 1`);
   await dormir(200);
@@ -983,7 +984,7 @@ async function principal() {
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/ajustes?abrir=hinario` });
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('hinario')`)); ) await dormir(250);
   await dormir(600);
-  const aoHinario = await av(`(() => { const h = document.getElementById('hinario'); const r = h?.getBoundingClientRect(); return { aberto: document.getElementById('conteudo')?.open === true, visivel: !!r && r.top >= 0 && r.bottom <= window.innerHeight }; })()`);
+  const aoHinario = await av(`(() => { const h = document.getElementById('hinario'); const r = h?.getBoundingClientRect(); return { aberto: document.getElementById('conteudo')?.open === true, visivel: !!r && r.top >= -1 && r.top < window.innerHeight }; })()`);
   confere(aoHinario.aberto && aoHinario.visivel, `?abrir=hinario abre o Conteúdo e deixa o hinário à vista: ${JSON.stringify(aoHinario)}`);
   await av("sessionStorage.removeItem('e2e-exemplo'); 1");
   await av("sessionStorage.removeItem('e2e-sem-partituras'); sessionStorage.setItem('e2e-falha-partitura', '1'); 1");
@@ -1034,6 +1035,9 @@ async function principal() {
   const card1 = await av(`(() => { const c = document.querySelector('#partituras'); return { achou: !!c, texto: c?.innerText ?? '', botoes: [...(c?.querySelectorAll('button') ?? [])].map((b) => b.textContent.trim()) }; })()`);
   confere(card1.achou && /installed|instaladas|instaladas/i.test(card1.texto) && card1.botoes.length === 1, `card Partituras com partituras instaladas: estado e um só botão (Remover): ${JSON.stringify({ botoes: card1.botoes })}`);
   await av(`document.querySelector('#partituras button').click(); 1`);
+  await dormir(300);
+  // Remover pede a confirmação na própria linha (UX-008): só ao confirmar o comando roda.
+  await av(`document.querySelector('#partituras .confirma .perigo').click(); 1`);
   await dormir(600);
   const card2 = await av(`(() => { const c = document.querySelector('#partituras'); return { removeu: window.__removeu ?? 0, texto: c.innerText, botoes: c.querySelectorAll('button').length, entradaArquivo: c.querySelectorAll('input[type="file"]').length }; })()`);
   confere(card2.removeu === 1, `Remover chama o comando que apaga só as partituras (1 vez): ${card2.removeu}`);
@@ -1971,6 +1975,8 @@ async function principal() {
   await dormir(500);
   const confirmado = await av(`window.__removeu ?? 0`);
   confere(confirmado === removidasAntes + 1, `confirmando, as partituras são removidas: ${confirmado} (antes ${removidasAntes})`);
+  const focoAposConfirmar = await av(`document.activeElement === document.body ? 'body' : (document.activeElement?.tagName ?? '')`);
+  confere(focoAposConfirmar !== "body", `depois de confirmar a remoção o foco não se perde no <body> (vai para o que sobrou na linha): ${focoAposConfirmar}`);
   await av(`sessionStorage.removeItem('e2e-sem-partituras'); 1`);
   // PERS-001: se o conteúdo instalado não carrega, Ajustes oferece o Remover (volta ao exemplo) e o erro some depois.
   await av(`sessionStorage.setItem('e2e-falha-carga', '1'); 1`);

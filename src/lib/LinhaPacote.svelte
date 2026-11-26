@@ -4,6 +4,7 @@
   // `partituras/partituras.svelte.ts`); esta linha só desenha o que elas informam.
   import { tick } from "svelte";
   import { progressoTotal } from "./pacote";
+  import Aviso from "./Aviso.svelte";
   import { i18n } from "./i18n/index.svelte";
   type Fase = "baixando" | "conferindo" | "instalando" | "ocioso";
   let {
@@ -34,7 +35,7 @@
     textoInstalando?: string;
     instalado?: boolean;
     rotuloRemover?: string;
-    aoRemover?: () => void;
+    aoRemover?: () => void | Promise<unknown>;
     /** Sem rótulo, não há botão de baixar (por exemplo, nenhum pacote publicado). */
     rotuloBaixar?: string;
     aoBaixar?: () => void;
@@ -51,8 +52,20 @@
   let confirmando = $state(false);
   let botaoRemover = $state<HTMLButtonElement>();
   let botaoCancelar = $state<HTMLButtonElement>();
+  let linha = $state<HTMLDivElement>();
+  /** O que deu errado ao remover (o `aoRemover` pode ser assíncrono e falhar): aparece na própria linha. */
+  let erroRemocao = $state("");
+  /** Remover pode ser assíncrono e falhar: o erro vira o aviso da linha em vez de uma promessa rejeitada solta. */
+  async function remover() {
+    erroRemocao = "";
+    try {
+      await aoRemover?.();
+    } catch (e) {
+      erroRemocao = String(e);
+    }
+  }
   async function pedir() {
-    if (!confirmarRemocao) return aoRemover?.();
+    if (!confirmarRemocao) return remover();
     confirmando = true;
     await tick();
     botaoCancelar?.focus();
@@ -62,9 +75,13 @@
     await tick();
     botaoRemover?.focus();
   }
-  function confirmar() {
+  async function confirmar() {
     confirmando = false;
-    aoRemover?.();
+    await remover();
+    // A pergunta (onde estava o foco) sumiu e, se a remoção deu certo, o botão Remover também: o foco vai para o primeiro botão que sobrou na linha (Baixar)
+    // ou, não havendo, para a própria linha, para quem usa teclado ou leitor de tela não perder o ponto.
+    await tick();
+    (botaoRemover ?? linha?.querySelector("button") ?? linha)?.focus();
   }
   // Se a linha deixa de estar instalada (ou uma instalação começa) com a pergunta aberta, ela não tem mais sentido.
   $effect(() => {
@@ -72,7 +89,7 @@
   });
 </script>
 
-<div class="pacote">
+<div class="pacote" bind:this={linha} tabindex="-1">
   <div class="pacote-info">
     <strong>{titulo}</strong>
     <span class="meta">{detalhe}</span>
@@ -96,10 +113,12 @@
   {:else if rotuloBaixar}
     <button class="botao primario" disabled={desabilitarBaixar} onclick={aoBaixar}>{rotuloBaixar}</button>
   {/if}
+  {#if erroRemocao}<Aviso tipo="erro">{i18n.t("remover.erro", { erro: erroRemocao })}</Aviso>{/if}
 </div>
 
 <style>
   .pacote { display: grid; gap: 0.5rem; margin: 0.6rem 0; padding: 0.8rem 0.9rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
+  .pacote:focus { outline: none; }
   .pacote-info { display: grid; gap: 0.15rem; }
   .pacote progress { width: 100%; height: 0.625rem; accent-color: var(--acento); }
   .confirma { padding: 0.8rem 0.9rem; border: 0.0625rem solid var(--perigo); border-radius: 0.75rem; background: var(--fundo); }
