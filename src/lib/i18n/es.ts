@@ -419,7 +419,7 @@ export const es: Dicionario = {
   "sobre.como_titulo": "Cómo funciona",
   "sobre.como": "El sonido lo genera la propia aplicación a partir de las notas, sin grabaciones (si quieres, en Ajustes puedes descargar sonidos de instrumentos grabados). El himnario y las partituras no vienen dentro de la app: los descargas una vez en Ajustes y quedan en este dispositivo. Una vez descargados, todo funciona sin internet.",
   "sobre.privacidade_titulo": "Privacidad",
-  "sobre.privacidade": "Tus preferencias y tus grabaciones se guardan solo en este dispositivo; nada sale de él sin que lo envíes. El micrófono solo se usa cuando grabas o tocas Escuchar en el afinador, y la reducción de ruido se ejecuta en el propio dispositivo. La aplicación no tiene registro, anuncios ni recopilación de datos.",
+  "sobre.privacidade": "Tus preferencias y tus grabaciones se guardan solo en este dispositivo; nada sale de él sin que lo envíes. El micrófono solo se usa cuando grabas o tocas Escuchar en el afinador, y la reducción de ruido se ejecuta en el propio dispositivo. El único contacto con internet es cuando descargas el himnario, las partituras o los sonidos: la app pide esos archivos a GitHub. La aplicación no tiene registro, anuncios ni recopilación de datos.",
   "sobre.codigo_titulo": "Código y contenido",
   "sobre.codigo": "El código es libre, bajo la licencia MIT. Las letras y partituras pertenecen a sus titulares y no forman parte del código.",
   "ajustes.remover_titulo": "¿Quitar el contenido importado?",

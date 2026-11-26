@@ -13,7 +13,7 @@ TypeScript**. O alvo principal é o **Android**; o desktop funciona para desenvo
 
 Este repositório contém **somente código**. Nenhum hino real está aqui: letras, partituras e áudios **não fazem parte
 do repositório** (ficam fora do Git, na pasta `content/`, que é ignorada) e só devem ser distribuídos com autorização de
-quem detém os direitos. **O hinário e as partituras também não vêm dentro do app**: a pessoa os baixa uma vez em Ajustes
+quem detém os direitos (a do transcritor, Enéias Ramos, está registrada em [`docs/licencas-de-terceiros.md`](docs/licencas-de-terceiros.md); a dos autores das letras e músicas e da edição, não). **O hinário e as partituras também não vêm dentro do app**: a pessoa os baixa uma vez em Ajustes
 (o primeiro acesso oferece o download do hinário) e eles ficam no aparelho, conferidos por tamanho e SHA-256, com uma barra de andamento (90% o download, o resto a conferência e a instalação). Os pacotes levam o SHA-256 no nome (`hinario-<sha8>.json`, `partituras-<sha8>.zip`)
 ([`docs/pacote-do-hinario.md`](docs/pacote-do-hinario.md) e [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md)). Os arquivos de teste (`src-tauri/exemplo/` e `tools/mscx2json/tests/fixtures/`) são
 **fictícios**. O formato dos dados está em [`docs/FORMATO.md`](docs/FORMATO.md).
@@ -28,7 +28,7 @@ O código foi escrito do zero: nenhum código ou arquivo de outros aplicativos f
   sax, trombone, tuba, cordas e outros).
 - **Andamento** de 1 em 1 e de 5 em 5 bpm, e **transposição** em semitons.
 - **Sons gravados (opcional):** por padrão o som é sintetizado no aparelho. Em Ajustes dá para baixar um pacote de
-  instrumentos gravados (FluidR3, licença MIT), conferido por SHA-256 e usado offline depois. O pacote não está no
+  instrumentos gravados (GeneralUser GS, de S. Christian Collins, com licença própria que permite redistribuir; ver [`docs/licencas-de-terceiros.md`](docs/licencas-de-terceiros.md)), conferido por SHA-256 e usado offline depois. O pacote não está no
   repositório nem no app. Detalhes em [`docs/pacote-de-sons.md`](docs/pacote-de-sons.md).
 - **Lista de hinos** com busca por número ou título; o **último hino aberto** fica marcado e há o atalho **Continuar de onde parou**.
 - **Letra** com as estrofes (o coro e o final em negrito), em abas na parte de baixo da tela (ao lado, com o celular deitado), com o **karaokê** acendendo cada sílaba.

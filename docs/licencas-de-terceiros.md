@@ -7,7 +7,9 @@ O código deste projeto é MIT (`LICENSE`). Alguns materiais de terceiros acompa
 - **O que é:** os arquivos `.mscx` de onde o conversor tira as notas e as letras e o gerador tira as partituras (SVG). Estão nos repositórios do autor no GitHub, um por tonalidade
   (`eneiasramos/ccb-hinario-5-do` é o usado hoje). **Não entram no Git deste projeto.**
 - **Autoria:** Enéias Ramos (dono dos repositórios; as letras e músicas dos hinos têm autores próprios, que aparecem em cada hino).
-- **Licença:** **nenhuma**: os repositórios dizem "todos os direitos reservados". **A autorização do autor para distribuir o hinário e os pacotes ainda não está registrada** (ver `docs/pacote-de-partituras.md`).
+- **Licença:** **nenhuma**: os repositórios dizem "todos os direitos reservados".
+- **Autorização (registrada em 2026-11-26):** o Enéias Ramos **autorizou** a distribuição do hinário e das partituras gerados a partir das transcrições dele, como o app faz hoje (download pelo Release do repositório `HyakoV3/biblioteca-musical-pacotes`). A confirmação foi dada ao responsável do projeto; a **prova (a mensagem dele) fica fora do repositório**, guardada pelo responsável. **Este é o único lugar onde a autorização é registrada**: os outros documentos apontam para cá.
+- **O que a autorização NÃO cobre:** as letras e as músicas dos hinos têm autores e titulares próprios, e a edição do hinário também. Esses direitos **continuam sem registro**. Antes de qualquer publicação aberta (loja ou tag final), é preciso decidir se a autorização do transcritor basta ou se há titulares a consultar.
 - **No app:** Ajustes, "Créditos e licenças", com o nome, o link do perfil e o aviso de que os repositórios não trazem licença. O crédito reconhece a autoria e **não afirma** que há autorização.
 
 ## Ícones: Google Material Icons (conjunto `ic`) e Material Symbols (conjunto `material-symbols`)

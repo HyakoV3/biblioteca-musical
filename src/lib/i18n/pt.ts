@@ -419,7 +419,7 @@ export const pt = {
   "sobre.como_titulo": "Como funciona",
   "sobre.como": "O som é gerado pelo próprio aplicativo a partir das notas, sem gravações (se quiser, em Ajustes dá para baixar sons de instrumentos gravados). O hinário e as partituras não vêm dentro do app: você os baixa uma vez em Ajustes e eles ficam neste aparelho. Depois de baixados, tudo funciona sem internet.",
   "sobre.privacidade_titulo": "Privacidade",
-  "sobre.privacidade": "Suas escolhas e as suas gravações ficam só neste aparelho; nada sai daqui sem você enviar. O microfone só é usado quando você grava ou toca em Ouvir no afinador, e a redução de ruído roda no próprio aparelho. O aplicativo não tem cadastro, anúncios nem coleta de dados.",
+  "sobre.privacidade": "Suas escolhas e as suas gravações ficam só neste aparelho; nada sai daqui sem você enviar. O microfone só é usado quando você grava ou toca em Ouvir no afinador, e a redução de ruído roda no próprio aparelho. O único contato com a internet é quando você baixa o hinário, as partituras ou os sons: o app pede esses arquivos ao GitHub. O aplicativo não tem cadastro, anúncios nem coleta de dados.",
   "sobre.codigo_titulo": "Código e conteúdo",
   "sobre.codigo": "O código é livre, sob a licença MIT. Letras e partituras pertencem aos seus titulares e não fazem parte do código.",
   "ajustes.remover_titulo": "Remover conteúdo importado?",

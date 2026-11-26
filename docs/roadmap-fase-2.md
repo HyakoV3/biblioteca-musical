@@ -106,7 +106,7 @@ sem ir para o Git.
 
 ## Etapa 5 — Conteúdo completo (por último)
 
-- [ ] **Autorização do autor das transcrições** para usar as transcrições do Hinário 5. **Sem ela, não baixar mais nada.**
+- [x] **Autorização do autor das transcrições** para usar as transcrições do Hinário 5: dada pelo Enéias, registrada em 2026-11-26 em [`licencas-de-terceiros.md`](licencas-de-terceiros.md). Os direitos das letras, das músicas e da edição seguem sem registro (ver o último item desta etapa).
 - [ ] Converter os 480 hinos (e decidir sobre os coros 1 a 6, hoje ignorados pelo conversor).
 - [ ] Revisar com arquivo real o que só foi testado com partituras fictícias: ligaduras, repetições, quiálteras,
       estruturas de final diferentes da do 457.
@@ -114,7 +114,7 @@ sem ir para o Git.
       escrevê-lo para os hinos reais, conforme aparecem os defeitos.
 - [ ] Confirmar direitos de letras e partituras com a CCB ou os titulares antes de distribuir.
 
-**Pronto quando:** o hinário 5 completo está convertido e validado, com a autorização registrada.
+**Pronto quando:** o hinário 5 completo está convertido e validado, com a autorização registrada (feito) e os direitos de letras e músicas decididos.
 
 ---
 

@@ -1,10 +1,23 @@
-# APK de teste fechado (com conteúdo embutido)
+# APK de teste fechado
 
-Para dar a outros músicos algo para testar, o build pode levar um `hinario.json` **dentro do binário**. O
-conteúdo **nunca entra no Git**: só o caminho do arquivo é informado na hora do build.
+## Para quem vai testar
 
-> **Direitos.** O conteúdo são transcrições de terceiros, ainda sem autorização (ver `docs/roadmap-uxui-inicial.md`,
-> seção 3). Use só em **teste fechado**. **Não publique** o APK (loja, redes, link aberto) antes da autorização.
+O app é **independente e não oficial** (não tem ligação com a Congregação Cristã no Brasil) e está em **teste fechado**: ainda pode errar. Para instalar:
+
+1. **Baixe a versão mais nova** na página de [Releases](https://github.com/HyakoV3/biblioteca-musical/releases) do projeto (a de cima da lista).
+2. **Baixe o arquivo que termina em `.apk`** (por exemplo `bibliotecamusical-0.3.7.apk`). Ignore o `.aab` e o `SHA256SUMS`: não são para instalar.
+3. **Permita a instalação de fora da loja** quando o Android perguntar (a opção "Instalar apps desconhecidos" do navegador ou do gerenciador de arquivos) e toque no arquivo para instalar.
+4. **Ao atualizar, instale por cima**: não desinstale. **Desinstalar apaga as gravações guardadas e os pacotes baixados** (o app não faz cópia de segurança das gravações). Se precisar desinstalar, mande antes, pelo botão **Enviar** do Gravador, as gravações que quiser guardar.
+5. **Confira a versão** em Ajustes, "Sobre o app", e diga qual é ao relatar um problema.
+6. **Para relatar:** conte ao responsável que lhe passou o link o que você fez, o que esperava e o que aconteceu, e a versão. Não envie dados pessoais.
+
+No primeiro acesso o app oferece **baixar o hinário** (cerca de 4 MB); as partituras e os sons gravados são opcionais, em Ajustes, "Conteúdo". Depois de baixados, tudo funciona sem internet.
+
+## Para quem publica
+
+Os APKs saem pelo Release do GitHub (veja "Entrega pelo GitHub", abaixo). O conteúdo (hinário e partituras) **não vai dentro do APK**: o app o baixa do repositório `HyakoV3/biblioteca-musical-pacotes`. A autorização do transcritor para distribuir esse conteúdo está registrada em [`licencas-de-terceiros.md`](licencas-de-terceiros.md); ela **não cobre** os autores das letras e músicas nem a edição do hinário. Antes de qualquer publicação aberta (loja ou tag final), esses direitos precisam ser decididos.
+
+Um build pode, se preciso, levar um `hinario.json` **dentro do binário** (o histórico abaixo conta como). O conteúdo **nunca entra no Git**: só o caminho do arquivo é informado na hora do build.
 
 ## Como funciona
 

@@ -137,7 +137,7 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
       retroceder (faixa de toque do miniplayer e do ponto); o botão de tamanho e alinhamento da letra.
 - [x] ~~**I-07:** testar as 4 vozes gravadas ao mesmo tempo no celular~~ e ~~aceitar o tamanho do pacote (36 MB)~~: feitos e aprovados
       pelo responsável em 2026-11-15.
-- [ ] **I-08 (partitura):** a **autorização do Enéias** para publicar os pacotes; a marca de andamento do autor sai do SVG no pacote 006; coros 1 a 6 não convertidos. **(depende do responsável)**
+- [ ] **I-08 (partitura):** a autorização do Enéias para publicar os pacotes **já foi dada** (2026-11-26, ver `licencas-de-terceiros.md`); a marca de andamento do autor sai do SVG no pacote 006; coros 1 a 6 não convertidos. **(depende do responsável)**
 - [ ] **I-12 (fase B) e I-26 (karaokê por nota):** nenhum teste automático muda o **zoom** com a curva da ligadura acesa (o código refaz a folga; só o celular conferiu); o e2e do **Gravador** falha com frequência no CI (ver I-03).
 - [ ] **I-13 (afinador):** a **etapa 2 (ouvir e medir)** é a I-32 em [`roadmap-ideas.md`](roadmap-ideas.md); o Rust não declara `armadura` nem `modo`.
 - [ ] **I-19 (letra):** o **negrito** do coro e do final (I-33); os hinos **61, 162, 185 e 238** sem o bloco "Final"; o **283** (versos colados) precisa da foto; vetar os **45 hífens de pronome** dos hinos 1 a 30; letras pendentes do 61, 62, 185, 189, 198, 238 e 475. **(depende do responsável)**
