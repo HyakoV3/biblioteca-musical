@@ -1364,6 +1364,7 @@ async function principal() {
   confere(gC.pressionado === 'false' && gC.ativos === 0 && gC.audio === true && avisoSumiu, `O Parar do aviso para a gravação, guarda o gravado, devolve o microfone e o aviso some: ${JSON.stringify(gC)}`);
   await apagarPrimeira();
   await dormir(300);
+  const itensAntesDoHino = (await estadoGravador()).itens; // a lista traz sobras de testes anteriores: o que se confere é UMA gravação a mais
   // GRV-001: COM o serviço do Android assumindo a gravação, abrir um hino NÃO a para: o aviso "Gravando · Parar" aparece na tela do hino, e o Parar dele guarda a gravação.
   await av(`window.__ponte = []; document.getElementById('gravar').click(); 1`);
   await dormir(700);
@@ -1382,9 +1383,9 @@ async function principal() {
   await av(`document.querySelector('button.voltar').click(); 1`);
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('aba-gravador')`)); ) await dormir(250);
   await av(`document.getElementById('aba-gravador').click(); 1`);
-  await esperarGravacao(1);
+  await esperarGravacao(itensAntesDoHino + 1);
   const hinoGuardada = await estadoGravador();
-  confere(hinoGuardada.itens === 1 && hinoGuardada.ativos === 0, `A gravação parada na tela do hino foi guardada e está na lista: ${JSON.stringify(hinoGuardada)}`);
+  confere(hinoGuardada.itens === itensAntesDoHino + 1 && hinoGuardada.ativos === 0, `A gravação parada na tela do hino foi guardada UMA vez e está na lista (antes: ${itensAntesDoHino}): ${JSON.stringify(hinoGuardada)}`);
   await apagarPrimeira();
   await dormir(300);
   // Sem fone: ligar o metrônomo para a gravação, que é guardada.
