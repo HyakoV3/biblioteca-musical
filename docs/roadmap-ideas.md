@@ -661,6 +661,51 @@ pasta deixa de existir. **Ideia ligada:** baixar **o arquivo** e não a pasta, m
 
 ---
 
+## I-42 — Comando de linha de comando para o bump e o RC (estilo release-it com Conventional Commits)
+
+- **Status:** anotada (2026-11-26).
+- **Origem:** o responsável, 2026-11-26: o bump da versão e a tag do RC foram feitos à mão (sete arquivos, a linha do histórico de versões, a PR de bump e depois a tag). Quer um comando no próprio computador, no estilo do `release-it` com Conventional Commits, para fazer isso sozinho.
+- **Prioridade:** a definir.
+
+### O problema
+
+Cada versão pede os mesmos passos, e é fácil esquecer um: `package.json` e `package-lock.json`, `src-tauri/Cargo.toml` e `Cargo.lock` (só o pacote do app, e não crates de terceiros com o mesmo número), `src-tauri/tauri.conf.json`, a linha "Estado" do README nos três idiomas, o histórico de versões em `docs/release-e-apk-no-github.md`, o exemplo de nome do APK nos três guias, a PR de bump, a tag `vX.Y.Z-rcN` (com o contador de RCs global, que não reinicia a cada versão) e depois a linha do RC em `docs/apk-de-teste.md`. O `versionCode` do Android sai da versão (`1000 × minor + patch`) e não tem arquivo próprio.
+
+### O que se deseja
+
+Um comando, por exemplo `npm run release`, que:
+
+1. **Lê os commits** desde a última tag (Conventional Commits: `feat` sobe o menor, `fix` e `perf` sobem o patch, `!` ou `BREAKING CHANGE` sobe o maior; enquanto for 0.x, o `feat` também pode subir só o patch, como se faz hoje) e **sugere a próxima versão**, que a pessoa confirma ou troca.
+2. **Atualiza os sete arquivos** e o histórico de versões de uma vez, confere que as três versões batem (a mesma regra que o `release.yml` aplica) e roda `cargo metadata --locked` para ver que o `Cargo.lock` ficou coerente.
+3. **Gera o trecho de notas** (changelog) a partir dos commits, agrupado por tipo, para a PR e para o Release.
+4. **Abre a branch e a PR** `chore(release): versão X.Y.Z` (com assignee e etiqueta), sem co-autoria, e **espera o merge**.
+5. Depois do merge, **cria e envia a tag** `vX.Y.Z-rcN` na `main` (sugerindo o próximo `N`) e acompanha o release até o fim, conferindo APK, AAB, `SHA256SUMS` e o certificado.
+6. Com `--dry-run`, só mostra o que faria, sem escrever nada.
+
+### Perguntas em aberto
+
+1. **Ferramenta pronta ou script próprio?** O `release-it` (ou o `commit-and-tag-version`) resolve os commits, a versão, o changelog e a tag; os arquivos do Rust e do Tauri e a linha do histórico exigiriam um plugin ou um *hook* de `after:bump`. Um script próprio em `tools/` (Node, sem dependência nova) é mais simples de entender, mas faz o trabalho do zero. Decidir pelo custo de manter.
+2. **Quem abre a PR?** O `main` é protegido, então o bump entra por PR. O comando pode usar o `gh` (já instalado no host do responsável) ou só preparar a branch e deixar o `gh pr create` para a pessoa.
+3. **Onde fica o contador de RCs?** Hoje é só a convenção (rc9 depois do rc8). Pode sair da última tag (`git describe`) em vez de ser digitado.
+4. **O comando deve exigir o portão do release?** O `release.yml` já recusa tag fora da `main` ou sem os 4 checks verdes; o comando pode avisar antes, para a tag não nascer para falhar.
+5. **Versão final:** o RC leva `-rcN` e a tag final não. O comando precisa dos dois caminhos, e a final também fala com a Play Store (`ENVIAR_PLAY_STORE`).
+
+### Impacto técnico (hipóteses)
+
+- Um script em `tools/` (ou a configuração do `release-it` no `package.json`), com testes que montam um repositório de mentira e conferem os sete arquivos (o mesmo estilo de `tools/test_*.py` e de `tests/`).
+- A regra do `versionCode` (`1000 × minor + patch`) vive no `release.yml`; o comando deve usar a mesma conta e dizer o resultado.
+- Nenhum segredo: o comando roda no computador do responsável, com o `gh` autenticado por ele.
+
+### Critérios de aceitação (propostos)
+
+- `npm run release -- --dry-run` mostra a versão sugerida, os arquivos que mudariam e o texto da PR, sem alterar nada.
+- Um bump feito pelo comando produz **o mesmo diff** que o bump manual da 0.3.8 (#219).
+- Se as três versões (`package.json`, `Cargo.toml`, `tauri.conf.json`) não baterem, ou o `Cargo.lock` não for coerente, o comando para antes de abrir a PR.
+- A tag só é criada na `main`, depois do merge, e o comando mostra o link do release e o resultado da conferência dos artefatos.
+- Há um teste automático para a escolha da versão a partir dos commits e para a edição dos arquivos.
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
