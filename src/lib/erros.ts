@@ -12,6 +12,8 @@ export const ERROS_DO_RUST: Readonly<Record<string, readonly string[]>> = {
   versao: ["versao", "esperado"],
   vozes_final: ["hino", "outras", "normal"],
   vozes_intro: ["hino", "outras", "normal"],
+  nota_invalida: ["hino", "voz"],
+  andamento_invalido: ["hino", "andamento"],
   grande_demais: [],
   vazio: [],
   repetido: ["numero"],

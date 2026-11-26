@@ -7,6 +7,9 @@ use std::sync::{Mutex, MutexGuard};
 
 const EXEMPLO: &str = include_str!("../exemplo/hinario.json");
 const VERSAO_SUPORTADA: u32 = 1;
+/// Faixa de andamento aceita (batidas por minuto): o conversor (`tools/mscx2json`) confere a mesma.
+const ANDAMENTO_MIN: u32 = 20;
+const ANDAMENTO_MAX: u32 = 300;
 /// Conteúdo opcional levado dentro do binário por `BM_PACOTE` na hora do build (ver build.rs). Vazio no
 /// build comum. Não vai para o Git: o repositório só traz o pacote de exemplo fictício.
 const INCLUSO: &str = include_str!(concat!(env!("OUT_DIR"), "/pacote_incluso.json"));
@@ -142,6 +145,13 @@ pub struct Introducao {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Nota(pub f32, pub f32, pub u8);
 
+impl Nota {
+    /// Tempo finito e não negativo, duração finita e positiva, MIDI de 0 a 127.
+    fn valida(&self) -> bool {
+        self.0.is_finite() && self.0 >= 0.0 && self.1.is_finite() && self.1 > 0.0 && self.2 <= 127
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Voz {
     pub nome: String,
@@ -180,6 +190,31 @@ pub fn ler(json: &str) -> Result<Hinario, String> {
             "versao",
             &[h.versao.to_string(), VERSAO_SUPORTADA.to_string()],
         ));
+    }
+    // PERS-003: faixa inválida recusa o hinário (diferente da sincronia e dos compassos, que são extras): uma nota com tempo negativo ou infinito,
+    // duração zero ou negativa, ou MIDI fora de 0 a 127 deixaria o sintetizador agendando lixo, e um andamento fora de 20 a 300 quebraria a conta de tempo.
+    for hino in &h.hinos {
+        if let Some(a) = hino.andamento
+            && !(ANDAMENTO_MIN..=ANDAMENTO_MAX).contains(&a)
+        {
+            return Err(erro(
+                "andamento_invalido",
+                &[hino.numero.to_string(), a.to_string()],
+            ));
+        }
+        let faixas = std::iter::once(&hino.vozes)
+            .chain(hino.passada_final.iter().map(|f| &f.vozes))
+            .chain(hino.introducao.iter().map(|i| &i.vozes));
+        for vozes in faixas {
+            for voz in vozes {
+                if voz.notas.iter().any(|n| !n.valida()) {
+                    return Err(erro(
+                        "nota_invalida",
+                        &[hino.numero.to_string(), voz.nome.clone()],
+                    ));
+                }
+            }
+        }
     }
     // O karaokê é um extra: sincronia malformada é descartada, sem recusar o hino.
     for hino in &mut h.hinos {
@@ -510,6 +545,58 @@ mod testes {
         ))
         .unwrap_err();
         assert_eq!(args(&e)[..2], ["vozes_intro", "1"], "{e}");
+    }
+
+    fn json_com_nota(nota: &str, andamento: &str) -> String {
+        format!(
+            r#"{{"versao":1,"hinario":{{"id":"a","nome":"A"}},"hinos":[{{"numero":7,"titulo":"T",{andamento}
+            "vozes":[{{"nome":"Soprano","notas":[{nota}]}}]}}]}}"#
+        )
+    }
+
+    #[test]
+    fn nota_com_tempo_duracao_ou_midi_invalidos_recusa_o_hinario() {
+        // PERS-003: o hino 7, a voz Soprano
+        for ruim in [
+            "[-1,1,60]",
+            "[0,0,60]",
+            "[0,-2,60]",
+            "[0,1,200]",
+            "[0,1e39,60]",
+        ] {
+            let e = ler(&json_com_nota(ruim, "")).unwrap_err();
+            assert_eq!(args(&e), ["nota_invalida", "7", "Soprano"], "{ruim}: {e}");
+        }
+        assert!(ler(&json_com_nota("[0,1,60],[1,0.5,127]", "")).is_ok());
+    }
+
+    #[test]
+    fn nota_invalida_na_introducao_e_no_final_tambem_recusa() {
+        let json = r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":7,"titulo":"T",
+            "vozes":[{"nome":"S","notas":[[0,1,60]]}],
+            "final":{"vozes":[{"nome":"S","notas":[[0,1,60]]}]},
+            "introducao":{"vozes":[{"nome":"S","notas":[[0,-1,60]]}]}}]}"#;
+        assert_eq!(args(&ler(json).unwrap_err())[0], "nota_invalida");
+    }
+
+    #[test]
+    fn andamento_fora_de_20_a_300_recusa_o_hinario() {
+        for (a, ok) in [
+            (19, false),
+            (20, true),
+            (300, true),
+            (301, false),
+            (0, false),
+        ] {
+            let r = ler(&json_com_nota("[0,1,60]", &format!(r#""andamento":{a},"#)));
+            assert_eq!(r.is_ok(), ok, "andamento {a}");
+            if !ok {
+                assert_eq!(
+                    args(&r.unwrap_err()),
+                    ["andamento_invalido", "7", &a.to_string()]
+                );
+            }
+        }
     }
 
     fn json_com_sincronia(sincronia: &str) -> String {

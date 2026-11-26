@@ -11,6 +11,8 @@ export const pt = {
   "erro.rust.versao": "Este hinário está na versão {versao}, e este app entende a versão {esperado}.",
   "erro.rust.vozes_final": "Hino {hino}: as vozes do final ({outras}) não correspondem às da passada normal ({normal}).",
   "erro.rust.vozes_intro": "Hino {hino}: as vozes da introdução ({outras}) não correspondem às da passada normal ({normal}).",
+  "erro.rust.nota_invalida": "Hino {hino}: a voz \"{voz}\" tem uma nota com tempo, duração ou altura inválidos.",
+  "erro.rust.andamento_invalido": "Hino {hino}: o andamento {andamento} está fora do intervalo de 20 a 300 batidas por minuto.",
   "erro.rust.grande_demais": "O arquivo é grande demais (limite de 20 MB).",
   "erro.rust.vazio": "O hinário não tem nenhum hino.",
   "erro.rust.repetido": "Há dois hinos com o mesmo número: {numero}.",

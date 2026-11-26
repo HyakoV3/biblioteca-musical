@@ -19,6 +19,8 @@ mesmo caminho conferido das partituras, e o guarda no aparelho. Sem ele, o app m
 
 ## Publicar um hinário novo
 
+> Antes de publicar, rode `python3 tools/verificar-compassos.py hinario.json <pasta dos svg ou zip das partituras>` (o hinário e as partituras precisam andar juntos: ver `docs/pacote-de-partituras.md`). O conversor já recusa, citando o arquivo, uma nota com tempo ou duração inválidos ou MIDI fora de 0 a 127, e o app recusa o mesmo no hinário importado.
+
 ```sh
 # 1. o hinario.json pronto (fora do Git); o NOME leva os 8 primeiros caracteres do SHA-256 do conteúdo (hinario-<sha8>.json):
 N=hinario-$(sha256sum hinario.json | cut -c1-8).json
