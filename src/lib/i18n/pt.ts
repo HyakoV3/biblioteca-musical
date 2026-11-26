@@ -502,6 +502,8 @@ export const pt = {
   "vez.intro": "Introdução",
   "vez.intro_curta": "Intro",
   "vez.tudo": "Tocar o hino todo",
+  "vez.tudo_pausar": "Pausar o hino todo",
+  "vez.tudo_continuar": "Continuar o hino todo",
   "vez.grupo": "Tocar só uma parte",
 };
 

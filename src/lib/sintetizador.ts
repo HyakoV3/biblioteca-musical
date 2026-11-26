@@ -180,20 +180,25 @@ export class Sintetizador {
     // Em iOS/WebView o áudio só inicia após um gesto do usuário (clique em "Tocar").
     if (!partida.pausado) await this.ctx.resume();
     const ctx = this.ctx;
+    // Pedido de um ponto COM o hino pausado (arrastar a barra depois de trocar de saída): o contexto novo nasce rodando, e a tela diz "pausado".
+    if (partida.pausado && ctx.state === "running") await ctx.suspend();
 
     // Compressor no fim da cadeia: várias vozes somadas não estouram o volume.
     const compressor = ctx.createDynamicsCompressor();
     compressor.connect(ctx.destination);
-    this.mestre = ctx.createGain();
-    this.mestre.gain.value = 0.9;
-    this.mestre.connect(compressor);
+    const mestre = ctx.createGain();
+    mestre.gain.value = 0.9;
+    mestre.connect(compressor);
+    this.mestre = mestre;
     // Todas as vozes são agendadas; silenciar é só baixar o volume da voz (vale ao vivo).
-    this.ganhos = vozes.map((_, i) => {
+    // `ganhos` fica em referência LOCAL: `parar()` (que zera `this.ganhos`) pode rodar durante o carregamento dos sons gravados abaixo.
+    const ganhos = vozes.map((_, i) => {
       const g = ctx.createGain();
       g.gain.value = opcoes.volumes[i] ?? 1;
-      g.connect(this.mestre!);
+      g.connect(mestre);
       return g;
     });
+    this.ganhos = ganhos;
 
     const seg = 60 / Math.max(opcoes.andamento, 1); // segundos por batida
     const aPartirDe = Math.max(0, partida.aPartirDe ?? 0);
@@ -203,7 +208,7 @@ export class Sintetizador {
       vozes.map((_, i) => {
         const pedido = opcoes.instrumentos[i];
         // Se o som gravado não carregar (pacote removido, sem arquivo), a voz toca na síntese padrão.
-        return pedido && ehRealista(pedido) ? this.real(ctx, pedido, i, this.ganhos[i]).catch(() => null) : null;
+        return pedido && ehRealista(pedido) ? this.real(ctx, pedido, i, ganhos[i]).catch(() => null) : null;
       }),
     );
     this.inicio = ctx.currentTime + ATRASO_INICIAL;
@@ -228,7 +233,7 @@ export class Sintetizador {
       for (const [t, dur, midi] of notasAPartirDe(voz.notas, aPartirDe)) {
         const ini = inicio + t * seg;
         const duracao = Math.max(dur * seg, 0.05);
-        this.fontes.push(...agendarNota(ctx, this.ondas, this.ganhos[i], id, midi + opcoes.transposicao, ini, duracao));
+        this.fontes.push(...agendarNota(ctx, this.ondas, ganhos[i], id, midi + opcoes.transposicao, ini, duracao));
         fim = Math.max(fim, ini + duracao - inicio);
       }
     });

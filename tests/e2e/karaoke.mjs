@@ -454,6 +454,7 @@ async function principal() {
   await dormir(600);
   let e = await lido();
   confere(!e.tocando, "voltar pelo slider com a música pausada mantém a pausa");
+  confere(e.tr === "fa", `pausado, voltar pelo slider já move o destaque da letra para o ponto escolhido: ${e.tr} (esperado fa)`);
   confere((e.valor ?? "").startsWith("0:03"), `o slider mostra o ponto escolhido: ${JSON.stringify(e.valor)} (esperado 0:03 ...)`);
   await av("document.querySelector('.mini .acao')?.click(); 1"); // continua
   await dormir(700);
@@ -473,6 +474,16 @@ async function principal() {
   await dormir(600);
   const tempoOuvir = await av("document.querySelector('#painel-ouvir .tempos span')?.textContent ?? null");
   confere(tempoOuvir === "0:02", `o tempo da aba Ouvir acompanha o slider: ${JSON.stringify(tempoOuvir)} (esperado "0:02")`);
+  // O botão principal do Player diz o que vai fazer: pausar enquanto toca, continuar quando pausado, e não usa aria-pressed (A11Y-001).
+  const nomePrincipal = () => av(`(() => { const b = document.querySelector('#painel-ouvir .botao.tocar'); return b ? { nome: b.textContent.replace(/\\s+/g, ' ').trim(), pressed: b.hasAttribute('aria-pressed') } : null; })()`);
+  const tocandoP = await nomePrincipal();
+  confere(tocandoP && /pausar|pause/i.test(tocandoP.nome) && !tocandoP.pressed, `botão principal tocando: nome diz Pausar e não tem aria-pressed: ${JSON.stringify(tocandoP)}`);
+  await av("document.querySelector('#painel-ouvir .botao.tocar').click(); 1");
+  await dormir(400);
+  const pausadoP = await nomePrincipal();
+  confere(pausadoP && /continuar|resume/i.test(pausadoP.nome), `botão principal pausado: nome diz Continuar: ${JSON.stringify(pausadoP)}`);
+  await av("document.querySelector('#painel-ouvir .botao.tocar').click(); 1");
+  await dormir(400);
   // O polegar NATIVO (transparente) tem de ter o mesmo tamanho do ponto desenhado: o toque e o arraste são mapeados por ele, e se
   // fosse menor o valor escolhido e o ponto divergiriam alguns pixels nas pontas. (O Chrome não informa o tamanho de um polegar
   // nativo pelo estilo, então a medida é de COMPORTAMENTO: com o passo livre, um toque exatamente no ponto que o desenho indicaria

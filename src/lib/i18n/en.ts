@@ -502,5 +502,7 @@ export const en: Dicionario = {
   "vez.intro": "Introduction",
   "vez.intro_curta": "Intro",
   "vez.tudo": "Play the whole hymn",
+  "vez.tudo_pausar": "Pause the whole hymn",
+  "vez.tudo_continuar": "Resume the whole hymn",
   "vez.grupo": "Play only one part",
 };

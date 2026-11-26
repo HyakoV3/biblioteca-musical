@@ -10,6 +10,10 @@ const falso = vi.hoisted(() => {
     tocar: [] as { opcoes: unknown; partida: unknown; resolver: (d: number) => void; rejeitar: (e: unknown) => void }[],
     relogio: 0,
     automatico: true,
+    volumes: [] as string[],
+    /** Quando preenchida, `pausar` só termina quando o teste chamar isto. */
+    pausa: null as null | (() => void),
+    segurarPausa: false,
   };
   return estado;
 });
@@ -25,6 +29,7 @@ vi.mock("../src/lib/sintetizador", () => ({
     }
     async pausar() {
       falso.chamadas.push("pausar");
+      if (falso.segurarPausa) await new Promise<void>((ok) => (falso.pausa = ok));
     }
     async continuar() {
       falso.chamadas.push("continuar");
@@ -32,8 +37,9 @@ vi.mock("../src/lib/sintetizador", () => ({
     parar() {
       falso.chamadas.push("parar");
     }
-    volume() {
+    volume(voz: number, valor: number) {
       falso.chamadas.push("volume");
+      falso.volumes.push(`${voz}:${valor}`);
     }
     decorrido() {
       return falso.relogio;
@@ -68,6 +74,9 @@ beforeEach(() => {
   falso.tocar.length = 0;
   falso.relogio = 0;
   falso.automatico = true;
+  falso.volumes.length = 0;
+  falso.pausa = null;
+  falso.segurarPausa = false;
 });
 
 describe("store de reprodução", () => {
@@ -161,6 +170,76 @@ describe("store de reprodução", () => {
     reproducao.config(hino).andamento = 90;
     await reproducao.continuar();
     expect(falso.tocar).toHaveLength(2);
+    expect(reproducao.estado).toBe("tocando");
+  });
+
+  it("REP-001: volume e mudo mexidos durante o carregamento chegam ao som quando ele começa", async () => {
+    falso.automatico = false;
+    const p = reproducao.tocar(hino, 1);
+    await soltar();
+    const c = reproducao.config(hino);
+    c.mudas[0] = true;
+    c.volumes[1] = 0.4;
+    falso.tocar[0].resolver(10);
+    await p;
+    expect(falso.volumes).toEqual(["0:0", "1:0.4"]);
+    expect(falso.tocar).toHaveLength(1); // volume não pede reagendamento
+  });
+
+  it("REP-001: andamento mudado durante o carregamento reagenda do começo com o valor novo", async () => {
+    falso.automatico = false;
+    const p = reproducao.tocar(hino, 1);
+    await soltar();
+    reproducao.config(hino).andamento = 90;
+    falso.tocar[0].resolver(10);
+    await soltar();
+    expect(falso.tocar).toHaveLength(2);
+    expect((falso.tocar[1].opcoes as { andamento: number }).andamento).toBe(90);
+    expect(falso.tocar[1].partida).toEqual({ aPartirDe: 0, pausado: false });
+    falso.tocar[1].resolver(8);
+    await p;
+    expect(reproducao.estado).toBe("tocando");
+    expect(reproducao.duracao).toBe(8);
+  });
+
+  it("REP-004: Parar durante o carregamento seguido de falha do áudio não mostra erro", async () => {
+    falso.automatico = false;
+    const p = reproducao.tocar(hino, 1);
+    await soltar();
+    reproducao.parar();
+    falso.tocar[0].rejeitar(new Error("cancelado"));
+    await p;
+    expect(reproducao.erro).toBe("");
+    expect(reproducao.estado).toBe("parado");
+  });
+
+  it("REP-006: Parar durante o pausar não deixa o estado voltar a 'pausado'", async () => {
+    await reproducao.tocar(hino, 1);
+    falso.segurarPausa = true;
+    const p = reproducao.pausar();
+    await soltar();
+    reproducao.parar();
+    falso.pausa?.();
+    await p;
+    expect(reproducao.estado).toBe("parado");
+    expect(reproducao.atual).toBeNull();
+  });
+
+  it("REP-005: busca durante o 'continuar' (que reagenda) é aplicada ao terminar, não descartada", async () => {
+    await reproducao.tocar(hino, 1);
+    await reproducao.pausar();
+    reproducao.config(hino).andamento = 90; // continuar vai reagendar
+    falso.automatico = false;
+    const c = reproducao.continuar();
+    await soltar();
+    await reproducao.irPara(5); // chega com o reagendamento em curso: fica pendente
+    falso.tocar[1].resolver(10); // o reagendamento do continuar termina
+    await soltar();
+    await soltar();
+    falso.tocar[2]?.resolver(10);
+    await c;
+    expect(falso.tocar).toHaveLength(3);
+    expect((falso.tocar[2].partida as { aPartirDe: number }).aPartirDe).toBeCloseTo((5 * 90) / 60);
     expect(reproducao.estado).toBe("tocando");
   });
 });

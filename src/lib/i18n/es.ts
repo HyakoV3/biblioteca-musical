@@ -502,5 +502,7 @@ export const es: Dicionario = {
   "vez.intro": "Introducción",
   "vez.intro_curta": "Intro",
   "vez.tudo": "Tocar el himno completo",
+  "vez.tudo_pausar": "Pausar el himno completo",
+  "vez.tudo_continuar": "Continuar el himno completo",
   "vez.grupo": "Tocar solo una parte",
 };
