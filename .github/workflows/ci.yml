@@ -39,12 +39,10 @@ jobs:
           python3 tools/verificar-traducoes.py
           python3 tools/verificar-movimento.py
           python3 tools/contraste.py
-          python3 tools/test_gerar_partituras.py
-          python3 tools/test_montar_pacote.py
-          # o gerador de ícone usa o Pillow; num ambiente virtual, porque o Python do sistema recusa `pip install` direto (PEP 668)
-          python3 -m venv "$RUNNER_TEMP/venv-icones"
-          "$RUNNER_TEMP/venv-icones/bin/pip" install --quiet pillow
-          "$RUNNER_TEMP/venv-icones/bin/python" tools/test_gerar_icone_do_app.py
+          # as ferramentas em Python rodam todas pelo pytest; o gerador de ícone usa o Pillow. Ambiente virtual, porque o Python do sistema recusa `pip install` direto (PEP 668)
+          python3 -m venv "$RUNNER_TEMP/venv-tools"
+          "$RUNNER_TEMP/venv-tools/bin/pip" install --quiet pillow pytest
+          "$RUNNER_TEMP/venv-tools/bin/python" -m pytest tools
 
   conversor:
     name: Conversor de partituras (Rust)

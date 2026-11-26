@@ -94,7 +94,10 @@ const STUB = `window.__TAURI_INTERNALS__ = {
       }
       throw JSON.stringify(["sem_partitura", String(args.numero)]);
     }
-    return null;
+    // Comandos dos plugins do Tauri (eventos, janela) não têm o que simular: devolvem nulo. Qualquer outro nome desconhecido falha, como falharia o Rust
+    // (um comando renomeado no app e esquecido aqui não pode passar em silêncio).
+    if (cmd.startsWith("plugin:")) return null;
+    throw new Error("comando desconhecido no stub do e2e: " + cmd);
   },
   transformCallback: () => 0,
   metadata: { currentWindow: { label: "main" }, currentWebview: { label: "main", windowLabel: "main" } },
@@ -230,9 +233,17 @@ async function principal() {
       if (m.id && espera.has(m.id)) espera.get(m.id)(m);
     };
     const enviar = (method, params = {}) =>
-      new Promise((r) => {
+      new Promise((r, rejeitar) => {
         const id = ++n;
-        espera.set(id, r);
+        // Sem resposta do Chrome em 30 s, a chamada rejeita com o nome do método: o e2e falha com mensagem em vez de ficar parado até o tempo esgotado do job.
+        const limite = setTimeout(() => {
+          espera.delete(id);
+          rejeitar(new Error(`sem resposta do Chrome a ${method} em 30 s`));
+        }, 30000);
+        espera.set(id, (m) => {
+          clearTimeout(limite);
+          r(m);
+        });
         ws.send(JSON.stringify({ id, method, params }));
       });
     const av = async (expressao) => {
@@ -249,6 +260,7 @@ async function principal() {
   // banco do APP aparecer em `indexedDB.databases()`, o que só acontece depois de a abertura dele terminar. Se não aparece em 10 s, esse Chrome é descartado e outro sobe.
   const sondaDoBanco = (av) => av(`new Promise((r) => { const ini = Date.now(); let fim = false; const acabar = (v) => { if (!fim) { fim = true; r(v); } }; setTimeout(() => acabar(false), 10000); const olhar = async () => { if (fim) return; try { const lista = await Promise.race([indexedDB.databases(), new Promise((_, rej) => setTimeout(() => rej(new Error('sem resposta')), 2000))]); if (lista.some((d) => d.name === 'bm-gravacoes')) return acabar(true); } catch {} if (Date.now() - ini > 10000) return acabar(false); setTimeout(olhar, 200); }; olhar(); })`);
   let sessao = null;
+  let bancoAbriu = false;
   for (let tentativa = 1; tentativa <= 3; tentativa++) {
     sessao = await abrirChrome();
     await sessao.enviar("Page.enable");
@@ -261,6 +273,7 @@ async function principal() {
     // BM_E2E_FORCAR_REINICIO=1 finge uma sonda sem resposta na 1ª tentativa: serve para conferir, na máquina, que o reinício do Chrome funciona.
     const simulado = process.env.BM_E2E_FORCAR_REINICIO === "1" && tentativa === 1;
     if (idbOk && !simulado) {
+      bancoAbriu = true;
       if (tentativa > 1) console.log(`Chrome com o banco do app funcionando na tentativa ${tentativa}`);
       break;
     }
@@ -277,6 +290,7 @@ async function principal() {
       /* o perfil é temporário: se não der para apagar agora, a limpeza final tenta */
     }
   }
+  if (!bancoAbriu) throw new Error("o banco do app (bm-gravacoes) não abriu em 3 tentativas de Chrome: o e2e não tem como seguir");
   const { ws, enviar, av } = sessao;
 
   await enviar("Page.enable");

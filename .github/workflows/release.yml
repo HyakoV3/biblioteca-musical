@@ -143,21 +143,8 @@ jobs:
           apksigner verify --verbose --print-certs "saida/bibliotecamusical-$v.apk"
           # Alinhamento de 16 KB das bibliotecas nativas (exigido pela Play Store em Android 15 ou mais): só avisa, não derruba o release.
           zipalign -c -P 16 4 "saida/bibliotecamusical-$v.apk" || echo "::warning::o APK não está alinhado a 16 KB (zipalign -P 16 4)"
-          # Permissões: este app BAIXA os pacotes de conteúdo, então INTERNET é esperada. O que se confere é que não apareceu nenhuma
-          # permissão fora desta lista (um plugin novo pode trazer uma sem ninguém notar).
-          # `uses-permission-sdk-23` também conta, e `maxSdkVersion` vem depois do nome (o sed pega só o nome entre aspas)
-          permissoes=$(aapt dump permissions "saida/bibliotecamusical-$v.apk" | sed -n "s/^uses-permission[-a-z0-9]*: name='\([^']*\)'.*/\1/p")
-          [ -n "$permissoes" ] || { echo "::error::não consegui ler as permissões do APK"; exit 1; }
-          echo "$permissoes"
-          permitidas='android.permission.INTERNET android.permission.FOREGROUND_SERVICE android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK android.permission.FOREGROUND_SERVICE_MICROPHONE android.permission.POST_NOTIFICATIONS android.permission.WAKE_LOCK android.permission.RECORD_AUDIO android.permission.MODIFY_AUDIO_SETTINGS'
-          for p in $permissoes; do
-            # a permissão própria que o AndroidX acrescenta a todo app (br.pro.bibliotecamusical.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION)
-            case "$p" in *.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION) continue ;; esac
-            case " $permitidas " in
-              *" $p "*) ;;
-              *) echo "::error::permissão inesperada no APK: $p"; exit 1 ;;
-            esac
-          done
+          # Permissões: a lista permitida mora em tools/conferir-permissoes-apk.sh (o mesmo script roda nas PRs, em android-pr.yml)
+          tools/conferir-permissoes-apk.sh "saida/bibliotecamusical-$v.apk"
           (cd saida && sha256sum * > SHA256SUMS && cat SHA256SUMS)
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
