@@ -31,8 +31,9 @@ function confere(letra: ReturnType<typeof estrofes>, lista: EstrofeSinc[]): bool
 }
 
 /**
- * A sincronia combina com a letra do hino? Se a letra foi editada depois da conversão (ou algo não bate), as posições
- * apontariam para o lugar errado: nesse caso o karaokê fica desligado para o hino, e a letra aparece normalmente.
+ * A sincronia combina com a letra do hino? Pega a letra ENCURTADA ou com estrofes a menos (uma posição passa do fim da linha, ou a estrofe sumiu):
+ * as posições apontariam para o lugar errado, então o karaokê fica desligado para o hino e a letra aparece normalmente. Uma letra trocada por
+ * outra do MESMO tamanho não é detectada.
  */
 export function sincroniaCombina(letra: string[], s: Sincronia | null | undefined): boolean {
   if (!s || s.normal.length === 0) return false;

@@ -2,7 +2,7 @@
 
 > **Hospedagem (2026-11-24):** as partituras passaram para o repositório público **separado** `HyakoV3/biblioteca-musical-pacotes` (Release `partituras-<sha8>`, o zip direto: o app aceita o zip sozinho ou dentro de uma pasta), pelo mesmo motivo do hinário (uma reclamação não afeta o repositório do app). O manifesto aponta para o asset; o servidor e o link de pasta descritos abaixo valem para APKs antigos (o app novo **não aceita mais** o endereço do servidor: `capabilities/default.json` só permite o GitHub).
 
-As partituras são **opcionais**, como os sons gravados: o app baixa um pacote do servidor em **Ajustes → Partituras → Baixar** (decisão do
+As partituras são **opcionais**, como os sons gravados: o app baixa um pacote do servidor em **Ajustes → Conteúdo → Partituras → Baixar** (decisão do
 responsável, 2026-11-16: o botão "Importar hinário" vai deixar de existir e as partituras ganham um botão automático, no molde dos sons).
 O pacote é um `.zip` só com `partituras/hino-<número>.svg` e, opcional, `partituras/hino-<número>-paisagem.svg` (formato e verificações em [`FORMATO.md`](FORMATO.md), seção "Importar").
 
@@ -110,7 +110,7 @@ arquivo, o app também aceita (usa o que veio, se bater).
 O passo 3 escreve `src/lib/partituras/manifesto.json`; **o app só instala um arquivo com exatamente aquele tamanho e SHA-256**. Mudou o zip no
 servidor, refaça o manifesto e gere um APK novo (a atualização automática, sem APK novo, é a ideia I-25 em
 [`roadmap-ideas.md`](roadmap-ideas.md)). O endereço precisa estar no servidor que o app pode acessar: `src-tauri/capabilities/default.json`
-(hoje só `https://fb.hm.hv2.xyz/*`).
+(hoje só `https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/*`).
 
 ## Como o app instala
 
@@ -125,7 +125,7 @@ números de hino aceitos vêm dele.
 
 ## Remover
 
-**Ajustes → Partituras → Remover** apaga só as partituras; o hinário fica.
+**Ajustes → Conteúdo → Partituras → Remover** apaga só as partituras; o hinário fica.
 
 ## Andamento da instalação (2026-11-23)
 

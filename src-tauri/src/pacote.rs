@@ -2,9 +2,10 @@
 //! à interface. O formato está em docs/FORMATO.md.
 //!
 //! O zip vem de fora, então nada dele é confiado:
-//!  - **nomes exatos:** só `hinario.json`, a pasta `partituras/` e `partituras/hino-<número>.svg`; qualquer outro nome
-//!    (`..`, caminho absoluto, subpasta, maiúscula, zero à esquerda) recusa o pacote. Nenhum nome do zip vira caminho no disco:
-//!    o arquivo gravado é sempre `partituras/hino-<número>.svg`, montado aqui;
+//!  - **nomes exatos:** só `hinario.json`, a pasta `partituras/`, `partituras/hino-<número>.svg` (retrato, obrigatório) e
+//!    `partituras/hino-<número>-paisagem.svg` (opcional); qualquer outro nome (`..`, caminho absoluto, subpasta, maiúscula, zero à
+//!    esquerda) recusa o pacote. Nenhum nome do zip vira caminho no disco: o arquivo gravado é sempre `partituras/hino-<número>.svg`
+//!    ou `-paisagem.svg`, montado aqui;
 //!  - **limites** de tamanho do zip, de arquivos, do total descompactado e de cada arquivo, valendo também para o que o
 //!    cabeçalho do zip declara errado (a leitura é cortada no limite);
 //!  - **cada SVG é limpo** por `svg::limpar` (lista de permitidos, reescrito); o que não passa é **recusado** e informado, e

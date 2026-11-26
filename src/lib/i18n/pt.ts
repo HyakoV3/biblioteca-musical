@@ -444,7 +444,7 @@ export const pt = {
   "sobre.aviso_concordo": "Concordo",
   "sobre.intro": "Biblioteca Musical é um aplicativo gratuito para músicos em treino. Ele reúne a lista de hinos, a letra, a partitura e um player que toca cada voz, para você estudar a sua. Traz também um afinador, um gravador e um metrônomo.",
   "sobre.fazer_titulo": "O que dá para fazer",
-  "sobre.fazer_1": "Buscar hinos por número ou título e ler a letra por estrofe, com o karaokê acendendo cada sílaba.",
+  "sobre.fazer_1": "Buscar hinos por número, título, autoria, verso ou tom e ler a letra por estrofe, com o karaokê acendendo cada sílaba.",
   "sobre.fazer_2": "Ouvir a introdução, cada vez ou o hino todo, e acompanhar na partitura a nota que está soando.",
   "sobre.fazer_3": "Silenciar vozes, ajustar o volume, mudar o andamento e transpor o tom.",
   "sobre.fazer_4": "Escolher o instrumento de cada voz.",

@@ -444,7 +444,7 @@ export const en: Dicionario = {
   "sobre.aviso_concordo": "I agree",
   "sobre.intro": "Biblioteca Musical is a free app for musicians in training. It brings together the hymn list, the lyrics, the sheet music and a player that plays each voice, so you can study yours. It also has a tuner, a recorder and a metronome.",
   "sobre.fazer_titulo": "What you can do",
-  "sobre.fazer_1": "Search hymns by number or title and read the lyrics by verse, with the karaoke lighting up each syllable.",
+  "sobre.fazer_1": "Search hymns by number, title, author, verse or key and read the lyrics by verse, with the karaoke lighting up each syllable.",
   "sobre.fazer_2": "Listen to the introduction, each time or the whole hymn, and follow the note that is sounding on the sheet music.",
   "sobre.fazer_3": "Mute voices, adjust the volume, change the tempo and transpose the key.",
   "sobre.fazer_4": "Choose the instrument for each voice.",
