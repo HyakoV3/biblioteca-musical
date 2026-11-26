@@ -49,6 +49,23 @@ Variável (não secreta): `ENVIAR_PLAY_STORE=true`, que liga o envio à faixa **
 
 **No Gradle** (`src-tauri/gen/android/app/build.gradle.kts`): o release é assinado **só** se existirem `keystore.properties` (modelo em `src-tauri/gen/android/keystore.properties.example`) ou as variáveis `BM_KEYSTORE`, `BM_KEYSTORE_PASSWORD`, `BM_KEY_ALIAS` e `BM_KEY_PASSWORD` (o workflow as define a partir dos segredos). **Sem elas** o release continua saindo `unsigned`, e o fluxo dos APKs de teste da máquina do responsável (`apk-de-teste.md`: `zipalign` e `apksigner` com a chave de depuração) **não muda**.
 
+## Release imutável e portões (onda 11 da auditoria)
+
+O que o `release.yml` passou a exigir, e o que **só o responsável** liga no GitHub (nada disso se aplica por código):
+
+| O que | Como funciona | Ação do responsável |
+|---|---|---|
+| Disparo manual numa tag | Recusado no início do job (o release é imutável); sob demanda só vale num branch | — |
+| Release já existente | O job `publicar` falha em vez de sobrescrever (`--clobber` saiu). Para refazer um envio que falhou no meio: apague o release e a tag e gere de novo | — |
+| Tag na `main` com o CI verde | O job confere que o commit da tag é ancestral da `main` e que os 4 checks de build passaram naquele commit. Se o CI da `main` ainda roda, espere e reexecute | — |
+| Certificado fixado | Com a variável `ANDROID_CERT_SHA256`, o APK e o AAB assinados têm de trazer esse certificado (sem a variável, só avisa) | Cadastrar a variável (Settings → Secrets and variables → Actions → **Variables**) com a impressão digital SHA-256 do certificado de envio, só hexadecimal |
+| Auditoria no release | `npm audit --audit-level=high` (com as dependências de build) e `cargo audit` no `src-tauri/Cargo.lock` antes de compilar | — |
+| Rust fixo | `rust-toolchain.toml` com a versão exata (hoje 1.99.1), usado no CI, nas PRs do Android e no release. Subir a versão é um commit | — |
+| Gradle fixo | `distributionSha256Sum` no `gradle-wrapper.properties` e validação do `gradle-wrapper.jar` no CI. Ao subir o Gradle, atualize a soma (a oficial está em `services.gradle.org/distributions/gradle-X-bin.zip.sha256`) | — |
+| Proteção de tags | Regra do repositório (Settings → Rules → Rulesets) que só deixa criar tags `v*` a quem tem permissão e proíbe apagá-las e movê-las | **Criar a regra** |
+
+Fica para depois: fixar por SHA as actions dos workflows do Claude e dar o escopo de PR ao token da revisão (CICD-009), que depende da ação A-03 do responsável.
+
 ## Conteúdo
 
 Os APKs do GitHub saem **sem hinos embutidos** (o `BM_PACOTE` nunca entra no CI): o repositório é público e o conteúdo é de terceiros. Depois de instalar, o hinário e as partituras são **baixados pelo app** (ver `docs/pacote-do-hinario.md`). O AAB da Play Store tem teto de 200 MB (o APK tem ~10 MB).

@@ -1,0 +1,7 @@
+# Versão EXATA do Rust do app, do conversor e do CI. Mudar a versão é um commit (nem o Dependabot nem um novo `stable` mexem aqui).
+# `rustup toolchain install` (sem argumentos) instala exatamente isto, inclusive o alvo do Android.
+[toolchain]
+channel = "1.99.1"
+profile = "minimal"
+components = ["rustfmt", "clippy"]
+targets = ["aarch64-linux-android"]

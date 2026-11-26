@@ -32,6 +32,9 @@ jobs:
     name: Android (APK e AAB)
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    permissions:
+      contents: read
+      checks: read   # para conferir pela API que o ci do commit da tag passou
     outputs:
       versao: ${{ steps.versao.outputs.versao }}
       assinado: ${{ steps.chave.outputs.assinado }}
@@ -39,6 +42,30 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false   # o GITHUB_TOKEN não fica em .git/config enquanto o npm e os plugins rodam
+          fetch-depth: 0               # a conferência abaixo precisa do histórico da main
+      - uses: gradle/actions/wrapper-validation@7296c772c13d12d9871528814b51fb2143c138ef # v6.4.1   # o gradle-wrapper.jar é o do Gradle oficial
+
+      - name: Recusar disparo manual numa tag
+        # Uma execução sob demanda numa TAG reassinaria e tentaria republicar um release que já existe. Sob demanda só vale num branch.
+        if: github.event_name == 'workflow_dispatch' && github.ref_type == 'tag'
+        run: |
+          echo "::error::o disparo manual não vale numa tag (o release é imutável): escolha um branch, ou empurre uma tag nova"
+          exit 1
+
+      - name: Conferir que a tag está na main e que o CI dela passou
+        if: github.event_name == 'push' && github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main \
+            || { echo "::error::o commit da tag $GITHUB_REF_NAME não está na main: só se lança o que passou pela revisão"; exit 1; }
+          runs=$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100")
+          for nome in "App (tipos, testes e verificadores)" "Karaokê num Chrome de verdade" "Leitor do hinário (Rust, src-tauri)" "Conversor de partituras (Rust)"; do
+            ok=$(printf '%s' "$runs" | jq -r --arg n "$nome" '[.check_runs[] | select(.name == $n and .conclusion == "success")] | length')
+            [ "$ok" -ge 1 ] || { echo "::error::o check \"$nome\" não passou neste commit (ou ainda roda): espere o CI da main terminar e reexecute"; exit 1; }
+          done
 
       - name: Versão (a tag tem que bater com package.json, Cargo.toml e tauri.conf.json)
         id: versao
@@ -65,11 +92,8 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Rust (stable) e alvo do Android
-        run: |
-          rustup toolchain install stable --profile minimal
-          rustup default stable
-          rustup target add aarch64-linux-android
+      - name: Rust (versão fixada) e alvo do Android
+        run: rustup toolchain install   # a versão exata de rust-toolchain.toml, com o alvo do Android
 
       - name: SDK e NDK do Android
         run: |
@@ -83,6 +107,13 @@ jobs:
         run: |
           npm run check
           npm test
+      - name: Auditoria das dependências (inclui as de build) e do Cargo.lock
+        run: npm audit --audit-level=high
+      - uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2.90.8
+        with:
+          tool: cargo-audit
+      - name: cargo audit (falha em vulnerabilidade; avisos de manutenção não derrubam)
+        run: cargo audit --file src-tauri/Cargo.lock
 
       - name: Chave de assinatura
         id: chave
@@ -90,9 +121,9 @@ jobs:
         # qualquer branch, NUNCA vê a chave de envio: usa sempre uma chave descartável. As senhas não vão para o $GITHUB_ENV (todos os passos
         # seguintes as veriam): só o arquivo da chave é gravado, e as senhas entram por `env:` nos dois passos de compilação.
         env:
-          KS_B64: ${{ github.ref_type == 'tag' && secrets.ANDROID_KEYSTORE_BASE64 || '' }}
-          KS_PASS: ${{ github.ref_type == 'tag' && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
-          KS_ALIAS: ${{ github.ref_type == 'tag' && secrets.ANDROID_KEY_ALIAS || '' }}
+          KS_B64: ${{ (github.event_name == 'push' && github.ref_type == 'tag') && secrets.ANDROID_KEYSTORE_BASE64 || '' }}
+          KS_PASS: ${{ (github.event_name == 'push' && github.ref_type == 'tag') && secrets.ANDROID_KEYSTORE_PASSWORD || '' }}
+          KS_ALIAS: ${{ (github.event_name == 'push' && github.ref_type == 'tag') && secrets.ANDROID_KEY_ALIAS || '' }}
         run: |
           ks="$RUNNER_TEMP/assinatura.jks"
           if [ "${GITHUB_REF_TYPE}" = tag ]; then
@@ -117,7 +148,7 @@ jobs:
           BM_KEY_PASSWORD: ${{ steps.chave.outputs.assinado == 'sim' && (secrets.ANDROID_KEY_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD) || 'teste-descartavel' }}
         run: npm run tauri -- android build --apk --target aarch64 --ci
       - name: Compilar o AAB (arm64)
-        if: github.ref_type == 'tag'
+        if: (github.event_name == 'push' && github.ref_type == 'tag')
         env:
           BM_KEYSTORE: ${{ runner.temp }}/assinatura.jks
           BM_KEYSTORE_PASSWORD: ${{ steps.chave.outputs.assinado == 'sim' && secrets.ANDROID_KEYSTORE_PASSWORD || 'teste-descartavel' }}
@@ -128,6 +159,8 @@ jobs:
       - name: Reunir, conferir e somar (SHA-256)
         env:
           VERSAO: ${{ steps.versao.outputs.versao }}
+          ASSINADO: ${{ steps.chave.outputs.assinado }}
+          CERT_ESPERADO: ${{ vars.ANDROID_CERT_SHA256 }}
         run: |
           set -euo pipefail
           v="$VERSAO"
@@ -141,6 +174,21 @@ jobs:
           fi
           if [ -n "$aab" ]; then cp "$aab" "saida/bibliotecamusical-$v.aab"; fi
           apksigner verify --verbose --print-certs "saida/bibliotecamusical-$v.apk"
+          # Certificado fixado: a impressão digital SHA-256 do certificado de envio fica na variável do repositório ANDROID_CERT_SHA256 (Settings > Secrets and variables >
+          # Actions > Variables). O APK e o AAB assinados têm de trazer exatamente esse certificado; sem a variável, só avisa (não dá para conferir o que não foi fixado).
+          if [ "$ASSINADO" = sim ]; then
+            esperado=$(printf '%s' "$CERT_ESPERADO" | tr -d ': \n' | tr 'A-F' 'a-f')
+            if [ -z "$esperado" ]; then
+              echo "::warning::a variável ANDROID_CERT_SHA256 não está cadastrada: o certificado de assinatura não foi comparado com o esperado"
+            else
+              cert_apk=$(apksigner verify --print-certs "saida/bibliotecamusical-$v.apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1 | tr 'A-F' 'a-f')
+              [ "$cert_apk" = "$esperado" ] || { echo "::error::o certificado do APK ($cert_apk) não é o esperado ($esperado)"; exit 1; }
+              if [ -n "$aab" ]; then
+                cert_aab=$(keytool -printcert -jarfile "saida/bibliotecamusical-$v.aab" | sed -n 's/^ *SHA256: //p' | head -1 | tr -d ':' | tr 'A-F' 'a-f')
+                [ "$cert_aab" = "$esperado" ] || { echo "::error::o certificado do AAB ($cert_aab) não é o esperado ($esperado)"; exit 1; }
+              fi
+            fi
+          fi
           # Alinhamento de 16 KB das bibliotecas nativas (exigido pela Play Store em Android 15 ou mais): só avisa, não derruba o release.
           zipalign -c -P 16 4 "saida/bibliotecamusical-$v.apk" || echo "::warning::o APK não está alinhado a 16 KB (zipalign -P 16 4)"
           # Permissões: a lista permitida mora em tools/conferir-permissoes-apk.sh (o mesmo script roda nas PRs, em android-pr.yml)
@@ -156,7 +204,7 @@ jobs:
 
   publicar:
     name: GitHub Release
-    if: github.ref_type == 'tag'
+    if: (github.event_name == 'push' && github.ref_type == 'tag')
     needs: android
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -174,15 +222,19 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           pre=""; case "${GITHUB_REF_NAME}" in *-*) pre="--prerelease";; esac
-          # Idempotente: se um re-run encontrar o release já criado (o envio falhou no meio), só reenvia os arquivos.
-          gh release create "${GITHUB_REF_NAME}" saida/* --verify-tag --title "Biblioteca Musical ${GITHUB_REF_NAME#v}" --generate-notes $pre \
-            || gh release upload "${GITHUB_REF_NAME}" saida/* --clobber
+          # Release imutável: se já existe um com este nome, recusa em vez de sobrescrever os arquivos (--clobber trocaria o APK que as pessoas já baixaram).
+          # Se o envio falhou no meio, apague o release e a tag e gere de novo (docs/release-e-apk-no-github.md).
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            echo "::error::o release ${GITHUB_REF_NAME} já existe e é imutável: apague o release e a tag para refazê-lo"
+            exit 1
+          fi
+          gh release create "${GITHUB_REF_NAME}" saida/* --verify-tag --title "Biblioteca Musical ${GITHUB_REF_NAME#v}" --generate-notes $pre
 
   play:
     name: Play Store (faixa interna, rascunho)
     # Só roda em tag FINAL (a rc tem o mesmo versionCode da final e travaria o envio dela) e com a variável ENVIAR_PLAY_STORE=true;
     # o app precisa já existir no Play Console e o segredo PLAY_SERVICE_ACCOUNT_JSON tem de estar cadastrado (conferido abaixo).
-    if: github.ref_type == 'tag' && !contains(github.ref_name, '-') && vars.ENVIAR_PLAY_STORE == 'true'
+    if: (github.event_name == 'push' && github.ref_type == 'tag') && !contains(github.ref_name, '-') && vars.ENVIAR_PLAY_STORE == 'true'
     needs: android
     runs-on: ubuntu-24.04
     timeout-minutes: 15

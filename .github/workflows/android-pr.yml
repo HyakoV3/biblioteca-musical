@@ -8,6 +8,7 @@ on:
       - "src-tauri/**"
       - "package.json"
       - "package-lock.json"
+      - "rust-toolchain.toml"
       - "tools/conferir-permissoes-apk.sh"
       - ".github/workflows/android-pr.yml"
 
@@ -40,11 +41,8 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      - name: Rust (stable) e alvo do Android
-        run: |
-          rustup toolchain install stable --profile minimal
-          rustup default stable
-          rustup target add aarch64-linux-android
+      - name: Rust (versão fixada) e alvo do Android
+        run: rustup toolchain install   # a versão exata de rust-toolchain.toml, com o alvo do Android
 
       - name: SDK e NDK do Android
         run: |
