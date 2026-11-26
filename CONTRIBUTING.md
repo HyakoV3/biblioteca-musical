@@ -1,6 +1,8 @@
+**Português** · [English](CONTRIBUTING.en.md) · [Español](CONTRIBUTING.es.md)
+
 # Como contribuir
 
-Obrigado por querer ajudar. O projeto é pequeno, em português, e está em **teste fechado** com músicos (versão 0.3.0). Antes de abrir uma
+Obrigado por querer ajudar. O projeto é pequeno, em português, e está em **teste fechado** com músicos (versão 0.3.x). Antes de abrir uma
 *pull request*, leia o [`README.md`](README.md) (o que o app é) e a seção "Desenvolvimento" dele (como rodar).
 
 ## Regra de ouro: nada de hinário no Git
@@ -21,10 +23,7 @@ npm test                            # testes da lógica (Vitest)
 python3 tools/verificar-traducoes.py
 python3 tools/verificar-movimento.py
 python3 tools/contraste.py
-python3 tools/test_gerar_partituras.py
-python3 tools/test_montar_pacote.py
-# o teste do gerador de ícone usa o Pillow; num ambiente virtual (o Python do sistema recusa `pip install` direto):
-#   python3 -m venv /tmp/venv && /tmp/venv/bin/pip install pillow && /tmp/venv/bin/python tools/test_gerar_icone_do_app.py
+python3 -m pytest tools             # os testes das ferramentas em Python (o gerador de ícone usa o Pillow; use um ambiente virtual)
 npm run test:e2e                    # karaokê num Chrome de verdade (precisa de Chrome ou Chromium)
 cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test    # em tools/mscx2json
 npm run build                       # o Tauri exige a pasta build/ para compilar o src-tauri
@@ -44,7 +43,7 @@ mudança entra por PR, sem *push* direto.
 - **Testes** para a lógica nova (Vitest em `tests/`, Rust ao lado do código). Um bug corrigido ganha o teste que o pegaria.
 - **Textos da interface nos três idiomas** (português, inglês e espanhol, em `src/lib/i18n/`): o `npm run check` e o verificador de traduções
   acusam chave faltando. Ver [`docs/TRADUCOES.md`](docs/TRADUCOES.md).
-- **Acessibilidade e aparência:** alvos de toque de pelo menos 48 px, contraste conferido nos temas (inclusive Alto contraste), estado nunca só
+- **Acessibilidade e aparência:** alvos de toque de pelo menos 44 px, contraste conferido nos temas (inclusive Alto contraste), estado nunca só
   por cor e respeito a "reduzir movimento". Ver [`docs/design-tokens.md`](docs/design-tokens.md).
 - **Documentação em dia:** se a mudança altera o que o app faz, ajuste o `README.md` e a doc do assunto em `docs/`. Ideia implementada sai de
   [`docs/roadmap-ideas.md`](docs/roadmap-ideas.md) para [`docs/archive/roadmap-implementadas.md`](docs/archive/roadmap-implementadas.md), e o
@@ -64,7 +63,7 @@ código. Eles **não bloqueiam o *merge***: só as 4 verificações do CI bloque
 
 ## Commits
 
-Seguimos **Conventional Commits** a partir de 2026-11-24 (a versão continua 0.3.0): `tipo(escopo): resumo`, em português, com `feat`, `fix`, `docs`, `chore`, `ci`, `build`, `refactor`, `test` ou `perf`, e `!` depois do tipo numa mudança incompatível (ex.: `feat(sons): baixar do GitHub Release`, `ci(release): conferir permissões do APK`). O título da PR segue o mesmo formato (o merge é *squash*, então ele vira o commit). Dizer o **porquê** quando não for óbvio. Commits pequenos e coerentes valem
+Seguimos **Conventional Commits** a partir de 2026-11-24: `tipo(escopo): resumo`, em português, com `feat`, `fix`, `docs`, `chore`, `ci`, `build`, `refactor`, `test` ou `perf`, e `!` depois do tipo numa mudança incompatível (ex.: `feat(sons): baixar do GitHub Release`, `ci(release): conferir permissões do APK`). O título da PR segue o mesmo formato (o merge é *squash*, então ele vira o commit). Dizer o **porquê** quando não for óbvio. Commits pequenos e coerentes valem
 mais que um grande. Sem atribuição automática de ferramentas nos commits e nas PRs deste repositório.
 
 ## Relatar problemas

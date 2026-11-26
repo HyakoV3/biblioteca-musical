@@ -1,3 +1,5 @@
+**Português** · [English](README.en.md) · [Español](README.es.md)
+
 # Biblioteca Musical
 
 Aplicativo gratuito e de código aberto para músicos em treino: estudar hinos ouvindo cada voz (soprano, contralto,

@@ -1,3 +1,5 @@
+**Português** · [English](apk-de-teste.en.md) · [Español](apk-de-teste.es.md)
+
 # APK de teste fechado
 
 ## Para quem vai testar

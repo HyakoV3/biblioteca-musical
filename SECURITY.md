@@ -1,3 +1,5 @@
+**Português** · [English](SECURITY.en.md) · [Español](SECURITY.es.md)
+
 # Segurança
 
 ## Como relatar uma vulnerabilidade
