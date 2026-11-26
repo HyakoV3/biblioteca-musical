@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BPM_MAX, BPM_MIN, COMPASSOS, Metronomo, agendar, compassoValido, ladoDoClique, posicaoDoPendulo, limitarBpm, novoEstado, progressoNoCompasso, tempoAceso, type Clique, type EstadoAgenda } from "../src/lib/metronomo";
+import { BPM_MAX, BPM_MIN, CLIQUE_FORTE, CLIQUE_FRACO, CLIQUE_MEDIO, COMPASSOS, Metronomo, ehComposto, perfilDoClique, agendar, compassoValido, ladoDoClique, posicaoDoPendulo, limitarBpm, novoEstado, progressoNoCompasso, tempoAceso, type Clique, type EstadoAgenda } from "../src/lib/metronomo";
 
 /** Roda o agendador como o temporizador de 25 ms faria, até `fim` (s), e devolve todos os cliques. */
 function simular(p: { bpm: number | ((t: number) => number); compasso: number | ((t: number) => number); fim: number; passo?: number; janela?: number }) {
@@ -370,5 +370,33 @@ describe("Metronomo (casca)", () => {
     expect(m.bpm).toBe(240);
     m.definirBpm(5);
     expect(m.bpm).toBe(30);
+  });
+});
+
+describe("timbre do clique nos compassos compostos (MET-001)", () => {
+  it("só 6, 9 e 12 são compostos", () => {
+    expect(COMPASSOS.filter(ehComposto)).toEqual([6, 9, 12]);
+  });
+
+  it("6/8: forte no 1º, médio no 4º (início do 2º grupo) e fracos nos demais", () => {
+    const perfis = Array.from({ length: 6 }, (_, i) => perfilDoClique(i, 6));
+    expect(perfis).toEqual([CLIQUE_FORTE, CLIQUE_FRACO, CLIQUE_FRACO, CLIQUE_MEDIO, CLIQUE_FRACO, CLIQUE_FRACO]);
+  });
+
+  it("12/8: um médio no início de cada grupo de 3 (índices 3, 6 e 9)", () => {
+    const medios = Array.from({ length: 12 }, (_, i) => i).filter((i) => perfilDoClique(i, 12) === CLIQUE_MEDIO);
+    expect(medios).toEqual([3, 6, 9]);
+  });
+
+  it("nos simples não há médio: 4/4 é um forte e três fracos", () => {
+    const perfis = Array.from({ length: 4 }, (_, i) => perfilDoClique(i, 4));
+    expect(perfis).toEqual([CLIQUE_FORTE, CLIQUE_FRACO, CLIQUE_FRACO, CLIQUE_FRACO]);
+  });
+
+  it("o médio fica entre o forte e o fraco em altura e em volume", () => {
+    expect(CLIQUE_MEDIO.hz).toBeGreaterThan(CLIQUE_FRACO.hz);
+    expect(CLIQUE_MEDIO.hz).toBeLessThan(CLIQUE_FORTE.hz);
+    expect(CLIQUE_MEDIO.ganho).toBeGreaterThan(CLIQUE_FRACO.ganho);
+    expect(CLIQUE_MEDIO.ganho).toBeLessThan(CLIQUE_FORTE.ganho);
   });
 });

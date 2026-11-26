@@ -648,6 +648,7 @@
       }}
     />
     <p class="meta ruido-tecnico" id="ruido-tecnico">{t(`gravador.ruido_tec_${filtro}`)}</p>
+    {#if filtro === "rnnoise" || filtro === "gtcrn"}<p class="meta" id="ruido-aviso">{t("gravador.ruido_aviso")}</p>{/if}
   </fieldset>
   {#if filtroFalhou}<Aviso tipo="info">{t("gravador.erro_filtro", { filtro: t(`gravador.ruido_tec_${filtroFalhou}`) })}</Aviso>{/if}
 

@@ -41,7 +41,7 @@ O código foi escrito do zero: nenhum código ou arquivo de outros aplicativos f
 - **Aparência:** modo automático, claro ou escuro, combinado com três estilos de cor (Normal, Pergaminho e Marinho e
   ouro), com contraste conferido ([`docs/design-tokens.md`](docs/design-tokens.md)).
 - Interface em português, espanhol e inglês, pronta para novos idiomas ([`docs/TRADUCOES.md`](docs/TRADUCOES.md)).
-- Acessibilidade: alvos de toque de 48 px, contraste conferido, respeito a "reduzir movimento".
+- Acessibilidade: alvos de toque de pelo menos 44 px, contraste conferido, respeito a "reduzir movimento".
 
 ## Conversor de partituras
 

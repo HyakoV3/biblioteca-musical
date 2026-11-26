@@ -5,7 +5,7 @@
   import Icone from "./Icone.svelte";
   import ListaRecentes from "./ListaRecentes.svelte";
   import QualNota from "./QualNota.svelte";
-  import { LA_PADRAO, OITAVA_MAX, OITAVA_MIN, OITAVA_PADRAO, frequenciaDe, limitarOitava, midiDe } from "./afinador";
+  import { LA_PADRAO, OITAVA_MAX, OITAVA_MIN, OITAVA_PADRAO, frequenciaDe, limitarOitava, midiDe, type Transposicao } from "./afinador";
   import { nomeDaNota, nomeDaNotaPorExtenso } from "./notacao";
   import { notacao } from "./notacao.svelte";
   import { adicionarNota, lerAfinador, salvarAfinador, type NotaRecente } from "./afinadorPrefs";
@@ -30,6 +30,9 @@
   let oitava = $state(OITAVA_PADRAO);
   /** O cartão "Outra nota" começa fechado e não é lembrado. */
   let outraAberta = $state(false);
+  /** O tom do instrumento escolhido em "Qual nota é essa?" (ligado ao cartão dele). Se transpõe (Si♭, Mi♭ ou Fá), o tom de "Outra nota" é o som real (concerto), e não a nota escrita no instrumento. */
+  let instrumento = $state<Transposicao>("concerto");
+  const instrumentoTranspoe = $derived(instrumento !== "concerto");
   /** O cartão "Temporizador" começa fechado e não é lembrado; o TEMPO escolhido (até parar, 10, 20 ou 30 s) é lembrado neste aparelho. */
   let temporizadorAberto = $state(false);
   let limite = $state<Limite>(0);
@@ -185,6 +188,7 @@
        cartão aberto ou fechado: quem usa muito uma nota que não é o Lá a deixa marcada aqui e toca com um toque. -->
   <div class="pilula">
   <Cartao titulo={t("afinador.outra_nota")} resumo={`${nomeNota} · ${hz(freqNota)} Hz`} bind:aberto={outraAberta} grade>
+    {#if instrumentoTranspoe}<p class="meta som-real" id="som-real">{t("afinador.som_real")}</p>{/if}
     <fieldset class="opcoes" aria-label={t("afinador.outra_nota")}>
       {#each Array.from({ length: 12 }, (_, n) => n) as n (n)}
         <label class:ativo={classe === n}>
@@ -245,7 +249,7 @@
     <p class="meta">{t("afinador.temporizador_vale")}</p>
   </Cartao>
 
-  <QualNota {ativa} bind:ouvindo aoComecar={parar} />
+  <QualNota {ativa} bind:ouvindo bind:instrumento aoComecar={parar} />
 
   <ListaRecentes
     titulo={t("afinador.recentes")}

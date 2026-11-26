@@ -61,7 +61,7 @@ mesmo conjunto de fluxos que o responsável já usa em outros projetos.
       resolver conversas só roda em PR do próprio repositório. Ativar também "exigir aprovação para primeiros
       colaboradores" nas configurações de Actions.
 - [ ] Pontos que a revisão deve cobrir neste projeto: segurança (rede só para o servidor de sons, conferência de
-      SHA-256), acessibilidade (alvos de 48 px, contraste, movimento reduzido) e dados de terceiros fora do Git.
+      SHA-256), acessibilidade (alvos de pelo menos 44 px, contraste, movimento reduzido) e dados de terceiros fora do Git.
       O pedido padrão do fluxo é genérico; dá para acrescentar esses pontos ao texto dele.
 
 ## 4. Testes automatizados
