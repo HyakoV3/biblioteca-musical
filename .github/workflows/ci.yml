@@ -23,6 +23,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+      - uses: gradle/actions/wrapper-validation@7296c772c13d12d9871528814b51fb2143c138ef # v6.4.1   # o gradle-wrapper.jar é o do Gradle oficial
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -50,6 +51,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+      - run: rustup toolchain install   # a versão exata de rust-toolchain.toml
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: tools/mscx2json
@@ -84,13 +86,14 @@ jobs:
       # o Tauri confere se a pasta do front-end existe ao compilar
       - run: npm ci
       - run: npm run build
+      - run: rustup toolchain install   # a versão exata de rust-toolchain.toml
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
       # binário pronto (compilar o cargo-audit do zero passa de 30 minutos)
       - uses: taiki-e/install-action@fe3acb53a98b62c772db35de75ce0e4595e7ca8c # v2.90.8
         with:
-          tool: cargo-audit
+          tool: cargo-audit@0.23.0
       - name: cargo audit (falha em vulnerabilidade; avisos de manutenção não derrubam)
         run: cargo audit --file src-tauri/Cargo.lock
       - run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
