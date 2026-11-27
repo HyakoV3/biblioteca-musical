@@ -47,13 +47,9 @@
     "severity": "FAIL",
     "value": 13
   },
-  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::Clean/Método::montarNotificacao": {
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::Clean/Método::entrarEmPrimeiroPlano": {
     "severity": "WARN",
-    "value": 26
-  },
-  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::Clean/Método::onStartCommand": {
-    "severity": "FAIL",
-    "value": 51
+    "value": 24
   },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::Clean/Params::onStartCommand": {
     "severity": "WARN",
@@ -61,15 +57,7 @@
   },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 221
-  },
-  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::OCP::onStartCommand": {
-    "severity": "FAIL",
-    "value": 9
-  },
-  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::SRP::": {
-    "severity": "WARN",
-    "value": 8
+    "value": 169
   },
   "src-tauri/gen/android/buildSrc/src/main/java/br/pro/bibliotecamusical/kotlin/BuildTask.kt::BuildTask::Clean/Método::assemble": {
     "severity": "WARN",
