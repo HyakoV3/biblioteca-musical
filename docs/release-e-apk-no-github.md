@@ -62,7 +62,7 @@ O que o `release.yml` passou a exigir, e o que **só o responsável** liga no Gi
 | Auditoria no release | `npm audit --audit-level=high` (com as dependências de build) e `cargo audit` no `src-tauri/Cargo.lock` antes de compilar | — |
 | Rust fixo | `rust-toolchain.toml` com a versão exata (hoje 1.99.1), usado no CI, nas PRs do Android e no release. Subir a versão é um commit | — |
 | Gradle fixo | `distributionSha256Sum` no `gradle-wrapper.properties` e validação do `gradle-wrapper.jar` no CI. Ao subir o Gradle, atualize a soma (a oficial está em `services.gradle.org/distributions/gradle-X-bin.zip.sha256`) | — |
-| Proteção de tags | Regra do repositório (Settings → Rules → Rulesets) que só deixa criar tags `v*` a quem tem permissão e proíbe apagá-las e movê-las | **Criar a regra** |
+| Proteção de tags | Regra do repositório (Settings → Rules → Rulesets) que só deixa criar tags `v*` a quem tem permissão e proíbe apagá-las e movê-las | **Feito em 2026-11-27**: ruleset "Proteger tags de versão" em `refs/tags/v*` (sem apagar, atualizar nem mover). A criação segue liberada a quem tem escrita |
 
 Fica para depois: fixar por SHA as actions dos workflows do Claude e dar o escopo de PR ao token da revisão (CICD-009), que depende da ação A-03 do responsável.
 
