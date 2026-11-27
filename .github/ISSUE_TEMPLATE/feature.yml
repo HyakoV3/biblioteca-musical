@@ -1,0 +1,30 @@
+name: Sugerir uma melhoria
+description: Uma ideia para o app.
+title: "feat: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Que problema isso resolve
+      description: Conte a situação de uso (por exemplo, "no ensaio eu preciso...").
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Como você imagina
+      description: Se tiver um desenho ou uma referência, descreva.
+    validations:
+      required: true
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Alternativas que você considerou
+  - type: checkboxes
+    id: ajuda
+    attributes:
+      label: Participação
+      options:
+        - label: Posso ajudar a testar no aparelho
+        - label: Posso ajudar a implementar

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Falha de segurança
+    url: https://github.com/HyakoV3/biblioteca-musical/security/advisories/new
+    about: Não abra uma issue pública. Relate em particular (veja o SECURITY.md).
+  - name: Dúvida ou conversa
+    url: https://github.com/HyakoV3/biblioteca-musical/issues/new?template=duvida.yml
+    about: Perguntas de uso e ideias soltas.
