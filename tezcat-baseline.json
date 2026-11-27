@@ -1419,6 +1419,10 @@
     "severity": "WARN",
     "value": 4
   },
+  "tests/apoio-gravacoes.ts::apoio-gravacoes::Clean/Nesting::fabricaMuda": {
+    "severity": "WARN",
+    "value": 2
+  },
   "tests/busca-hinos.test.ts::busca-hinos.test::Clean/Tamanho::": {
     "severity": "WARN",
     "value": 369
@@ -1434,14 +1438,6 @@
   "tests/gravacaoEmCurso.test.ts::gravacaoEmCurso.test::Clean/Tamanho::": {
     "severity": "WARN",
     "value": 308
-  },
-  "tests/gravacoes.test.ts::gravacoes.test::Clean/Nesting::fabricaMuda": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "tests/gravacoes.test.ts::gravacoes.test::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 522
   },
   "tests/gravador.test.ts::gravador.test::Clean/Nesting::preparar": {
     "severity": "WARN",
