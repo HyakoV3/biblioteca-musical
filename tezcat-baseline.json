@@ -11,6 +11,14 @@
     "severity": "WARN",
     "value": 23
   },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Params::abrirFolha": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Params::montarFolha": {
+    "severity": "FAIL",
+    "value": 5
+  },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Tamanho::": {
     "severity": "WARN",
     "value": 192
