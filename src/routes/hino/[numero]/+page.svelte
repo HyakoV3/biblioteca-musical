@@ -399,6 +399,6 @@
   .alinha-centro { text-align: center; }
 
   /* Barra de tamanho e alinhamento da letra (os botões são o `.botao-barra` global). */
-  .barra-letra { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem 1rem; margin: 0 0 1.2rem; }
-  .barra-letra .grupo { display: flex; gap: 0.4rem; }
+  .barra-letra { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; margin: 0 0 1.2rem; }
+  .barra-letra .grupo { display: flex; gap: 0.2rem; }
 </style>

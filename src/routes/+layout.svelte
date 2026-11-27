@@ -107,10 +107,10 @@
   :global(.botao:disabled) { opacity: 0.5; cursor: not-allowed; }
   /* Cartão: a moldura dos cartões do player e de Ajustes (Cartao.svelte e o cartão fixo "Tocar"). */
   :global(.cartao) { border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
-  /* Botão quadrado das barras de controle (tamanho e alinhamento da letra, tamanho da partitura): 3 rem, só ícone; o que está
-     ligado (aria-pressed) leva borda dourada. */
+  /* Botão quadrado das barras de controle (tamanho e alinhamento da letra, tamanho da partitura): 2,75 rem (o mínimo de toque), só ícone;
+     o que está ligado (aria-pressed) leva borda dourada. Com 2,75 rem os dois grupos de 3 cabem lado a lado na largura de 20 rem (18 rem úteis). */
   :global(.botao-barra) {
-    display: inline-flex; align-items: center; justify-content: center; padding: 0; min-width: 3rem; height: 3rem;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0; min-width: 2.75rem; height: 2.75rem;
     border-radius: 0.75rem; line-height: 1; cursor: pointer;
     border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
   }
