@@ -20,98 +20,20 @@
 //!  - o `<svg>` raiz, que é o que o layout da página enxerga, não pode ter `class` (puxaria uma regra do app, por exemplo
 //!    `position:fixed`) nem `transform`, e sai sempre com `overflow="hidden"` (o desenho não passa por cima da interface).
 
+mod listas;
+mod valores;
+
 use crate::hinario::erro;
-use roxmltree::{Document, Node, NodeType, ParsingOptions};
+use listas::{ATRIBUTOS, COM_TEXTO, ELEMENTOS};
+use roxmltree::{Attribute, Document, Node, NodeType, ParsingOptions};
 use std::collections::HashMap;
+use valores::{escapar, valor_final};
 
 /// Nós (elementos, textos...) que um SVG pode ter. Um hino grande do Verovio tem cerca de 20 mil.
 pub const LIMITE_NOS: u32 = 300_000;
 const LIMITE_PROFUNDIDADE: usize = 40;
 const NS_SVG: &str = "http://www.w3.org/2000/svg";
 const NS_XML: &str = "http://www.w3.org/XML/1998/namespace";
-
-const ELEMENTOS: &[&str] = &[
-    "svg", "g", "path", "use", "text", "tspan", "rect", "ellipse", "circle", "line", "polyline",
-    "polygon", "defs", "desc", "title", "symbol",
-];
-
-/// Elementos cujo conteúdo de texto vale. Nos demais, só pode haver espaço entre os filhos.
-const COM_TEXTO: &[&str] = &["text", "tspan", "desc", "title"];
-
-/// Atributos permitidos (de geometria e de apresentação). `id` e `href` (só `#id`) têm regras próprias em `valor_final`. Sem
-/// `style` (nenhum CSS do pacote entra), sem `xmlns` (o app escreve o seu) e sem nada que comece com `on`.
-const ATRIBUTOS: &[&str] = &[
-    "id",
-    "class",
-    "transform",
-    "version",
-    "viewBox",
-    "preserveAspectRatio",
-    "overflow",
-    "x",
-    "y",
-    "dx",
-    "dy",
-    "width",
-    "height",
-    "cx",
-    "cy",
-    "r",
-    "rx",
-    "ry",
-    "x1",
-    "y1",
-    "x2",
-    "y2",
-    "d",
-    "points",
-    "href",
-    "color",
-    "fill",
-    "fill-opacity",
-    "fill-rule",
-    "stroke",
-    "stroke-width",
-    "stroke-linecap",
-    "stroke-linejoin",
-    "stroke-dasharray",
-    "stroke-dashoffset",
-    "stroke-opacity",
-    "stroke-miterlimit",
-    "opacity",
-    "visibility",
-    "display",
-    "font-family",
-    "font-size",
-    "font-style",
-    "font-weight",
-    "font-variant",
-    "text-anchor",
-    "text-decoration",
-    "dominant-baseline",
-    "letter-spacing",
-    "word-spacing",
-    "xml:lang",
-    "xml:space",
-    // I-26: o instante em que a nota (ou pausa) soa dentro do compasso, em batidas. Só números (ver `tempo_valido`).
-    "data-t",
-    "data-f",
-];
-
-/// Pedaços que não podem aparecer em nenhum valor (em minúsculas, já com as entidades XML resolvidas). A barra
-/// invertida barra os escapes de CSS (`\75rl(`), que escondem um `url(`.
-const PROIBIDOS_NO_VALOR: &[&str] = &[
-    "url(",
-    "javascript:",
-    "data:",
-    "expression",
-    "@import",
-    "\\",
-    "<",
-];
-
-/// Prefixo dos `id` (e dos `href="#..."`) do SVG, para não colidirem com os da página.
-const PREFIXO_ID: &str = "bm-p-";
 
 /// Confere o SVG e devolve a versão reescrita, ou o motivo de recusar. O motivo é um erro codificado (`["svg_elemento", "script"]`, ver
 /// `hinario::erro`): a interface o traduz no idioma da pessoa, e o detalhe (o nome do elemento ou do atributo) segue como argumento.
@@ -127,13 +49,7 @@ fn limpar_com(texto: &str, limite_nos: u32) -> Result<String, String> {
     };
     let doc = Document::parse_with_options(texto, opcoes)
         .map_err(|e| erro("svg_xml", &[e.to_string()]))?;
-    for no in doc.root().children() {
-        match no.node_type() {
-            NodeType::Comment => return Err(erro("svg_comentario", &[])),
-            NodeType::PI => return Err(erro("svg_instrucao", &[])),
-            _ => {}
-        }
-    }
+    sem_comentario_na_raiz(&doc)?;
     let raiz = doc.root_element();
     if raiz.tag_name().name() != "svg" {
         return Err(erro("svg_raiz", &[raiz.tag_name().name().to_string()]));
@@ -144,17 +60,38 @@ fn limpar_com(texto: &str, limite_nos: u32) -> Result<String, String> {
     Ok(saida)
 }
 
-/// Recusa o `<use>` cujo alvo é, ou contém, outro `<use>`. O navegador resolve cada `<use>` copiando o alvo; um alvo que também usa
-/// outros alvos faz o desenho crescer em cadeia (a conta explode com poucos nós) e trava a página. Os SVGs do Verovio só apontam
-/// para `<symbol>` ou `<g>` sem `<use>` dentro.
-fn sem_use_encadeado(doc: &Document) -> Result<(), String> {
-    let e_use = |n: &Node| n.is_element() && n.tag_name().name() == "use";
-    let mut por_id: HashMap<&str, Node> = HashMap::new();
+fn e_use(no: &Node) -> bool {
+    no.is_element() && no.tag_name().name() == "use"
+}
+
+/// O primeiro elemento de cada `id` do documento.
+fn elementos_por_id<'a, 'i>(doc: &'a Document<'i>) -> HashMap<&'a str, Node<'a, 'i>> {
+    let mut por_id = HashMap::new();
     for n in doc.descendants().filter(|n| n.is_element()) {
         if let Some(id) = n.attribute("id") {
             por_id.entry(id).or_insert(n);
         }
     }
+    por_id
+}
+
+/// Comentário e instrução de processamento fora do elemento raiz: recusados.
+fn sem_comentario_na_raiz(doc: &Document) -> Result<(), String> {
+    for no in doc.root().children() {
+        match no.node_type() {
+            NodeType::Comment => return Err(erro("svg_comentario", &[])),
+            NodeType::PI => return Err(erro("svg_instrucao", &[])),
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+/// Recusa o `<use>` cujo alvo é, ou contém, outro `<use>`. O navegador resolve cada `<use>` copiando o alvo; um alvo que também usa
+/// outros alvos faz o desenho crescer em cadeia (a conta explode com poucos nós) e trava a página. Os SVGs do Verovio só apontam
+/// para `<symbol>` ou `<g>` sem `<use>` dentro.
+fn sem_use_encadeado(doc: &Document) -> Result<(), String> {
+    let por_id = elementos_por_id(doc);
     for uso in doc.descendants().filter(e_use) {
         let Some(id) = uso.attribute("href").and_then(|h| h.strip_prefix('#')) else {
             continue;
@@ -169,6 +106,26 @@ fn sem_use_encadeado(doc: &Document) -> Result<(), String> {
 }
 
 fn escrever(no: Node, nivel: usize, saida: &mut String) -> Result<(), String> {
+    let nome = conferir_elemento(no, nivel)?;
+    saida.push('<');
+    saida.push_str(nome);
+    if nivel == 0 {
+        saida.push_str(&format!(" xmlns=\"{NS_SVG}\""));
+    }
+    escrever_atributos(no, nome, nivel, saida)?;
+    if nivel == 0 {
+        saida.push_str(" overflow=\"hidden\"");
+    }
+    saida.push('>');
+    escrever_filhos(no, nome, nivel, saida)?;
+    saida.push_str("</");
+    saida.push_str(nome);
+    saida.push('>');
+    Ok(())
+}
+
+/// Profundidade, espaço de nomes e lista de elementos permitidos. Devolve o nome do elemento.
+fn conferir_elemento<'a>(no: Node<'a, '_>, nivel: usize) -> Result<&'a str, String> {
     if nivel > LIMITE_PROFUNDIDADE {
         return Err(erro("svg_fundo", &[]));
     }
@@ -179,34 +136,22 @@ fn escrever(no: Node, nivel: usize, saida: &mut String) -> Result<(), String> {
     if !ELEMENTOS.contains(&nome) {
         return Err(erro("svg_elemento", &[nome.to_string()]));
     }
-    saida.push('<');
-    saida.push_str(nome);
-    if nivel == 0 {
-        saida.push_str(&format!(" xmlns=\"{NS_SVG}\""));
-    }
+    Ok(nome)
+}
+
+fn escrever_atributos(
+    no: Node,
+    nome: &str,
+    nivel: usize,
+    saida: &mut String,
+) -> Result<(), String> {
     for a in no.attributes() {
-        let completo = match a.namespace() {
-            None => a.name().to_string(),
-            Some(NS_XML) => format!("xml:{}", a.name()),
-            Some(_) => {
-                return Err(erro(
-                    "svg_atributo_espaco",
-                    &[a.name().to_string(), nome.to_string()],
-                ));
-            }
-        };
+        let completo = nome_do_atributo(&a, nome)?;
         if !ATRIBUTOS.contains(&completo.as_str()) {
             return Err(erro("svg_atributo", &[completo, nome.to_string()]));
         }
-        if nivel == 0 {
-            match completo.as_str() {
-                // O overflow do raiz é decidido abaixo, e não pelo pacote.
-                "overflow" => continue,
-                "class" | "transform" => {
-                    return Err(erro("svg_atributo_raiz", &[completo]));
-                }
-                _ => {}
-            }
+        if nivel == 0 && !atributo_do_raiz(&completo)? {
+            continue;
         }
         let valor = valor_final(&completo, a.value())
             .map_err(|m| erro("svg_valor", &[completo.clone(), nome.to_string(), m]))?;
@@ -216,103 +161,58 @@ fn escrever(no: Node, nivel: usize, saida: &mut String) -> Result<(), String> {
         escapar(&valor, true, saida);
         saida.push('"');
     }
-    if nivel == 0 {
-        saida.push_str(" overflow=\"hidden\"");
+    Ok(())
+}
+
+/// O nome do atributo como sai na página: sem espaço de nomes, ou `xml:...`. Outro espaço de nomes é recusado.
+fn nome_do_atributo(a: &Attribute, elemento: &str) -> Result<String, String> {
+    match a.namespace() {
+        None => Ok(a.name().to_string()),
+        Some(NS_XML) => Ok(format!("xml:{}", a.name())),
+        Some(_) => Err(erro(
+            "svg_atributo_espaco",
+            &[a.name().to_string(), elemento.to_string()],
+        )),
     }
-    saida.push('>');
-    let com_texto = COM_TEXTO.contains(&nome);
+}
+
+/// Regras do `<svg>` raiz: `overflow` é decidido pelo app (falso: pula o atributo), `class` e `transform` são recusados.
+fn atributo_do_raiz(completo: &str) -> Result<bool, String> {
+    match completo {
+        "overflow" => Ok(false),
+        "class" | "transform" => Err(erro("svg_atributo_raiz", &[completo.to_string()])),
+        _ => Ok(true),
+    }
+}
+
+fn escrever_filhos(no: Node, nome: &str, nivel: usize, saida: &mut String) -> Result<(), String> {
     for filho in no.children() {
         match filho.node_type() {
             // O CSS do pacote é descartado (ver o cabeçalho): quem o escreveu não decide nada na página.
             NodeType::Element if is_style(filho) => {}
             NodeType::Element => escrever(filho, nivel + 1, saida)?,
-            NodeType::Text => {
-                let t = filho.text().unwrap_or("");
-                if com_texto {
-                    // Em <text> e <tspan> o espaço entre os filhos é mantido: faz parte de como o texto é desenhado.
-                    escapar(t, false, saida);
-                } else if !t.trim().is_empty() {
-                    return Err(erro("svg_texto", &[nome.to_string()]));
-                }
-            }
+            NodeType::Text => escrever_texto(filho.text().unwrap_or(""), nome, saida)?,
             NodeType::Comment => return Err(erro("svg_comentario", &[])),
             NodeType::PI => return Err(erro("svg_instrucao", &[])),
             NodeType::Root => {}
         }
     }
-    saida.push_str("</");
-    saida.push_str(nome);
-    saida.push('>');
+    Ok(())
+}
+
+/// Em `<text>` e `<tspan>` o espaço entre os filhos é mantido (faz parte de como o texto é desenhado); nos demais, só pode haver espaço.
+fn escrever_texto(texto: &str, nome: &str, saida: &mut String) -> Result<(), String> {
+    if COM_TEXTO.contains(&nome) {
+        escapar(texto, false, saida);
+    } else if !texto.trim().is_empty() {
+        return Err(erro("svg_texto", &[nome.to_string()]));
+    }
     Ok(())
 }
 
 /// `<style>` do espaço de nomes do SVG (um `<style>` de outro espaço de nomes não é descartado: é recusado em `escrever`).
 fn is_style(no: Node) -> bool {
     no.tag_name().name() == "style" && no.tag_name().namespace() == Some(NS_SVG)
-}
-
-/// Um tempo em batidas como o gerador escreve: dígitos com no máximo um ponto decimal no meio, até 12 caracteres (`0`, `1.5`, `12.3333`).
-/// Sem sinal, sem expoente, sem espaço: o app lê o valor com `parseFloat`, e nada mais que número passa.
-fn tempo_valido(valor: &str) -> bool {
-    let partes: Vec<&str> = valor.split('.').collect();
-    valor.len() <= 12
-        && partes.len() <= 2
-        && partes
-            .iter()
-            .all(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()))
-}
-
-fn id_simples(id: &str) -> bool {
-    !id.is_empty()
-        && id
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || "_-.:".contains(c))
-}
-
-/// O `id` com o prefixo do app. Idempotente: limpar de novo um SVG já limpo não prefixa outra vez.
-fn com_prefixo(id: &str) -> String {
-    if id.starts_with(PREFIXO_ID) {
-        id.to_string()
-    } else {
-        format!("{PREFIXO_ID}{id}")
-    }
-}
-
-/// Confere o valor de um atributo e devolve o que vai para a saída (`id` e `href` ganham o prefixo).
-fn valor_final(atributo: &str, valor: &str) -> Result<String, String> {
-    match atributo {
-        "id" if id_simples(valor) => Ok(com_prefixo(valor)),
-        "id" => Err(erro("svg_valor_id", &[])),
-        "data-t" | "data-f" if tempo_valido(valor) => Ok(valor.to_string()),
-        "data-t" | "data-f" => Err(erro("svg_valor_tempo", &[])),
-        "href" => {
-            let id = valor.strip_prefix('#').unwrap_or("");
-            if id_simples(id) {
-                Ok(format!("#{}", com_prefixo(id)))
-            } else {
-                Err(erro("svg_valor_href", &[]))
-            }
-        }
-        _ => {
-            let baixo = valor.to_ascii_lowercase();
-            match PROIBIDOS_NO_VALOR.iter().find(|p| baixo.contains(**p)) {
-                Some(p) => Err(erro("svg_valor_proibido", &[p.to_string()])),
-                None => Ok(valor.to_string()),
-            }
-        }
-    }
-}
-
-fn escapar(texto: &str, atributo: bool, saida: &mut String) {
-    for c in texto.chars() {
-        match c {
-            '&' => saida.push_str("&amp;"),
-            '<' => saida.push_str("&lt;"),
-            '>' => saida.push_str("&gt;"),
-            '"' if atributo => saida.push_str("&quot;"),
-            _ => saida.push(c),
-        }
-    }
 }
 
 #[cfg(test)]
