@@ -8,8 +8,10 @@
 // Funções puras e sem Web Audio: servem ao sintetizador do app e às prévias geradas offline.
 import medidas from "./timbres.json";
 import { INSTRUMENTOS, type Perfil, type SinteticoId } from "./instrumentos";
+import { eficazRelativo, interpolar, mediana, misturar, type Ancora } from "./timbres-espectro";
 
-type Ancora = { midi: number; h: number[]; ataque: number; fc_inicio: number | null; abertura: number | null };
+export { eficazRelativo };
+
 type Medida = { faixa: [number, number]; ancoras: Ancora[] };
 const MEDIDAS = medidas.instrumentos as unknown as Record<string, Medida>;
 
@@ -44,15 +46,6 @@ const ATAQUE_MAX = 0.08;
 const COM_ABERTURA = new Set<string>(["trompete", "trombone", "tuba", "trompa"]);
 /** Acima disto o "começo escuro" medido já é o espectro inteiro: não há abertura a imitar. */
 const CORTE_MAXIMO = 20;
-/** Abaixo da amplitude relativa 0,003 (-50 dB) o harmônico não se ouve: não entra na tabela. */
-const PISO = 0.003;
-
-function mediana(v: number[]): number {
-  const o = [...v].sort((a, b) => a - b);
-  const m = o.length >> 1;
-  return o.length % 2 ? o[m] : (o[m - 1] + o[m]) / 2;
-}
-
 /**
  * Tabela de harmônicos (índice 0 ignorado, como em `Perfil`) da nota `midi` (altura que SOA, já transposta): interpola as
  * duas âncoras vizinhas. Fora da faixa medida vale a âncora da ponta, porque lá as amostras só foram deslocadas e o
@@ -60,49 +53,10 @@ function mediana(v: number[]): number {
  */
 export function harmonicosEm(id: SinteticoId, midi: number): number[] {
   const mistura = MISTURAS[id];
-  if (mistura) {
-    const partes = mistura.map(([c, peso]) => ({ h: harmonicosEm(c, midi), peso }));
-    const n = Math.max(...partes.map((p) => p.h.length));
-    const h = [0];
-    for (let k = 1; k < n; k++) h.push(partes.reduce((s, p) => s + p.peso * (p.h[k] ?? 0), 0));
-    while (h.length > 2 && h[h.length - 1] < PISO) h.pop();
-    return h;
-  }
+  if (mistura) return misturar(mistura.map(([c, peso]) => ({ h: harmonicosEm(c, midi), peso })));
   const m = MEDIDAS[id];
   if (!m) return INSTRUMENTOS[id].harmonicos;
-  const a = m.ancoras;
-  let i = a.findIndex((x) => x.midi >= midi);
-  let t: number;
-  if (i < 0) {
-    i = a.length - 1;
-    t = 0;
-  } else if (i === 0) {
-    t = 0;
-  } else {
-    t = (midi - a[i - 1].midi) / (a[i].midi - a[i - 1].midi);
-    i -= 1;
-  }
-  const lo = a[i].h;
-  const hi = a[Math.min(i + 1, a.length - 1)].h;
-  const n = Math.max(lo.length, hi.length);
-  const h = [0];
-  for (let k = 0; k < n; k++) h.push((lo[k] ?? 0) * (1 - t) + (hi[k] ?? 0) * t);
-  while (h.length > 2 && h[h.length - 1] < PISO) h.pop();
-  return h;
-}
-
-/** Quanto da onda (já normalizada para pico 1, como o Web Audio faz) é volume eficaz: serve para igualar o volume entre tabelas. */
-export function eficazRelativo(harmonicos: number[]): number {
-  const N = 512; // pontos por período: dá para até 255 harmônicos
-  let soma = 0;
-  let pico = 0;
-  for (let n = 0; n < N; n++) {
-    let x = 0;
-    for (let k = 1; k < harmonicos.length && k < N / 2; k++) x += harmonicos[k] * Math.sin((2 * Math.PI * k * n) / N);
-    soma += x * x;
-    pico = Math.max(pico, Math.abs(x));
-  }
-  return pico > 0 ? Math.sqrt(soma / N) / pico : 0;
+  return interpolar(m.ancoras, midi);
 }
 
 const cache = new Map<string, PerfilDaNota>();
