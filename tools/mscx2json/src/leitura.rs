@@ -1,13 +1,10 @@
 //! A leitura das pautas de um `.mscx`, uma depois da outra: o que elas acumulam (vozes, letra, estrutura, avisos).
 
-use crate::coro::{separar_o_final, separar_sem_plano};
-use crate::correcoes::{self, Correcao};
-use crate::estrutura::{Estrutura, Plano, plano_passadas, registrar_marcas, selecionar};
+use crate::correcoes::Correcao;
+use crate::estrutura::{Estrutura, Plano, plano_passadas};
 use crate::modelo::{Marca, Voz};
-use crate::montagem::montar_letra;
 use crate::partes::NomeDaPauta;
 use crate::percurso::{Acorde, Estado, Silaba, percorrer};
-use crate::vozes::dividir_em_vozes;
 use crate::xml::{fracao, numero};
 use roxmltree::Node;
 use std::collections::{BTreeMap, HashMap};
@@ -157,7 +154,7 @@ impl<'a> Leitura<'a> {
             // A estrutura de repetição é lida só da primeira pauta (as outras repetem as mesmas marcas).
             if idx_pauta == 0 {
                 self.estrutura.inicios.push(pauta.inicio);
-                registrar_marcas(&mut self.estrutura, compasso, ci);
+                self.estrutura.registrar_marcas(compasso, ci);
             }
             let tamanho = pauta.tamanho_do_compasso(compasso);
             for fonte in fontes_do_compasso(compasso) {
@@ -193,87 +190,6 @@ impl<'a> Leitura<'a> {
         percorrer(no, &mut t, &mut est)?;
         self.andamento = est.andamento;
         Ok(())
-    }
-
-    /// A letra sai da primeira pauta que tem sílabas: corrigida pelo arquivo de correções e com o final (ou o coro) separado.
-    fn montar_a_letra(&mut self, mut silabas: Vec<Silaba>, respiracoes: Vec<f64>) {
-        if !self.letra.is_empty() || silabas.is_empty() {
-            return;
-        }
-        self.correcoes_tentadas = true;
-        self.avisos.extend(correcoes::aplicar(
-            &mut silabas,
-            self.numero_hino,
-            self.ajustes,
-        ));
-        // Guarda a letra já corrigida, antes de separar o final: se o final for descartado, a letra é refeita sem o plano.
-        self.letra_base = Some((silabas.clone(), respiracoes.clone()));
-        self.separar_final_ou_coro(&mut silabas);
-        (self.letra, self.marcas) = montar_letra(silabas, respiracoes);
-    }
-
-    fn separar_final_ou_coro(&mut self, silabas: &mut [Silaba]) {
-        let segunda_casa = self
-            .plano
-            .as_ref()
-            .and_then(|p| p.final_.last())
-            .map(|&(a2, _)| a2);
-        let Some(a2) = segunda_casa else {
-            separar_sem_plano(silabas, &mut self.avisos);
-            return;
-        };
-        let no_final = separar_o_final(silabas, self.estrutura.inicios[a2]);
-        if no_final > 0 {
-            self.avisos.push(format!(
-                "final separado: {no_final} sílabas cantadas só na última vez viraram o bloco \"Final\""
-            ));
-        }
-    }
-
-    /// As vozes da pauta. Com o padrão de final reconhecido, saem as notas da passada normal e as da passada do final.
-    fn montar_as_vozes(&mut self, nome: NomeDaPauta, camadas: BTreeMap<usize, Vec<Acorde>>) {
-        let camadas: Vec<Vec<Acorde>> = camadas.into_values().collect();
-        let Some(plano) = &self.plano else {
-            let (linhas, omitidos) = dividir_em_vozes(camadas, nome.limite());
-            self.avisos
-                .extend(avisar_omitidos(&nome.rotulo(), omitidos));
-            self.vozes.extend(nome.nomear(linhas));
-            return;
-        };
-        // Guarda as notas inteiras: se o final for descartado, as vozes são refeitas com a leitura única.
-        self.pautas_guardadas.push((nome.clone(), camadas.clone()));
-        let recorte = |segmentos: &[(usize, usize)]| -> Vec<Vec<Acorde>> {
-            camadas
-                .iter()
-                .map(|c| selecionar(c, &self.estrutura.inicios, segmentos))
-                .collect()
-        };
-        let (normal, final_) = (recorte(&plano.normal), recorte(&plano.final_));
-        // Com o plano, a contagem é a da leitura recortada: só vale se o final for aceito.
-        let (linhas, omitidos) = dividir_em_vozes(normal, nome.limite());
-        self.avisos_do_recorte
-            .extend(avisar_omitidos(&nome.rotulo(), omitidos));
-        let max = linhas.len();
-        self.vozes.extend(nome.nomear(linhas));
-        self.montar_vozes_do_final(final_, &nome, max);
-    }
-
-    fn montar_vozes_do_final(&mut self, camadas: Vec<Vec<Acorde>>, nome: &NomeDaPauta, max: usize) {
-        let (linhas, omitidos) = dividir_em_vozes(camadas, nome.limite());
-        let quem = format!("{} (passada do final)", nome.rotulo());
-        self.avisos_do_recorte
-            .extend(avisar_omitidos(&quem, omitidos));
-        if linhas.len() == max {
-            self.vozes_final.extend(nome.nomear(linhas));
-            return;
-        }
-        // As vozes do final precisam corresponder uma a uma às da passada normal.
-        self.final_ok = false;
-        self.avisos.push(format!(
-            "{}: a passada do final tem {} voz(es) e a normal {max}; o final foi descartado",
-            nome.rotulo(),
-            linhas.len()
-        ));
     }
 }
 

@@ -28,7 +28,8 @@ fn compassos_json(c: &Compassos) -> Value {
     Value::Object(o)
 }
 
-pub fn para_json(h: &Hino) -> Value {
+/// Os campos de identificação do hino: número, título, autoria, andamento e tonalidade.
+fn identificacao(h: &Hino) -> Map<String, Value> {
     let mut m = Map::new();
     m.insert("numero".into(), json!(h.numero));
     m.insert("titulo".into(), json!(h.titulo));
@@ -40,6 +41,11 @@ pub fn para_json(h: &Hino) -> Value {
         "tonalidade".into(),
         json!(nome_da_tonalidade(h.armadura, h.modo)),
     );
+    m
+}
+
+pub fn para_json(h: &Hino) -> Value {
+    let mut m = identificacao(h);
     m.extend((!h.letra.is_empty()).then(|| campo("letra", json!(h.letra))));
     m.insert("vozes".into(), Value::Array(vozes_json(&h.vozes)));
     let com_vozes = |v: &Vec<Voz>| json!({ "vozes": vozes_json(v) });

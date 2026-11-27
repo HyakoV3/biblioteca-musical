@@ -1,13 +1,11 @@
 //! O fim da conversão: com as pautas lidas, decide o final, a sincronia, a introdução, os compassos e a tonalidade e monta o hino.
 
-use crate::coro::separar_sem_plano;
-use crate::estrutura::{compassos_da_introducao, compassos_da_passada, recortar_inicio};
-use crate::leitura::{Leitura, avisar_omitidos};
-use crate::modelo::{Compassos, Hino, Sincronia, Voz, arredondar};
-use crate::montagem::montar_letra;
+use crate::estrutura::Plano;
+use crate::leitura::Leitura;
+use crate::modelo::{Compassos, Hino, Marca, Sincronia, Voz, arredondar};
+use crate::recortes::{compassos_da_introducao, compassos_da_passada, recortar_inicio};
 use crate::sincronia::estrofes_da_passada;
 use crate::tonalidade::{ler_armadura, modo_pelo_baixo, nome_da_tonalidade};
-use crate::vozes::dividir_em_vozes;
 use crate::xml::{texto_completo, texto_de_estilo};
 use roxmltree::Document;
 
@@ -36,30 +34,106 @@ fn autoria_do_hino(doc: &Document) -> Option<String> {
     (!nomes.is_empty()).then(|| nomes.join(" · "))
 }
 
+/// Os recortes da partitura por passada: o plano de repetição, onde cada compasso começa e as marcas da letra.
+struct Recortes<'a> {
+    plano: Option<&'a Plano>,
+    inicios: &'a [f64],
+    marcas: &'a [Marca],
+    /// O final foi aceito (tem passada do final).
+    tem_final: bool,
+}
+
+impl Recortes<'_> {
+    /// Os compassos que a passada normal toca: os do plano, ou a partitura toda sem plano.
+    fn trechos_normais(&self) -> Vec<(usize, usize)> {
+        match self.plano {
+            Some(p) => p.normal.clone(),
+            None => vec![(0, self.inicios.len() - 1)],
+        }
+    }
+
+    /// O plano, só quando o final foi aceito (a passada do final).
+    fn plano_do_final(&self) -> Option<&Plano> {
+        self.plano.filter(|_| self.tem_final)
+    }
+
+    /// Sincronia da letra (karaokê): o instante de cada sílaba na régua de cada passada. A passada normal toca os
+    /// compassos do plano (ou a partitura toda, sem plano); a do final, só quando o final foi aceito.
+    fn sincronia(&self) -> Option<Sincronia> {
+        if self.marcas.is_empty() || self.inicios.len() < 2 {
+            return None;
+        }
+        let normal = estrofes_da_passada(self.marcas, &self.trechos_normais(), self.inicios);
+        let final_ = self
+            .plano_do_final()
+            .map(|p| estrofes_da_passada(self.marcas, &p.final_, self.inicios))
+            .filter(|f| !f.is_empty());
+        (!normal.is_empty()).then_some(Sincronia {
+            normal,
+            passada_final: final_,
+        })
+    }
+
+    /// Compassos de cada fluxo (I-12, fase B): a passada normal toca os compassos do plano (ou a partitura toda, sem plano); a do final, só quando
+    /// o final foi aceito; a introdução, os que começam antes do "*". Mesma régua das notas das vozes de cada fluxo.
+    fn compassos(&self, fim_intro: Option<f64>) -> Option<Compassos> {
+        if self.inicios.len() < 2 {
+            return None;
+        }
+        Some(Compassos {
+            normal: compassos_da_passada(self.inicios, &self.trechos_normais()),
+            passada_final: self
+                .plano_do_final()
+                .map(|p| compassos_da_passada(self.inicios, &p.final_)),
+            introducao: fim_intro.map(|fim| compassos_da_introducao(self.inicios, fim)),
+        })
+    }
+}
+
+/// O que sai da leitura além das vozes da passada normal: a passada do final, a sincronia, a introdução e os compassos.
+struct Fluxos {
+    passada_final: Option<Vec<Voz>>,
+    sincronia: Option<Sincronia>,
+    introducao: Option<Vec<Voz>>,
+    compassos: Option<Compassos>,
+}
+
 impl Leitura<'_> {
     pub(crate) fn concluir(mut self, doc: &Document) -> Result<Hino, String> {
         self.avisar_correcoes_sem_letra();
-        let final_descartado =
-            self.plano.is_some() && !(self.final_ok && !self.vozes_final.is_empty());
-        if final_descartado {
-            self.refazer_sem_plano();
-        } else {
-            self.avisos.append(&mut self.avisos_do_recorte);
-        }
+        let final_descartado = self.decidir_o_final();
         self.avisar_estrutura(doc, final_descartado);
-        let tem_final = self.final_ok && !self.vozes_final.is_empty();
-        let passada_final = tem_final.then(|| std::mem::take(&mut self.vozes_final));
-        let sincronia = self.sincronia(tem_final);
-        let introducao = self.introducao();
-        let fim_intro = introducao.as_ref().map(|(_, fim)| *fim);
-        let compassos = self.compassos(tem_final, fim_intro);
+        let fluxos = self.fluxos();
         if self.vozes.is_empty() {
             return Err("nenhuma nota encontrada".into());
         }
+        Ok(self.montar_hino(doc, fluxos))
+    }
+
+    fn fluxos(&mut self) -> Fluxos {
+        let tem_final = self.final_ok && !self.vozes_final.is_empty();
+        let passada_final = tem_final.then(|| std::mem::take(&mut self.vozes_final));
+        let introducao = self.introducao();
+        let recortes = Recortes {
+            plano: self.plano.as_ref(),
+            inicios: &self.estrutura.inicios,
+            marcas: &self.marcas,
+            tem_final,
+        };
+        let fim_intro = introducao.as_ref().map(|(_, fim)| *fim);
+        Fluxos {
+            sincronia: recortes.sincronia(),
+            compassos: recortes.compassos(fim_intro),
+            introducao: introducao.map(|(vozes, _)| vozes),
+            passada_final,
+        }
+    }
+
+    fn montar_hino(mut self, doc: &Document, fluxos: Fluxos) -> Hino {
         let titulo = titulo_do_hino(doc, self.numero_hino);
         let autoria = autoria_do_hino(doc);
-        let (armadura, modo) = self.tonalidade(doc, passada_final.as_deref());
-        Ok(Hino {
+        let (armadura, modo) = self.tonalidade(doc, fluxos.passada_final.as_deref());
+        Hino {
             numero: self.numero_hino,
             titulo,
             autoria,
@@ -67,94 +141,13 @@ impl Leitura<'_> {
             armadura,
             modo,
             vozes: self.vozes,
-            passada_final,
-            introducao: introducao.map(|(vozes, _)| vozes),
+            passada_final: fluxos.passada_final,
+            introducao: fluxos.introducao,
             letra: self.letra,
-            sincronia,
-            compassos,
+            sincronia: fluxos.sincronia,
+            compassos: fluxos.compassos,
             avisos: self.avisos,
-        })
-    }
-
-    fn avisar_correcoes_sem_letra(&mut self) {
-        if !self.ajustes.is_empty() && !self.correcoes_tentadas {
-            self.avisos.push(format!(
-                "hino {}: {} correção(ões) da letra NÃO aplicada(s), porque a partitura não tem letra",
-                self.numero_hino,
-                self.ajustes.len()
-            ));
         }
-    }
-
-    /// MSCX-002: com o final descartado (as vozes do final não casam com as da passada normal), a passada normal NÃO pode ficar cortada na 1ª casa:
-    /// perderia a 2ª casa e o trecho final, que a partitura manda tocar. Refaz as vozes com a leitura única, em ordem, como numa partitura sem plano.
-    fn refazer_sem_plano(&mut self) {
-        self.plano = None;
-        self.vozes.clear();
-        for (nome, camadas) in std::mem::take(&mut self.pautas_guardadas) {
-            let (linhas, omitidos) = dividir_em_vozes(camadas, nome.limite());
-            self.vozes.extend(nome.nomear(linhas));
-            self.avisos
-                .extend(avisar_omitidos(&nome.rotulo(), omitidos));
-        }
-        // A letra também volta ao caminho sem plano (coro e refrão trocado, sem o bloco "Final").
-        if let Some((mut sil, resp)) = self.letra_base.take() {
-            self.avisos.retain(|a| !a.starts_with("final separado:"));
-            separar_sem_plano(&mut sil, &mut self.avisos);
-            (self.letra, self.marcas) = montar_letra(sil, resp);
-        }
-        self.avisos.push(
-            "final descartado: a partitura é lida uma vez, em ordem (com a 2ª casa e o trecho final), e não só até a 1ª casa".to_string(),
-        );
-    }
-
-    fn avisar_estrutura(&mut self, doc: &Document, final_descartado: bool) {
-        if let Some(p) = &self.plano {
-            self.avisos.push(format!(
-                "estrutura de repetição reconhecida: {}",
-                p.descricao
-            ));
-            return;
-        }
-        let tem_repeticao = doc.descendants().any(|n| {
-            matches!(
-                n.tag_name().name(),
-                "startRepeat" | "endRepeat" | "Jump" | "Volta"
-            )
-        });
-        if !final_descartado && tem_repeticao {
-            self.avisos.push(
-                "há repetições/saltos numa estrutura não reconhecida: a partitura é lida uma vez, em ordem".to_string(),
-            );
-        }
-    }
-
-    /// Os compassos que a passada normal toca: os do plano, ou a partitura toda sem plano.
-    fn trechos_normais(&self) -> Vec<(usize, usize)> {
-        match &self.plano {
-            Some(p) => p.normal.clone(),
-            None => vec![(0, self.estrutura.inicios.len() - 1)],
-        }
-    }
-
-    /// Sincronia da letra (karaokê): o instante de cada sílaba na régua de cada passada. A passada normal toca os
-    /// compassos do plano (ou a partitura toda, sem plano); a do final, só quando o final foi aceito.
-    fn sincronia(&self, tem_final: bool) -> Option<Sincronia> {
-        let inicios = &self.estrutura.inicios;
-        if self.marcas.is_empty() || inicios.len() < 2 {
-            return None;
-        }
-        let normal = estrofes_da_passada(&self.marcas, &self.trechos_normais(), inicios);
-        let final_ = self
-            .plano
-            .as_ref()
-            .filter(|_| tem_final)
-            .map(|p| estrofes_da_passada(&self.marcas, &p.final_, inicios))
-            .filter(|f| !f.is_empty());
-        (!normal.is_empty()).then_some(Sincronia {
-            normal,
-            passada_final: final_,
-        })
     }
 
     /// Introdução: do começo até o fim da nota que leva o primeiro "*" (o autor o escreve sobre a última nota da introdução, que fecha com a
@@ -174,24 +167,6 @@ impl Leitura<'_> {
             arredondar(fim)
         ));
         Some((intro, fim))
-    }
-
-    /// Compassos de cada fluxo (I-12, fase B): a passada normal toca os compassos do plano (ou a partitura toda, sem plano); a do final, só quando
-    /// o final foi aceito; a introdução, os que começam antes do "*". Mesma régua das notas das vozes de cada fluxo.
-    fn compassos(&self, tem_final: bool, fim_intro: Option<f64>) -> Option<Compassos> {
-        let inicios = &self.estrutura.inicios;
-        if inicios.len() < 2 {
-            return None;
-        }
-        Some(Compassos {
-            normal: compassos_da_passada(inicios, &self.trechos_normais()),
-            passada_final: self
-                .plano
-                .as_ref()
-                .filter(|_| tem_final)
-                .map(|p| compassos_da_passada(inicios, &p.final_)),
-            introducao: fim_intro.map(|fim| compassos_da_introducao(inicios, fim)),
-        })
     }
 
     /// Armadura e modo: o escrito no arquivo, ou o deduzido do baixo (maior, com aviso, se nada bate).

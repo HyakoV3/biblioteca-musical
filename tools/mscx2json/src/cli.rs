@@ -7,7 +7,7 @@ use crate::modelo::Hino;
 use crate::partes::nomes_satb;
 use crate::saida::{cabecalho, para_json};
 use crate::validacao::validar;
-use serde_json::json;
+use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
 
 pub(crate) const AJUDA: &str = "Uso: mscx2json [--nomes-originais] [--idioma pt-BR] [--correcoes correcoes.json] [--avisos avisos.txt] --id ID --nome NOME arquivo.mscx|pasta ... > hinario.json\n\
@@ -68,8 +68,8 @@ fn caminho_dos_avisos(it: &mut impl Iterator<Item = String>) -> Result<PathBuf, 
 
 impl Opcoes {
     /// Lê os argumentos. `None` quando o pedido era só a ajuda (já impressa).
-    fn ler(args: Vec<String>) -> Result<Option<Self>, String> {
-        let mut o = Opcoes {
+    fn padrao() -> Self {
+        Opcoes {
             id: None,
             nome: None,
             entradas: vec![],
@@ -77,7 +77,11 @@ impl Opcoes {
             idioma: None,
             arquivo_correcoes: None,
             arquivo_avisos: None,
-        };
+        }
+    }
+
+    fn ler(args: Vec<String>) -> Result<Option<Self>, String> {
+        let mut o = Opcoes::padrao();
         let mut it = args.into_iter();
         while let Some(a) = it.next() {
             match a.as_str() {
@@ -212,10 +216,10 @@ fn avisar_correcoes_sem_hino(correcoes: &Correcoes, resultado: &mut Resultado) {
 }
 
 /// O hinário em JSON (texto) a partir dos hinos convertidos.
-fn montar_json(opcoes: &Opcoes, id: &str, nome: &str, hinos: &[Hino]) -> Result<String, String> {
+fn montar_json(cabecalho: Value, hinos: &[Hino]) -> Result<String, String> {
     let saida = json!({
         "versao": 1,
-        "hinario": cabecalho(id, nome, opcoes.idioma.as_deref()),
+        "hinario": cabecalho,
         "hinos": hinos.iter().map(para_json).collect::<Vec<_>>(),
     });
     serde_json::to_string(&saida).map_err(|e| e.to_string())
@@ -239,7 +243,7 @@ pub(crate) fn executar_conversao(args: Vec<String>) -> Result<(), String> {
     if let Some(p) = hinos.windows(2).find(|p| p[0].numero == p[1].numero) {
         return Err(format!("número de hino repetido: {}", p[0].numero));
     }
-    let json = montar_json(&opcoes, &id, &nome, hinos)?;
+    let json = montar_json(cabecalho(&id, &nome, opcoes.idioma.as_deref()), hinos)?;
     // O relatório sai ANTES do JSON: se não der para gravá-lo, o erro vem sem que o stdout já tenha recebido uma saída "boa".
     if let Some(c) = &opcoes.arquivo_avisos {
         std::fs::write(c, relatorio_de_avisos(&resultado.avisos_por_arquivo))

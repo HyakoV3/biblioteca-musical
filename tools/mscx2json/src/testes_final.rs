@@ -2,52 +2,62 @@
 
 use crate::testes_apoio::*;
 
-#[test]
-fn final_descartado_refaz_a_letra_e_nao_deixa_aviso_do_plano() {
-    // Mesma estrutura do teste acima (o último compasso tem 2 notas e o final é descartado), agora com duas estrofes e texto do final escrito
-    // sob a estrofe 1 ("amém", depois da última sílaba da estrofe 2). Com o plano, esse texto virava o bloco "Final". Com o final descartado a letra
-    // volta ao caminho sem plano: sem o bloco "Final" e sem o aviso "final separado".
-    let ly = |v1: &str, v2: &str| {
-        let a = if v1.is_empty() {
-            String::new()
-        } else {
-            format!("<Lyrics><text>{v1}</text></Lyrics>")
-        };
-        let b = if v2.is_empty() {
-            String::new()
-        } else {
-            format!("<Lyrics><no>1</no><text>{v2}</text></Lyrics>")
-        };
-        format!("{a}{b}")
-    };
-    let comp = |extra: &str, pitch: u8, v1: &str, v2: &str| {
-        format!(
-            "<Measure>{extra}<voice>{C44}<Chord>{}<durationType>whole</durationType><Note><pitch>{pitch}</pitch></Note></Chord></voice></Measure>",
-            ly(v1, v2)
-        )
-    };
+/// Seis compassos com duas estrofes: o hino com final em que o último compasso tem 2 notas (o final é descartado) e o texto do final está
+/// escrito sob a estrofe 1 ("amém", depois da última sílaba da estrofe 2).
+fn medidas_do_final_descartado() -> String {
     let ultimo = format!(
         "<Measure><voice>{C44}<Chord><durationType>whole</durationType><Note><pitch>69</pitch></Note><Note><pitch>72</pitch></Note></Chord></voice></Measure>"
     );
-    let medidas = [
-        comp("<startRepeat/>", 60, "um", "UM"),
-        comp("", 62, "dois", "DOIS"),
-        comp(
+    [
+        comp_com_letra("<startRepeat/>", 60, "um", "UM"),
+        comp_com_letra("", 62, "dois", "DOIS"),
+        comp_com_letra(
             r#"<endRepeat>2</endRepeat><Volta id="1"><endings>2</endings></Volta>"#,
             64,
             "três",
             "",
         ),
-        comp(
+        comp_com_letra(
             r#"<endSpanner id="1"/><Volta id="2"><endings>3</endings></Volta>"#,
             65,
             "fecho",
             "BIS",
         ),
-        comp(r#"<endSpanner id="2"/>"#, 67, "amém", ""),
+        comp_com_letra(r#"<endSpanner id="2"/>"#, 67, "amém", ""),
         ultimo,
     ]
-    .concat();
+    .concat()
+}
+
+/// As sílabas de uma nota: `v1` na estrofe 1 e `v2` na estrofe 2 (texto vazio = sem sílaba).
+fn letra_de_duas_estrofes(v1: &str, v2: &str) -> String {
+    let a = if v1.is_empty() {
+        String::new()
+    } else {
+        format!("<Lyrics><text>{v1}</text></Lyrics>")
+    };
+    let b = if v2.is_empty() {
+        String::new()
+    } else {
+        format!("<Lyrics><no>1</no><text>{v2}</text></Lyrics>")
+    };
+    format!("{a}{b}")
+}
+
+/// Compasso de uma semibreve com `extra` antes da voz e as sílabas `v1` e `v2`.
+fn comp_com_letra(extra: &str, pitch: u8, v1: &str, v2: &str) -> String {
+    format!(
+        "<Measure>{extra}<voice>{C44}<Chord>{}<durationType>whole</durationType><Note><pitch>{pitch}</pitch></Note></Chord></voice></Measure>",
+        letra_de_duas_estrofes(v1, v2)
+    )
+}
+
+#[test]
+fn final_descartado_refaz_a_letra_e_nao_deixa_aviso_do_plano() {
+    // Mesma estrutura do teste acima (o último compasso tem 2 notas e o final é descartado), agora com duas estrofes e texto do final escrito
+    // sob a estrofe 1 ("amém", depois da última sílaba da estrofe 2). Com o plano, esse texto virava o bloco "Final". Com o final descartado a letra
+    // volta ao caminho sem plano: sem o bloco "Final" e sem o aviso "final separado".
+    let medidas = medidas_do_final_descartado();
     // Controle: se o final fosse aceito, o texto sob a estrofe 1 viraria o bloco Final (a mesma partitura, sem o compasso de 2 notas).
     let com_final = converter(
         &doc(

@@ -78,6 +78,27 @@ impl Estrofe {
         self.linhas.last().map(String::as_str).unwrap_or("")
     }
 
+    /// O texto da sílaba. O autor às vezes escreve o número da estrofe dentro da primeira sílaba ("1. Pa"): o app já numera.
+    fn texto_de<'s>(&self, sil: &'s Silaba) -> &'s str {
+        if self.linhas.iter().all(|l| l.is_empty()) {
+            sem_numero_inicial(&sil.texto)
+        } else {
+            sil.texto.as_str()
+        }
+    }
+
+    /// Chegou uma sílaba com `quebras` respirações antes dela: se há respiração nova, a linha quebra quando ela termina um verso
+    /// (ou sempre, se a estrofe não tem a pista da maiúscula: `regra_do_verso` falso).
+    fn respirar(&mut self, quebras: usize, palavra: &str, regra_do_verso: bool) {
+        if quebras <= self.quebra_vista {
+            return;
+        }
+        self.quebra_vista = quebras;
+        if !regra_do_verso || comeca_verso(palavra, self.ultima_linha()) {
+            self.quebrar_linha();
+        }
+    }
+
     /// Abre uma linha nova, a não ser que a última ainda esteja vazia.
     fn quebrar_linha(&mut self) {
         if !self.linhas.last().is_some_and(|l| l.is_empty()) {
@@ -122,32 +143,21 @@ struct Letra<'a> {
 impl Letra<'_> {
     /// Põe a sílaba `i` (as sílabas vêm ordenadas pelo tempo) na estrofe dela.
     fn acrescentar(&mut self, i: usize, sil: &Silaba) {
+        let quebras = quebras_ate(self.respiracoes, sil.t);
+        let regra_do_verso = self.maiusculas.get(&sil.verso).copied().unwrap_or(0) >= 2;
         let e = self.estrofes.entry(sil.verso).or_insert_with(Estrofe::nova);
         if e.e_duplicata(sil) {
             return;
         }
         e.lembrar(sil);
-        // O autor às vezes escreve o número da estrofe dentro da primeira sílaba ("1. Pa"): o app já numera.
-        let primeira = e.linhas.iter().all(|l| l.is_empty());
-        let texto = if primeira {
-            sem_numero_inicial(&sil.texto)
-        } else {
-            sil.texto.as_str()
-        };
+        let texto = e.texto_de(sil);
         if texto.is_empty() {
             return;
         }
         if sil.quebra_antes {
             e.quebrar_linha();
         }
-        let quebras = quebras_ate(self.respiracoes, sil.t);
-        if quebras > e.quebra_vista {
-            e.quebra_vista = quebras;
-            let regra_do_verso = self.maiusculas.get(&sil.verso).copied().unwrap_or(0) >= 2;
-            if !regra_do_verso || comeca_verso(&self.palavras[i], e.ultima_linha()) {
-                e.quebrar_linha();
-            }
-        }
+        e.respirar(quebras, &self.palavras[i], regra_do_verso);
         self.marcas.push(e.escrever(texto, sil));
     }
 }
