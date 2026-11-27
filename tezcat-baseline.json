@@ -419,57 +419,21 @@
     "severity": "WARN",
     "value": 21
   },
-  "src/lib/Partitura.svelte::Partitura::Clean/Método::$effect@L360": {
-    "severity": "FAIL",
-    "value": 38
-  },
-  "src/lib/Partitura.svelte::Partitura::Clean/Método::destacar": {
-    "severity": "FAIL",
-    "value": 45
-  },
-  "src/lib/Partitura.svelte::Partitura::Clean/Método::destacarCurvas": {
-    "severity": "FAIL",
-    "value": 82
-  },
-  "src/lib/Partitura.svelte::Partitura::Clean/Método::destacarNotas": {
-    "severity": "WARN",
-    "value": 26
-  },
-  "src/lib/Partitura.svelte::Partitura::Clean/Nesting::$effect@L360": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/Partitura.svelte::Partitura::Clean/Nesting::carregar": {
-    "severity": "WARN",
-    "value": 2
-  },
   "src/lib/Partitura.svelte::Partitura::Clean/Nesting::destacarCurvas": {
-    "severity": "FAIL",
-    "value": 5
+    "severity": "WARN",
+    "value": 2
   },
-  "src/lib/Partitura.svelte::Partitura::Clean/Nesting::destacarNotas": {
+  "src/lib/Partitura.svelte::Partitura::Clean/Nesting::lerCarga": {
     "severity": "WARN",
     "value": 2
   },
   "src/lib/Partitura.svelte::Partitura::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 398
-  },
-  "src/lib/Partitura.svelte::Partitura::OCP::$effect@L360": {
     "severity": "WARN",
-    "value": 5
-  },
-  "src/lib/Partitura.svelte::Partitura::OCP::destacar": {
-    "severity": "WARN",
-    "value": 5
-  },
-  "src/lib/Partitura.svelte::Partitura::OCP::destacarCurvas": {
-    "severity": "WARN",
-    "value": 4
+    "value": 233
   },
   "src/lib/Partitura.svelte::Partitura::SRP::": {
-    "severity": "FAIL",
-    "value": 24
+    "severity": "WARN",
+    "value": 21
   },
   "src/lib/Player.svelte::Player::Clean/Nesting::$effect@L42": {
     "severity": "WARN",
@@ -1070,6 +1034,30 @@
   "src/lib/organizar.ts::organizar::Clean/Params::nomeDaGravacao": {
     "severity": "WARN",
     "value": 4
+  },
+  "src/lib/partituraCurva.ts::partituraCurva::Clean/Método::criarCurva": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "src/lib/partituraCurva.ts::partituraCurva::Clean/Nesting::bordasDaCurva": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/partituraCurva.ts::partituraCurva::Clean/Nesting::mediaDasBordas": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/partituraCurva.ts::partituraCurva::Clean/Nesting::meioDaCurva": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/partituraCurva.ts::partituraCurva::Clean/Params::andarCurva": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/partituraDestaque.ts::partituraDestaque::Clean/Params::elemento": {
+    "severity": "WARN",
+    "value": 3
   },
   "src/lib/partituras/baixar.ts::baixar::Clean/Nesting::extrairDaPastaReal": {
     "severity": "WARN",

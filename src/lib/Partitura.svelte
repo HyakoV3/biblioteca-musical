@@ -4,7 +4,7 @@
   import Aviso from "./Aviso.svelte";
   import { biblioteca, type Compassos } from "./biblioteca.svelte";
   import { compassoDoPonto } from "./compassos";
-  import { acesasDoPonto, alturaEm, indexarNotas, mesmasNotas, progressoDaCurva, temNotas, type Acesa, type NotaDoDesenho } from "./notas";
+  import { acesasDoPonto, indexarNotas, mesmasNotas, temNotas, type Acesa, type NotaDoDesenho } from "./notas";
   import { reproducao } from "./reproducao.svelte";
   import Estado from "./Estado.svelte";
   import { traduzirErro } from "./erros";
@@ -12,6 +12,8 @@
   import { CONSULTA_PAISAGEM, ESCALAS_PARTITURA, ZOOM_PADRAO, escalaDoZoom, limitarZoom, varianteDaTela, type EstadoPartitura, type Variante } from "./partitura";
   import { lerZoomPartitura, salvarZoomPartitura } from "./preferencias";
   import ControleDeTamanho from "./ControleDeTamanho.svelte";
+  import { andarCurva, criarCurva, removerCurva, type CurvaAcesa } from "./partituraCurva";
+  import { aCadaQuadro, criarBarra, criarHalo, criarRetangulo, garantirVisivel, medirCaixa } from "./partituraDestaque";
 
   // O painel da aba Partitura (I-08). Com a partitura do hino instalada, mostra o SVG que o Rust entrega (já conferido na
   // importação e de novo na leitura) embutido na página, para seguir o tema; sem nenhuma partitura instalada, avisa e leva a Ajustes.
@@ -50,14 +52,19 @@
   const pediu: Record<Variante, boolean> = { retrato: false, paisagem: false };
   const lendo: Record<Variante, boolean> = { retrato: false, paisagem: false }; // uma leitura de cada vez por versão
   const carga = $derived(cargas[variante]);
+  async function lerCarga(v: Variante): Promise<Carga> {
+    try {
+      return { svg: await biblioteca.lerPartitura(numero, v === "paisagem") };
+    } catch (e) {
+      return { erro: traduzirErro(String(e), t) };
+    }
+  }
   async function carregar(v: Variante) {
     if (lendo[v]) return;
     lendo[v] = true;
     cargas[v] = null; // volta ao "Carregando..."
     try {
-      cargas[v] = { svg: await biblioteca.lerPartitura(numero, v === "paisagem") };
-    } catch (e) {
-      cargas[v] = { erro: traduzirErro(String(e), t) };
+      cargas[v] = await lerCarga(v);
     } finally {
       lendo[v] = false;
     }
@@ -70,7 +77,8 @@
   });
 
   // --- Karaokê: destaca o compasso que toca. O destaque é um retângulo desenhado ATRÁS do compasso (primeiro filho do `g.measure`, que é o
-  // N-ésimo do SVG: a ordem escrita, a mesma dos índices que o conversor emite), então vale em qualquer tema: as notas ficam por cima. ---
+  // N-ésimo do SVG: a ordem escrita, a mesma dos índices que o conversor emite), então vale em qualquer tema: as notas ficam por cima.
+  // Os elementos SVG em si são feitos em `partituraDestaque.ts`; aqui fica o que está aceso e quando limpar. ---
   let folha = $state<HTMLDivElement>();
   let compassoAceso = -1; // o índice destacado agora (não reativo: só o DOM muda)
   let retangulo: SVGRectElement | null = null;
@@ -81,50 +89,12 @@
   let notasAcesas: NotaDoDesenho<Element>[] = [];
   let aureolas: SVGEllipseElement[] = [];
   let porNota = false; // o SVG traz o tempo das notas (uma partitura de um pacote antigo não traz: fica só o compasso)
-
-  // A ligadura: a curva ganha uma cópia dourada, recortada da esquerda para a direita conforme a primeira nota soa (a luz corre do halo dela até
-  // a segunda nota, que acende quando a curva termina).
-  type CurvaAcesa = {
-    n: NotaDoDesenho<Element>;
-    recorte: SVGRectElement;
-    clip: SVGClipPathElement;
-    faixa: SVGPathElement; // a faixa larga e translúcida ATRÁS da curva (o halo da ligadura)
-    copia: SVGPathElement; // o traço dourado fino POR CIMA da curva
-    ponto: SVGCircleElement; // o ponto brilhante na ponta que avança
-    largura: number; // largura total do recorte (com a folga), em unidades do desenho
-    meio: { x: number; y: number }[]; // o meio da curva, de ponta a ponta, por onde o ponto anda
-    original: SVGPathElement; // a curva do Verovio (para medir a escala da tela)
-    caixa: DOMRect;
-    escala: number; // pixels da tela por unidade do desenho, quando a folga e o ponto foram medidos (muda com o zoom e com a janela)
-  };
-
-  /**
-   * A faixa tem 0,6 rem na tela em qualquer zoom (traço sem escala), então a folga do recorte e o raio do ponto, que estão em unidades do desenho, dependem da escala
-   * que a tela aplica ao desenho agora. Mede de novo (e refaz o recorte e o ponto) sempre que essa escala muda.
-   */
-  function ajustarEscala(c: CurvaAcesa) {
-    const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    const escala = Math.abs(c.original.getScreenCTM()?.a ?? 1) || 1;
-    const folga = (rem * 0.3 + 2) / escala;
-    c.escala = escala;
-    c.largura = c.caixa.width + folga * 2;
-    c.recorte.setAttribute("x", String(c.caixa.x - folga));
-    c.recorte.setAttribute("y", String(c.caixa.y - folga * 2));
-    c.recorte.setAttribute("height", String(c.caixa.height + folga * 4));
-    c.ponto.setAttribute("r", String((rem * 0.35) / escala));
-  }
   let curvasAcesas: CurvaAcesa[] = [];
   let curvasPedidas: NotaDoDesenho<Element>[] = []; // as curvas da última chamada, mesmo as que não puderam ser desenhadas (senão uma ignorada refaria tudo a cada quadro)
-  let contadorDeRecortes = 0;
   const reduzirMovimento = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function limparCurvas() {
-    for (const c of curvasAcesas) {
-      c.faixa.remove();
-      c.copia.remove();
-      c.ponto.remove();
-      c.clip.remove();
-    }
+    for (const c of curvasAcesas) removerCurva(c);
     curvasAcesas = [];
     curvasPedidas = [];
   }
@@ -140,11 +110,15 @@
     notasAcesas = [];
   }
 
-  function limparDestaque() {
+  function limparMarcas() {
     retangulo?.remove();
     retangulo = null;
     barra?.remove();
     barra = null;
+  }
+
+  function limparDestaque() {
+    limparMarcas();
     compassoAceso = -1;
     limparNotas();
   }
@@ -157,42 +131,8 @@
     limparHalos();
     notasAcesas = novas;
     for (const { el } of novas) {
-      // A cabeça da nota (ou a pausa inteira): a haste e a bandeirola ficam de fora do tamanho do halo.
-      const base = (el.querySelector("g.notehead") ?? el) as SVGGraphicsElement;
-      let caixa: DOMRect;
-      try {
-        caixa = base.getBBox();
-      } catch {
-        continue; // sem layout (painel escondido): não destaca
-      }
-      if (caixa.width === 0 || caixa.height === 0) continue;
-      const a = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
-      a.setAttribute("class", "destaque-nota");
-      a.setAttribute("cx", String(caixa.x + caixa.width / 2));
-      a.setAttribute("cy", String(caixa.y + caixa.height / 2));
-      a.setAttribute("rx", String(caixa.width * 0.9));
-      a.setAttribute("ry", String(Math.max(caixa.height, caixa.width) * 0.75));
-      el.insertBefore(a, el.firstChild); // primeiro filho: desenhado antes (atrás) da cabeça, da haste e do acidente
-      aureolas.push(a);
-    }
-  }
-
-  /** O comprimento da 1ª curva de Bézier do traçado (a borda de ida da ligadura), ou nulo se o traçado não tem duas curvas. Mede um traçado de teste só com ela. */
-  function comprimentoDaIda(original: SVGPathElement): number | null {
-    const d = original.getAttribute("d") ?? "";
-    const primeira = d.indexOf("C");
-    const segunda = primeira < 0 ? -1 : d.indexOf("C", primeira + 1);
-    if (segunda < 0) return null;
-    const teste = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    teste.setAttribute("d", d.slice(0, segunda));
-    original.parentNode?.appendChild(teste); // medir exige o traçado no documento
-    try {
-      const c = teste.getTotalLength();
-      return Number.isFinite(c) && c > 0 ? c : null;
-    } catch {
-      return null;
-    } finally {
-      teste.remove();
+      const halo = criarHalo(el);
+      if (halo) aureolas.push(halo);
     }
   }
 
@@ -202,139 +142,39 @@
       limparCurvas();
       curvasPedidas = curvas.map((c) => c.n);
       for (const { n } of curvas) {
-        const original = n.el.querySelector("path") as SVGPathElement | null;
-        if (!original) continue;
-        let caixa: DOMRect;
-        try {
-          caixa = original.getBBox();
-        } catch {
-          continue; // sem layout (painel escondido): não destaca
-        }
-        if (caixa.width === 0) continue;
-        const ns = "http://www.w3.org/2000/svg";
-        const d = original.getAttribute("d") ?? "";
-        const clip = document.createElementNS(ns, "clipPath");
-        clip.setAttribute("id", `recorte-ligadura-${++contadorDeRecortes}`);
-        const recorte = document.createElementNS(ns, "rect");
-        recorte.setAttribute("width", "0"); // o x, o y e a altura vêm de `ajustarEscala`
-        clip.appendChild(recorte);
-        const recortada = `url(#${clip.getAttribute("id")})`;
-        const faixa = document.createElementNS(ns, "path");
-        faixa.setAttribute("class", "faixa-ligadura");
-        faixa.setAttribute("d", d);
-        faixa.setAttribute("clip-path", recortada);
-        const copia = document.createElementNS(ns, "path");
-        copia.setAttribute("class", "destaque-ligadura");
-        copia.setAttribute("d", d);
-        copia.setAttribute("clip-path", recortada);
-        const ponto = document.createElementNS(ns, "circle");
-        ponto.setAttribute("class", "ponto-ligadura");
-        ponto.setAttribute("cx", String(caixa.x));
-        ponto.setAttribute("cy", String(caixa.y + caixa.height / 2));
-        // O meio da curva: a curva é uma lua (uma borda de ida e outra de volta); a metade do comprimento separa as duas bordas.
-        const meio: { x: number; y: number }[] = [];
-        try {
-          const total = original.getTotalLength();
-          // Onde a borda de ida termina e a de volta começa: o fim da 1ª das duas curvas de Bézier do desenho. A ligadura de expressão (inclinada) tem as duas bordas de comprimentos diferentes,
-          // e a metade do comprimento total misturaria as duas. Sem as duas curvas no traçado, vale a metade (a ligadura simples tem bordas iguais).
-          const corte = comprimentoDaIda(original) ?? total / 2;
-          const ida: { x: number; y: number }[] = [];
-          const volta: { x: number; y: number }[] = [];
-          for (let i = 0; i <= 40; i++) {
-            const dist = (total * i) / 40;
-            const q = original.getPointAtLength(dist);
-            (dist <= corte ? ida : volta).push({ x: q.x, y: q.y });
-          }
-          const crescente = (l: { x: number; y: number }[]) => [...l].sort((a, b) => a.x - b.x);
-          const a = crescente(ida);
-          const b = crescente(volta);
-          for (let i = 0; i <= 24; i++) {
-            const x = caixa.x + (caixa.width * i) / 24;
-            meio.push({ x, y: (alturaEm(a, x) + alturaEm(b, x)) / 2 });
-          }
-        } catch (e) {
-          console.warn("Partitura: não foi possível calcular o meio da ligadura; usando o centro da caixa", e);
-          meio.push({ x: caixa.x, y: caixa.y + caixa.height / 2 }, { x: caixa.x + caixa.width, y: caixa.y + caixa.height / 2 });
-        }
-        // A faixa vai ATRÁS da curva (antes dela); o traço fino e o ponto, por cima.
-        original.before(faixa);
-        n.el.append(clip, copia, ponto);
-        const nova: CurvaAcesa = { n, recorte, clip, faixa, copia, ponto, largura: caixa.width, meio, original, caixa, escala: 0 };
-        ajustarEscala(nova);
-        curvasAcesas.push(nova);
+        const nova = criarCurva(n);
+        if (nova) curvasAcesas.push(nova);
       }
     }
-    for (const c of curvasAcesas) {
-      // O zoom ou a janela mudaram a escala do desenho: refaz a folga do recorte e o raio do ponto.
-      const escalaAgora = Math.abs(c.original.getScreenCTM()?.a ?? 1) || 1;
-      if (Math.abs(escalaAgora - c.escala) / c.escala > 0.01) ajustarEscala(c);
-      const local = curvas.find((x) => x.n === c.n)?.local ?? c.n.f;
-      // Pedindo menos movimento, a curva aparece inteira de uma vez (sem a luz correndo).
-      const p = reduzirMovimento ? 1 : progressoDaCurva(c.n, local);
-      c.recorte.setAttribute("width", String(c.largura * p));
-      // O ponto brilhante vai na ponta do avanço, pelo meio da curva (do começo ao fim dela, sem a folga).
-      const xPonto = c.meio[0].x + (c.meio[c.meio.length - 1].x - c.meio[0].x) * p;
-      c.ponto.setAttribute("cx", String(xPonto));
-      c.ponto.setAttribute("cy", String(alturaEm(c.meio, xPonto)));
-    }
+    for (const c of curvasAcesas) andarCurva(c, curvas.find((x) => x.n === c.n)?.local ?? c.n.f, reduzirMovimento);
   }
 
-  /** Só rola se o compasso saiu da vista (entre a barra de cima e as de baixo, e dentro da região da partitura); a rolagem é suave só se a pessoa não pediu menos movimento. */
-  function garantirVisivel(el: Element) {
-    const r = el.getBoundingClientRect();
-    const topo = (document.querySelector("header")?.getBoundingClientRect().bottom ?? 0) + 8;
-    const css = getComputedStyle(document.documentElement);
-    const reservado = (parseFloat(css.getPropertyValue("--altura-miniplayer")) || 0) + (parseFloat(css.getPropertyValue("--altura-navegacao")) || 0);
-    const regiao = folha?.parentElement?.getBoundingClientRect();
-    const foraVertical = r.top < topo || r.bottom > window.innerHeight - reservado - 8;
-    const foraHorizontal = !!regiao && (r.left < regiao.left || r.right > regiao.right);
-    if (foraVertical || foraHorizontal) el.scrollIntoView({ block: "center", inline: "center" });
-  }
-
-  function destacar(indice: number | null) {
-    const alvo = indice ?? -1;
-    if (alvo === compassoAceso) return;
-    retangulo?.remove();
-    retangulo = null;
-    barra?.remove();
-    barra = null;
-    compassoAceso = alvo;
-    if (indice === null || !folha) return;
-    const medida = folha.querySelectorAll<SVGGElement>("svg g.measure")[indice];
-    if (!medida) return; // índice fora do desenho: sem destaque, sem quebrar
-    let caixa: DOMRect;
-    try {
-      caixa = medida.getBBox();
-    } catch {
-      return; // sem layout (painel escondido): não destaca
-    }
-    if (caixa.width === 0 || caixa.height === 0) return;
+  /** Marca o compasso: o fundo (só sem o tempo das notas) e a barra dourada, ambos atrás das notas. */
+  function marcarCompasso(medida: SVGGElement, caixa: DOMRect) {
     const folga = Math.min(caixa.width, caixa.height) * 0.04;
     // O fundo (retângulo) só existe quando a partitura NÃO traz o tempo das notas (pacote antigo): lá ele é o único destaque. Com o tempo das notas,
     // o compasso é mostrado só pela barra dourada à esquerda, e o halo da nota fica sozinho (o fundo o apagava).
     let ancora: Element | null = null;
     if (!porNota) {
-      const r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      r.setAttribute("class", "destaque-compasso");
-      r.setAttribute("x", String(caixa.x - folga));
-      r.setAttribute("y", String(caixa.y - folga));
-      r.setAttribute("width", String(caixa.width + 2 * folga));
-      r.setAttribute("height", String(caixa.height + 2 * folga));
-      r.setAttribute("rx", String(folga * 2));
-      medida.insertBefore(r, medida.firstChild);
-      retangulo = r;
-      ancora = r;
+      retangulo = criarRetangulo(caixa, folga);
+      medida.insertBefore(retangulo, medida.firstChild);
+      ancora = retangulo;
     }
-    // A barra dourada na esquerda: mostra QUAL compasso é sem encher o fundo (o fundo apagava o halo da nota).
-    const b = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    b.setAttribute("class", "barra-compasso");
-    b.setAttribute("x1", String(caixa.x - folga));
-    b.setAttribute("x2", String(caixa.x - folga));
-    b.setAttribute("y1", String(caixa.y - folga));
-    b.setAttribute("y2", String(caixa.y + caixa.height + folga));
-    medida.insertBefore(b, ancora ? ancora.nextSibling : medida.firstChild); // atrás das notas: primeiro filho, ou logo depois do retângulo
-    barra = b;
-    garantirVisivel(medida);
+    barra = criarBarra(caixa, folga);
+    medida.insertBefore(barra, ancora ? ancora.nextSibling : medida.firstChild); // atrás das notas: primeiro filho, ou logo depois do retângulo
+  }
+
+  function destacar(indice: number | null) {
+    const alvo = indice ?? -1;
+    if (alvo === compassoAceso) return;
+    limparMarcas();
+    compassoAceso = alvo;
+    if (indice === null || !folha) return;
+    const medida = folha.querySelectorAll<SVGGElement>("svg g.measure")[indice];
+    const caixa = medida ? medirCaixa(medida) : null; // sem o compasso (índice fora do desenho) ou sem layout (painel escondido): não destaca
+    if (!medida || !caixa || caixa.width === 0 || caixa.height === 0) return;
+    marcarCompasso(medida, caixa);
+    garantirVisivel(medida, folha.parentElement);
   }
 
   // O SVG foi trocado (outra versão, ou lido de novo): o retângulo e o índice guardados eram do DOM antigo.
@@ -355,6 +195,21 @@
     });
   });
 
+  /** Relê onde o hino está e põe o destaque do compasso e das notas nesse ponto. */
+  function atualizarKaraoke() {
+    const ponto = reproducao.ponto(numero);
+    if (!folha) return;
+    // O índice das notas vem ANTES do destaque do compasso: com tempo por nota o compasso não leva o fundo.
+    indiceNotas ??= indexarNotas(folha.querySelectorAll("svg g.measure"));
+    const tem = temNotas(indiceNotas);
+    if (tem !== porNota) {
+      porNota = tem;
+      limparDestaque(); // trocou o jeito de mostrar o compasso: refaz do zero
+    }
+    destacar(compassoDoPonto(compassos, ponto));
+    destacarNotas(tem ? acesasDoPonto(compassos, ponto, indiceNotas) : []);
+  }
+
   // Enquanto toca, lê o relógio do áudio a cada quadro (o `decorrido` do store só anda a cada 200 ms); parado ou pausado, lê uma vez a cada
   // mudança. Fora da aba, com o karaokê desligado ou sem compassos, não gasta nada e o destaque some.
   $effect(() => {
@@ -372,28 +227,8 @@
       untrack(limparDestaque);
       return;
     }
-    const atualizar = () => {
-      const ponto = reproducao.ponto(numero);
-      if (!folha) return;
-      // O índice das notas vem ANTES do destaque do compasso: com tempo por nota o compasso não leva o fundo.
-      indiceNotas ??= indexarNotas(folha.querySelectorAll("svg g.measure"));
-      const tem = temNotas(indiceNotas);
-      if (tem !== porNota) {
-        porNota = tem;
-        limparDestaque(); // trocou o jeito de mostrar o compasso: refaz do zero
-      }
-      destacar(compassoDoPonto(compassos, ponto));
-      destacarNotas(tem ? acesasDoPonto(compassos, ponto, indiceNotas) : []);
-    };
-    untrack(atualizar);
-    if (!tocando) return;
-    let id = 0;
-    const quadro = () => {
-      atualizar();
-      id = requestAnimationFrame(quadro);
-    };
-    id = requestAnimationFrame(quadro);
-    return () => cancelAnimationFrame(id);
+    untrack(atualizarKaraoke);
+    if (tocando) return aCadaQuadro(atualizarKaraoke);
   });
 </script>
 
