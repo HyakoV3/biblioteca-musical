@@ -137,6 +137,7 @@ Regras: linhas **opcionais** somem quando não se aplicam (sem voz tirada, trans
 ## O que testar no aparelho (não substituível)
 
 1. O WhatsApp mostra o `EXTRA_TEXT` que vai com um áudio `.ogg`? E o Telegram?
+   **Respondida em 2026-11-27 (aparelho do responsável):** o **WhatsApp não mostra**; o **Telegram e o Discord mostram**. Por isso o app também copia o contexto para a área de transferência (PR #233) e a pessoa cola na conversa.
 2. O WhatsApp mostra o nome do arquivo de áudio? Com que tamanho?
 3. O `COMMENT` do `OpusTags` sobrevive ao WhatsApp (o arquivo recebido ainda o tem)?
 4. Se o `EXTRA_TEXT` for ignorado, o professor consegue abrir o `.txt` do caminho D?
