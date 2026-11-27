@@ -87,42 +87,6 @@
     "severity": "WARN",
     "value": 3
   },
-  "src-tauri/src/hinario.rs::hinario::Clean/Método::carregar": {
-    "severity": "WARN",
-    "value": 29
-  },
-  "src-tauri/src/hinario.rs::hinario::Clean/Método::ler": {
-    "severity": "FAIL",
-    "value": 74
-  },
-  "src-tauri/src/hinario.rs::hinario::Clean/Nesting::carregar": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src-tauri/src/hinario.rs::hinario::Clean/Nesting::ler": {
-    "severity": "FAIL",
-    "value": 4
-  },
-  "src-tauri/src/hinario.rs::hinario::Clean/Nesting::remover": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/hinario.rs::hinario::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 415
-  },
-  "src-tauri/src/hinario.rs::hinario::OCP::ler": {
-    "severity": "FAIL",
-    "value": 9
-  },
-  "src-tauri/src/hinario.rs::hinario::SRP::": {
-    "severity": "WARN",
-    "value": 15
-  },
-  "src-tauri/src/hinario.rs::hinario::testes::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 605
-  },
   "src-tauri/src/lib.rs::lib::Clean/Params::importar_partituras": {
     "severity": "WARN",
     "value": 3
@@ -2672,6 +2636,30 @@
     "value": 2
   },
   "src-tauri/src/svg/valores.rs::valores::Clean/Params::escapar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/hinario.rs::hinario::Clean/Nesting::carregar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/hinario.rs::hinario::Clean/Nesting::remover": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/hinario.rs::hinario::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 196
+  },
+  "src-tauri/src/hinario/leitura.rs::leitura::Clean/Método::ler": {
+    "severity": "WARN",
+    "value": 25
+  },
+  "src-tauri/src/hinario/leitura.rs::leitura::Clean/Nesting::conferir_notas": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/hinario/leitura.rs::leitura::Clean/Params::mesmas_vozes": {
     "severity": "WARN",
     "value": 3
   }
