@@ -311,62 +311,6 @@
     "severity": "WARN",
     "value": 3
   },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::elementos_por_id": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::escrever_atributos": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::escrever_filhos": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::sem_comentario_na_raiz": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::sem_use_encadeado": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_atributos": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_filhos": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_texto": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 217
-  },
-  "src-tauri/src/svg.rs::svg::testes::Clean/Nesting::svgs_gerados_passam_na_limpeza": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src-tauri/src/svg.rs::svg::testes::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 497
-  },
-  "src-tauri/src/svg/valores.rs::valores::Clean/Nesting::escapar": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg/valores.rs::valores::Clean/Params::escapar": {
-    "severity": "WARN",
-    "value": 3
-  },
   "src/lib/Abas.svelte::Abas::OCP::teclas": {
     "severity": "WARN",
     "value": 5
@@ -2207,71 +2151,87 @@
     "severity": "FAIL",
     "value": 9
   },
-  "tools/mscx2json/src/cli.rs::cli::Clean/Método::executar_conversao": {
-    "severity": "FAIL",
-    "value": 129
-  },
-  "tools/mscx2json/src/cli.rs::cli::Clean/Nesting::executar_conversao": {
+  "tools/mscx2json/src/cli.rs::Opcoes::Clean/Método::ler": {
     "severity": "WARN",
-    "value": 3
+    "value": 23
+  },
+  "tools/mscx2json/src/cli.rs::Opcoes::Clean/Nesting::ler": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/cli.rs::cli::Clean/Método::executar_conversao": {
+    "severity": "WARN",
+    "value": 27
+  },
+  "tools/mscx2json/src/cli.rs::cli::Clean/Nesting::converter_arquivos": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/cli.rs::cli::Clean/Nesting::listar_arquivos": {
+    "severity": "WARN",
+    "value": 2
   },
   "tools/mscx2json/src/cli.rs::cli::Clean/Nesting::relatorio_de_avisos": {
     "severity": "WARN",
     "value": 2
   },
-  "tools/mscx2json/src/cli.rs::cli::Clean/Tamanho::": {
+  "tools/mscx2json/src/cli.rs::cli::Clean/Params::converter_arquivo": {
     "severity": "WARN",
-    "value": 184
+    "value": 4
   },
-  "tools/mscx2json/src/cli.rs::cli::OCP::executar_conversao": {
-    "severity": "FAIL",
-    "value": 9
-  },
-  "tools/mscx2json/src/conserto.rs::conserto::Clean/Método::corrigir_silabas": {
-    "severity": "FAIL",
-    "value": 50
-  },
-  "tools/mscx2json/src/conserto.rs::conserto::Clean/Nesting::corrigir_silabas": {
+  "tools/mscx2json/src/cli.rs::cli::Clean/Params::converter_arquivos": {
     "severity": "WARN",
     "value": 3
   },
-  "tools/mscx2json/src/conserto.rs::conserto::OCP::corrigir_silabas": {
-    "severity": "FAIL",
-    "value": 6
+  "tools/mscx2json/src/cli.rs::cli::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 224
+  },
+  "tools/mscx2json/src/conclusao.rs::Leitura::Clean/Método::montar_hino": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "tools/mscx2json/src/conclusao.rs::conclusao::Clean/Nesting::autoria_do_hino": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/conserto.rs::conserto::Clean/Nesting::corrigir_silabas": {
+    "severity": "WARN",
+    "value": 2
   },
   "tools/mscx2json/src/conversao.rs::conversao::Clean/Método::converter_com": {
-    "severity": "FAIL",
-    "value": 390
+    "severity": "WARN",
+    "value": 20
   },
-  "tools/mscx2json/src/conversao.rs::conversao::Clean/Nesting::converter_com": {
-    "severity": "FAIL",
-    "value": 4
+  "tools/mscx2json/src/conversao.rs::conversao::Clean/Método::partes_das_pautas": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "tools/mscx2json/src/conversao.rs::conversao::Clean/Nesting::partes_das_pautas": {
+    "severity": "WARN",
+    "value": 3
   },
   "tools/mscx2json/src/conversao.rs::conversao::Clean/Params::converter_com": {
     "severity": "WARN",
     "value": 3
   },
-  "tools/mscx2json/src/conversao.rs::conversao::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 419
-  },
-  "tools/mscx2json/src/conversao.rs::conversao::OCP::converter_com": {
-    "severity": "FAIL",
-    "value": 30
+  "tools/mscx2json/src/coro.rs::coro::Clean/Método::dona_do_resto": {
+    "severity": "WARN",
+    "value": 23
   },
   "tools/mscx2json/src/coro.rs::coro::Clean/Método::refrao_com_estrofe_trocada": {
     "severity": "WARN",
-    "value": 29
+    "value": 22
   },
   "tools/mscx2json/src/coro.rs::coro::Clean/Método::separar_o_coro": {
-    "severity": "FAIL",
-    "value": 59
+    "severity": "WARN",
+    "value": 22
   },
   "tools/mscx2json/src/coro.rs::coro::Clean/Método::separar_o_final": {
-    "severity": "FAIL",
-    "value": 33
+    "severity": "WARN",
+    "value": 23
   },
-  "tools/mscx2json/src/coro.rs::coro::Clean/Nesting::separar_o_coro": {
+  "tools/mscx2json/src/coro.rs::coro::Clean/Nesting::instante_do_coro": {
     "severity": "WARN",
     "value": 2
   },
@@ -2279,13 +2239,13 @@
     "severity": "WARN",
     "value": 2
   },
+  "tools/mscx2json/src/coro.rs::coro::Clean/Params::instante_do_coro": {
+    "severity": "WARN",
+    "value": 3
+  },
   "tools/mscx2json/src/coro.rs::coro::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 183
-  },
-  "tools/mscx2json/src/coro.rs::coro::OCP::separar_o_coro": {
-    "severity": "WARN",
-    "value": 5
+    "value": 195
   },
   "tools/mscx2json/src/correcoes.rs::correcoes::testes::Clean/Params::s": {
     "severity": "WARN",
@@ -2347,73 +2307,77 @@
     "severity": "WARN",
     "value": 3
   },
+  "tools/mscx2json/src/descarte.rs::Leitura::Clean/Método::avisar_estrutura": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "tools/mscx2json/src/estrutura.rs::Estrutura::Clean/Método::registrar_marcas": {
+    "severity": "WARN",
+    "value": 22
+  },
+  "tools/mscx2json/src/estrutura.rs::Estrutura::Clean/Nesting::registrar_marcas": {
+    "severity": "WARN",
+    "value": 2
+  },
   "tools/mscx2json/src/estrutura.rs::estrutura::Clean/Método::plano_passadas": {
     "severity": "WARN",
     "value": 20
   },
-  "tools/mscx2json/src/estrutura.rs::estrutura::Clean/Método::recortar_inicio": {
+  "tools/mscx2json/src/leitura.rs::Leitura::Clean/Método::ler_compassos": {
     "severity": "WARN",
-    "value": 23
+    "value": 20
   },
-  "tools/mscx2json/src/estrutura.rs::estrutura::Clean/Método::registrar_marcas": {
-    "severity": "FAIL",
-    "value": 30
+  "tools/mscx2json/src/leitura.rs::Leitura::Clean/Método::nova": {
+    "severity": "WARN",
+    "value": 22
   },
-  "tools/mscx2json/src/estrutura.rs::estrutura::Clean/Método::selecionar": {
+  "tools/mscx2json/src/leitura.rs::Leitura::Clean/Método::percorrer_fonte": {
     "severity": "WARN",
     "value": 21
   },
-  "tools/mscx2json/src/estrutura.rs::estrutura::Clean/Nesting::compassos_da_passada": {
+  "tools/mscx2json/src/leitura.rs::Leitura::Clean/Nesting::ler_compassos": {
     "severity": "WARN",
     "value": 2
   },
-  "tools/mscx2json/src/estrutura.rs::estrutura::Clean/Nesting::cortar_ligaduras_do_segmento": {
+  "tools/mscx2json/src/leitura.rs::Leitura::Clean/Params::nova": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/mscx2json/src/leitura.rs::Leitura::Clean/Params::percorrer_fonte": {
     "severity": "WARN",
     "value": 3
   },
-  "tools/mscx2json/src/estrutura.rs::estrutura::Clean/Nesting::registrar_marcas": {
+  "tools/mscx2json/src/montagem.rs::Estrofe::Clean/Método::escrever": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "tools/mscx2json/src/montagem.rs::Estrofe::Clean/Params::respirar": {
     "severity": "WARN",
     "value": 3
   },
-  "tools/mscx2json/src/estrutura.rs::estrutura::Clean/Nesting::selecionar": {
+  "tools/mscx2json/src/montagem.rs::Estrofe::SRP::": {
     "severity": "WARN",
-    "value": 2
-  },
-  "tools/mscx2json/src/estrutura.rs::estrutura::Clean/Params::registrar_marcas": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "tools/mscx2json/src/estrutura.rs::estrutura::Clean/Params::selecionar": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "tools/mscx2json/src/estrutura.rs::estrutura::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 190
+    "value": 8
   },
   "tools/mscx2json/src/montagem.rs::montagem::Clean/Método::montar_letra": {
-    "severity": "FAIL",
-    "value": 126
+    "severity": "WARN",
+    "value": 22
   },
-  "tools/mscx2json/src/montagem.rs::montagem::Clean/Nesting::montar_letra": {
+  "tools/mscx2json/src/montagem.rs::montagem::Clean/Nesting::contar_maiusculas": {
     "severity": "WARN",
     "value": 3
   },
-  "tools/mscx2json/src/montagem.rs::montagem::OCP::montar_letra": {
-    "severity": "FAIL",
-    "value": 14
+  "tools/mscx2json/src/montagem.rs::montagem::Clean/Nesting::juntar_estrofes": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/montagem.rs::montagem::Clean/Params::contar_maiusculas": {
+    "severity": "WARN",
+    "value": 3
   },
   "tools/mscx2json/src/partes.rs::partes::Clean/Nesting::nomes_satb": {
     "severity": "WARN",
     "value": 2
-  },
-  "tools/mscx2json/src/partes.rs::partes::Clean/Params::nome_da_voz": {
-    "severity": "FAIL",
-    "value": 5
-  },
-  "tools/mscx2json/src/percurso.rs::percurso::Clean/Método::percorrer": {
-    "severity": "FAIL",
-    "value": 108
   },
   "tools/mscx2json/src/percurso.rs::percurso::Clean/Nesting::fecha_asterisco": {
     "severity": "WARN",
@@ -2423,9 +2387,29 @@
     "severity": "WARN",
     "value": 2
   },
+  "tools/mscx2json/src/percurso.rs::percurso::Clean/Nesting::notas_do_acorde": {
+    "severity": "WARN",
+    "value": 2
+  },
   "tools/mscx2json/src/percurso.rs::percurso::Clean/Nesting::percorrer": {
-    "severity": "FAIL",
-    "value": 4
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/percurso.rs::percurso::Clean/Nesting::ritmo": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/percurso.rs::percurso::Clean/Nesting::silabas_do_acorde": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/percurso.rs::percurso::Clean/Params::acorde": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/percurso.rs::percurso::Clean/Params::asterisco": {
+    "severity": "WARN",
+    "value": 3
   },
   "tools/mscx2json/src/percurso.rs::percurso::Clean/Params::fecha_asterisco": {
     "severity": "WARN",
@@ -2435,33 +2419,65 @@
     "severity": "WARN",
     "value": 3
   },
+  "tools/mscx2json/src/percurso.rs::percurso::Clean/Params::marcador": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/percurso.rs::percurso::Clean/Params::pausa": {
+    "severity": "WARN",
+    "value": 3
+  },
   "tools/mscx2json/src/percurso.rs::percurso::Clean/Params::percorrer": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/percurso.rs::percurso::Clean/Params::ritmo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/percurso.rs::percurso::Clean/Params::silabas_do_acorde": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/percurso.rs::percurso::Clean/Params::tuplo": {
     "severity": "WARN",
     "value": 3
   },
   "tools/mscx2json/src/percurso.rs::percurso::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 199
+    "value": 244
   },
-  "tools/mscx2json/src/percurso.rs::percurso::OCP::percorrer": {
-    "severity": "FAIL",
-    "value": 12
+  "tools/mscx2json/src/percurso.rs::percurso::OCP::ritmo": {
+    "severity": "WARN",
+    "value": 4
   },
-  "tools/mscx2json/src/saida.rs::saida::Clean/Método::para_json": {
-    "severity": "FAIL",
-    "value": 47
+  "tools/mscx2json/src/recortes.rs::recortes::Clean/Método::selecionar": {
+    "severity": "WARN",
+    "value": 20
   },
-  "tools/mscx2json/src/saida.rs::saida::Clean/Nesting::para_json": {
+  "tools/mscx2json/src/recortes.rs::recortes::Clean/Nesting::compassos_da_passada": {
     "severity": "WARN",
     "value": 2
+  },
+  "tools/mscx2json/src/recortes.rs::recortes::Clean/Nesting::cortar_ligaduras_do_segmento": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/recortes.rs::recortes::Clean/Nesting::selecionar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/recortes.rs::recortes::Clean/Params::selecionar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/saida.rs::saida::Clean/Método::para_json": {
+    "severity": "WARN",
+    "value": 27
   },
   "tools/mscx2json/src/saida.rs::saida::Clean/Params::cabecalho": {
     "severity": "WARN",
     "value": 3
-  },
-  "tools/mscx2json/src/saida.rs::saida::OCP::para_json": {
-    "severity": "FAIL",
-    "value": 10
   },
   "tools/mscx2json/src/sincronia.rs::sincronia::Clean/Método::estrofes_da_passada": {
     "severity": "WARN",
@@ -2489,7 +2505,7 @@
   },
   "tools/mscx2json/src/testes_apoio.rs::testes_apoio::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 167
+    "value": 168
   },
   "tools/mscx2json/src/testes_apoio.rs::testes_apoio::SRP::": {
     "severity": "WARN",
@@ -2503,13 +2519,17 @@
     "severity": "WARN",
     "value": 3
   },
+  "tools/mscx2json/src/testes_final.rs::testes_final::Clean/Método::medidas_do_final_descartado": {
+    "severity": "WARN",
+    "value": 24
+  },
+  "tools/mscx2json/src/testes_final.rs::testes_final::Clean/Params::comp_com_letra": {
+    "severity": "WARN",
+    "value": 4
+  },
   "tools/mscx2json/src/testes_final.rs::testes_final::Clean/Params::comp_ligado": {
     "severity": "WARN",
     "value": 3
-  },
-  "tools/mscx2json/src/testes_final.rs::testes_final::tests::Clean/Método::final_descartado_refaz_a_letra_e_nao_deixa_aviso_do_plano": {
-    "severity": "FAIL",
-    "value": 88
   },
   "tools/mscx2json/src/testes_leitura.rs::testes_leitura::tests::Clean/Nesting::letra_por_estrofe_com_silabas_e_quebra_na_respiracao": {
     "severity": "WARN",
@@ -2536,8 +2556,8 @@
     "value": 3
   },
   "tools/mscx2json/src/tonalidade.rs::tonalidade::Clean/Método::ler_armadura": {
-    "severity": "FAIL",
-    "value": 30
+    "severity": "WARN",
+    "value": 23
   },
   "tools/mscx2json/src/tonalidade.rs::tonalidade::Clean/Método::modo_pelo_baixo": {
     "severity": "WARN",
@@ -2551,41 +2571,49 @@
     "severity": "WARN",
     "value": 3
   },
-  "tools/mscx2json/src/validacao.rs::validacao::Clean/Método::validar": {
-    "severity": "FAIL",
-    "value": 58
+  "tools/mscx2json/src/validacao.rs::Local::Clean/Nesting::conferir_voz": {
+    "severity": "WARN",
+    "value": 2
   },
-  "tools/mscx2json/src/validacao.rs::validacao::Clean/Nesting::validar": {
-    "severity": "FAIL",
-    "value": 4
+  "tools/mscx2json/src/validacao.rs::validacao::Clean/Nesting::tempos_de_sincronia_e_compassos": {
+    "severity": "WARN",
+    "value": 2
   },
-  "tools/mscx2json/src/validacao.rs::validacao::OCP::validar": {
-    "severity": "FAIL",
-    "value": 7
+  "tools/mscx2json/src/validacao.rs::validacao::Clean/Nesting::validar_vozes": {
+    "severity": "WARN",
+    "value": 2
   },
   "tools/mscx2json/src/versos.rs::versos::Clean/Nesting::palavra_a_partir": {
     "severity": "WARN",
     "value": 2
   },
-  "tools/mscx2json/src/vozes.rs::vozes::Clean/Método::dividir_em_vozes": {
-    "severity": "FAIL",
-    "value": 106
-  },
-  "tools/mscx2json/src/vozes.rs::vozes::Clean/Nesting::dividir_em_vozes": {
+  "tools/mscx2json/src/vozes.rs::Camadas::Clean/Método::intervalo": {
     "severity": "WARN",
-    "value": 3
+    "value": 29
   },
-  "tools/mscx2json/src/vozes.rs::vozes::Clean/Nesting::registrar": {
+  "tools/mscx2json/src/vozes.rs::Camadas::Clean/Nesting::ler": {
     "severity": "WARN",
     "value": 2
   },
-  "tools/mscx2json/src/vozes.rs::vozes::Clean/Params::registrar": {
-    "severity": "FAIL",
-    "value": 6
+  "tools/mscx2json/src/vozes.rs::Trilha::Clean/Nesting::registrar": {
+    "severity": "WARN",
+    "value": 2
   },
-  "tools/mscx2json/src/vozes.rs::vozes::OCP::dividir_em_vozes": {
-    "severity": "FAIL",
-    "value": 9
+  "tools/mscx2json/src/vozes.rs::vozes::Clean/Método::dividir_em_vozes": {
+    "severity": "WARN",
+    "value": 22
+  },
+  "tools/mscx2json/src/vozes.rs::vozes::Clean/Nesting::ler_camada": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/vozes_da_pauta.rs::Leitura::Clean/Método::montar_as_vozes": {
+    "severity": "WARN",
+    "value": 26
+  },
+  "tools/mscx2json/src/vozes_da_pauta.rs::Leitura::Clean/Params::montar_vozes_do_final": {
+    "severity": "WARN",
+    "value": 3
   },
   "tools/mscx2json/src/xml.rs::xml::Clean/Método::texto_de_estilo": {
     "severity": "WARN",

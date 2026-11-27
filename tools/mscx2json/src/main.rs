@@ -5,21 +5,27 @@
 //! (semínima = 1) e as notas em MIDI, como descrito em docs/FORMATO.md.
 
 mod cli;
+mod conclusao;
 mod conserto;
 mod conversao;
 mod coro;
 mod correcoes;
+mod descarte;
 mod estrutura;
+mod leitura;
+mod letra_da_pauta;
 mod modelo;
 mod montagem;
 mod partes;
 mod percurso;
+mod recortes;
 mod saida;
 mod sincronia;
 mod tonalidade;
 mod validacao;
 mod versos;
 mod vozes;
+mod vozes_da_pauta;
 mod xml;
 
 #[cfg(test)]

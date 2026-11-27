@@ -12,6 +12,7 @@ pub(crate) use crate::modelo::*;
 pub(crate) use crate::montagem::*;
 pub(crate) use crate::partes::*;
 pub(crate) use crate::percurso::*;
+pub(crate) use crate::recortes::*;
 pub(crate) use crate::saida::*;
 pub(crate) use crate::sincronia::*;
 pub(crate) use crate::tonalidade::*;

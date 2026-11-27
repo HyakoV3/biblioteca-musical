@@ -89,109 +89,154 @@ pub(crate) fn fecha_asterisco(est: &mut Estado, inicio: f64, fim: f64) {
     });
 }
 
+fn andamento(c: Node, est: &mut Estado) {
+    if let Some(v) = numero::<f64>(c, "tempo") {
+        est.andamento = Some((v * 60.0).round() as u32);
+    }
+}
+
+fn tuplo(c: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
+    let normal: f64 = numero(c, "normalNotes").unwrap_or(2.0);
+    let real: f64 = numero(c, "actualNotes").unwrap_or(3.0);
+    est.tuplos.push(normal / real);
+    // Formato aninhado: os acordes ficam dentro de <Tuplet>.
+    if c.children()
+        .any(|x| x.has_tag_name("Chord") || x.has_tag_name("Rest"))
+    {
+        percorrer(c, t, est)?;
+        est.tuplos.pop();
+    }
+    Ok(())
+}
+
+/// O tempo e o ritmo: andamento, tercinas e o `tick` do MuseScore 2.
+fn ritmo(c: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
+    match c.tag_name().name() {
+        "Tempo" if est.andamento.is_none() => andamento(c, est),
+        "Tuplet" => tuplo(c, t, est)?,
+        "tick" if est.plano => {
+            if let Some(v) = c.text().and_then(|x| x.trim().parse::<f64>().ok()) {
+                *t = v / est.divisao;
+            }
+        }
+        "endTuplet" => {
+            est.tuplos.pop();
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+/// O "*" aparece como texto de pauta (<StaffText><text>) ou como cifra (<Harmony><name>), conforme a partitura.
+fn asterisco(c: Node, t: f64, est: &mut Estado) {
+    let rotulo = if c.has_tag_name("Harmony") {
+        "name"
+    } else {
+        "text"
+    };
+    if filho(c, rotulo)
+        .map(texto_completo)
+        .as_deref()
+        .map(str::trim)
+        == Some("*")
+    {
+        est.asteriscos.push(t); // provisório: vira o fim da nota que vem a seguir (ver `fecha_asterisco`)
+        est.asteriscos_pendentes.push(est.asteriscos.len() - 1);
+    }
+}
+
+/// As respirações e os "*" que marcam o fim da introdução.
+fn marcador(c: Node, t: f64, est: &mut Estado) {
+    if c.has_tag_name("Breath") {
+        est.respiracoes.push(t);
+        // "*" logo antes da respiração, sem nota no meio: a introdução termina onde a respiração está (no 250, o "*" fica em 11 e a respiração em 12,
+        // depois de um `tick`; parar no "*" deixava uma batida de fora).
+        fecha_asteriscos_na_respiracao(est.asteriscos, est.asteriscos_pendentes, t);
+    } else {
+        asterisco(c, t, est);
+    }
+}
+
+/// A duração da nota ou da pausa, já com as tercinas abertas.
+fn duracao_real(c: Node, est: &Estado) -> Result<f64, String> {
+    Ok(duracao(c, est.compasso)? * est.tuplos.iter().product::<f64>())
+}
+
+fn pausa(c: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
+    let dur = duracao_real(c, est)?;
+    fecha_asterisco(est, *t, *t + dur);
+    // MUS-003: a pausa escrita fica registrada como um acorde SEM notas. Quem divide as camadas em vozes (`dividir_em_vozes`) a usa para
+    // não repetir a nota da outra camada na voz que a partitura manda calar.
+    let voz = voz_do(c, est);
+    est.saida.entry(voz).or_default().push(Acorde {
+        inicio: *t,
+        dur,
+        notas: vec![],
+    });
+    *t += dur;
+    Ok(())
+}
+
+/// As notas de um acorde como (midi, termina_ligadura, começa_ligadura), sem as que não tocam.
+fn notas_do_acorde(c: Node) -> Result<Vec<(u8, bool, bool)>, String> {
+    let mut notas = vec![];
+    for nota in c.children().filter(|n| n.has_tag_name("Note")) {
+        if texto(nota, "play") == Some("0") {
+            continue;
+        }
+        let midi: u8 = numero(nota, "pitch").ok_or("nota sem <pitch> válido")?;
+        notas.push((midi, liga_fim(nota), liga_inicio(nota)));
+    }
+    Ok(notas)
+}
+
+/// As sílabas da letra que o acorde carrega, cantadas no instante `t`.
+fn silabas_do_acorde(c: Node, t: f64, est: &mut Estado) {
+    let voz = voz_do(c, est);
+    for l in c.children().filter(|x| x.has_tag_name("Lyrics")) {
+        let sil = filho(l, "text")
+            .map(texto_completo)
+            .filter(|t| !t.is_empty());
+        if let Some(sil) = sil {
+            est.silabas.push(Silaba {
+                t,
+                voz,
+                verso: numero(l, "no").filter(|&v| v < FINAL).unwrap_or(0),
+                continua: matches!(texto(l, "syllabic"), Some("begin" | "middle")),
+                quebra_antes: false,
+                texto: sil,
+            });
+        }
+    }
+}
+
+fn acorde(c: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
+    if e_apojatura(c) {
+        return Ok(());
+    }
+    let dur = duracao_real(c, est)?;
+    fecha_asterisco(est, *t, *t + dur);
+    let notas = notas_do_acorde(c)?;
+    silabas_do_acorde(c, *t, est);
+    if !notas.is_empty() {
+        let voz = voz_do(c, est);
+        est.saida.entry(voz).or_default().push(Acorde {
+            inicio: *t,
+            dur,
+            notas,
+        });
+    }
+    *t += dur;
+    Ok(())
+}
+
 pub(crate) fn percorrer(no: Node, t: &mut f64, est: &mut Estado) -> Result<(), String> {
     for c in no.children().filter(|c| c.is_element()) {
         match c.tag_name().name() {
-            "Tempo" if est.andamento.is_none() => {
-                if let Some(v) = numero::<f64>(c, "tempo") {
-                    est.andamento = Some((v * 60.0).round() as u32);
-                }
-            }
-            "Tuplet" => {
-                let normal: f64 = numero(c, "normalNotes").unwrap_or(2.0);
-                let real: f64 = numero(c, "actualNotes").unwrap_or(3.0);
-                est.tuplos.push(normal / real);
-                // Formato aninhado: os acordes ficam dentro de <Tuplet>.
-                if c.children()
-                    .any(|x| x.has_tag_name("Chord") || x.has_tag_name("Rest"))
-                {
-                    percorrer(c, t, est)?;
-                    est.tuplos.pop();
-                }
-            }
-            "tick" if est.plano => {
-                if let Some(v) = c.text().and_then(|x| x.trim().parse::<f64>().ok()) {
-                    *t = v / est.divisao;
-                }
-            }
-            "Breath" => {
-                est.respiracoes.push(*t);
-                // "*" logo antes da respiração, sem nota no meio: a introdução termina onde a respiração está (no 250, o "*" fica em 11 e a respiração em 12,
-                // depois de um `tick`; parar no "*" deixava uma batida de fora).
-                fecha_asteriscos_na_respiracao(est.asteriscos, est.asteriscos_pendentes, *t);
-            }
-            // O "*" aparece como texto de pauta (<StaffText><text>) ou como cifra (<Harmony><name>), conforme a partitura.
-            "StaffText" | "Harmony" => {
-                let rotulo = if c.has_tag_name("Harmony") {
-                    "name"
-                } else {
-                    "text"
-                };
-                if filho(c, rotulo)
-                    .map(texto_completo)
-                    .as_deref()
-                    .map(str::trim)
-                    == Some("*")
-                {
-                    est.asteriscos.push(*t); // provisório: vira o fim da nota que vem a seguir (ver `fecha_asterisco`)
-                    est.asteriscos_pendentes.push(est.asteriscos.len() - 1);
-                }
-            }
-            "endTuplet" => {
-                est.tuplos.pop();
-            }
-            "Rest" => {
-                let dur = duracao(c, est.compasso)? * est.tuplos.iter().product::<f64>();
-                fecha_asterisco(est, *t, *t + dur);
-                // MUS-003: a pausa escrita fica registrada como um acorde SEM notas. Quem divide as camadas em vozes (`dividir_em_vozes`) a usa para
-                // não repetir a nota da outra camada na voz que a partitura manda calar.
-                let voz = voz_do(c, est);
-                est.saida.entry(voz).or_default().push(Acorde {
-                    inicio: *t,
-                    dur,
-                    notas: vec![],
-                });
-                *t += dur;
-            }
-            "Chord" => {
-                if e_apojatura(c) {
-                    continue;
-                }
-                let dur = duracao(c, est.compasso)? * est.tuplos.iter().product::<f64>();
-                fecha_asterisco(est, *t, *t + dur);
-                let mut notas = vec![];
-                for nota in c.children().filter(|n| n.has_tag_name("Note")) {
-                    if texto(nota, "play") == Some("0") {
-                        continue;
-                    }
-                    let midi: u8 = numero(nota, "pitch").ok_or("nota sem <pitch> válido")?;
-                    notas.push((midi, liga_fim(nota), liga_inicio(nota)));
-                }
-                let voz = voz_do(c, est);
-                for l in c.children().filter(|x| x.has_tag_name("Lyrics")) {
-                    let sil = filho(l, "text")
-                        .map(texto_completo)
-                        .filter(|t| !t.is_empty());
-                    if let Some(sil) = sil {
-                        est.silabas.push(Silaba {
-                            t: *t,
-                            voz,
-                            verso: numero(l, "no").filter(|&v| v < FINAL).unwrap_or(0),
-                            continua: matches!(texto(l, "syllabic"), Some("begin" | "middle")),
-                            quebra_antes: false,
-                            texto: sil,
-                        });
-                    }
-                }
-                if !notas.is_empty() {
-                    est.saida.entry(voz).or_default().push(Acorde {
-                        inicio: *t,
-                        dur,
-                        notas,
-                    });
-                }
-                *t += dur;
-            }
+            "Tempo" | "Tuplet" | "tick" | "endTuplet" => ritmo(c, t, est)?,
+            "Breath" | "StaffText" | "Harmony" => marcador(c, *t, est),
+            "Rest" => pausa(c, t, est)?,
+            "Chord" => acorde(c, t, est)?,
             _ => {}
         }
     }

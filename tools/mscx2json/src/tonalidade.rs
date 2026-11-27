@@ -2,7 +2,19 @@
 
 use crate::modelo::Voz;
 use crate::xml::{filho, texto};
-use roxmltree::Document;
+use roxmltree::{Document, Node};
+
+/// O modo escrito no `<mode>` do `KeySig`, se houver.
+fn modo_escrito(ks: Node) -> Option<&'static str> {
+    match texto(ks, "mode")
+        .map(|m| m.trim().to_lowercase())
+        .as_deref()
+    {
+        Some("major" | "maior" | "ionian") => Some("maior"),
+        Some("minor" | "menor" | "aeolian") => Some("menor"),
+        _ => None,
+    }
+}
 
 /// Armadura e modo escrito (se houver) do primeiro `KeySig` da partitura. MuseScore 2 e 3 gravam `<accidental>`; o 4 pode gravar
 /// `<concertKey>` e `<mode>` (não confirmado: aceita o que existir). Modulações no meio da peça são ignoradas.
@@ -10,14 +22,7 @@ pub(crate) fn ler_armadura(doc: &Document) -> (i8, Option<&'static str>, Option<
     let Some(ks) = doc.descendants().find(|n| n.has_tag_name("KeySig")) else {
         return (0, None, None);
     };
-    let modo = match texto(ks, "mode")
-        .map(|m| m.trim().to_lowercase())
-        .as_deref()
-    {
-        Some("major" | "maior" | "ionian") => Some("maior"),
-        Some("minor" | "menor" | "aeolian") => Some("menor"),
-        _ => None,
-    };
+    let modo = modo_escrito(ks);
     // Sem o número, a armadura é 0 (o MuseScore pode omitir o 0); com o número inválido, vira 0 COM aviso.
     let bruto = ["accidental", "concertKey"]
         .iter()
