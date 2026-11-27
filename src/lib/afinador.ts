@@ -92,3 +92,11 @@ export function mediana(valores: readonly number[]): number | null {
   const m = o.length >> 1;
   return o.length % 2 ? o[m] : (o[m - 1] + o[m]) / 2;
 }
+
+/** Por que o microfone não abriu: permissão negada ou bloqueada (`negada`), nenhum microfone ou sem suporte (`sem_microfone`), ou qualquer outra falha (`falhou`). */
+export function erroDeEscuta(e: unknown): "negada" | "sem_microfone" | "falhou" {
+  if (!(e instanceof DOMException)) return "falhou";
+  if (e.name === "NotAllowedError" || e.name === "SecurityError") return "negada";
+  if (e.name === "NotFoundError" || e.name === "NotSupportedError") return "sem_microfone";
+  return "falhou";
+}

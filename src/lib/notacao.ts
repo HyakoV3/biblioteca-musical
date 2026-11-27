@@ -42,6 +42,9 @@ const MODOS: Record<Idioma, { maior: string; menor: string }> = {
 
 const classeDe = (n: number): number => ((Math.round(n) % 12) + 12) % 12;
 
+/** O número da oitava de uma nota MIDI (o Dó central, 60, é a oitava 4). */
+export const oitavaDe = (m: number): number => Math.floor(m / 12) - 1;
+
 /** O nome da nota de classe 0 (Dó) a 11 (Si), no sistema escolhido. */
 export const nomeDaNota = (classe: number, idioma: Idioma, notacao: Notacao = "auto"): string => NOMES[sistemaDe(notacao, idioma)][classeDe(classe)];
 

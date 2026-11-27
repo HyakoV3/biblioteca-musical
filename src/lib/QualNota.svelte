@@ -4,14 +4,14 @@
   import Aviso from "./Aviso.svelte";
   import Cartao from "./Cartao.svelte";
   import Icone from "./Icone.svelte";
-  import { DESLOCAMENTO_ESCRITO, classeDe, palavraDeAfinacao, posicaoNaTrilha, type Transposicao } from "./afinador";
+  import { DESLOCAMENTO_ESCRITO, classeDe, erroDeEscuta, palavraDeAfinacao, posicaoNaTrilha, type Transposicao } from "./afinador";
   import { lerInstrumento, salvarInstrumento } from "./afinadorPrefs";
   import { Estabilizador, type Estado } from "./detector";
   import { SuavizadorDeCents, type Suave } from "./suavizador";
   import { Escuta } from "./escuta";
   import { emCurso } from "./gravacaoEmCurso.svelte";
   import { i18n } from "./i18n/index.svelte";
-  import { nomeDaNota, nomeDaNotaPorExtenso } from "./notacao";
+  import { nomeDaNota, nomeDaNotaPorExtenso, oitavaDe } from "./notacao";
   import { notacao } from "./notacao.svelte";
   import { reproducao } from "./reproducao.svelte";
 
@@ -65,6 +65,15 @@
     ouvindo = false;
   }
 
+  /** Uma leitura bruta do detector: acalma a nota e a bola, e solta o microfone se ficou 2 minutos sem som. */
+  function aoReceberSom(bruta: Parameters<Estabilizador["entrar"]>[1]) {
+    const agora = performance.now();
+    estado = estabilizador.entrar(agora, bruta);
+    suave = suavizador.entrar(agora, estado);
+    if (estado.tipo !== "silencio") ultimoSom = agora;
+    else if (agora - ultimoSom > SEM_SOM_MAX_MS) parar(); // esquecida ligada: solta o microfone
+  }
+
   async function iniciar() {
     if (emCurso.gravando) {
       erro = "gravando"; // dois microfones abertos ao mesmo tempo esbarram no WebView: na v1 não se ouve enquanto grava
@@ -79,27 +88,18 @@
     ultimoSom = performance.now();
     ouvindo = true;
     try {
-      await escuta.iniciar(
-        (bruta) => {
-          const agora = performance.now();
-          estado = estabilizador.entrar(agora, bruta);
-          suave = suavizador.entrar(agora, estado);
-          if (estado.tipo !== "silencio") ultimoSom = agora;
-          else if (agora - ultimoSom > SEM_SOM_MAX_MS) parar(); // esquecida ligada: solta o microfone
-        },
-        () => {
-          // o sistema tirou o microfone: não fica "ouvindo" sem ouvir
-          if (minha !== tentativa) return;
-          parar();
-          erro = "falhou";
-        },
-      );
+      await escuta.iniciar(aoReceberSom, () => {
+        // o sistema tirou o microfone: não fica "ouvindo" sem ouvir
+        if (minha !== tentativa) return;
+        parar();
+        erro = "falhou";
+      });
       if (minha === tentativa) ultimoSom = performance.now(); // o relógio dos 2 min começa quando o microfone abre, e não no pedido de permissão
     } catch (e) {
       console.warn("afinador: não foi possível ouvir", e);
       if (minha !== tentativa) return;
       parar();
-      erro = e instanceof DOMException && (e.name === "NotAllowedError" || e.name === "SecurityError") ? "negada" : e instanceof DOMException && (e.name === "NotFoundError" || e.name === "NotSupportedError") ? "sem_microfone" : "falhou";
+      erro = erroDeEscuta(e);
     }
   }
 
@@ -132,7 +132,6 @@
     };
   });
 
-  const oitavaDe = (m: number) => Math.floor(m / 12) - 1;
   const nome = (m: number) => `${nomeDaNota(classeDe(m), i18n.idioma, notacao.atual)}${oitavaDe(m)}`;
   const porExtenso = (m: number) => `${nomeDaNotaPorExtenso(classeDe(m), i18n.idioma, notacao.atual)} ${oitavaDe(m)}`;
   // Com um tom que transpõe a pessoa lê o NOME da nota: o número da oitava mudaria de instrumento para instrumento (o sax tenor lê uma oitava abaixo do trompete), então some. Em Dó (concerto) fica.
