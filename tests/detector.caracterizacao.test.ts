@@ -1,5 +1,5 @@
 // Caracterização do Estabilizador: uma sequência longa e determinística de leituras brutas (notas com vibrato, saltos de oitava, ruído, clareza e volume baixos, frequências fora da faixa, nulos,
-// pausas longas) passa pelo estabilizador e o hash da saída (ponto flutuante exato, menos o `rms` da janela de seno) é comparado com o gravado antes do refactor.
+// pausas longas) passa pelo estabilizador e o hash da saída (números com 6 casas) é comparado com o gravado antes do refactor.
 import { describe, expect, it } from "vitest";
 import { Estabilizador, rms, type Bruta } from "../src/lib/detector";
 import esperado from "./fixtures/detector-caracterizacao.sha256?raw";
@@ -42,13 +42,13 @@ function percorrer(estabilizador: Estabilizador, semente: number): unknown[] {
   return saida;
 }
 
-/** `Math.sin` não é idêntico entre versões do Node: o `rms` da janela entra com 9 casas, o resto (só aritmética) vai exato. */
-const arredondar = (n: number): number => Number(n.toFixed(9));
+/** `Math.sin`, `log2` e `pow` não dão o mesmo último dígito em todas as versões do Node (o CI usa outra que a de quem desenvolve): os números entram no hash com 6 casas. */
+const arredondar = (_: string, v: unknown): unknown => (typeof v === "number" && Number.isFinite(v) ? Number(v.toFixed(6)) : v);
 
 async function gerar(): Promise<string> {
   const janela = Float32Array.from({ length: 64 }, (_, i) => Math.sin(i / 3) * 0.3);
-  const saida = [percorrer(new Estabilizador(), 1), percorrer(new Estabilizador(432), 2), arredondar(rms(janela)), rms([])];
-  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(saida)));
+  const saida = [percorrer(new Estabilizador(), 1), percorrer(new Estabilizador(432), 2), rms(janela), rms([])];
+  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(saida, arredondar)));
   return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
