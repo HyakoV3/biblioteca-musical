@@ -1295,17 +1295,9 @@
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/suavizador.ts::SuavizadorDeCents::Clean/Método::entrar": {
-    "severity": "FAIL",
-    "value": 31
-  },
-  "src/lib/suavizador.ts::SuavizadorDeCents::Clean/Nesting::entrar": {
-    "severity": "WARN",
-    "value": 2
-  },
   "src/lib/suavizador.ts::SuavizadorDeCents::OCP::entrar": {
-    "severity": "FAIL",
-    "value": 6
+    "severity": "WARN",
+    "value": 4
   },
   "src/lib/timbres.ts::timbres::Clean/Nesting::perfilDaNota": {
     "severity": "WARN",

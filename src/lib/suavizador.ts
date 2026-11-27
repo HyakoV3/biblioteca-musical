@@ -43,29 +43,42 @@ export class SuavizadorDeCents {
       return null;
     }
     const atual = e.leitura.cents;
-    if (!Number.isFinite(atual)) return this.suave === null ? null : { suave: this.suave, mostrado: this.mostrado };
+    if (!Number.isFinite(atual)) return this.valor();
 
     // Nota congelada (o som acabou) e quadro suspeito de erro de oitava: a leitura é a MESMA de antes. Segura o valor, sem andar (senão a bola deslizaria esmaecida até o valor bruto antigo).
-    if (e.repetida && this.suave !== null) {
-      if (e.tipo === "congelada") this.congelou = true;
-      this.t = agora;
-      return { suave: this.suave, mostrado: this.mostrado };
-    }
+    if (e.repetida && this.suave !== null) return this.segurar(agora, e.tipo === "congelada");
 
     // Salta (sem deslizar): o primeiro valor, a troca da nota que SOA (a trilha se recentra e a leitura passa de, por exemplo, +55 para −45) e a volta depois do silêncio.
-    if (this.suave === null || e.leitura.midi !== this.midi || this.congelou) {
-      this.suave = atual;
-      this.mostrado = Math.round(atual);
-    } else {
-      const ms = agora - this.t;
-      // `ms` inválido (≤ 0, NaN): segura o valor; `ms` enorme: alfa vai a 1 e o valor salta.
-      const alfa = ms > 0 && Number.isFinite(ms) ? 1 - Math.exp(-ms / this.tau) : 0;
-      this.suave += alfa * (atual - this.suave);
-      if (Math.abs(this.suave - this.mostrado) >= this.zona) this.mostrado = Math.round(this.suave);
-    }
+    if (this.suave === null || e.leitura.midi !== this.midi || this.congelou) this.saltar(atual);
+    else this.deslizar(agora, atual);
     this.midi = e.leitura.midi;
     this.t = agora;
     this.congelou = false;
-    return { suave: this.suave, mostrado: this.mostrado };
+    return this.valor();
+  }
+
+  private valor(): Suave | null {
+    return this.suave === null ? null : { suave: this.suave, mostrado: this.mostrado };
+  }
+
+  private segurar(agora: number, congelada: boolean): Suave | null {
+    if (congelada) this.congelou = true;
+    this.t = agora;
+    return this.valor();
+  }
+
+  private saltar(atual: number): void {
+    this.suave = atual;
+    this.mostrado = Math.round(atual);
+  }
+
+  /** Só com um valor suave já existente (`entrar` salta quando não há). */
+  private deslizar(agora: number, atual: number): void {
+    const anterior = this.suave ?? atual;
+    const ms = agora - this.t;
+    // `ms` inválido (≤ 0, NaN): segura o valor; `ms` enorme: alfa vai a 1 e o valor salta.
+    const alfa = ms > 0 && Number.isFinite(ms) ? 1 - Math.exp(-ms / this.tau) : 0;
+    this.suave = anterior + alfa * (atual - anterior);
+    if (Math.abs(this.suave - this.mostrado) >= this.zona) this.mostrado = Math.round(this.suave);
   }
 }
