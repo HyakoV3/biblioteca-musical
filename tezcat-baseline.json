@@ -23,29 +23,9 @@
     "severity": "WARN",
     "value": 9
   },
-  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteServico.kt::PonteServico::Clean/Método::ligar": {
-    "severity": "FAIL",
-    "value": 31
-  },
-  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteServico.kt::PonteServico::Clean/Nesting::rotaDeSaida": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteServico.kt::PonteServico::Clean/Nesting::temFone": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteServico.kt::PonteServico::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 227
-  },
-  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteServico.kt::PonteServico::OCP::ligar": {
-    "severity": "WARN",
-    "value": 4
-  },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteServico.kt::PonteServico::SRP::": {
-    "severity": "FAIL",
-    "value": 13
+    "severity": "WARN",
+    "value": 10
   },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/ServicoAudio.kt::ServicoAudio::Clean/Método::montarNotificacao": {
     "severity": "WARN",
