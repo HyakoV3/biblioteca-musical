@@ -12,10 +12,10 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
 
 - [x] Repositório **público** criado em 2026-11-14: <https://github.com/HyakoV3/biblioteca-musical>. Um só e-mail de autor (o `noreply` do GitHub) e sem co-autoria.
 - [x] Proteções da `main` (sem exclusão nem *force-push*, PR obrigatória, 4 verificações do CI), *secret scanning* e *push protection* ativos (conferido em 2026-11-23).
-- [x] Dependabot (npm, cargo, GitHub Actions e Gradle): `.github/dependabot.yml` com um PR por ecossistema e as majors problemáticas ignoradas (2026-11-24). Falta ligar os alertas de segurança do Dependabot nas configurações do repositório.
+- [x] Dependabot (npm, cargo, GitHub Actions e Gradle): `.github/dependabot.yml` com um PR por ecossistema e as majors problemáticas ignoradas (2026-11-24). Alertas e correções automáticas de segurança do Dependabot ligados (conferido em 2026-11-27).
 - [x] Arquivos da comunidade: `CONTRIBUTING.md` e `SECURITY.md` (2026-11-23).
-- [ ] Modelos de *issue* e de *pull request* (`.github/`).
-- [ ] Tópicos e imagem de pré-visualização do repositório (a descrição já existe; os tópicos estão vazios).
+- [x] Modelos de *issue* (defeito, melhoria e dúvida) e de *pull request*, e `CODEOWNERS` (`.github/`, PR #228, 2026-11-27).
+- [ ] Imagem de pré-visualização do repositório (a descrição e os 8 tópicos já existem). **Configurações ligadas por `gh` em 2026-11-27:** só *squash* no merge, apagar a branch depois do merge, exigir conversas resolvidas na `main`, wiki desligada e o ruleset "Proteger tags de versão" (`v*`: sem apagar, atualizar nem mover).
 - [ ] **Regra de ouro:** nada sensível no Git. Conteúdo de hinários e notas locais ficam fora do Git (`content/` e `docs/privado/`, no `.gitignore`).
 
 ## 2. CI/CD (GitHub Actions)
@@ -31,7 +31,7 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
 - [x] **Android nas PRs (2026-11-26):** `android-pr.yml` compila o APK arm64 (chave descartável) quando a PR muda `src-tauri/**`, e confere as permissões com `tools/conferir-permissoes-apk.sh`, o mesmo script do release.
 - [ ] Se o teste de ponta a ponta ficar lento ou instável, restringi-lo à `main` e ao disparo manual.
 - [x] **Workflow de release escrito (2026-11-24)**, em [`release-e-apk-no-github.md`](release-e-apk-no-github.md): tag `v*` gera APK e AAB assinados, `SHA256SUMS` e o GitHub Release (sufixo `-rc1` vira pré-lançamento); sob demanda gera um APK de teste. Assinatura condicional no Gradle (sem chave, o release sai `unsigned` e o fluxo manual dos APKs de teste não muda), conferência de permissões e de tag, `dependabot.yml` agrupado. Testado **localmente**; **não rodou no GitHub ainda**.
-- [ ] **Ligar o release (depende do responsável):** gerar a chave de envio (`keytool`, fora do repositório, com cópia e senha num cofre) e cadastrar `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` **num terminal normal** (comandos em `release-e-apk-no-github.md`); depois rodar o release sob demanda e a tag `v0.3.1-rc1`.
+- [x] **Release ligado:** a chave de envio e os segredos foram cadastrados, e o release já gerou os pré-lançamentos até a `v0.3.9-rc10` (2026-11-27, APK de 11,4 MiB). O que se fazia: gerar a chave de envio (`keytool`, fora do repositório, com cópia e senha num cofre) e cadastrar `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` **num terminal normal** (comandos em `release-e-apk-no-github.md`); depois rodar o release sob demanda e a tag `v0.3.1-rc1`. Falta só a tag final (sem sufixo) e, se for o caso, o envio à Play Store.
 - [ ] **Sem conteúdo embutido:** o `BM_PACOTE` (hinos de terceiros) nunca entra no CI nem em *release* público. Só o APK de teste fechado, gerado na máquina do responsável, leva conteúdo (`apk-de-teste.md`).
 - [ ] Conferir que versão e commit (`__APP_VERSAO__`, `__APP_COMMIT__`) aparecem certos no APK do CI.
 - [ ] **iOS:** o GitHub tem máquinas macOS (de graça em repositório público), então o CI consegue **compilar** o app
