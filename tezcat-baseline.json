@@ -563,25 +563,9 @@
     "severity": "WARN",
     "value": 4
   },
-  "src/lib/compartilhar.ts::compartilhar::Clean/Método::enviarAgora": {
-    "severity": "FAIL",
-    "value": 40
-  },
-  "src/lib/compartilhar.ts::compartilhar::Clean/Nesting::enviarAgora": {
-    "severity": "FAIL",
-    "value": 5
-  },
   "src/lib/compartilhar.ts::compartilhar::Clean/Params::compartilharGravacao": {
     "severity": "WARN",
     "value": 4
-  },
-  "src/lib/compartilhar.ts::compartilhar::Clean/Params::enviarAgora": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src/lib/compartilhar.ts::compartilhar::OCP::enviarAgora": {
-    "severity": "FAIL",
-    "value": 6
   },
   "src/lib/contagem.ts::Contagem::Clean/Nesting::iniciar": {
     "severity": "WARN",
