@@ -5,19 +5,15 @@
   },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Método::comecar": {
     "severity": "WARN",
-    "value": 21
+    "value": 20
   },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Método::enviarComTexto": {
-    "severity": "FAIL",
-    "value": 41
-  },
-  "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Nesting::enviarComTexto": {
     "severity": "WARN",
-    "value": 2
+    "value": 23
   },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 177
+    "value": 192
   },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::SRP::": {
     "severity": "WARN",
