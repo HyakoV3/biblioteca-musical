@@ -159,7 +159,7 @@ private fun copiarContexto(contexto: Context, texto: String): Boolean {
 /** Deixa só letras, números e `._-` no nome do arquivo (até 80 caracteres); vazio vira "gravacao". */
 private fun nomeSaneado(nome: String): String = nome.replace(Regex("[^A-Za-z0-9._-]"), "_").take(80).ifEmpty { "gravacao" }
 
-/** Só aceita um tipo MIME no formato `tipo/subtipo`; qualquer outra coisa vira `audio/*`. */
+/** Só aceita um tipo MIME no formato `tipo/subtipo`; qualquer outra coisa vira o tipo genérico de áudio. */
 private fun mimeValido(tipo: String): String = if (tipo.matches(Regex("[a-z]+/[a-z0-9.+-]+"))) tipo else "audio/*"
 
 /** Monta a folha de compartilhamento do sistema para o arquivo (com o texto abaixo do áudio, se houver). */
