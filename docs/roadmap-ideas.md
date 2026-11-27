@@ -1213,6 +1213,139 @@ Começar pela **A, na forma da D** (gravar com o hino, em um toque), mais o que 
 
 ---
 
+## I-50 — Faixa "afinado" maior e com cor por proximidade, no "Qual nota é essa?"
+
+- **Status:** rascunho (2026-11-27); as **cores foram aprovadas** pelo responsável; **ainda não revisada** por um subagente Opus.
+- **Origem:** o responsável, 2026-11-27: "o retângulo central podia ser ligeiramente maior e um pouco mais alto que a bola, e quando estivermos dentro dele ele pode mudar de cor, levemente esverdeado; quando fora, mais próximo, levemente alaranjado; perto das extremidades fica como é hoje".
+- **Prioridade:** baixa a média (acabamento do medidor).
+
+### O problema
+
+No medidor do "Qual nota é essa?" (`QualNota.svelte`), a faixa "afinado" é uma caixa de 1 rem de altura (±5 cents, 10% da trilha) e a bola tem 1,5 rem: **a bola cobre a faixa justamente quando a pessoa acerta**, e o único sinal de "acertei" é a palavra "Afinado" e a posição. A cor não ajuda a ver, de relance, se está longe, perto ou dentro.
+
+### O que se deseja
+
+1. A faixa fica **mais alta que a bola** (cerca de 2,25 rem, contra 1,5 rem; a trilha tem 2,5 rem, então cabe).
+2. A faixa muda de fundo conforme a **distância da afinação**, em três zonas:
+
+| Zona | Distância | Fundo da faixa |
+|---|---|---|
+| Dentro | ≤ 5 cents (`AFINADO_CENTS`) | esverdeado, com a borda cheia (2 px sólidos) |
+| Perto | 5 a ~15 cents | alaranjado leve |
+| Longe | > 15 cents | como hoje (só a borda) |
+
+3. Novo token `--aviso` (laranja), porque `tema.css` só tem `--sucesso` e `--perigo`. O fundo é `color-mix` de **22%** da cor sobre a `--superficie`.
+
+**Cores aprovadas (2026-11-27):**
+
+| Tema | Verde (`--sucesso`) | Laranja novo (`--aviso`) |
+|---|---|---|
+| Normal claro | `#1a7f37` (atual) | `#c2570c` |
+| Normal escuro | `#56d364` (atual) | `#ffa657` |
+| Pergaminho claro | `#1d6a35` (atual) | `#c2570c` |
+| Pergaminho escuro | `#6fd183` (atual) | `#ffa657` |
+| Marinho claro | `#1b7a3a` (atual) | `#c2570c` |
+| Marinho escuro | `#5fd38a` (a confirmar contra o `--sucesso` atual) | `#ffa657` |
+| Alto contraste | sem tinta | sem tinta (só a borda mais grossa quando afinado) |
+
+**Contraste calculado (WCAG):** a bola (`--ouro-linha`) sobre o fundo tingido fica entre **3,9 e 5,3:1** em todas as paletas (mínimo para interface: 3:1); o texto sobre o fundo tingido, entre 7,1 e 12,4:1. A borda laranja `#c2570c` sobre a superfície clara dá **4,3 a 4,5:1**: passa, mas perto do limite.
+
+### Largura da faixa: decisão a tomar
+
+A largura de hoje (10% da trilha) **é** a tolerância (±5 cents). Alargar só o desenho faria a cor dizer "afinado" enquanto a palavra ainda diz "baixo". Duas saídas: (a) **manter ±5** e aumentar só a altura (recomendado); (b) subir `AFINADO_CENTS` (por exemplo ±7) e a largura **juntos**, na mesma constante.
+
+### Acessibilidade
+
+- **A cor nunca é o único sinal:** a palavra (Afinado, Baixo, Alto), a posição da bola e a forma da faixa continuam. Verde e laranja são um par que o daltonismo vermelho-verde confunde, então a **borda cheia** marca "dentro" e o laranja só pinta o fundo.
+- A mudança de cor leva uma transição curta (~150 ms) e **nenhuma** com "reduzir movimento".
+- O leitor de tela já ouve "nota, afinado/baixo/alto" (`aria-live`); não muda.
+
+### Perguntas em aberto
+
+1. Largura: manter ±5 cents (só altura) ou subir a tolerância (a opção b)?
+2. O limite de "perto" em 15 cents é bom? (hipótese; testar com o trompete e o vibrato.)
+3. Degraus com transição curta, ou mistura contínua entre as cores?
+4. O verde do Marinho escuro: confirmar `#5fd38a` contra o `--sucesso` atual da paleta.
+5. A borda laranja em 4,3:1 no claro basta, ou escurecer um pouco o `#c2570c`?
+
+### Impacto técnico (hipóteses)
+
+- `afinador.ts`: uma função pura `zonaDeAfinacao(cents)` ("dentro" | "perto" | "longe" | null para leitura inválida), com os limites em constantes junto de `AFINADO_CENTS`; testável sem áudio.
+- `QualNota.svelte`: a `.faixa` ganha `data-zona` e a altura nova; o CSS usa `color-mix(in srgb, var(--sucesso) 22%, var(--superficie))` e o equivalente com `--aviso`.
+- `tema.css`: `--aviso` nas seis paletas (e no alto contraste, igual ao amarelo, sem tinta); `docs/design-tokens.md` ganha a linha do token.
+- Teste unitário da função e do CSS por zona; e2e confere que a faixa muda de zona ao mexer nos cents.
+
+### Critérios de aceitação (propostos)
+
+- A faixa é mais alta que a bola e continua cabendo a 320 px e com fonte grande.
+- Dentro de ±5 cents o fundo fica esverdeado e a borda cheia; entre 5 e 15, alaranjado; fora, como hoje.
+- Contraste da bola sobre cada fundo de pelo menos 3:1 nas seis paletas (verificado por conta, como acima).
+- No alto contraste não há tinta, só a borda mais grossa.
+- Com "reduzir movimento", a cor troca sem transição.
+- A palavra, a posição da bola e o leitor de tela continuam iguais.
+
+---
+
+## I-51 — Intensidade interna dos filtros de ruído (escala 1 a 12, só para quem desenvolve)
+
+- **Status:** rascunho (2026-11-27); **ainda não revisada** por um subagente Opus.
+- **Origem:** o responsável, 2026-11-27, depois de testar os filtros no aparelho (RC6 e seguintes): o Médio e o Alto "ficaram muito agressivos e cortavam notas longas, como previsto". Pedido: uma **escala de 1 a 12, para os desenvolvedores controlarem o nível aplicado** (não para a pessoa ajustar), com o Alto de 11 para **10** e o Médio de 8 para **6**; o Baixo (Android) fica em **3**.
+- **Prioridade:** média (o resultado atual abafa instrumento).
+
+### O problema
+
+No Gravador, **Reduzir ruído** tem quatro níveis. Testados no aparelho do responsável (2026-11-27): **Desligado** deixa o ruído de fundo; **Baixo** some com o fundo e corta levemente notas longas; **Médio** corta notas longas de forma média; **Alto** de forma agressiva. O AudioWorklet roda no aparelho e a gravação não saiu muda; o custo de CPU e bateria não foi medido, "mas por enquanto está tranquilo".
+
+O Médio (RNNoise) e o Alto (GTCRN) são redes neurais que o app liga **inteiras**: o pacote `@sapphi-red/web-noise-suppressor` não tem parâmetro de intensidade (os nós só aceitam `maxChannels` e o binário), então hoje não há como atenuar o corte das notas longas, que é o defeito para quem toca instrumento.
+
+### O que se deseja
+
+Uma **escala interna de 1 a 12**, **sem tela**, que diz quanto do filtro entra no som gravado. Ela é um **ajuste fino de compilação**: quem gera o APK (ou o RC) escolhe os valores na hora do build, sem mexer na lógica, para a equipe afinar de ouvido e comparar APKs de teste com valores diferentes. Os valores padrão (a coluna "proposta") ficam no código; um valor de ambiente os substitui.
+
+| Nível na tela | Tecnologia | Escala hoje (sensação do responsável) | Escala proposta |
+|---|---|---|---|
+| Desligado | sem filtro | — | — |
+| Baixo | filtro do Android | 3 | **3** (o filtro é do sistema, não tem intensidade: fica como está) |
+| Médio | RNNoise | 8 | **6** |
+| Alto | GTCRN | 11 | **10** |
+
+**No frontend nada muda** (confirmado pelo responsável): a pessoa vê **sempre** os mesmos quatro níveis, Desligado, Baixo, Médio e Alto, com os mesmos nomes e o mesmo aviso; a escala de 1 a 12 não aparece na tela nem em Ajustes. Só o que cada nível faz por baixo fica mais suave, e só quem compila o APK mexe nos números.
+
+Os números são **sensação de ouvido**, não medida: servem de ponto de partida a testar.
+
+### Como (hipótese)
+
+Misturar o som **filtrado** com o **original** (seco e molhado) antes do gravador: `saída = m · filtrado + (1 − m) · original`, com `m` saindo da escala (por exemplo `nivel / 12`, ou uma curva a calibrar de ouvido). O original devolve a nota longa que a rede cortaria.
+
+- **O atraso precisa casar.** O filtro atrasa o som; o caminho do original ganha um `DelayNode` com o mesmo atraso, senão a soma vira um som "oco" (filtro de pente). É o ponto de maior risco e o que mais pede teste no aparelho.
+- **Fora do alcance da escala:** o Baixo (Android) e o Desligado.
+- Nível 12 equivale a "só filtrado" (como hoje); a escala nunca passa de 12.
+
+### Perguntas em aberto
+
+1. Como se escolhe o valor na compilação? Hipótese: variáveis do Vite lidas em `filtroDeRuido.ts` (por exemplo `VITE_RUIDO_NIVEL_RNNOISE` e `VITE_RUIDO_NIVEL_GTCRN`, inteiros de 1 a 12), com os padrões 6 e 10 no código; valor ausente, fora de 1 a 12 ou que não é inteiro **volta ao padrão** (nunca quebra o build). Perguntas: o `release.yml` passa a aceitar essas variáveis como entrada do RC (para gerar APKs de teste com valores diferentes), ou só o build local? E o **nome do APK ou a tela Sobre** deve mostrar os valores usados, para saber qual APK é qual?
+2. Mistura linear (`nivel / 12`) ou curva? Dá para começar linear e ajustar de ouvido.
+3. O atraso do RNNoise e o do GTCRN são diferentes (e fixos)? Medir; se mudarem com o aparelho, a mistura precisa estimar.
+4. O gravador mede o nível do som **depois** do filtro (o medidor lê a saída dele): ler a mistura, não só o filtrado.
+5. O texto do aviso ("Médio e Alto são feitos para voz falada e podem abafar notas longas") continua verdadeiro com a mistura? Revisar, e nos 3 idiomas, se a mistura mudar o que ele promete.
+
+### Impacto técnico (hipóteses)
+
+- `gravador.ts` (`ligarFiltro`): hoje `fonte → filtro → destino`. Passa a ter também `fonte → atraso → ganho seco → destino` e `filtro → ganho molhado → destino`, com os dois ganhos vindos da escala; o `destroy` e o `soltar` desligam os nós novos.
+- `filtroDeRuido.ts`: a escala (padrões 6 e 10, com leitura validada das variáveis de build) e uma função pura `misturaDoFiltro(filtro)` (0 a 1), testável sem áudio; `vite.config` repassa as variáveis. O valor vira constante do bundle: **não há ajuste em tempo de execução**.
+- Teste unitário da função; a parte de áudio só se prova no aparelho.
+
+### Critérios de aceitação (propostos)
+
+- O Médio e o Alto, nos níveis propostos, deixam notas longas de instrumento mais inteiras que hoje, e ainda tiram uma parte do ruído de fundo (conferido de ouvido, no aparelho, com instrumento e com voz).
+- Gerar o APK com outro valor de ambiente muda a mistura daquele APK, sem tocar na lógica e sem mexer na tela; sem valor (ou com um inválido), o padrão vale.
+- A tela e os textos não mostram a escala em nenhum lugar.
+- A soma não soa "oca" (sem filtro de pente audível): o atraso do original casa com o do filtro.
+- O Baixo e o Desligado ficam como estão; a mistura em 12 equivale ao filtrado de hoje.
+- A gravação continua não saindo muda; o CPU/bateria não piora de forma perceptível (a mistura soma poucos nós).
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
