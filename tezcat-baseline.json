@@ -939,10 +939,6 @@
     "severity": "FAIL",
     "value": 559
   },
-  "src/lib/instrumentos.ts::instrumentos::OCP::tipoDaVoz": {
-    "severity": "FAIL",
-    "value": 8
-  },
   "src/lib/karaoke.ts::karaoke::Clean/Nesting::confere": {
     "severity": "WARN",
     "value": 3

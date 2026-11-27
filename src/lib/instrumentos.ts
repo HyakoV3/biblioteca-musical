@@ -62,23 +62,20 @@ export const POR_VOZ: Record<TipoVoz, InstrumentoId[]> = {
 
 const sem_acentos = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
+/** Nomes de voz (já sem acento e em minúsculas) que cada tipo reconhece, em pt/es/en. */
+const NOMES_DA_VOZ = new Map<string, TipoVoz>([
+  ["soprano", "soprano"],
+  ["contralto", "contralto"],
+  ["alto", "contralto"],
+  ["tenor", "tenor"],
+  ["baixo", "baixo"],
+  ["bajo", "baixo"],
+  ["bass", "baixo"],
+]);
+
 /** Reconhece o tipo da voz pelo nome (pt/es/en). Outros nomes (ex.: "Parte I") devolvem null. */
 export function tipoDaVoz(nome: string): TipoVoz | null {
-  switch (sem_acentos(nome)) {
-    case "soprano":
-      return "soprano";
-    case "contralto":
-    case "alto":
-      return "contralto";
-    case "tenor":
-      return "tenor";
-    case "baixo":
-    case "bajo":
-    case "bass":
-      return "baixo";
-    default:
-      return null;
-  }
+  return NOMES_DA_VOZ.get(sem_acentos(nome)) ?? null;
 }
 
 /** Instrumentos disponíveis para uma voz: os da sua faixa; sem tipo conhecido, todos. */
