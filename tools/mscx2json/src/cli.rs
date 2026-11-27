@@ -67,7 +67,7 @@ fn caminho_dos_avisos(it: &mut impl Iterator<Item = String>) -> Result<PathBuf, 
 }
 
 impl Opcoes {
-    /// Lê os argumentos. `None` quando o pedido era só a ajuda (já impressa).
+    /// Os valores padrão: nenhuma opção dada e os nomes das vozes renomeados.
     fn padrao() -> Self {
         Opcoes {
             id: None,
@@ -80,6 +80,7 @@ impl Opcoes {
         }
     }
 
+    /// Lê os argumentos. `None` quando o pedido era só a ajuda (já impressa).
     fn ler(args: Vec<String>) -> Result<Option<Self>, String> {
         let mut o = Opcoes::padrao();
         let mut it = args.into_iter();
@@ -126,19 +127,25 @@ fn carregar_correcoes(arquivo: &Option<PathBuf>) -> Result<Correcoes, String> {
 fn listar_arquivos(entradas: Vec<PathBuf>) -> Result<Vec<PathBuf>, String> {
     let mut arquivos = vec![];
     for e in entradas {
-        if !e.is_dir() {
+        if e.is_dir() {
+            arquivos.extend(mscx_da_pasta(&e)?);
+        } else {
             arquivos.push(e);
-            continue;
         }
-        let mut dentro: Vec<_> = std::fs::read_dir(&e)
-            .map_err(|x| format!("{}: {x}", e.display()))?
-            .filter_map(|x| x.ok().map(|x| x.path()))
-            .filter(|p| p.extension().is_some_and(|x| x == "mscx"))
-            .collect();
-        dentro.sort();
-        arquivos.extend(dentro);
     }
     Ok(arquivos)
+}
+
+/// Os `.mscx` de uma pasta, em ordem. Uma entrada que não pode ser lida é um erro (o hino sumiria do hinário sem aviso).
+fn mscx_da_pasta(pasta: &Path) -> Result<Vec<PathBuf>, String> {
+    let falha = |x: std::io::Error| format!("{}: {x}", pasta.display());
+    let mut dentro = std::fs::read_dir(pasta)
+        .map_err(falha)?
+        .map(|x| x.map(|x| x.path()).map_err(falha))
+        .collect::<Result<Vec<_>, String>>()?;
+    dentro.retain(|p| p.extension().is_some_and(|x| x == "mscx"));
+    dentro.sort();
+    Ok(dentro)
 }
 
 /// Os hinos convertidos e os avisos de cada arquivo (inclusive os dos ignorados).

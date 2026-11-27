@@ -311,62 +311,6 @@
     "severity": "WARN",
     "value": 3
   },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::elementos_por_id": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::escrever_atributos": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::escrever_filhos": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::sem_comentario_na_raiz": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::sem_use_encadeado": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_atributos": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_filhos": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_texto": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 217
-  },
-  "src-tauri/src/svg.rs::svg::testes::Clean/Nesting::svgs_gerados_passam_na_limpeza": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src-tauri/src/svg.rs::svg::testes::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 497
-  },
-  "src-tauri/src/svg/valores.rs::valores::Clean/Nesting::escapar": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg/valores.rs::valores::Clean/Params::escapar": {
-    "severity": "WARN",
-    "value": 3
-  },
   "src/lib/Abas.svelte::Abas::OCP::teclas": {
     "severity": "WARN",
     "value": 5
@@ -2241,7 +2185,7 @@
   },
   "tools/mscx2json/src/cli.rs::cli::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 218
+    "value": 224
   },
   "tools/mscx2json/src/conclusao.rs::Leitura::Clean/Método::montar_hino": {
     "severity": "WARN",
