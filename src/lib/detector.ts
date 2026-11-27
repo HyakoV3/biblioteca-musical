@@ -73,29 +73,41 @@ export class Estabilizador {
   }
 
   entrar(agora: number, bruta: Bruta | null): Estado {
-    if (leituraValida(bruta)) {
-      // Poda ANTES de filtrar: depois de uma pausa (entre 200 ms e o fim do congelamento) as leituras velhas não podem decidir se a nota nova é "erro de oitava".
-      this.recentes = this.recentes.filter((r) => agora - r.t <= JANELA_MEDIANA_MS);
-      const f = this.filtrarOitava(bruta.freq);
-      if (f !== null) {
-        this.recentes.push({ t: agora, f });
-        const freq = mediana(this.recentes.map((r) => r.f));
-        const leitura = freq === null ? null : leituraComHisterese(freq, this.nota, this.la);
-        if (freq !== null && leitura) {
-          this.nota = leitura.midi;
-          this.ultima = { leitura, freq, t: agora };
-          return { tipo: "nota", leitura, freq };
-        }
-      } else if (this.ultima) {
-        // Um quadro suspeito de erro de oitava: segue a nota de antes (viva, não esmaecida) e adia o `t` do último som bom para o congelamento não começar à toa.
-        this.ultima.t = agora;
-        return { tipo: "nota", leitura: this.ultima.leitura, freq: this.ultima.freq, repetida: true };
-      }
-    }
+    const viva = leituraValida(bruta) ? this.lerNota(agora, bruta) : null;
+    return viva ?? this.congelarOuCalar(agora);
+  }
+
+  /** Uma leitura boa: a nota nova, a repetição da de antes (quadro suspeito de erro de oitava) ou nulo, para cair no congelamento. */
+  private lerNota(agora: number, bruta: Bruta): Estado | null {
+    // Poda ANTES de filtrar: depois de uma pausa (entre 200 ms e o fim do congelamento) as leituras velhas não podem decidir se a nota nova é "erro de oitava".
+    this.recentes = this.recentes.filter((r) => agora - r.t <= JANELA_MEDIANA_MS);
+    const f = this.filtrarOitava(bruta.freq);
+    return f === null ? this.repetirUltima(agora) : this.aceitar(agora, f);
+  }
+
+  private aceitar(agora: number, f: number): Estado | null {
+    this.recentes.push({ t: agora, f });
+    const freq = mediana(this.recentes.map((r) => r.f));
+    const leitura = freq === null ? null : leituraComHisterese(freq, this.nota, this.la);
+    if (freq === null || !leitura) return null;
+    this.nota = leitura.midi;
+    this.ultima = { leitura, freq, t: agora };
+    return { tipo: "nota", leitura, freq };
+  }
+
+  /** Um quadro suspeito de erro de oitava: segue a nota de antes (viva, não esmaecida) e adia o `t` do último som bom para o congelamento não começar à toa. */
+  private repetirUltima(agora: number): Estado | null {
+    if (!this.ultima) return null;
+    this.ultima.t = agora;
+    return { tipo: "nota", leitura: this.ultima.leitura, freq: this.ultima.freq, repetida: true };
+  }
+
+  /** Sem nota viva: a última segue esmaecida por `CONGELAR_MS`; depois disso, silêncio. */
+  private congelarOuCalar(agora: number): Estado {
     if (this.ultima && agora - this.ultima.t <= CONGELAR_MS) return { tipo: "congelada", leitura: this.ultima.leitura, freq: this.ultima.freq, repetida: true };
     this.recentes = [];
     this.nota = null;
-    this.ultima = null;
+    this.ultima = null; // `candidata` fica como está (só `reiniciar` a zera)
     return { tipo: "silencio" };
   }
 
