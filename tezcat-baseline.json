@@ -1363,15 +1363,23 @@
     "severity": "WARN",
     "value": 3
   },
-  "src/lib/sons/baixar.ts::baixar::Clean/Método::baixarComControle": {
-    "severity": "FAIL",
-    "value": 51
-  },
-  "src/lib/sons/baixar.ts::baixar::Clean/Método::baixarZip": {
+  "src/lib/sons/baixar.ts::baixar::Clean/Método::criarControle": {
     "severity": "WARN",
-    "value": 23
+    "value": 29
   },
-  "src/lib/sons/baixar.ts::baixar::Clean/Nesting::baixarComControle": {
+  "src/lib/sons/baixar.ts::baixar::Clean/Nesting::acumular": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/sons/baixar.ts::baixar::Clean/Nesting::criarControle": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/sons/baixar.ts::baixar::Clean/Nesting::lerEmPedacos": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/sons/baixar.ts::baixar::Clean/Params::acumular": {
     "severity": "WARN",
     "value": 3
   },
@@ -1383,9 +1391,9 @@
     "severity": "WARN",
     "value": 3
   },
-  "src/lib/sons/baixar.ts::baixar::OCP::baixarComControle": {
-    "severity": "FAIL",
-    "value": 8
+  "src/lib/sons/baixar.ts::baixar::Clean/Params::lerEmPedacos": {
+    "severity": "WARN",
+    "value": 3
   },
   "src/lib/sons/extrair.ts::ErroPacote::DIP::": {
     "severity": "WARN",
