@@ -166,7 +166,7 @@ class PonteCompartilhar(private val atividade: MainActivity) {
 private fun copiarContexto(contexto: Context, texto: String) {
     if (texto.isBlank()) return
     try {
-        (contexto.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("contexto", texto.take(4000)))
+        (contexto.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("contexto", texto))
     } catch (e: Exception) {
         android.util.Log.w("bm", "compartilhar: não copiou o contexto", e)
     }

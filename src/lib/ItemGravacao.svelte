@@ -162,7 +162,7 @@
       const blob = await gravacoes.blob(meta.id);
       if (!blob) throw new Error("sem arquivo");
       const r = await compartilharGravacao(blob, nomeDoArquivo(meta.criadaEm, meta.tipo), t("gravador.enviar_titulo"), comContexto ? textoDoEnvio : undefined);
-      if (!destruido) [falhouEnvio, contextoCopiado] = [r === "erro", r === "ok" && comContexto];
+      if (!destruido) [falhouEnvio, contextoCopiado] = [r === "erro", r === "ok" && comContexto && textoDoEnvio.trim() !== ""];
     } catch (e) {
       console.warn("gravador: não foi possível enviar a gravação", e);
       if (!destruido) falhouEnvio = true;
