@@ -543,57 +543,45 @@
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/contexto.ts::contexto::Clean/Método::contextoValido": {
-    "severity": "WARN",
-    "value": 25
-  },
-  "src/lib/contexto.ts::contexto::Clean/Método::linhasDoContexto": {
-    "severity": "FAIL",
-    "value": 33
-  },
-  "src/lib/contexto.ts::contexto::Clean/Método::montarContexto": {
-    "severity": "FAIL",
-    "value": 37
-  },
-  "src/lib/contexto.ts::contexto::Clean/Nesting::linhasDoContexto": {
-    "severity": "FAIL",
-    "value": 4
-  },
-  "src/lib/contexto.ts::contexto::Clean/Nesting::lista": {
+  "src/lib/contexto-texto.ts::contexto-texto::Clean/Nesting::linhaDaParte": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/contexto.ts::contexto::Clean/Nesting::marcarMudanca": {
+  "src/lib/contexto-texto.ts::contexto-texto::Clean/Nesting::linhaDasVozes": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/contexto-texto.ts::contexto-texto::Clean/Nesting::linhasDoHino": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/contexto.ts::contexto::Clean/Nesting::montarContexto": {
-    "severity": "FAIL",
-    "value": 4
-  },
-  "src/lib/contexto.ts::contexto::Clean/Nesting::resumoDoContexto": {
+  "src/lib/contexto-texto.ts::contexto-texto::Clean/Nesting::lista": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/contexto.ts::contexto::Clean/Params::linhasDoContexto": {
-    "severity": "FAIL",
-    "value": 5
+  "src/lib/contexto-texto.ts::contexto-texto::Clean/Nesting::resumoDoHino": {
+    "severity": "WARN",
+    "value": 2
   },
-  "src/lib/contexto.ts::contexto::Clean/Params::textoDoContexto": {
+  "src/lib/contexto-texto.ts::contexto-texto::Clean/Params::textoDoContexto": {
     "severity": "WARN",
     "value": 4
+  },
+  "src/lib/contexto-texto.ts::contexto-texto::SRP::": {
+    "severity": "WARN",
+    "value": 15
+  },
+  "src/lib/contexto.ts::contexto::Clean/Nesting::contextoDeHino": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/contexto.ts::contexto::Clean/Nesting::contextoDeMetronomo": {
+    "severity": "WARN",
+    "value": 2
   },
   "src/lib/contexto.ts::contexto::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 217
-  },
-  "src/lib/contexto.ts::contexto::OCP::contextoValido": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src/lib/contexto.ts::contexto::OCP::linhasDoContexto": {
-    "severity": "FAIL",
-    "value": 7
+    "value": 150
   },
   "src/lib/detector.ts::Estabilizador::Clean/Método::entrar": {
     "severity": "WARN",
