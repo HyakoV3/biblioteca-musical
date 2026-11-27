@@ -706,6 +706,280 @@ Um comando, por exemplo `npm run release`, que:
 
 ---
 
+## I-43 — Explicações atrás do ⓘ no Gravador e no Afinador
+
+- **Status:** anotada (2026-11-26).
+- **Origem:** o responsável, 2026-11-26, depois de ver o ⓘ de Ajustes → Conteúdo e o de Saída de áudio: "cabe fazer o ⓘ com a informação" nos outros lugares com texto fixo.
+- **Prioridade:** baixa.
+
+### O problema
+
+Alguns cartões mostram sempre parágrafos que só servem a quem quer entender o porquê. Em Ajustes → Conteúdo e em Saída de áudio isso já foi para trás de um botão ⓘ (`button.info`, com `aria-expanded`), que deixa a tela limpa e a explicação a um toque.
+
+### O que se deseja
+
+Usar o mesmo botão ⓘ nestes lugares, sem esconder o que a pessoa precisa ver (erros, avisos de permissão, "Microfone ligado. Nada é gravado."):
+
+1. **Gravador, Reduzir ruído:** o aviso de que Médio e Alto são feitos para voz falada e podem abafar notas longas de instrumento (`gravador.ruido_aviso`) e a linha técnica (RNNoise, GTCRN, `gravador.ruido_tec_*`) ficam atrás de um ⓘ.
+2. **Afinador, temporizador:** "Vale para o tom de referência e para outra nota." (`afinador.temporizador_vale`) atrás de um ⓘ ao lado de "Parar sozinho depois de:".
+3. **Afinador, som real (concerto):** `afinador.som_real` atrás de um ⓘ no instrumento que transpõe.
+
+Fora da proposta: Ajustes → Sobre (a pessoa já abre a seção para ler), o aviso do hinário de exemplo, os erros (`*.erro_*`) e o texto do Alto contraste.
+
+### Textos já removidos em PRs anteriores (para rever junto)
+
+Levantados em 2026-11-26 no histórico do git (`src/lib/i18n/pt.ts`, últimos 200 commits que tocaram o arquivo), só as chaves **apagadas por inteiro** e com 60 caracteres ou mais. Texto encurtado ou reescrito não aparece aqui. Ao mexer neste assunto, decidir um a um se volta atrás de um ⓘ, se fica de fora de propósito ou se já está dito em outro lugar (por exemplo, no Sobre).
+
+| Saiu em | Chave | Texto (pt) | Onde ficava |
+|---|---|---|---|
+| #192 | `gravador.privacidade` | As gravações ficam só neste aparelho, guardadas no app, até você apagá-las. | Gravador, aviso fixo |
+| #188 | `afinador.privacidade` | O microfone só abre quando você toca em Ouvir. Nada é gravado nem sai do aparelho. | Afinador |
+| #188 | `afinador.inst_concerto` | Concerto, som real (voz, trombone, bombardino em clave de fá, tuba, órgão, cordas) | Afinador, lista de instrumentos |
+| #183 | `gravador.reduzir_ruido_dica` | Usa o filtro do aparelho. Pode abafar notas longas de instrumento e vozes em coro: ouça a gravação antes de enviar. Vale na próxima gravação. | Gravador, Reduzir ruído |
+| #117 | `metronomo.explica` | Um clique regular para estudar no tempo. Ele continua com a tela bloqueada e só para quando você tocar em Parar. | Metrônomo, abertura |
+| #117 | `afinador.explica` | Toque uma nota de referência para afinar de ouvido. O som para ao sair desta aba. | Afinador, abertura |
+| #117 | `gravador.explica` | Grave a sua voz ou o seu instrumento e ouça depois. As gravações ficam guardadas no app, só neste aparelho. No Android, a gravação em andamento segue ao trocar… | Gravador, abertura |
+| #112 | `metronomo.status_on_um` | Metrônomo ligado: {bpm} batidas por minuto, 1 tempo por compasso. | Metrônomo, aviso para leitor de tela |
+| #110 | `gravador.explica` (versão anterior) | …As gravações ficam guardadas no app, só neste aparelho. A gravação em andamento para ao sair desta aba. | Gravador, abertura |
+| #74 | `gravador.explica` (versão anterior) | Grave a sua voz ou o seu instrumento para ouvir depois. Nada sai do aparelho. A gravação para ao sair desta aba. | Gravador, abertura |
+| #74 | `gravador.privacidade` (versão anterior) | A gravação fica só neste aparelho e some ao descartá-la ou fechar o app. | Gravador |
+| #53 | `sons.nivelar_ajuda` | Iguala o volume de cada nota dos instrumentos gravados, para as vozes se encaixarem. Vale na próxima vez que tocar. | Sons gravados (o nivelador foi removido) |
+| #16 | `creditos.uso.fluidr3` | Banco de sons cujas gravações foram medidas para melhorar os instrumentos sintetizados. | Créditos |
+| #11 | `creditos.uso.soundfonts` | Amostras do FluidR3 já convertidas em MP3, baixadas no pacote de sons. | Créditos |
+| (antigo) | `app.aviso` | App não oficial, sem vínculo com a Congregação Cristã no Brasil. | Sobre (hoje o aviso tem outra forma) |
+| (antigo) | `vez.dica` | A última vez termina de forma diferente (o final). No hino todo há uma pausa de 2 segundos entre as partes. | Player, vezes da letra |
+
+Os de **privacidade** e de **microfone** (`gravador.privacidade`, `afinador.privacidade`) são os que mais valem rever: dizem o que o app faz com o áudio, e hoje isso só aparece no Sobre.
+
+<details>
+<summary>Lista completa: todas as 204 chaves de texto apagadas por inteiro na história do repositório (2026-11-26)</summary>
+
+Levantada no histórico inteiro do git (`src/lib/i18n/`, 596 commits da `main`) e conferida com as PRs do GitHub (`gh pr list`). Entram todas as chaves que existiram e não existem mais (nem com o mesmo texto em outra chave). Muitas são rótulos curtos de telas que mudaram; as de explicação são as que interessam a este assunto. Uma chave que aparece em mais de uma linha teve versões diferentes.
+
+| Data | Saiu em | Chave | Texto (pt) |
+|---|---|---|---|
+| 2026-11-26 | #223 | `letra.justificar` | Justify |
+| 2026-11-26 | #223 | `letra.justificar` | Justificar |
+| 2026-11-26 | #215 | `ajustes.confirmar_remocao` | Remove |
+| 2026-11-26 | #215 | `ajustes.confirmar_remocao` | Quitar |
+| 2026-11-26 | #214 | `gravador.apagar_todas_mesmo` | ¿Borrar de verdad las {n}? |
+| 2026-11-26 | #214 | `gravador.apagar_todas_mesmo` | Really delete all {n}? |
+| 2026-11-26 | #192 | `gravador.privacidade` | Recordings stay only on this device, saved in the app, until you delete them. |
+| 2026-11-26 | #192 | `gravador.privacidade` | Las grabaciones quedan solo en este dispositivo, guardadas en la app, hasta que las borre. |
+| 2026-11-26 | #192 | `gravador.privacidade` | As gravações ficam só neste aparelho, guardadas no app, até você apagá-las. |
+| 2026-11-25 | #188 | `afinador.privacidade` | The microphone only opens when you tap Listen. Nothing is recorded or leaves the device. |
+| 2026-11-25 | #188 | `afinador.privacidade` | O microfone só abre quando você toca em Ouvir. Nada é gravado nem sai do aparelho. |
+| 2026-11-25 | #188 | `afinador.privacidade` | El micrófono solo se abre cuando tocas Escuchar. No se graba nada ni sale del dispositivo. |
+| 2026-11-25 | #188 | `afinador.inst_si_bemol` | Si♭ (trompete, clarinete, sax soprano) |
+| 2026-11-25 | #188 | `afinador.inst_si_bemol` | Si♭ (trompeta, clarinete, saxo soprano) |
+| 2026-11-25 | #188 | `afinador.inst_si_bemol` | B♭ (trumpet, clarinet, soprano sax) |
+| 2026-11-25 | #188 | `afinador.inst_mi_bemol` | Mi♭ (saxo alto, genis) |
+| 2026-11-25 | #188 | `afinador.inst_mi_bemol` | Mi♭ (sax alto, genis) |
+| 2026-11-25 | #188 | `afinador.inst_mi_bemol` | E♭ (alto sax, genis) |
+| 2026-11-25 | #188 | `afinador.inst_fa` | Fá (trompa) |
+| 2026-11-25 | #188 | `afinador.inst_fa` | Fa (trompa) |
+| 2026-11-25 | #188 | `afinador.inst_fa` | F (horn) |
+| 2026-11-25 | #188 | `afinador.inst_concerto` | Concierto, sonido real (voz, trombón, bombardino en clave de fa, tuba, órgano, cuerdas) |
+| 2026-11-25 | #188 | `afinador.inst_concerto` | Concerto, som real (voz, trombone, bombardino em clave de fá, tuba, órgão, cordas) |
+| 2026-11-25 | #188 | `afinador.inst_concerto` | Concert pitch, real sound (voice, trombone, bass-clef euphonium, tuba, organ, strings) |
+| 2026-11-25 | #183 | `gravador.reduzir_ruido_dica` | Uses the device's own filter. It can muffle long instrument notes and choir voices: listen to the recording before sending it. Applies to the next recording. |
+| 2026-11-25 | #183 | `gravador.reduzir_ruido_dica` | Usa o filtro do aparelho. Pode abafar notas longas de instrumento e vozes em coro: ouça a gravação antes de enviar. Vale na próxima gravação. |
+| 2026-11-25 | #183 | `gravador.reduzir_ruido_dica` | Usa el filtro del propio dispositivo. Puede apagar notas largas de instrumento y voces en coro: escucha la grabación antes de enviarla. Vale para la próxima grabación. |
+| 2026-11-25 | #183 | `gravador.carregando_mais` | Loading more recordings… |
+| 2026-11-25 | #183 | `gravador.carregando_mais` | Carregando mais gravações… |
+| 2026-11-25 | #183 | `gravador.carregando_mais` | Cargando más grabaciones… |
+| 2026-11-25 | #168 | `player.restaurar_andamento` | Restore {n} bpm |
+| 2026-11-25 | #168 | `player.restaurar_andamento` | Restaurar {n} bpm |
+| 2026-11-25 | #168 | `player.restaurar_andamento` | Restablecer {n} bpm |
+| 2026-11-22 | 06f149c | `gravador.formato_webm` | Send as .webm (works in more places) |
+| 2026-11-22 | 06f149c | `gravador.formato_webm` | Enviar como .webm (funciona en más lugares) |
+| 2026-11-22 | 06f149c | `gravador.formato_webm` | Enviar como .webm (funciona em mais lugares) |
+| 2026-11-22 | 06f149c | `gravador.formato_weba` | Send as .weba (audio only) |
+| 2026-11-22 | 06f149c | `gravador.formato_weba` | Enviar como .weba (só áudio) |
+| 2026-11-22 | 06f149c | `gravador.formato_weba` | Enviar como .weba (solo audio) |
+| 2026-11-22 | 06f149c | `gravador.formato` | Formato do arquivo enviado |
+| 2026-11-22 | 06f149c | `gravador.formato` | Formato del archivo enviado |
+| 2026-11-22 | 06f149c | `gravador.formato` | Format of the file sent |
+| 2026-11-21 | e0dd68a | `metronomo.status_on_um` | Metrônomo ligado: {bpm} batidas por minuto, 1 tempo por compasso. |
+| 2026-11-21 | e0dd68a | `metronomo.status_on_um` | Metrónomo encendido: {bpm} pulsos por minuto, 1 tiempo por compás. |
+| 2026-11-21 | e0dd68a | `metronomo.status_on_um` | Metronome on: {bpm} beats per minute, 1 beat per bar. |
+| 2026-11-21 | e0dd68a | `metronomo.recente_um` | {bpm} bpm · 1 tiempo |
+| 2026-11-21 | e0dd68a | `metronomo.recente_um` | {bpm} bpm · 1 tempo |
+| 2026-11-21 | e0dd68a | `metronomo.recente_um` | {bpm} bpm · 1 beat |
+| 2026-11-21 | e0dd68a | `metronomo.compasso_um` | 1 tiempo |
+| 2026-11-21 | e0dd68a | `metronomo.compasso_um` | 1 tempo |
+| 2026-11-21 | e0dd68a | `metronomo.compasso_um` | 1 beat |
+| 2026-11-21 | a3bcc30 | `metronomo.explica` | Un clic regular para estudiar a tiempo. Sigue con la pantalla bloqueada y solo se detiene cuando tocas Detener. |
+| 2026-11-21 | a3bcc30 | `metronomo.explica` | Um clique regular para estudar no tempo. Ele continua com a tela bloqueada e só para quando você tocar em Parar. |
+| 2026-11-21 | a3bcc30 | `metronomo.explica` | A steady click to practise in time. It keeps going with the screen locked and only stops when you tap Stop. |
+| 2026-11-21 | a3bcc30 | `gravador.explica` | Record your voice or instrument and listen later. Recordings are saved in the app, only on this device. On Android, a recording in progress keeps going when you switch tabs; when you leave the home screen it stops and is saved. In the browser, it stops when you leave this tab. |
+| 2026-11-21 | a3bcc30 | `gravador.explica` | Grave a sua voz ou o seu instrumento e ouça depois. As gravações ficam guardadas no app, só neste aparelho. No Android, a gravação em andamento segue ao trocar de aba; ao sair da tela inicial, ela para e é guardada. No navegador, ela para ao sair desta aba. |
+| 2026-11-21 | a3bcc30 | `gravador.explica` | Grabe su voz o su instrumento y escúchelo después. Las grabaciones se guardan en la app, solo en este dispositivo. En Android, la grabación en curso sigue al cambiar de pestaña; al salir de la pantalla de inicio se detiene y se guarda. En el navegador, se detiene al salir de esta pestaña. |
+| 2026-11-21 | a3bcc30 | `afinador.explica` | Toque uma nota de referência para afinar de ouvido. O som para ao sair desta aba. |
+| 2026-11-21 | a3bcc30 | `afinador.explica` | Toca una nota de referencia para afinar de oído. El sonido se detiene al salir de esta pestaña. |
+| 2026-11-21 | a3bcc30 | `afinador.explica` | Play a reference note to tune by ear. The sound stops when you leave this tab. |
+| 2026-11-21 | 2fd252c | `importar.remover` | Remover importação |
+| 2026-11-21 | 2fd252c | `importar.remover` | Remove import |
+| 2026-11-21 | 2fd252c | `importar.remover` | Quitar importación |
+| 2026-11-21 | 2fd252c | `importar.ok` | Imported: {total} from “{nome}”. |
+| 2026-11-21 | 2fd252c | `importar.ok` | Importado: {total} de “{nome}”. |
+| 2026-11-21 | 2fd252c | `importar.erro` | Não foi possível importar: {erro} |
+| 2026-11-21 | 2fd252c | `importar.erro` | No se pudo importar: {erro} |
+| 2026-11-21 | 2fd252c | `importar.erro` | Could not import: {erro} |
+| 2026-11-21 | 2fd252c | `importar.botao` | Importar hinário |
+| 2026-11-21 | 2fd252c | `importar.botao` | Importar himnario |
+| 2026-11-21 | 2fd252c | `importar.botao` | Import hymnal |
+| 2026-11-21 | 1d6acdc | `afinador.la` | Lá 440 Hz |
+| 2026-11-21 | 1d6acdc | `afinador.la` | La 440 Hz |
+| 2026-11-21 | 1d6acdc | `afinador.la` | A 440 Hz |
+| 2026-11-20 | #109 | `gravador.explica` | Record your voice or instrument and listen later. Recordings are saved in the app, only on this device. A recording in progress stops when you leave this tab. |
+| 2026-11-20 | #109 | `gravador.explica` | Grave a sua voz ou o seu instrumento e ouça depois. As gravações ficam guardadas no app, só neste aparelho. A gravação em andamento para ao sair desta aba. |
+| 2026-11-20 | #109 | `gravador.explica` | Grabe su voz o su instrumento y escúchelo después. Las grabaciones se guardan en la app, solo en este dispositivo. La grabación en curso se detiene al salir de esta pestaña. |
+| 2026-11-17 | fb004ef | `gravador.privacidade` | The recording stays only on this device and goes away when you discard it or close the app. |
+| 2026-11-17 | fb004ef | `gravador.privacidade` | La grabación queda solo en este dispositivo y desaparece al descartarla o cerrar la app. |
+| 2026-11-17 | fb004ef | `gravador.privacidade` | A gravação fica só neste aparelho e some ao descartá-la ou fechar o app. |
+| 2026-11-17 | fb004ef | `gravador.explica` | Record your voice or instrument to listen to later. Nothing leaves the device. The recording stops when you leave this tab. |
+| 2026-11-17 | fb004ef | `gravador.explica` | Grave a sua voz ou o seu instrumento para ouvir depois. Nada sai do aparelho. A gravação para ao sair desta aba. |
+| 2026-11-17 | fb004ef | `gravador.explica` | Grabe su voz o su instrumento para escucharlo después. Nada sale del dispositivo. La grabación se detiene al salir de esta pestaña. |
+| 2026-11-17 | ecb50f3 | `player.duracao_tudo` | Whole hymn: {tempo} |
+| 2026-11-17 | ecb50f3 | `player.duracao_tudo` | Hino todo: {tempo} |
+| 2026-11-17 | ecb50f3 | `player.duracao_tudo` | Himno completo: {tempo} |
+| 2026-11-17 | 2a72e56 | `afinador.volume` | Volumen |
+| 2026-11-17 | 2a72e56 | `afinador.volume` | Volume |
+| 2026-11-17 | 2a677f9 | `ajustes.fonte_atual` | Current content: {nome} ({total}) |
+| 2026-11-17 | 2a677f9 | `ajustes.fonte_atual` | Conteúdo atual: {nome} ({total}) |
+| 2026-11-17 | 2a677f9 | `ajustes.fonte_atual` | Contenido actual: {nome} ({total}) |
+| 2026-11-17 | 2a677f9 | `ajustes.biblioteca` | Library |
+| 2026-11-16 | f5b88ac | `sons.nivelar_ligado` | On |
+| 2026-11-16 | f5b88ac | `sons.nivelar_ligado` | Activado |
+| 2026-11-16 | f5b88ac | `sons.nivelar_desligado` | Off |
+| 2026-11-16 | f5b88ac | `sons.nivelar_desligado` | Desactivado |
+| 2026-11-16 | f5b88ac | `sons.nivelar_ajuda` | Iguala o volume de cada nota dos instrumentos gravados, para as vozes se encaixarem. Vale na próxima vez que tocar. |
+| 2026-11-16 | f5b88ac | `sons.nivelar_ajuda` | Iguala el volumen de cada nota de los instrumentos grabados para que las voces encajen. Se aplica la próxima vez que toques. |
+| 2026-11-16 | f5b88ac | `sons.nivelar_ajuda` | Evens out the volume of each note of the recorded instruments so the voices blend. Applies the next time you play. |
+| 2026-11-16 | f5b88ac | `sons.nivelar` | Nivelar las notas |
+| 2026-11-16 | f5b88ac | `sons.nivelar` | Nivelar as notas |
+| 2026-11-16 | f5b88ac | `sons.nivelar` | Even out the notes |
+| 2026-11-16 | d8321a3 | `importar.recusadas` | Scores that were not imported: {total} (hymns {lista}). First reason: {motivo} |
+| 2026-11-16 | d8321a3 | `importar.recusadas` | Partituras que no entraron: {total} (himnos {lista}). Primer motivo: {motivo} |
+| 2026-11-16 | d8321a3 | `importar.ok_partituras` | Imported: {total} from “{nome}”, with {partituras}. |
+| 2026-11-16 | d8321a3 | `importar.ok_partituras` | Importado: {total} de “{nome}”, con {partituras}. |
+| 2026-11-16 | d8321a3 | `importar.ok_partituras` | Importado: {total} de “{nome}”, com {partituras}. |
+| 2026-11-16 | d8321a3 | `erro.rust.zip_sem_json` | The package does not have the hinario.json file. |
+| 2026-11-16 | d8321a3 | `erro.rust.zip_sem_json` | O pacote não tem o arquivo hinario.json. |
+| 2026-11-16 | d8321a3 | `erro.rust.zip_sem_json` | El paquete no tiene el archivo hinario.json. |
+| 2026-11-15 | 3fa27c1 | `creditos.uso.soundfonts` | Muestras de FluidR3 ya convertidas a MP3, descargadas en el paquete de sonidos. |
+| 2026-11-15 | 3fa27c1 | `creditos.uso.soundfonts` | FluidR3 samples already converted to MP3, downloaded in the sound pack. |
+| 2026-11-15 | 3fa27c1 | `creditos.uso.soundfonts` | Amostras do FluidR3 já convertidas em MP3, baixadas no pacote de sons. |
+| 2026-11-15 | 3fa27c1 | `creditos.uso.fluidr3` | Sound bank the instrument recordings come from (recorded sounds). |
+| 2026-11-15 | 3fa27c1 | `creditos.uso.fluidr3` | Banco de sonidos de donde vienen las grabaciones de los instrumentos (sonidos grabados). |
+| 2026-11-15 | 0aaa2e4 | `creditos.uso.soundfonts` | Muestras de FluidR3 en MP3, usadas solo en esas mediciones. |
+| 2026-11-15 | 0aaa2e4 | `creditos.uso.soundfonts` | FluidR3 samples in MP3, used only for those measurements. |
+| 2026-11-15 | 0aaa2e4 | `creditos.uso.soundfonts` | Amostras do FluidR3 em MP3, usadas só nessas medições. |
+| 2026-11-15 | 0aaa2e4 | `creditos.uso.fluidr3` | Sound bank whose recordings were measured to improve the synthesized instruments. |
+| 2026-11-15 | 0aaa2e4 | `creditos.uso.fluidr3` | Banco de sons cujas gravações foram medidas para melhorar os instrumentos sintetizados. |
+| 2026-11-15 | 0aaa2e4 | `creditos.uso.fluidr3` | Banco de sonidos cuyas grabaciones se midieron para mejorar los instrumentos sintetizados. |
+| 2026-11-14 | f4aaf89 | `player.tocar` | ▶ Tocar |
+| 2026-11-14 | f4aaf89 | `player.tocar` | ▶ Reproducir |
+| 2026-11-14 | f4aaf89 | `player.tocar` | ▶ Play |
+| 2026-11-14 | f4aaf89 | `player.parar` | ■ Stop |
+| 2026-11-14 | f4aaf89 | `player.parar` | ■ Parar |
+| 2026-11-14 | f4aaf89 | `player.parar` | ■ Detener |
+| 2026-11-14 | f4aaf89 | `player.andamento` | Tempo: {bpm} bpm |
+| 2026-11-14 | eec9cc4 | `vez.dica` | ⚑ The last time ends differently (the final). The whole hymn has a 2-second pause between parts. |
+| 2026-11-14 | eec9cc4 | `vez.dica` | ⚑ La última vez termina distinto (el final). En el himno completo hay una pausa de 2 segundos entre las partes. |
+| 2026-11-14 | eec9cc4 | `vez.dica` | ⚑ A última vez termina de forma diferente (o final). No hino todo há uma pausa de 2 segundos entre as partes. |
+| 2026-11-14 | d7e53ae | `vez.dica_pausa` | The whole hymn has a 2-second pause between parts. |
+| 2026-11-14 | d7e53ae | `vez.dica_pausa` | Entre las partes del himno completo hay una pausa de 2 segundos. |
+| 2026-11-14 | d7e53ae | `vez.dica_pausa` | Entre as partes do hino todo há uma pausa de 2 segundos. |
+| 2026-11-14 | d7e53ae | `vez.dica` | The last time ends differently (the final). The whole hymn has a 2-second pause between parts. |
+| 2026-11-14 | d7e53ae | `vez.dica` | La última vez termina distinto (el final). En el himno completo hay una pausa de 2 segundos entre las partes. |
+| 2026-11-14 | d7e53ae | `vez.dica` | A última vez termina de forma diferente (o final). No hino todo há uma pausa de 2 segundos entre as partes. |
+| 2026-11-14 | beec51b | `importar.remover` | Remover conteúdo importado |
+| 2026-11-14 | beec51b | `importar.remover` | Remove imported content |
+| 2026-11-14 | beec51b | `importar.remover` | Quitar contenido importado |
+| 2026-11-14 | beec51b | `importar.botao` | Importar hinário (.json) |
+| 2026-11-14 | beec51b | `importar.botao` | Importar himnario (.json) |
+| 2026-11-14 | beec51b | `importar.botao` | Import hymnal (.json) |
+| 2026-11-14 | aed267d | `player.silenciar` | Silenciar {voz} |
+| 2026-11-14 | aed267d | `player.silenciar` | Mute {voz} |
+| 2026-11-14 | aed267d | `player.ativar` | Unmute {voz} |
+| 2026-11-14 | aed267d | `player.ativar` | Ativar {voz} |
+| 2026-11-14 | aed267d | `player.ativar` | Activar {voz} |
+| 2026-11-14 | 96a9b1a | `lista.vazio` | No se encontró ningún himno. |
+| 2026-11-14 | 96a9b1a | `lista.vazio` | No hymns found. |
+| 2026-11-14 | 96a9b1a | `lista.vazio` | Nenhum hino encontrado. |
+| 2026-11-14 | 96a9b1a | `lista.exemplo` | sample package |
+| 2026-11-14 | 96a9b1a | `lista.exemplo` | paquete de ejemplo |
+| 2026-11-14 | 96a9b1a | `lista.exemplo` | pacote de exemplo |
+| 2026-11-14 | 96a9b1a | `importar.confirmar` | Confirmar remoção |
+| 2026-11-14 | 96a9b1a | `importar.confirmar` | Confirmar eliminación |
+| 2026-11-14 | 96a9b1a | `importar.confirmar` | Confirm removal |
+| 2026-11-14 | 96a9b1a | `hino.voltar` | ← Volver |
+| 2026-11-14 | 96a9b1a | `hino.voltar` | ← Voltar |
+| 2026-11-14 | 96a9b1a | `hino.voltar` | ← Back |
+| 2026-11-14 | 96a9b1a | `app.idioma` | Language |
+| 2026-11-14 | 96a9b1a | `app.idioma` | Idioma |
+| 2026-11-14 | 8121a5b | `inst.real_orgao_palheta` | Órgão de palhetas gravado (teste) |
+| 2026-11-14 | 8121a5b | `inst.real_orgao_palheta` | Recorded reed organ (test) |
+| 2026-11-14 | 8121a5b | `inst.real_orgao_palheta` | Armonio grabado (prueba) |
+| 2026-11-14 | 8121a5b | `inst.real_orgao` | Órgão gravado (teste) |
+| 2026-11-14 | 8121a5b | `inst.real_orgao` | Órgano grabado (prueba) |
+| 2026-11-14 | 8121a5b | `inst.real_orgao` | Recorded organ (test) |
+| 2026-11-14 | 8121a5b | `grupo.reais` | Sons gravados (teste) |
+| 2026-11-14 | 8121a5b | `grupo.reais` | Sonidos grabados (prueba) |
+| 2026-11-14 | 8121a5b | `grupo.reais` | Recorded sounds (test) |
+| 2026-11-14 | 7352f99 | `vez.dica` | The last time is the one that ends differently (the final). |
+| 2026-11-14 | 7352f99 | `vez.dica` | La última vez es la que termina distinto (el final). |
+| 2026-11-14 | 7352f99 | `vez.dica` | A última vez é a que termina de forma diferente (o final). |
+| 2026-11-14 | 61ae09b | `player.semitons` | {n} semitonos |
+| 2026-11-14 | 61ae09b | `player.semitons` | {n} semitones |
+| 2026-11-14 | 61ae09b | `importar.ok` | Imported: {n} hymns from “{nome}”. |
+| 2026-11-14 | 61ae09b | `importar.ok` | Importado: {n} hinos de “{nome}”. |
+| 2026-11-14 | 61ae09b | `importar.ok` | Importado: {n} himnos de “{nome}”. |
+| 2026-11-14 | 61ae09b | `ajustes.fonte_atual` | Current content: {nome} ({n} hymns) |
+| 2026-11-14 | 61ae09b | `ajustes.fonte_atual` | Conteúdo atual: {nome} ({n} hinos) |
+| 2026-11-14 | 61ae09b | `ajustes.fonte_atual` | Contenido actual: {nome} ({n} himnos) |
+| 2026-11-14 | 380f5dc | `plural.passadas.um` | {n} passada |
+| 2026-11-14 | 380f5dc | `plural.passadas.um` | {n} pass |
+| 2026-11-14 | 380f5dc | `plural.passadas.um` | {n} pasada |
+| 2026-11-14 | 380f5dc | `plural.passadas.outros` | {n} passes |
+| 2026-11-14 | 380f5dc | `plural.passadas.outros` | {n} passadas |
+| 2026-11-14 | 380f5dc | `plural.passadas.outros` | {n} pasadas |
+| 2026-11-14 | 380f5dc | `player.passadas_rotulo` | Passes |
+| 2026-11-14 | 380f5dc | `player.passadas_rotulo` | Passadas |
+| 2026-11-14 | 380f5dc | `player.passadas_rotulo` | Pasadas |
+| 2026-11-14 | 380f5dc | `player.com_final_dica` | The last pass plays the hymn's ending. |
+| 2026-11-14 | 380f5dc | `player.com_final_dica` | La última pasada toca el final del himno. |
+| 2026-11-14 | 380f5dc | `player.com_final_dica` | A última passada toca o final do hino. |
+| 2026-11-14 | 380f5dc | `player.com_final` | Terminar con el final |
+| 2026-11-14 | 380f5dc | `player.com_final` | Terminar com o final |
+| 2026-11-14 | 380f5dc | `player.com_final` | End with the final |
+| 2026-11-14 | 380f5dc | `estado.ligado` | On |
+| 2026-11-14 | 380f5dc | `estado.ligado` | Activado |
+| 2026-11-14 | 380f5dc | `estado.desligado` | Off |
+| 2026-11-14 | 380f5dc | `estado.desligado` | Desactivado |
+| 2026-11-14 | 0c09fd3 | `app.aviso` | Unofficial app, not affiliated with the Christian Congregation in Brazil. |
+| 2026-11-14 | 0c09fd3 | `app.aviso` | App não oficial, sem vínculo com a Congregação Cristã no Brasil. |
+| 2026-11-14 | 0c09fd3 | `app.aviso` | App no oficial, sin vínculo con la Congregación Cristiana en Brasil. |
+
+</details>
+
+
+### Perguntas em aberto
+
+1. O aviso do Médio e Alto deve aparecer sozinho quando um deles é escolhido (como hoje) **e** ter o ⓘ, ou só o ⓘ?
+2. Extrair o botão para um componente (`BotaoInfo.svelte`) antes de usar em mais de dois lugares?
+
+### Critérios de aceitação (propostos)
+
+- O ⓘ tem alvo de pelo menos 44 px, `aria-expanded` e `aria-label` traduzidos em pt, en e es.
+- Fechado por padrão; `aria-controls` só quando aberto.
+- Nenhum erro nem aviso de permissão fica escondido.
+- O e2e abre e fecha cada ⓘ.
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
