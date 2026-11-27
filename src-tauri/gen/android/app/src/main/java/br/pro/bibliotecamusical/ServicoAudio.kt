@@ -1,16 +1,10 @@
 package br.pro.bibliotecamusical
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
-import android.os.PowerManager
 
 /**
  * Serviço em primeiro plano (tipo mídia) que mantém o app vivo enquanto um hino toca, para o som não parar com a tela bloqueada ou o app em
@@ -24,9 +18,6 @@ class ServicoAudio : Service() {
         const val CANAL = "reproducao"
         const val ID_NOTIFICACAO = 1
         const val ACAO_PARAR = "br.pro.bibliotecamusical.PARAR"
-
-        /** O hino mais longo cabe folgado em uma hora; o limite evita um wake lock esquecido se o JavaScript nunca avisar que parou. */
-        private const val LIMITE_WAKE_LOCK_MS = 60L * 60L * 1000L
 
         /** Avisa o JavaScript que a pessoa tocou em "Parar" na notificação (definido pela ponte; nulo com o app fechado). */
         @Volatile
@@ -86,34 +77,70 @@ class ServicoAudio : Service() {
         var aoPararGravacao: (() -> Unit)? = null
     }
 
-    private var wakeLock: PowerManager.WakeLock? = null
+    private val trava by lazy { TravaDeCpu(this) }
+    private val notificacao by lazy { NotificacaoServico(this) }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACAO_PARAR) {
-            aoParar?.invoke()
-            aoPararGravacao?.invoke()
-            aoPararMetronomo?.invoke()
-            tocando = false
-            gravando = false
-            metronomo = false
-            tituloAtual = ""
-            encerrar()
+            pararPelaNotificacao()
             return START_NOT_STICKY
         }
         ativo = true
-        val titulo = if (tocando && tituloAtual.isNotBlank()) tituloAtual else if (metronomo && !gravando) getString(R.string.notificacao_metronomo_titulo) else getString(R.string.app_name)
+        if (!entrarEmPrimeiroPlano()) return START_NOT_STICKY
+        aguardandoPrimeiroPlano = false
+        if (paradaPendente) {
+            // A pessoa já tinha pausado ou parado enquanto o serviço subia: agora que ele chamou `startForeground`, pode sair sem derrubar o app.
+            paradaPendente = false
+            encerrar()
+            return START_NOT_STICKY
+        }
+        trava.segurar()
+        // Se o sistema matar o processo, o hino já se perdeu: não faz sentido ressuscitar o serviço sem som.
+        return START_NOT_STICKY
+    }
+
+    override fun onDestroy() {
+        ativo = false
+        tocando = false
+        gravando = false
+        metronomo = false
+        trava.soltar()
         try {
-            criarCanal()
-            val notificacao = montarNotificacao(titulo)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                var tipo = if (tocando || metronomo || !gravando) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK else 0
-                if (gravando) tipo = tipo or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-                startForeground(ID_NOTIFICACAO, notificacao, tipo)
-            } else {
-                startForeground(ID_NOTIFICACAO, notificacao)
-            }
+            aoOcioso?.invoke()
+        } catch (e: Exception) {
+            android.util.Log.w("bm", "não deu para pausar a WebView ao fim do serviço", e)
+        }
+        super.onDestroy()
+    }
+
+    private fun encerrar() {
+        trava.soltar()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
+    }
+
+    /** O toque em "Parar" na notificação: avisa o JavaScript, zera o que o serviço segurava e se encerra. */
+    private fun pararPelaNotificacao() {
+        aoParar?.invoke()
+        aoPararGravacao?.invoke()
+        aoPararMetronomo?.invoke()
+        tocando = false
+        gravando = false
+        metronomo = false
+        tituloAtual = ""
+        encerrar()
+    }
+
+    /** Chama `startForeground` com a notificação do estado atual. Devolve false se o Android recusou (o serviço já se encerrou). */
+    private fun entrarEmPrimeiroPlano(): Boolean {
+        val titulo = notificacao.titulo()
+        try {
+            notificacao.criarCanal()
+            val pronta = notificacao.montar(titulo)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) startForeground(ID_NOTIFICACAO, pronta, tipoDoServico()) else startForeground(ID_NOTIFICACAO, pronta)
+            return true
         } catch (e: Exception) {
             // O Android recusou (ForegroundServiceStartNotAllowedException no 12+, SecurityException sem a permissão do tipo de mídia, restrição
             // do fabricante): o hino segue tocando como antes, só sem a proteção, e o app não cai.
@@ -128,93 +155,14 @@ class ServicoAudio : Service() {
             if (eraGravacao) aoFalhar?.invoke()
             if (eraMetronomo) aoFalharMetronomo?.invoke()
             stopSelf()
-            return START_NOT_STICKY
-        }
-        aguardandoPrimeiroPlano = false
-        if (paradaPendente) {
-            // A pessoa já tinha pausado ou parado enquanto o serviço subia: agora que ele chamou `startForeground`, pode sair sem derrubar o app.
-            paradaPendente = false
-            encerrar()
-            return START_NOT_STICKY
-        }
-        segurarCpu()
-        // Se o sistema matar o processo, o hino já se perdeu: não faz sentido ressuscitar o serviço sem som.
-        return START_NOT_STICKY
-    }
-
-    override fun onDestroy() {
-        ativo = false
-        tocando = false
-        gravando = false
-        metronomo = false
-        soltarCpu()
-        try {
-            aoOcioso?.invoke()
-        } catch (e: Exception) {
-            android.util.Log.w("bm", "não deu para pausar a WebView ao fim do serviço", e)
-        }
-        super.onDestroy()
-    }
-
-    private fun encerrar() {
-        soltarCpu()
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
-    }
-
-    /**
-     * Refeito a cada `onStartCommand`, para o estado atual valer: um hino tem o limite de uma hora (contado de novo a cada mudança); uma
-     * gravação NÃO tem limite (ela segue até a pessoa parar, e o wake lock é solto ao parar o serviço). Sem isso, a CPU dormiria com a tela
-     * bloqueada passada uma hora de gravação.
-     */
-    private fun segurarCpu() {
-        soltarCpu()
-        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "bm:reproducao").apply {
-            setReferenceCounted(false)
-            if (gravando || metronomo) acquire() else acquire(LIMITE_WAKE_LOCK_MS)
+            return false
         }
     }
+}
 
-    private fun soltarCpu() {
-        wakeLock?.takeIf { it.isHeld }?.release()
-        wakeLock = null
-    }
-
-    private fun criarCanal() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val gerente = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (gerente.getNotificationChannel(CANAL) != null) return
-        // IMPORTANCE_LOW: aparece na barra sem som nem vibração (o som é o do hino).
-        val canal = NotificationChannel(CANAL, getString(R.string.canal_reproducao), NotificationManager.IMPORTANCE_LOW)
-        canal.setShowBadge(false)
-        gerente.createNotificationChannel(canal)
-    }
-
-    private fun montarNotificacao(titulo: String): Notification {
-        val abrir = PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-        val parar = PendingIntent.getService(
-            this,
-            1,
-            Intent(this, ServicoAudio::class.java).setAction(ACAO_PARAR),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-        val construtor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) Notification.Builder(this, CANAL) else @Suppress("DEPRECATION") Notification.Builder(this)
-        return construtor
-            .setSmallIcon(R.drawable.ic_notificacao)
-            .setContentTitle(titulo)
-            .setContentText(getString(if (gravando) R.string.notificacao_gravando else if (metronomo && !tocando) R.string.notificacao_metronomo else R.string.notificacao_tocando))
-            .setContentIntent(abrir)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setCategory(Notification.CATEGORY_TRANSPORT)
-            .setVisibility(Notification.VISIBILITY_PUBLIC)
-            .addAction(Notification.Action.Builder(null, getString(R.string.notificacao_parar), parar).build())
-            .build()
-    }
+/** O tipo do serviço em primeiro plano (Android 10 em diante): mídia, e microfone se há gravação. */
+private fun tipoDoServico(): Int {
+    var tipo = if (ServicoAudio.tocando || ServicoAudio.metronomo || !ServicoAudio.gravando) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK else 0
+    if (ServicoAudio.gravando) tipo = tipo or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+    return tipo
 }
