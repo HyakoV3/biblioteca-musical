@@ -11,6 +11,7 @@ dados **fictícios**, só para mostrar a estrutura (o pacote de exemplo embutido
     {
       "numero": 1,
       "titulo": "Título de exemplo",
+      "titulos": { "en": "Example title" },
       "tonalidade": "Dó maior",
       "andamento": 90,
       "letra": ["Linha 1 fictícia", "Linha 2 fictícia"],

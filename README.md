@@ -18,7 +18,7 @@ do repositório** (ficam fora do Git, na pasta `content/`, que é ignorada) e s�
 quem detém os direitos (a do transcritor, Enéias Ramos, está registrada em [`docs/licencas-de-terceiros.md`](docs/licencas-de-terceiros.md); a dos autores das letras e músicas e da edição, não). **O hinário e as partituras também não vêm dentro do app**: a pessoa os baixa uma vez em Ajustes
 (o primeiro acesso oferece o download do hinário) e eles ficam no aparelho, conferidos por tamanho e SHA-256, com uma barra de andamento (90% o download, o resto a conferência e a instalação). Os pacotes levam o SHA-256 no nome (`hinario-<sha8>.json`, `partituras-<sha8>.zip`)
 ([`docs/pacote-do-hinario.md`](docs/pacote-do-hinario.md) e [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md)). Os arquivos de teste de `tools/mscx2json/tests/fixtures/` são
-**fictícios**; o pacote de exemplo (`src-tauri/exemplo/`) é de **domínio público**. O formato dos dados está em [`docs/FORMATO.md`](docs/FORMATO.md).
+**fictícios**; o pacote de exemplo (`src-tauri/exemplo/`) é de **domínio público** ([guia](docs/pacote-de-exemplo.md)). O formato dos dados está em [`docs/FORMATO.md`](docs/FORMATO.md).
 
 O código foi escrito do zero: nenhum código ou arquivo de outros aplicativos foi copiado.
 

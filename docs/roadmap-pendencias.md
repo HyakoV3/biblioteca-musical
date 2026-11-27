@@ -32,7 +32,7 @@ Legenda: `[x]` feito · `[ ]` a fazer · **(depende de ...)** o que bloqueia o i
 - [ ] Se o teste de ponta a ponta ficar lento ou instável, restringi-lo à `main` e ao disparo manual.
 - [x] **Workflow de release escrito (2026-11-24)**, em [`release-e-apk-no-github.md`](release-e-apk-no-github.md): tag `v*` gera APK e AAB assinados, `SHA256SUMS` e o GitHub Release (sufixo `-rc1` vira pré-lançamento); sob demanda gera um APK de teste. Assinatura condicional no Gradle (sem chave, o release sai `unsigned` e o fluxo manual dos APKs de teste não muda), conferência de permissões e de tag, `dependabot.yml` agrupado. Testado **localmente**; **não rodou no GitHub ainda**.
 - [x] **Release ligado:** a chave de envio e os segredos foram cadastrados, e o release já gerou os pré-lançamentos até a `v0.3.9-rc10` (2026-11-27, APK de 11,4 MiB). O que se fazia: gerar a chave de envio (`keytool`, fora do repositório, com cópia e senha num cofre) e cadastrar `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` **num terminal normal** (comandos em `release-e-apk-no-github.md`); depois rodar o release sob demanda e a tag `v0.3.1-rc1`. Falta só a tag final (sem sufixo) e, se for o caso, o envio à Play Store.
-- [ ] **Sem conteúdo embutido:** o `BM_PACOTE` (hinos de terceiros) nunca entra no CI nem em *release* público. Só o APK de teste fechado, gerado na máquina do responsável, leva conteúdo (`apk-de-teste.md`).
+- [ ] **Sem conteúdo embutido além do exemplo:** o `BM_PACOTE` (hinos de terceiros) nunca entra no CI nem em *release* público; o que vai em todo APK é o pacote de exemplo de 5 hinos de domínio público ([`pacote-de-exemplo.md`](pacote-de-exemplo.md)). Só o APK de teste fechado, gerado na máquina do responsável, leva conteúdo (`apk-de-teste.md`).
 - [ ] Conferir que versão e commit (`__APP_VERSAO__`, `__APP_COMMIT__`) aparecem certos no APK do CI.
 - [ ] **iOS:** o GitHub tem máquinas macOS (de graça em repositório público), então o CI consegue **compilar** o app
       iOS sem Mac. Mas **instalar** em iPhone, usar o TestFlight ou publicar na App Store exige uma conta do
@@ -67,8 +67,8 @@ mesmo conjunto de fluxos que o responsável já usa em outros projetos.
 
 ## 4. Testes automatizados
 
-- [x] **Testes do app no repositório** (`tests/`, executor Vitest): `npm test`. **395 testes em 32 arquivos** (2026-11-22), só com dados
-      **fictícios** (`tests/amostras.ts`; nenhum hino real entra no Git): partes e vezes do hino (introdução, final,
+- [x] **Testes do app no repositório** (`tests/`, executor Vitest): `npm test`. **690 testes em 53 arquivos** (2026-11-27), só com dados
+      **fictícios** (`tests/amostras.ts`) ou o pacote de exemplo de domínio público (`tests/exemplo.test.ts`, `tests/titulo.test.ts`; nenhum outro hino real entra no Git): partes e vezes do hino (introdução, final,
       pausas), sintetizador (reagendar na pausa, tempo audível, filtro de abertura dos metais, uma onda por altura),
       timbres por altura (interpolação das medidas, volume preservado; `tests/timbres.test.ts`), karaokê (validação e escolha da sílaba), pacote de
       sons (zips sintéticos adulterados, truncados e "bomba"), catálogo de sons gravados x manifesto, número do hino e
@@ -79,8 +79,8 @@ mesmo conjunto de fluxos que o responsável já usa em outros projetos.
 - [x] **Ponta a ponta do karaokê** (`npm run test:e2e`, `tests/e2e/karaoke.mjs`): sobe o Vite e um Chrome mudo, entrega
       um hino fictício por um `invoke` simulado do Tauri e confere sílaba, estrofe, tempo, pausa e o botão. Precisa de
       Chrome ou Chromium (variável `CHROME` indica o executável) e não sobra processo nem pasta temporária.
-- [x] O conversor `tools/mscx2json` tem testes em Rust, dentro do repositório (`cargo test`: 126), e o leitor do app também
-      (`cargo test --lib` em `src-tauri`: 105, mais 4 que só rodam sob pedido, com conteúdo real). As ferramentas em Python têm os seus (`pytest tools`).
+- [x] O conversor `tools/mscx2json` tem testes em Rust, dentro do repositório (`cargo test`: 142), e o leitor do app também
+      (`cargo test --lib` em `src-tauri`: 120, mais 4 que só rodam sob pedido, com conteúdo real). As ferramentas em Python têm os seus (`pytest tools`: 165).
 - [x] Tudo isso roda no **CI** (seção 2), inclusive o teste de ponta a ponta.
 - [ ] Testes de componentes Svelte e do store (`reproducao.svelte.ts`), que dependem do compilador do Svelte no
       Vitest: ficam de fora por enquanto (a lógica pura já está coberta).
