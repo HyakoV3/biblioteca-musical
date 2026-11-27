@@ -2051,58 +2051,6 @@
     "severity": "FAIL",
     "value": 9
   },
-  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Método::aplicar": {
-    "severity": "FAIL",
-    "value": 67
-  },
-  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Método::ler": {
-    "severity": "FAIL",
-    "value": 77
-  },
-  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Método::sequencia": {
-    "severity": "WARN",
-    "value": 23
-  },
-  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Nesting::aplicar": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Nesting::ler": {
-    "severity": "FAIL",
-    "value": 4
-  },
-  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Nesting::sequencia": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Params::aplicar": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Params::duas_ou_mais": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Params::inteiro_positivo": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Params::palavras": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "tools/mscx2json/src/correcoes.rs::correcoes::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 263
-  },
-  "tools/mscx2json/src/correcoes.rs::correcoes::OCP::aplicar": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "tools/mscx2json/src/correcoes.rs::correcoes::OCP::ler": {
-    "severity": "FAIL",
-    "value": 6
-  },
   "tools/mscx2json/src/correcoes.rs::correcoes::testes::Clean/Params::s": {
     "severity": "WARN",
     "value": 3
@@ -2110,6 +2058,58 @@
   "tools/mscx2json/src/correcoes.rs::correcoes::testes::Clean/Tamanho::": {
     "severity": "WARN",
     "value": 341
+  },
+  "tools/mscx2json/src/correcoes/aplicacao.rs::aplicacao::Clean/Método::aplicar_uma": {
+    "severity": "WARN",
+    "value": 23
+  },
+  "tools/mscx2json/src/correcoes/aplicacao.rs::aplicacao::Clean/Método::sequencia": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "tools/mscx2json/src/correcoes/aplicacao.rs::aplicacao::Clean/Nesting::efetivar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/correcoes/aplicacao.rs::aplicacao::Clean/Nesting::sequencia": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/correcoes/aplicacao.rs::aplicacao::Clean/Params::achar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/correcoes/aplicacao.rs::aplicacao::Clean/Params::aplicar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/correcoes/aplicacao.rs::aplicacao::Clean/Params::aplicar_uma": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/correcoes/aplicacao.rs::aplicacao::Clean/Params::efetivar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/mscx2json/src/correcoes/aplicacao.rs::aplicacao::Clean/Params::ligar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/mscx2json/src/correcoes/leitura.rs::Item::SRP::": {
+    "severity": "WARN",
+    "value": 8
+  },
+  "tools/mscx2json/src/correcoes/leitura.rs::leitura::Clean/Método::ler": {
+    "severity": "WARN",
+    "value": 20
+  },
+  "tools/mscx2json/src/correcoes/leitura.rs::leitura::Clean/Nesting::ler": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/mscx2json/src/correcoes/leitura.rs::leitura::Clean/Params::ler_item": {
+    "severity": "WARN",
+    "value": 3
   },
   "tools/mscx2json/src/main.rs::main::Clean/Método::converter_com": {
     "severity": "FAIL",
