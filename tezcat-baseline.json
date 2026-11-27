@@ -1375,29 +1375,9 @@
     "severity": "FAIL",
     "value": 6
   },
-  "src/lib/timbres.ts::timbres::Clean/Método::harmonicosEm": {
-    "severity": "FAIL",
-    "value": 32
-  },
-  "src/lib/timbres.ts::timbres::Clean/Nesting::harmonicosEm": {
-    "severity": "WARN",
-    "value": 2
-  },
   "src/lib/timbres.ts::timbres::Clean/Nesting::perfilDaNota": {
     "severity": "WARN",
     "value": 2
-  },
-  "src/lib/timbres.ts::timbres::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 172
-  },
-  "src/lib/timbres.ts::timbres::OCP::harmonicosEm": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src/lib/timbres.ts::timbres::SRP::": {
-    "severity": "WARN",
-    "value": 16
   },
   "src/lib/tom.ts::TomSustentado::Clean/Método::tocar": {
     "severity": "WARN",
