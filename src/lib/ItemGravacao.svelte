@@ -132,7 +132,7 @@
   const textoDoEnvio = $derived(contexto ? textoDoContexto(contexto, tr, i18n.idioma, notacao.atual) : "");
   /** O resumo de uma linha no card e as linhas completas ao abrir (as mesmas do texto enviado, sem a formatação). */
   const resumo = $derived(contexto ? resumoDoContexto(contexto, tr) : "");
-  const linhasContexto = $derived(contexto ? linhasDoContexto(contexto, tr, i18n.idioma, false, notacao.atual) : []);
+  const linhasContexto = $derived(contexto ? linhasDoContexto(contexto, tr, i18n.idioma, { notacao: notacao.atual }) : []);
   /** O diálogo de envio só existe no DOM enquanto está aberto (com muitas gravações, um `<dialog>` por item pesaria à toa). */
   let dialogoAberto = $state(false);
   let dialogo = $state<HTMLDialogElement | null>(null);

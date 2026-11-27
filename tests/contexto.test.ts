@@ -64,6 +64,8 @@ describe("contextoValido", () => {
     expect(contextoValido(c)).toEqual(c);
     expect(contextoValido(null)).toBeNull();
     expect(contextoValido({ v: 99, origem: "hino" })).toBeNull();
+    // origem que não é texto (um array de um item vira "hino" ao virar chave) não acha validador
+    for (const origem of [["hino"], ["metronomo"], 1, {}, null]) expect(contextoValido({ v: 1, origem, hino: { numero: 1, titulo: "a", andamento: 2, transposicao: 0, parte: "tudo", vozes: [] } })).toBeNull();
     expect(contextoValido({ v: 1, origem: "hino", hino: { numero: "x", vozes: [] } })).toBeNull();
   });
   it("recusa registro malformado, que quebraria o texto (sem título, voz sem nome, tempos fora de 2 a 4)", () => {
