@@ -1115,37 +1115,21 @@
     "severity": "WARN",
     "value": 4
   },
-  "src/lib/preferencias.ts::preferencias::Clean/Nesting::lerAjustes": {
+  "src/lib/preferencias-leitura.ts::preferencias-leitura::Clean/Nesting::salvarZoomPartitura": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/preferencias.ts::preferencias::Clean/Nesting::lerCartoes": {
+  "src/lib/preferencias-paineis.ts::preferencias-paineis::Clean/Nesting::salvarAjustes": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/preferencias.ts::preferencias::Clean/Nesting::lerTudo": {
+  "src/lib/preferencias-voz.ts::preferencias-voz::Clean/Nesting::lerTudo": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/preferencias.ts::preferencias::Clean/Nesting::salvarAjustes": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/preferencias.ts::preferencias::Clean/Nesting::salvarZoomPartitura": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/preferencias.ts::preferencias::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 272
-  },
-  "src/lib/preferencias.ts::preferencias::OCP::lerVoz": {
+  "src/lib/preferencias-voz.ts::preferencias-voz::OCP::lerVoz": {
     "severity": "WARN",
     "value": 4
-  },
-  "src/lib/preferencias.ts::preferencias::SRP::": {
-    "severity": "FAIL",
-    "value": 28
   },
   "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Método::irPara": {
     "severity": "WARN",
