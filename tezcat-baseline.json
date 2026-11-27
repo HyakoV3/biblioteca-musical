@@ -1124,8 +1124,8 @@
     "value": 3
   },
   "src/lib/organizar.ts::organizar::Clean/Params::mesclar": {
-    "severity": "FAIL",
-    "value": 5
+    "severity": "WARN",
+    "value": 4
   },
   "src/lib/organizar.ts::organizar::Clean/Params::nomeDaGravacao": {
     "severity": "WARN",
