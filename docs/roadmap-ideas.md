@@ -1215,7 +1215,7 @@ Começar pela **A, na forma da D** (gravar com o hino, em um toque), mais o que 
 
 ## I-50 — Faixa "afinado" maior e com cor por proximidade, no "Qual nota é essa?"
 
-- **Status:** rascunho (2026-11-27); as **cores foram aprovadas** pelo responsável; **ainda não revisada** por um subagente Opus.
+- **Status:** rascunho **revisado** (2026-11-27, subagente Opus; correções incorporadas abaixo); as **cores foram aprovadas** pelo responsável.
 - **Origem:** o responsável, 2026-11-27: "o retângulo central podia ser ligeiramente maior e um pouco mais alto que a bola, e quando estivermos dentro dele ele pode mudar de cor, levemente esverdeado; quando fora, mais próximo, levemente alaranjado; perto das extremidades fica como é hoje".
 - **Prioridade:** baixa a média (acabamento do medidor).
 
@@ -1245,10 +1245,10 @@ No medidor do "Qual nota é essa?" (`QualNota.svelte`), a faixa "afinado" é uma
 | Pergaminho claro | `#1d6a35` (atual) | `#c2570c` |
 | Pergaminho escuro | `#6fd183` (atual) | `#ffa657` |
 | Marinho claro | `#1b7a3a` (atual) | `#c2570c` |
-| Marinho escuro | `#5fd38a` (a confirmar contra o `--sucesso` atual) | `#ffa657` |
+| Marinho escuro | `#62d67a` (atual) | `#ffa657` |
 | Alto contraste | sem tinta | sem tinta (só a borda mais grossa quando afinado) |
 
-**Contraste calculado (WCAG):** a bola (`--ouro-linha`) sobre o fundo tingido fica entre **3,9 e 5,3:1** em todas as paletas (mínimo para interface: 3:1); o texto sobre o fundo tingido, entre 7,1 e 12,4:1. A borda laranja `#c2570c` sobre a superfície clara dá **4,3 a 4,5:1**: passa, mas perto do limite.
+**Contraste calculado (WCAG, recalculado pela revisão):** a bola (`--ouro-linha`) sobre o fundo tingido fica entre **3,9 e 5,3:1** em todas as paletas (mínimo para interface: 3:1). Não há texto dentro da faixa. A borda laranja `#c2570c` sobre a superfície clara dá **4,3 a 4,5:1** e, **sobre o próprio fundo laranja**, cai para **3,2 a 3,4:1** nas paletas claras: passa de 3:1, mas com pouca folga.
 
 ### Largura da faixa: decisão a tomar
 
@@ -1257,7 +1257,8 @@ A largura de hoje (10% da trilha) **é** a tolerância (±5 cents). Alargar só 
 ### Acessibilidade
 
 - **A cor nunca é o único sinal:** a palavra (Afinado, Baixo, Alto), a posição da bola e a forma da faixa continuam. Verde e laranja são um par que o daltonismo vermelho-verde confunde, então a **borda cheia** marca "dentro" e o laranja só pinta o fundo.
-- A mudança de cor leva uma transição curta (~150 ms) e **nenhuma** com "reduzir movimento".
+- A mudança de cor leva uma transição curta (~150 ms) e **nenhuma** com "reduzir movimento" (reaproveitar `movimento.css`, que já trata `prefers-reduced-motion`).
+- Sem leitura (zona nula), a faixa fica **sem tinta** (a trilha já esmaece a 0,55 de opacidade).
 - O leitor de tela já ouve "nota, afinado/baixo/alto" (`aria-live`); não muda.
 
 ### Perguntas em aberto
@@ -1265,13 +1266,15 @@ A largura de hoje (10% da trilha) **é** a tolerância (±5 cents). Alargar só 
 1. Largura: manter ±5 cents (só altura) ou subir a tolerância (a opção b)?
 2. O limite de "perto" em 15 cents é bom? (hipótese; testar com o trompete e o vibrato.)
 3. Degraus com transição curta, ou mistura contínua entre as cores?
-4. O verde do Marinho escuro: confirmar `#5fd38a` contra o `--sucesso` atual da paleta.
-5. A borda laranja em 4,3:1 no claro basta, ou escurecer um pouco o `#c2570c`?
+4. ~~O verde do Marinho escuro~~ **Resolvida pela revisão:** o `--sucesso` atual é `#62d67a` (`tema.css:180,200`).
+5. A borda laranja basta (4,3 a 4,5:1 sobre a superfície; 3,2 a 3,4:1 sobre o fundo laranja), ou escurecer um pouco o `#c2570c`?
+6. **Histerese nos limites.** Com vibrato, um degrau fixo em 15 cents pisca entre laranja e nada. A zona sai do valor **calmo** (`suave.mostrado`, o mesmo da palavra), com folga na entrada e na saída de cada zona (por exemplo entra em 4 e sai em 6 cents)?
 
 ### Impacto técnico (hipóteses)
 
 - `afinador.ts`: uma função pura `zonaDeAfinacao(cents)` ("dentro" | "perto" | "longe" | null para leitura inválida), com os limites em constantes junto de `AFINADO_CENTS`; testável sem áudio.
-- `QualNota.svelte`: a `.faixa` ganha `data-zona` e a altura nova; o CSS usa `color-mix(in srgb, var(--sucesso) 22%, var(--superficie))` e o equivalente com `--aviso`.
+- `QualNota.svelte`: a zona vem do valor **calmo** que alimenta a palavra (`suave.mostrado`), **não** do que move a bola (`suave.suave`, `QualNota.svelte:148-150`), senão a cor e a palavra discordam; a `.faixa` ganha `data-zona` e a altura nova; o CSS usa `color-mix(in srgb, var(--sucesso) 22%, var(--superficie))` e o equivalente com `--aviso`.
+- `color-mix` já é usado no app (`Segmentado.svelte:34`), então o suporte do WebView não é risco novo (pede WebView 111 ou mais nova; `minSdk` 24).
 - `tema.css`: `--aviso` nas seis paletas (e no alto contraste, igual ao amarelo, sem tinta); `docs/design-tokens.md` ganha a linha do token.
 - Teste unitário da função e do CSS por zona; e2e confere que a faixa muda de zona ao mexer nos cents.
 
@@ -1283,12 +1286,14 @@ A largura de hoje (10% da trilha) **é** a tolerância (±5 cents). Alargar só 
 - No alto contraste não há tinta, só a borda mais grossa.
 - Com "reduzir movimento", a cor troca sem transição.
 - A palavra, a posição da bola e o leitor de tela continuam iguais.
+- A cor e a palavra nunca discordam (a zona usa o mesmo valor calmo da palavra) e não pisca com vibrato (histerese testada na função pura).
+- Sem leitura, a faixa não tem tinta.
 
 ---
 
 ## I-51 — Intensidade interna dos filtros de ruído (escala 1 a 12, só para quem desenvolve)
 
-- **Status:** rascunho (2026-11-27); **ainda não revisada** por um subagente Opus.
+- **Status:** rascunho **revisado** (2026-11-27, subagente Opus; correções abaixo; o que o 1 a 12 significa, em dB, espera decisão do responsável).
 - **Origem:** o responsável, 2026-11-27, depois de testar os filtros no aparelho (RC6 e seguintes): o Médio e o Alto "ficaram muito agressivos e cortavam notas longas, como previsto". Pedido: uma **escala de 1 a 12, para os desenvolvedores controlarem o nível aplicado** (não para a pessoa ajustar), com o Alto de 11 para **10** e o Médio de 8 para **6**; o Baixo (Android) fica em **3**.
 - **Prioridade:** média (o resultado atual abafa instrumento).
 
@@ -1300,7 +1305,7 @@ O Médio (RNNoise) e o Alto (GTCRN) são redes neurais que o app liga **inteiras
 
 ### O que se deseja
 
-Uma **escala interna de 1 a 12**, **sem tela**, que diz quanto do filtro entra no som gravado. Ela é um **ajuste fino de compilação**: quem gera o APK (ou o RC) escolhe os valores na hora do build, sem mexer na lógica, para a equipe afinar de ouvido e comparar APKs de teste com valores diferentes. Os valores padrão (a coluna "proposta") ficam no código; um valor de ambiente os substitui.
+Uma **escala interna de 1 a 12**, **sem tela**, que diz quanto do filtro entra no som gravado. Ela é um **ajuste fino de compilação**: quem gera o APK (ou o RC) escolhe os valores na hora do build, sem mexer na lógica, para a equipe afinar de ouvido e comparar APKs de teste com valores diferentes. Os valores padrão (a coluna "proposta") ficam no código; um valor de ambiente os substitui. **Atenção (revisão):** com a mistura linear `m = nivel / 12`, o ruído cai **no máximo** `−20·log10(1 − m)`: o Médio em 6 deixa 50% do original e só tira **~6 dB**; o Alto em 10, **~15,6 dB**. O Médio em 6 provavelmente tira **menos ruído que o Baixo**. Por isso a escala deve representar a **atenuação máxima em dB** (`m = 1 − 10^(−dB/20)`), e não uma fração linear; o responsável decide o que o 1 a 12 significa (ver as perguntas).
 
 | Nível na tela | Tecnologia | Escala hoje (sensação do responsável) | Escala proposta |
 |---|---|---|---|
@@ -1317,21 +1322,23 @@ Os números são **sensação de ouvido**, não medida: servem de ponto de parti
 
 Misturar o som **filtrado** com o **original** (seco e molhado) antes do gravador: `saída = m · filtrado + (1 − m) · original`, com `m` saindo da escala (por exemplo `nivel / 12`, ou uma curva a calibrar de ouvido). O original devolve a nota longa que a rede cortaria.
 
-- **O atraso precisa casar.** O filtro atrasa o som; o caminho do original ganha um `DelayNode` com o mesmo atraso, senão a soma vira um som "oco" (filtro de pente). É o ponto de maior risco e o que mais pede teste no aparelho.
+- **O atraso precisa casar.** O filtro atrasa o som; o caminho do original ganha um `DelayNode` com o mesmo atraso, senão a soma vira um som "oco" (filtro de pente). O `AudioWorkletNode` **não informa** a latência; estimativa da revisão a partir do código (não medida): **RNNoise ~21 ms** (buffer em anel de 512 amostras mais ~480 do algoritmo); **GTCRN** com quadro de 768 amostras a 48 kHz, mais reamostragem e STFT, **desconhecido e provavelmente maior**. Os dois são **fixos e diferentes**: medir por **correlação cruzada** (um clique gravado), não de ouvido. Até o `.wasm` carregar o filtro devolve silêncio, e só o original passa.
+- **Fase:** o RNNoise aplica ganhos reais por banda (risco pequeno de som oco com o atraso certo); o GTCRN usa máscara complexa (mexe na fase) e **pode soar oco mesmo com o atraso certo**. Clipping é risco baixo (os pesos somam 1).
 - **Fora do alcance da escala:** o Baixo (Android) e o Desligado.
 - Nível 12 equivale a "só filtrado" (como hoje); a escala nunca passa de 12.
+- **Alternativas a testar para instrumento:** o mesmo pacote traz um `NoiseGateWorkletNode` (`openThreshold`, `closeThreshold`, `holdMs`) e o Speex; um gate, ou um filtro só nos graves/médios, pode tirar o chiado sem cortar a nota longa.
 
 ### Perguntas em aberto
 
-1. Como se escolhe o valor na compilação? Hipótese: variáveis do Vite lidas em `filtroDeRuido.ts` (por exemplo `VITE_RUIDO_NIVEL_RNNOISE` e `VITE_RUIDO_NIVEL_GTCRN`, inteiros de 1 a 12), com os padrões 6 e 10 no código; valor ausente, fora de 1 a 12 ou que não é inteiro **volta ao padrão** (nunca quebra o build). Perguntas: o `release.yml` passa a aceitar essas variáveis como entrada do RC (para gerar APKs de teste com valores diferentes), ou só o build local? E o **nome do APK ou a tela Sobre** deve mostrar os valores usados, para saber qual APK é qual?
-2. Mistura linear (`nivel / 12`) ou curva? Dá para começar linear e ajustar de ouvido.
-3. O atraso do RNNoise e o do GTCRN são diferentes (e fixos)? Medir; se mudarem com o aparelho, a mistura precisa estimar.
+1. Como se escolhe o valor na compilação? Hipótese: variáveis de ambiente (por exemplo `RUIDO_NIVEL_RNNOISE` e `RUIDO_NIVEL_GTCRN`, inteiros de 1 a 12) lidas no `vite.config.js` e repassadas por `define`, como o `__APP_COMMIT__` (`vite.config.js:34`); **nenhuma `VITE_` é usada hoje**, só `import.meta.env.DEV` em `tom.ts:59`. Os padrões (6 e 10) ficam no código; valor ausente, fora de 1 a 12 ou não inteiro **volta ao padrão** (nunca quebra o build). O Tauri roda `npm run build` como `beforeBuildCommand` (`tauri.conf.json:9`) e o `release.yml` builda **duas vezes** (APK em `:143`, AAB em `:150`): a variável precisa ficar no `env` do **job**, senão o APK e o AAB saem diferentes. O `workflow_dispatch` hoje não tem entradas (`:16`): o RC passa a aceitar as duas como entrada (para gerar APKs de teste com valores diferentes), ou só o build local? E a tela **Sobre**, junto do commit, deve mostrar os valores usados, para saber qual APK é qual? (Seria um número na tela, só no Sobre.)
+2. **O que o 1 a 12 significa?** Mistura linear (`nivel / 12`, que dá só ~6 dB no Médio) ou **atenuação máxima em dB** (recomendação da revisão)? Em dB, o responsável escolhe, por exemplo, "Médio tira até 10 dB, Alto até 18 dB", e a mistura sai da conta.
+3. Os atrasos do RNNoise e do GTCRN são diferentes e fixos (estimativas acima): medir por correlação cruzada, com tolerância de 1 ms, e conferir se mudam com o aparelho.
 4. O gravador mede o nível do som **depois** do filtro (o medidor lê a saída dele): ler a mistura, não só o filtrado.
 5. O texto do aviso ("Médio e Alto são feitos para voz falada e podem abafar notas longas") continua verdadeiro com a mistura? Revisar, e nos 3 idiomas, se a mistura mudar o que ele promete.
 
 ### Impacto técnico (hipóteses)
 
-- `gravador.ts` (`ligarFiltro`): hoje `fonte → filtro → destino`. Passa a ter também `fonte → atraso → ganho seco → destino` e `filtro → ganho molhado → destino`, com os dois ganhos vindos da escala; o `destroy` e o `soltar` desligam os nós novos.
+- `gravador.ts` (`ligarFiltro`): hoje `fonte → filtro → destino`. Passa a ter também `fonte → atraso → ganho seco → destino` e `filtro → ganho molhado → destino`, com os dois ganhos vindos da escala. O **medidor** (`ligarMedidorEm`, `gravador.ts:278`) deve ler a **mistura**, não só o filtrado, e o `soltar` (`:410-414`) e o `destroy` desligam o atraso e os ganhos novos.
 - `filtroDeRuido.ts`: a escala (padrões 6 e 10, com leitura validada das variáveis de build) e uma função pura `misturaDoFiltro(filtro)` (0 a 1), testável sem áudio; `vite.config` repassa as variáveis. O valor vira constante do bundle: **não há ajuste em tempo de execução**.
 - Teste unitário da função; a parte de áudio só se prova no aparelho.
 
@@ -1343,6 +1350,9 @@ Misturar o som **filtrado** com o **original** (seco e molhado) antes do gravado
 - A soma não soa "oca" (sem filtro de pente audível): o atraso do original casa com o do filtro.
 - O Baixo e o Desligado ficam como estão; a mistura em 12 equivale ao filtrado de hoje.
 - A gravação continua não saindo muda; o CPU/bateria não piora de forma perceptível (a mistura soma poucos nós).
+- **O atraso de cada filtro é medido** (correlação cruzada com um clique) e o do original casa com tolerância de **no máximo 1 ms**.
+- **A redução de ruído em dB num trecho de silêncio é medida por nível** e confere com a escala escolhida.
+- Teste unitário do valor padrão e do valor inválido (ausente, fora de 1 a 12, não inteiro: volta ao padrão).
 
 ---
 
