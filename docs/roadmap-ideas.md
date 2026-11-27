@@ -1047,6 +1047,64 @@ Uma linha em Ajustes, "Créditos e licenças" (`src/lib/licencas.ts`), citando o
 
 ---
 
+## I-47 — Controles de mídia na notificação (miniplayer fora do app)
+
+- **Status:** anotada (2026-11-27).
+- **Origem:** o responsável, 2026-11-27: "hoje na notificação só tem o parar; queria um miniplayer, e a partir dele navegar na música, alternar para o metrônomo, alternar para a gravação". Referências citadas: Spotify e Feishin.
+- **Prioridade:** a definir.
+
+### O problema
+
+Com a tela bloqueada ou o app em segundo plano, a única coisa que a pessoa vê é a notificação do serviço de áudio (`ServicoAudio.kt`): o título, uma linha de estado ("tocando", "metrônomo", "gravando") e **um botão, Parar**. Não dá para pausar e continuar, ir a outra parte do hino, trocar de hino nem ver em que ponto está. O miniplayer que existe dentro do app (`.mini`) só funciona com o app aberto.
+
+### Como isso se chama no Android
+
+Não é só uma notificação comum: é uma **notificação de mídia** (estilo `MediaStyle`) ligada a uma **`MediaSession`**. É o que o Spotify, o YouTube Music e o Feishin usam, e ela dá de graça, no mesmo conjunto:
+
+- os **controles na tela bloqueada** e na gaveta de notificações (play/pausa, anterior, próximo, **barra de progresso arrastável**, título, arte);
+- o **player de mídia nas Configurações rápidas** (Android 11 em diante) e a escolha da saída de áudio;
+- os **botões do fone** (Bluetooth e com fio), do carro e do relógio, que chegam como eventos da sessão;
+- o reconhecimento do app como "tocando agora", com a categoria de transporte que o serviço já declara.
+
+No Media3 (a biblioteca do Android para isso) o nome é `MediaSession` com `MediaSessionService`. A alternativa sem a biblioteca é o `android.media.session.MediaSession` do próprio sistema.
+
+### O que se deseja
+
+1. **Hino:** a notificação passa a ser de mídia, com título (número e nome do hino no idioma da interface), a parte que toca, **play/pausa**, **hino anterior e seguinte** (na ordem da lista) e **barra de progresso** que leva à parte tocada.
+2. **Metrônomo:** a mesma notificação mostra o andamento e a fórmula de compasso, com play/pausa e, se couber, os botões de mais e menos 1 bpm.
+3. **Gravação:** a mesma notificação mostra o tempo gravado, com **parar** (e pausar, se o Android permitir no tipo de serviço de microfone). Gravar **não é mídia**, então os controles de progresso e de hino não se aplicam.
+4. **Alternar entre os três** a partir da notificação: um hino tocando e uma gravação em andamento (a gravação com o hino no fone já existe, I-38) mostram os dois estados, sem esconder o botão de parar a gravação.
+5. O que a pessoa faz na notificação e o que o app mostra aberto têm de estar **sempre iguais** (uma única fonte da verdade, como na Onda 3).
+
+### Perguntas em aberto
+
+1. **Uma sessão ou três?** Uma `MediaSession` para o hino e o metrônomo, e uma notificação à parte (sem mídia) para a gravação, ou uma só notificação com modos?
+2. **Anterior e seguinte:** na ordem da lista, entre os favoritos, ou entre os recentes? O que fazer no último hino?
+3. **Barra de progresso do hino:** o hino toca por partes (introdução, vezes, final) e pode ter repetições. Mostrar o tempo total previsto ou o tempo da parte?
+4. **Quem manda:** hoje o estado vive no JavaScript (`reproducao.svelte.ts`), e o Kotlin só mantém o serviço. Os botões da notificação precisam chamar o JavaScript (pela `PonteServico`) com o app em segundo plano e a WebView possivelmente suspensa.
+5. **Biblioteca ou sistema:** o Media3 traz muita coisa pronta, mas aumenta o APK e as dependências; o `MediaSession` do sistema é menor e já basta para os controles.
+6. **Arte:** usar o logo do app, ou a clave, como imagem do "álbum"?
+7. **Fone e carro:** os botões físicos (play/pausa, próximo) devem valer? No fone com botão único, o duplo toque costuma ser "próximo".
+
+### Impacto técnico (hipóteses)
+
+- `ServicoAudio.kt`: trocar o `Notification.Builder` simples por um com `MediaStyle` e `setSessionToken`; manter o canal `IMPORTANCE_LOW`, a categoria de transporte e os tipos `mediaPlayback|microphone`.
+- Novo caminho de volta, do Kotlin para o JavaScript (play, pausa, anterior, seguinte, buscar), pela ponte que já existe, e do JavaScript para o Kotlin (estado, posição e duração).
+- Android 13 em diante: a permissão de notificações (`POST_NOTIFICATIONS`) passa a importar mais, porque a notificação vira o controle principal.
+- Testes: a lógica de "qual botão aparece em cada estado" pode ficar pura e testada no Vitest; o resto só se confere no aparelho (tela bloqueada, fone, Configurações rápidas).
+
+### Critérios de aceitação (propostos)
+
+- Com a tela bloqueada, a notificação de um hino mostra título, play/pausa, anterior, seguinte e a barra de progresso, e cada botão funciona.
+- A barra de progresso arrasta e o som e a letra vão para o ponto escolhido.
+- O mesmo vale para o metrônomo (play/pausa e andamento) e para a gravação (tempo e parar).
+- O estado da notificação e o do app aberto nunca divergem (testado ao pausar por um e voltar pelo outro).
+- O botão do fone (play/pausa) pausa e continua o hino.
+- Nada novo exige permissão além das notificações; o app continua sem rede para isso.
+- A notificação aparece em pt, en e es.
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
