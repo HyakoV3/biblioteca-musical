@@ -126,6 +126,7 @@
 
   let enviando = $state(false);
   let falhouEnvio = $state(false);
+  let contextoCopiado = $state(false);
   const sePodeEnviar = podeCompartilhar();
   const contexto = $derived(contextoValido(meta.contexto));
   const textoDoEnvio = $derived(contexto ? textoDoContexto(contexto, tr, i18n.idioma, notacao.atual) : "");
@@ -156,12 +157,12 @@
     fecharDialogo();
     if (enviando) return;
     enviando = true;
-    falhouEnvio = false;
+    falhouEnvio = contextoCopiado = false;
     try {
       const blob = await gravacoes.blob(meta.id);
       if (!blob) throw new Error("sem arquivo");
       const r = await compartilharGravacao(blob, nomeDoArquivo(meta.criadaEm, meta.tipo), t("gravador.enviar_titulo"), comContexto ? textoDoEnvio : undefined);
-      if (!destruido) falhouEnvio = r === "erro";
+      if (!destruido) [falhouEnvio, contextoCopiado] = [r === "erro", r === "ok" && comContexto];
     } catch (e) {
       console.warn("gravador: não foi possível enviar a gravação", e);
       if (!destruido) falhouEnvio = true;
@@ -266,6 +267,7 @@
   {/if}
   {#if falhou}<p class="meta erro-item" role="alert">{t("gravador.erro_abrir")}</p>{/if}
   {#if falhouEnvio}<p class="meta erro-item" role="alert">{t("gravador.erro_enviar")}</p>{/if}
+  {#if contextoCopiado}<p class="meta" role="status">{t("gravador.contexto_copiado")}</p>{/if}
   {#if erroAtualizar}<p class="meta erro-item" role="alert">{t("gravador.erro_atualizar")}</p>{/if}
   {#if resumo}
     <details class="contexto">

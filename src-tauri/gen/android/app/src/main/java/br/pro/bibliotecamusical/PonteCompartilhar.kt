@@ -1,5 +1,8 @@
 package br.pro.bibliotecamusical
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.util.Base64
 import android.webkit.JavascriptInterface
@@ -94,7 +97,7 @@ class PonteCompartilhar(private val atividade: MainActivity) {
     @JavascriptInterface
     fun enviar(titulo: String): Boolean = enviarComTexto(titulo, "")
 
-    /** Igual a `enviar`, com um texto (o contexto da gravação, em Markdown) que vai junto do áudio, abaixo dele. */
+    /** Igual a `enviar`, com um texto (o contexto da gravação, em Markdown) que vai junto do áudio, abaixo dele; também é copiado (ver `copiarContexto`). */
     @JavascriptInterface
     @Synchronized
     fun enviarComTexto(titulo: String, texto: String): Boolean {
@@ -119,9 +122,9 @@ class PonteCompartilhar(private val atividade: MainActivity) {
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             val folha = Intent.createChooser(envio, titulo.take(80))
-            // Espera a folha abrir para devolver o resultado de verdade (a exceção de `startActivity` acontece na thread principal).
-            val abrir = FutureTask<Boolean> {
+            val abrir = FutureTask<Boolean> { // espera a folha abrir para devolver o resultado de verdade (`startActivity` falha na thread principal)
                 try {
+                    copiarContexto(atividade, texto)
                     atividade.startActivity(folha)
                     true
                 } catch (e: Exception) {
@@ -154,4 +157,17 @@ class PonteCompartilhar(private val atividade: MainActivity) {
 
     /** A Activity foi destruída no meio de um envio: não deixa o arquivo aberto. */
     fun soltar() = cancelar()
+}
+
+/**
+ * Copia o contexto da gravação para a área de transferência (chamada na thread principal; falhar não impede o envio). Alguns apps, como o WhatsApp, ignoram o `EXTRA_TEXT`
+ * quando o anexo é áudio; com o texto copiado, a pessoa cola na conversa.
+ */
+private fun copiarContexto(contexto: Context, texto: String) {
+    if (texto.isBlank()) return
+    try {
+        (contexto.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("contexto", texto.take(4000)))
+    } catch (e: Exception) {
+        android.util.Log.w("bm", "compartilhar: não copiou o contexto", e)
+    }
 }
