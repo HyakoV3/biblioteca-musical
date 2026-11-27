@@ -38,5 +38,5 @@
 </div>
 
 <style>
-  .controle-tamanho { display: flex; gap: 0.4rem; }
+  .controle-tamanho { display: flex; gap: 0.2rem; }
 </style>
