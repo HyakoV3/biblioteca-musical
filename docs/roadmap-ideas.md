@@ -1105,6 +1105,257 @@ No Media3 (a biblioteca do Android para isso) o nome é `MediaSession` com `Medi
 
 ---
 
+## I-48 — Registrar o nível de filtragem no contexto da gravação
+
+- **Status:** anotada e **revisada** (2026-11-27, subagente Opus): o filtro a registrar é o **efetivo**, num campo próprio de `MetaGravacao`, fora do `contexto`.
+- **Origem:** o responsável, 2026-11-27, ao testar o envio da gravação com contexto: "anota aí, no contexto gravar o nível de filtragem".
+- **Prioridade:** a definir.
+
+### O problema
+
+O contexto da gravação (I-38, `contexto.ts`) diz o que tocava no fone (metrônomo ou hino), mas não diz **como o som foi captado**. Quem recebe o áudio não sabe se havia filtro de ruído, e o filtro muda o que se ouve: o Médio e o Alto são feitos para voz falada e podem abafar notas longas de instrumento e vozes em coro (`gravador.ruido_aviso`).
+
+### O que se deseja
+
+Guardar, **junto da gravação** (campo próprio de `MetaGravacao`, não dentro do `contexto`), o filtro de ruído que **de fato valeu** (`desligado`, `android`, `rnnoise` ou `gtcrn`, de `filtroDeRuido.ts`) e mostrá-lo como mais uma linha do texto enviado e do card, por exemplo "Filtro de ruído: desligado" ou "Filtro de ruído: Médio (RNNoise)".
+
+### Perguntas em aberto
+
+1. ~~Registrar também quando não há metrônomo nem hino?~~ **Resolvida pela revisão:** o `contexto` é nulo sem fone ou sem nada tocando (`contexto.ts:64-100`) e `contextoValido` só aceita `origem` metrônomo ou hino, então o filtro **não cabe dentro do contexto**; vai em `MetaGravacao` e vale para toda gravação. Resta decidir se a linha aparece também quando não há contexto.
+2. Mostrar a linha também com o filtro **desligado** (é a informação de que o som está fiel), ou só quando ligado?
+3. O nome na tela: o de Ajustes ("Médio", "Alto") ou o técnico (RNNoise, GTCRN)?
+
+### Impacto técnico (hipóteses)
+
+- `MetaGravacao` (`gravacoes.ts:10`) ganha um campo opcional `filtro` (só acrescentar; gravações antigas não o têm). **Gravar o filtro efetivo, não o escolhido:** o filtro pode falhar e a gravação seguir sem ele (`gravador.ts:252-254`, `filtroFalhou` em `Gravador.svelte:108`); registrar o escolhido mentiria. O "android" pode não se aplicar no aparelho: conferir com `track.getSettings()`.
+- `linhasDoContexto` e `textoDoContexto` (ou um texto à parte, já que não há contexto sem fone) ganham a linha; chaves novas em pt, en e es. O valor vem do que o gravador aplicou ao começar, não de `preferencias`.
+- O filtro vale para a gravação inteira (a escolha só vale na próxima), então não entra em `mudouDurante`.
+
+### Critérios de aceitação (propostos)
+
+- Uma gravação feita com cada filtro mostra a linha certa no card e no texto enviado.
+- Gravações antigas continuam abrindo, sem a linha.
+- Teste unitário de `contexto.ts` para o campo e para a linha, nos 3 idiomas.
+
+---
+
+## I-49 — Troca rápida entre o hino e o Gravador (e gravar sem sair do hino)
+
+- **Status:** rascunho **revisado** (2026-11-27, subagente Opus; correções e uma 4ª proposta incorporadas abaixo), à espera da escolha do responsável.
+- **Origem:** o responsável, 2026-11-27: "preciso de um fastswitch entre estar dentro do hino e o gravador e vice-versa, ou algum tipo de abordagem para iniciar a gravação dentro do hino; e já é possível iniciar pelo miniplayer".
+- **Prioridade:** a definir.
+
+### O problema
+
+Quem pratica um hino com o fone ouve o hino na tela do hino (aba Ouvir) e grava na aba **Gravador**, da tela inicial. Para gravar, a pessoa sai do hino, vai ao Gravador, toca em Gravar (o contexto do hino entra sozinho) e volta ao hino para seguir. Cada ida e volta perde o lugar (rolagem, aba, a vez do hino) e custa vários toques, justo na hora em que as mãos estão no instrumento.
+
+### Como é hoje (conferido no código, 2026-11-27)
+
+- A gravação em curso é **uma só para o app** (`gravacaoEmCurso.svelte.ts`, `emCurso`): ela segue com a tela do hino aberta, e a faixa "● Gravando 0:34 · Parar" (`AvisoGravando.svelte`) já aparece na tela do hino (`hino/[numero]/+page.svelte:298`) e nas abas da tela inicial, menos no Gravador.
+- Começar a gravar é `emCurso.alternar(filtro)` / `emCurso.iniciar(filtro)`; **só o `Gravador.svelte` inicia** (`Gravador.svelte:105`). `QualNota` e `Metronomo` apenas leem o estado ou param a gravação (`QualNota.svelte:69,114`, `Metronomo.svelte:69`). O filtro de ruído vem de `preferencias`.
+- O miniplayer (`Miniplayer.svelte:45-58`) tem Tocar/Pausar, o título (link para `/hino/N`) e Parar; **não tem botão de gravar**, nem a notificação do Android (só Parar, `ServicoAudio.kt:217`). O que o responsável chama de "iniciar pelo miniplayer" é, provavelmente, que o miniplayer **aparece sobre a aba Gravador** (só some no painel Ouvir do próprio hino, `Miniplayer.svelte:14`): toca-se o hino por ele e aperta-se Gravar ali, sem entrar no hino.
+- **Metade da B já existe:** o título do miniplayer volta ao hino em 1 toque, e o Voltar do hino usa `history.back()` (`navegacao.ts:13`), que reabre `inicio.aba` (pode ser o Gravador, `inicio.svelte.ts:5`). O que falta é a aba e a rolagem do hino, que são estado local do componente e voltam a Ouvir/topo ao montar de novo (`hino/[numero]/+page.svelte:198,205,217-218`).
+- A gravação **só segue** com a tela do hino aberta quando está `protegida`, isto é, com o serviço do Android ligado (`gravacaoEmCurso.svelte.ts:188,261-264`). O `Gravador` fica sempre montado na tela inicial; se a gravação começou no hino sem `protegida` e a pessoa volta a outra aba, o efeito chama `emCurso.sair()` e **para a gravação** (`Gravador.svelte:375-382`).
+- Gravar a partir do hino deixa `aoTerminar` nulo: a gravação guardada não avisa ninguém, e uma que falha vira `perdida`, que só aparece na tela inicial (`gravacaoEmCurso.svelte.ts:341-349`, `+page.svelte:135`).
+- Com o hino **pausado** no início, o contexto sai nulo (`lerContextoReal`): a gravação fica sem contexto.
+- O contexto da gravação (I-38) só existe com **fone**; sem fone o hino para ao gravar.
+- As abas do hino (`Ouvir | Letra | Partitura`, esta quando há) usam o mesmo componente `Abas.svelte`; a proposta C chegaria a **4 abas** (`+page.svelte:43`).
+
+### Propostas
+
+**A. Botão Gravar no próprio hino (começar sem sair).** Um botão ● no cabeçalho ou no painel Ouvir do hino liga `emCurso.alternar`. A pessoa continua no hino; a faixa de gravando e o Parar já existem. O contexto do hino entra como hoje.
+- *Prós:* menor mudança (reaproveita `emCurso` e `AvisoGravando`); um toque; não perde o lugar.
+- *Contras:* o resultado (ouvir, enviar, renomear) só aparece no Gravador; sem fone o botão precisa explicar que o hino vai parar; mais um botão no cabeçalho, que já tem o karaokê.
+
+**B. Atalhos de ida e volta com memória do lugar.** No hino, "Ir ao Gravador"; no Gravador, um chip "Voltar ao hino 10" (o último hino aberto ou o do contexto da gravação em curso), que devolve a pessoa à mesma aba e rolagem.
+- *Prós:* resolve a ida **e** a volta com o Gravador completo; não mexe no motor de gravação.
+- *Contras:* ainda troca de tela (mesmo que com um toque); precisa guardar o hino e a posição de forma confiável (ao matar o app, sem hino lembrado, o chip some).
+
+**C. Aba "Gravar" dentro do hino (`Ouvir | Letra | Gravar`).** Um painel enxuto com o botão Gravar, o medidor, o tempo e a última gravação deste hino (ouvir e enviar). A lista completa continua no Gravador.
+- *Prós:* gravar, conferir e enviar sem deixar o hino; combina com o contexto (as gravações do hino ficam juntas); usa o padrão de abas que já existe.
+- *Contras:* o maior trabalho (duplica parte do `Gravador.svelte` e do `ItemGravacao.svelte`); mais uma aba em tela pequena (320 px); risco de duas telas mostrarem a mesma gravação em estados diferentes.
+
+**D. "Gravar com este hino" (um toque: tocar e gravar).** Variante da A, proposta pela revisão: o botão dá play no hino **e** começa a gravar no mesmo toque, e o contexto (I-38) fica garantido. Sem isso, se o hino estiver pausado quando a gravação começa, a gravação sai sem contexto.
+- *Prós:* é o caso de uso real (praticar com o hino no fone); contexto sempre certo.
+- *Contras:* esconde duas ações num botão (precisa de um rótulo claro); sem fone, o hino não pode tocar junto.
+
+### Recomendação (a rever pelo responsável)
+
+Começar pela **A, na forma da D** (gravar com o hino, em um toque), mais o que falta da **B**: guardar a aba e a rolagem do hino fora do componente (como `inicio` faz) e tornar visível o caminho do miniplayer. Antes de ligar o botão, resolver duas regras que a revisão apontou: o que fazer quando o serviço do Android recusa (avisar ou bloquear, para a gravação não parar sozinha ao trocar de aba) e dar um **retorno ao parar** (um aviso "Guardada · Ver no Gravador"), porque hoje gravar no hino termina em silêncio. Deixar a **C** para depois. Sem fone, preferência da revisão: manter o botão habilitado, com o aviso de que o hino vai parar.
+
+### Perguntas em aberto
+
+1. O caminho "pelo miniplayer" é o descrito acima (miniplayer sobre a aba Gravador)? O responsável confirma?
+2. Sem fone, o botão Gravar no hino deve **parar o hino** e gravar, ou ficar desabilitado com a explicação?
+3. Ao parar a gravação dentro do hino, o que a pessoa vê: só a faixa some, ou aparece um aviso "Gravação guardada · Ouvir"?
+4. O chip "Voltar ao hino" vale só durante a gravação, ou sempre que houve um hino aberto há pouco?
+5. E se o **Qual nota é essa?** estiver ouvindo o microfone: o botão Gravar no hino fica desabilitado?
+6. A 320 px, onde cabe o botão, com o cabeçalho do hino já ocupado pelas ações de andamento e pelo karaokê?
+
+### Impacto técnico (hipóteses)
+
+- A: `emCurso` já vive fora da tela; falta o botão (`Icone` de microfone/ponto), a regra do fone e os textos nos 3 idiomas.
+- B: guardar o último hino e a aba (`navegacao.ts`/`inicio.svelte.ts` já guardam a aba da tela inicial); o hino precisa restaurar rolagem e aba.
+- C: extrair do `Gravador.svelte` um painel reutilizável; testes e2e para a troca de aba com gravação em curso.
+
+### Critérios de aceitação (propostos)
+
+- Do hino com o fone ligado, gravar e parar em no máximo 2 toques, sem sair da tela.
+- Voltar do Gravador ao hino deixa a aba Ouvir e a posição como estavam.
+- Alvos de toque de pelo menos 44 px, nomes acessíveis em pt, en e es, e tudo cabe a 320 px.
+- A gravação em curso nunca fica sem o Parar visível.
+- Uma gravação iniciada no hino **sobrevive** à volta a qualquer aba e à troca de tela.
+- Se o serviço do Android recusar, a pessoa é avisada (ou o botão é bloqueado); a gravação não para sozinha.
+- Ao parar, aparece um retorno ("Guardada · Ver no Gravador"); uma gravação perdida também é avisada fora da tela inicial.
+- Voltar do Gravador ao hino preserva a rolagem, além da aba.
+- O leitor de tela anuncia que a gravação começou.
+- Gravar com o hino pausado toca o hino e a gravação sai com contexto.
+
+---
+
+## I-50 — Faixa "afinado" maior e com cor por proximidade, no "Qual nota é essa?"
+
+- **Status:** rascunho **revisado** (2026-11-27, subagente Opus; correções incorporadas abaixo); as **cores foram aprovadas** pelo responsável.
+- **Origem:** o responsável, 2026-11-27: "o retângulo central podia ser ligeiramente maior e um pouco mais alto que a bola, e quando estivermos dentro dele ele pode mudar de cor, levemente esverdeado; quando fora, mais próximo, levemente alaranjado; perto das extremidades fica como é hoje".
+- **Prioridade:** baixa a média (acabamento do medidor).
+
+### O problema
+
+No medidor do "Qual nota é essa?" (`QualNota.svelte`), a faixa "afinado" é uma caixa de 1 rem de altura (±5 cents, 10% da trilha) e a bola tem 1,5 rem: **a bola cobre a faixa justamente quando a pessoa acerta**, e o único sinal de "acertei" é a palavra "Afinado" e a posição. A cor não ajuda a ver, de relance, se está longe, perto ou dentro.
+
+### O que se deseja
+
+1. A faixa fica **mais alta que a bola** (cerca de 2,25 rem, contra 1,5 rem; a trilha tem 2,5 rem, então cabe).
+2. A faixa muda de fundo conforme a **distância da afinação**, em três zonas:
+
+| Zona | Distância | Fundo da faixa |
+|---|---|---|
+| Dentro | ≤ 5 cents (`AFINADO_CENTS`) | esverdeado, com a borda cheia (2 px sólidos) |
+| Perto | 5 a ~15 cents | alaranjado leve |
+| Longe | > 15 cents | como hoje (só a borda) |
+
+3. Novo token `--aviso` (laranja), porque `tema.css` só tem `--sucesso` e `--perigo`. O fundo é `color-mix` de **22%** da cor sobre a `--superficie`.
+
+**Cores aprovadas (2026-11-27):**
+
+| Tema | Verde (`--sucesso`) | Laranja novo (`--aviso`) |
+|---|---|---|
+| Normal claro | `#1a7f37` (atual) | `#c2570c` |
+| Normal escuro | `#56d364` (atual) | `#ffa657` |
+| Pergaminho claro | `#1d6a35` (atual) | `#c2570c` |
+| Pergaminho escuro | `#6fd183` (atual) | `#ffa657` |
+| Marinho claro | `#1b7a3a` (atual) | `#c2570c` |
+| Marinho escuro | `#62d67a` (atual) | `#ffa657` |
+| Alto contraste | sem tinta | sem tinta (só a borda mais grossa quando afinado) |
+
+**Contraste calculado (WCAG, recalculado pela revisão):** a bola (`--ouro-linha`) sobre o fundo tingido fica entre **3,9 e 5,3:1** em todas as paletas (mínimo para interface: 3:1). Não há texto dentro da faixa. A borda laranja `#c2570c` sobre a superfície clara dá **4,3 a 4,5:1** e, **sobre o próprio fundo laranja**, cai para **3,2 a 3,4:1** nas paletas claras: passa de 3:1, mas com pouca folga.
+
+### Largura da faixa: decisão a tomar
+
+A largura de hoje (10% da trilha) **é** a tolerância (±5 cents). Alargar só o desenho faria a cor dizer "afinado" enquanto a palavra ainda diz "baixo". Duas saídas: (a) **manter ±5** e aumentar só a altura (recomendado); (b) subir `AFINADO_CENTS` (por exemplo ±7) e a largura **juntos**, na mesma constante.
+
+### Acessibilidade
+
+- **A cor nunca é o único sinal:** a palavra (Afinado, Baixo, Alto), a posição da bola e a forma da faixa continuam. Verde e laranja são um par que o daltonismo vermelho-verde confunde, então a **borda cheia** marca "dentro" e o laranja só pinta o fundo.
+- A mudança de cor leva uma transição curta (~150 ms) e **nenhuma** com "reduzir movimento" (reaproveitar `movimento.css`, que já trata `prefers-reduced-motion`).
+- Sem leitura (zona nula), a faixa fica **sem tinta** (a trilha já esmaece a 0,55 de opacidade).
+- O leitor de tela já ouve "nota, afinado/baixo/alto" (`aria-live`); não muda.
+
+### Perguntas em aberto
+
+1. Largura: manter ±5 cents (só altura) ou subir a tolerância (a opção b)?
+2. O limite de "perto" em 15 cents é bom? (hipótese; testar com o trompete e o vibrato.)
+3. Degraus com transição curta, ou mistura contínua entre as cores?
+4. ~~O verde do Marinho escuro~~ **Resolvida pela revisão:** o `--sucesso` atual é `#62d67a` (`tema.css:180,200`).
+5. A borda laranja basta (4,3 a 4,5:1 sobre a superfície; 3,2 a 3,4:1 sobre o fundo laranja), ou escurecer um pouco o `#c2570c`?
+6. **Histerese nos limites.** Com vibrato, um degrau fixo em 15 cents pisca entre laranja e nada. A zona sai do valor **calmo** (`suave.mostrado`, o mesmo da palavra), com folga na entrada e na saída de cada zona (por exemplo entra em 4 e sai em 6 cents)?
+
+### Impacto técnico (hipóteses)
+
+- `afinador.ts`: uma função pura `zonaDeAfinacao(cents)` ("dentro" | "perto" | "longe" | null para leitura inválida), com os limites em constantes junto de `AFINADO_CENTS`; testável sem áudio.
+- `QualNota.svelte`: a zona vem do valor **calmo** que alimenta a palavra (`suave.mostrado`), **não** do que move a bola (`suave.suave`, `QualNota.svelte:148-150`), senão a cor e a palavra discordam; a `.faixa` ganha `data-zona` e a altura nova; o CSS usa `color-mix(in srgb, var(--sucesso) 22%, var(--superficie))` e o equivalente com `--aviso`.
+- `color-mix` já é usado no app (`Segmentado.svelte:34`), então o suporte do WebView não é risco novo (pede WebView 111 ou mais nova; `minSdk` 24).
+- `tema.css`: `--aviso` nas seis paletas (e no alto contraste, igual ao amarelo, sem tinta); `docs/design-tokens.md` ganha a linha do token.
+- Teste unitário da função e do CSS por zona; e2e confere que a faixa muda de zona ao mexer nos cents.
+
+### Critérios de aceitação (propostos)
+
+- A faixa é mais alta que a bola e continua cabendo a 320 px e com fonte grande.
+- Dentro de ±5 cents o fundo fica esverdeado e a borda cheia; entre 5 e 15, alaranjado; fora, como hoje.
+- Contraste da bola sobre cada fundo de pelo menos 3:1 nas seis paletas (verificado por conta, como acima).
+- No alto contraste não há tinta, só a borda mais grossa.
+- Com "reduzir movimento", a cor troca sem transição.
+- A palavra, a posição da bola e o leitor de tela continuam iguais.
+- A cor e a palavra nunca discordam (a zona usa o mesmo valor calmo da palavra) e não pisca com vibrato (histerese testada na função pura).
+- Sem leitura, a faixa não tem tinta.
+
+---
+
+## I-51 — Intensidade interna dos filtros de ruído (escala 1 a 12, só para quem desenvolve)
+
+- **Status:** rascunho **revisado** (2026-11-27, subagente Opus; correções abaixo; o que o 1 a 12 significa, em dB, espera decisão do responsável).
+- **Origem:** o responsável, 2026-11-27, depois de testar os filtros no aparelho (RC6 e seguintes): o Médio e o Alto "ficaram muito agressivos e cortavam notas longas, como previsto". Pedido: uma **escala de 1 a 12, para os desenvolvedores controlarem o nível aplicado** (não para a pessoa ajustar), com o Alto de 11 para **10** e o Médio de 8 para **6**; o Baixo (Android) fica em **3**.
+- **Prioridade:** média (o resultado atual abafa instrumento).
+
+### O problema
+
+No Gravador, **Reduzir ruído** tem quatro níveis. Testados no aparelho do responsável (2026-11-27): **Desligado** deixa o ruído de fundo; **Baixo** some com o fundo e corta levemente notas longas; **Médio** corta notas longas de forma média; **Alto** de forma agressiva. O AudioWorklet roda no aparelho e a gravação não saiu muda; o custo de CPU e bateria não foi medido, "mas por enquanto está tranquilo".
+
+O Médio (RNNoise) e o Alto (GTCRN) são redes neurais que o app liga **inteiras**: o pacote `@sapphi-red/web-noise-suppressor` não tem parâmetro de intensidade (os nós só aceitam `maxChannels` e o binário), então hoje não há como atenuar o corte das notas longas, que é o defeito para quem toca instrumento.
+
+### O que se deseja
+
+Uma **escala interna de 1 a 12**, **sem tela**, que diz quanto do filtro entra no som gravado. Ela é um **ajuste fino de compilação**: quem gera o APK (ou o RC) escolhe os valores na hora do build, sem mexer na lógica, para a equipe afinar de ouvido e comparar APKs de teste com valores diferentes. Os valores padrão (a coluna "proposta") ficam no código; um valor de ambiente os substitui. **Atenção (revisão):** com a mistura linear `m = nivel / 12`, o ruído cai **no máximo** `−20·log10(1 − m)`: o Médio em 6 deixa 50% do original e só tira **~6 dB**; o Alto em 10, **~15,6 dB**. O Médio em 6 provavelmente tira **menos ruído que o Baixo**. Por isso a escala deve representar a **atenuação máxima em dB** (`m = 1 − 10^(−dB/20)`), e não uma fração linear; o responsável decide o que o 1 a 12 significa (ver as perguntas).
+
+| Nível na tela | Tecnologia | Escala hoje (sensação do responsável) | Escala proposta |
+|---|---|---|---|
+| Desligado | sem filtro | — | — |
+| Baixo | filtro do Android | 3 | **3** (o filtro é do sistema, não tem intensidade: fica como está) |
+| Médio | RNNoise | 8 | **6** |
+| Alto | GTCRN | 11 | **10** |
+
+**No frontend nada muda** (confirmado pelo responsável): a pessoa vê **sempre** os mesmos quatro níveis, Desligado, Baixo, Médio e Alto, com os mesmos nomes e o mesmo aviso; a escala de 1 a 12 não aparece na tela nem em Ajustes. Só o que cada nível faz por baixo fica mais suave, e só quem compila o APK mexe nos números.
+
+Os números são **sensação de ouvido**, não medida: servem de ponto de partida a testar.
+
+### Como (hipótese)
+
+Misturar o som **filtrado** com o **original** (seco e molhado) antes do gravador: `saída = m · filtrado + (1 − m) · original`, com `m` saindo da escala (por exemplo `nivel / 12`, ou uma curva a calibrar de ouvido). O original devolve a nota longa que a rede cortaria.
+
+- **O atraso precisa casar.** O filtro atrasa o som; o caminho do original ganha um `DelayNode` com o mesmo atraso, senão a soma vira um som "oco" (filtro de pente). O `AudioWorkletNode` **não informa** a latência; estimativa da revisão a partir do código (não medida): **RNNoise ~21 ms** (buffer em anel de 512 amostras mais ~480 do algoritmo); **GTCRN** com quadro de 768 amostras a 48 kHz, mais reamostragem e STFT, **desconhecido e provavelmente maior**. Os dois são **fixos e diferentes**: medir por **correlação cruzada** (um clique gravado), não de ouvido. Até o `.wasm` carregar o filtro devolve silêncio, e só o original passa.
+- **Fase:** o RNNoise aplica ganhos reais por banda (risco pequeno de som oco com o atraso certo); o GTCRN usa máscara complexa (mexe na fase) e **pode soar oco mesmo com o atraso certo**. Clipping é risco baixo (os pesos somam 1).
+- **Fora do alcance da escala:** o Baixo (Android) e o Desligado.
+- Nível 12 equivale a "só filtrado" (como hoje); a escala nunca passa de 12.
+- **Alternativas a testar para instrumento:** o mesmo pacote traz um `NoiseGateWorkletNode` (`openThreshold`, `closeThreshold`, `holdMs`) e o Speex; um gate, ou um filtro só nos graves/médios, pode tirar o chiado sem cortar a nota longa.
+
+### Perguntas em aberto
+
+1. Como se escolhe o valor na compilação? Hipótese: variáveis de ambiente (por exemplo `RUIDO_NIVEL_RNNOISE` e `RUIDO_NIVEL_GTCRN`, inteiros de 1 a 12) lidas no `vite.config.js` e repassadas por `define`, como o `__APP_COMMIT__` (`vite.config.js:34`); **nenhuma `VITE_` é usada hoje**, só `import.meta.env.DEV` em `tom.ts:59`. Os padrões (6 e 10) ficam no código; valor ausente, fora de 1 a 12 ou não inteiro **volta ao padrão** (nunca quebra o build). O Tauri roda `npm run build` como `beforeBuildCommand` (`tauri.conf.json:9`) e o `release.yml` builda **duas vezes** (APK em `:143`, AAB em `:150`): a variável precisa ficar no `env` do **job**, senão o APK e o AAB saem diferentes. O `workflow_dispatch` hoje não tem entradas (`:16`): o RC passa a aceitar as duas como entrada (para gerar APKs de teste com valores diferentes), ou só o build local? E a tela **Sobre**, junto do commit, deve mostrar os valores usados, para saber qual APK é qual? (Seria um número na tela, só no Sobre.)
+2. **O que o 1 a 12 significa?** Mistura linear (`nivel / 12`, que dá só ~6 dB no Médio) ou **atenuação máxima em dB** (recomendação da revisão)? Em dB, o responsável escolhe, por exemplo, "Médio tira até 10 dB, Alto até 18 dB", e a mistura sai da conta.
+3. Os atrasos do RNNoise e do GTCRN são diferentes e fixos (estimativas acima): medir por correlação cruzada, com tolerância de 1 ms, e conferir se mudam com o aparelho.
+4. O gravador mede o nível do som **depois** do filtro (o medidor lê a saída dele): ler a mistura, não só o filtrado.
+5. O texto do aviso ("Médio e Alto são feitos para voz falada e podem abafar notas longas") continua verdadeiro com a mistura? Revisar, e nos 3 idiomas, se a mistura mudar o que ele promete.
+
+### Impacto técnico (hipóteses)
+
+- `gravador.ts` (`ligarFiltro`): hoje `fonte → filtro → destino`. Passa a ter também `fonte → atraso → ganho seco → destino` e `filtro → ganho molhado → destino`, com os dois ganhos vindos da escala. O **medidor** (`ligarMedidorEm`, `gravador.ts:278`) deve ler a **mistura**, não só o filtrado, e o `soltar` (`:410-414`) e o `destroy` desligam o atraso e os ganhos novos.
+- `filtroDeRuido.ts`: a escala (padrões 6 e 10, com leitura validada das variáveis de build) e uma função pura `misturaDoFiltro(filtro)` (0 a 1), testável sem áudio; `vite.config` repassa as variáveis. O valor vira constante do bundle: **não há ajuste em tempo de execução**.
+- Teste unitário da função; a parte de áudio só se prova no aparelho.
+
+### Critérios de aceitação (propostos)
+
+- O Médio e o Alto, nos níveis propostos, deixam notas longas de instrumento mais inteiras que hoje, e ainda tiram uma parte do ruído de fundo (conferido de ouvido, no aparelho, com instrumento e com voz).
+- Gerar o APK com outro valor de ambiente muda a mistura daquele APK, sem tocar na lógica e sem mexer na tela; sem valor (ou com um inválido), o padrão vale.
+- A tela e os textos não mostram a escala em nenhum lugar.
+- A soma não soa "oca" (sem filtro de pente audível): o atraso do original casa com o do filtro.
+- O Baixo e o Desligado ficam como estão; a mistura em 12 equivale ao filtrado de hoje.
+- A gravação continua não saindo muda; o CPU/bateria não piora de forma perceptível (a mistura soma poucos nós).
+- **O atraso de cada filtro é medido** (correlação cruzada com um clique) e o do original casa com tolerância de **no máximo 1 ms**.
+- **A redução de ruído em dB num trecho de silêncio é medida por nível** e confere com a escala escolhida.
+- Teste unitário do valor padrão e do valor inválido (ausente, fora de 1 a 12, não inteiro: volta ao padrão).
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
