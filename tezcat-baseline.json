@@ -452,8 +452,8 @@
     "value": 21
   },
   "src/lib/QualNota.svelte::QualNota::Clean/Método::iniciar": {
-    "severity": "FAIL",
-    "value": 37
+    "severity": "WARN",
+    "value": 28
   },
   "src/lib/QualNota.svelte::QualNota::Clean/Nesting::iniciar": {
     "severity": "WARN",
@@ -461,11 +461,11 @@
   },
   "src/lib/QualNota.svelte::QualNota::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 172
+    "value": 171
   },
   "src/lib/QualNota.svelte::QualNota::OCP::iniciar": {
-    "severity": "FAIL",
-    "value": 6
+    "severity": "WARN",
+    "value": 4
   },
   "src/lib/QualNota.svelte::QualNota::SRP::": {
     "severity": "WARN",

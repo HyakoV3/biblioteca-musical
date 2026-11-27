@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   LA_PADRAO,
+  erroDeEscuta,
   leituraComHisterese,
   mediana,
   notaEscrita,
@@ -145,7 +146,7 @@ describe("nota mais próxima", () => {
   });
 });
 
-import { nomeDaNota as nome, nomeDaNotaPorExtenso as extenso, nomeDaTonalidade, sistemaDe } from "../src/lib/notacao";
+import { nomeDaNota as nome, nomeDaNotaPorExtenso as extenso, nomeDaTonalidade, oitavaDe, sistemaDe } from "../src/lib/notacao";
 
 describe("nomes das notas em sílabas ou letras", () => {
   it("automático segue o idioma; sílabas e letras forçam o sistema", () => {
@@ -255,5 +256,33 @@ describe("Qual nota é essa? (I-35): contas do medidor de vizinhas", () => {
   it("frequência inválida não dá leitura", () => {
     expect(leituraComHisterese(0, null)).toBeNull();
     expect(leituraComHisterese(NaN, 69)).toBeNull();
+  });
+});
+
+describe("erroDeEscuta", () => {
+  it("permissão negada ou bloqueada", () => {
+    expect(erroDeEscuta(new DOMException("x", "NotAllowedError"))).toBe("negada");
+    expect(erroDeEscuta(new DOMException("x", "SecurityError"))).toBe("negada");
+  });
+
+  it("sem microfone ou sem suporte", () => {
+    expect(erroDeEscuta(new DOMException("x", "NotFoundError"))).toBe("sem_microfone");
+    expect(erroDeEscuta(new DOMException("x", "NotSupportedError"))).toBe("sem_microfone");
+  });
+
+  it("qualquer outra coisa é falha", () => {
+    expect(erroDeEscuta(new DOMException("x", "AbortError"))).toBe("falhou");
+    expect(erroDeEscuta(new Error("NotAllowedError"))).toBe("falhou");
+    expect(erroDeEscuta({ name: "NotAllowedError" })).toBe("falhou");
+    expect(erroDeEscuta(undefined)).toBe("falhou");
+  });
+});
+
+describe("oitavaDe", () => {
+  it("o Dó central (60) é a oitava 4 e o Lá 440 (69) também", () => {
+    expect(oitavaDe(60)).toBe(4);
+    expect(oitavaDe(69)).toBe(4);
+    expect(oitavaDe(59)).toBe(3);
+    expect(oitavaDe(12)).toBe(0);
   });
 });
