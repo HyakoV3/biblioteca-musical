@@ -151,7 +151,8 @@ Quase tudo é **ver no celular** ou depende de uma resposta do responsável.
       Opcional: **`.m4a`/AAC com `MediaCodec`** ("enviar como MP4"), só se algum destino recusar Ogg. **(depende do responsável)**
 - [ ] **I-17 (último hino):** a posição (retomar de onde estava tocando) não foi feita; guardar andamento, tom e instrumentos; ver no celular o anel da lista e o atalho **Continuar de onde parou**.
 - [ ] **I-33 (negrito):** ver no celular o contraste do negrito no coro e no final (Alto contraste) e se atrapalha o destaque da sílaba.
-- [x] **I-29 (Reduzir ruído):** testado no aparelho em 2026-11-27: o AudioWorklet roda, a gravação não sai muda, o Alto filtra mais forte que o Médio, e o Médio e o Alto cortam notas longas (o Baixo, levemente); CPU e bateria **não foram medidos** (sem problema percebido). Falta só suavizar o Médio e o Alto: ver a **I-51** (escala interna, ajuste de compilação; rascunho na PR #234).
+- [x] **I-29 (Reduzir ruído):** testado no aparelho em 2026-11-27: o AudioWorklet roda, a gravação não sai muda, o Alto filtra mais forte que o Médio, e o Médio e o Alto cortam notas longas (o Baixo, levemente); CPU e bateria **não foram medidos** (sem problema percebido).
+- [ ] **I-51 (intensidade dos filtros de ruído):** suavizar o Médio e o Alto com uma escala interna de 1 a 12, ajuste de compilação, sem mudar a tela; ver a **I-51** em [`roadmap-ideas.md`](roadmap-ideas.md) (rascunho revisado; falta decidir se a escala vale em dB).
 - [ ] **I-03 (Gravador):** renomear a gravação e ligá-la a um hino; o fone Bluetooth (atraso); confirmar no aparelho a gravação em segundo plano e com o hino no fone.
 - [ ] **I-20 (Metrônomo), como futuro:** o gauge de ponteiro e os compassos irregulares 5 e 7, com agrupamentos.
 - [ ] **Outras ideias soltas:** botão **"Atualizar"** do hinário (ver a **I-25** em [`roadmap-ideas.md`](roadmap-ideas.md)); o estalo ao bloquear a tela e o hino 86 estão na seção 8.
