@@ -144,6 +144,6 @@ export function contextoValido(x: unknown): ContextoGravacao | null {
   if (!x || typeof x !== "object") return null;
   const c = x as Partial<ContextoGravacao>;
   if (typeof c.v !== "number" || c.v < 1 || c.v > VERSAO_DO_CONTEXTO) return null;
-  const valida = Object.hasOwn(VALIDADORES, c.origem as string) ? VALIDADORES[c.origem!] : undefined;
+  const valida = typeof c.origem === "string" && Object.hasOwn(VALIDADORES, c.origem) ? VALIDADORES[c.origem] : undefined;
   return valida?.(c) ? (c as ContextoGravacao) : null;
 }
