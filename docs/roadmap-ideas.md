@@ -315,7 +315,7 @@ Uma variável de ambiente no build (por exemplo `BM_TESTE=026`) lida pelo `vite.
 
 ## I-29 — Filtro de ruído no Gravador (tipo Krisp)
 
-- **Status:** anotada. **Pílula de filtros feita (2026-11-25, RC6):** a caixa virou a escolha **Desligado · Android · RNNoise · GTCRN** (`prefs.reduzir-ruido` guarda o nome; o antigo "1" vira Android). RNNoise e GTCRN rodam no aparelho por AudioWorklet + WebAssembly (`@sapphi-red/web-noise-suppressor`, tudo empacotado, nada baixado); se o filtro falhar, grava sem ele e avisa. O **DeepFilterNet3** foi trocado pelo **GTCRN** porque o pacote do DFN3 baixa o modelo de um CDN de terceiros. **Testado no aparelho do responsável (2026-11-27):** o AudioWorklet **roda** no WebView, a gravação **não sai muda**, e o custo de CPU e bateria **não foi medido** (sem problema percebido). Qualidade: Desligado deixa o ruído de fundo; **Baixo** some com o fundo e corta levemente notas longas; **Médio** corta notas longas de forma média; **Alto**, de forma agressiva: **o Alto filtra mais forte que o Médio** (a ordem dos nomes está certa). O Médio e o Alto abafam demais as notas longas de instrumento: ver a I-51 (ajuste fino de compilação, ainda em rascunho na PR #234). **Nomes na tela (2026-11-26):** a escolha é uma pílula só, com **Desligado · Baixo · Médio · Alto** e o nome técnico numa linha miúda embaixo (Baixo = filtro do Android, Médio = RNNoise, Alto = GTCRN). Essa ordem por força era um palpite (o GTCRN é um modelo maior) e **foi confirmada no aparelho** (2026-11-27): o Alto soa mais forte que o Médio. Histórico: **Opção 1 feita (2026-11-24):** o Gravador tem a caixa **Reduzir ruído** (desligada por padrão, lembrada em `prefs.reduzir-ruido`), que liga `noiseSuppression: true` do aparelho na PRÓXIMA gravação. **Falta testar no aparelho do responsável** se já basta; as opções 2 (RNNoise) e 3 (DeepFilterNet3) **só entram se a 1 não bastar**. O medidor lê o mesmo fluxo filtrado (a ressalva "o medidor lê o sinal cru" só vale para as opções 2 e 3).
+- **Status:** anotada. **Pílula de filtros feita (2026-11-25, RC6):** a caixa virou a escolha **Desligado · Android · RNNoise · GTCRN** (`prefs.reduzir-ruido` guarda o nome; o antigo "1" vira Android). RNNoise e GTCRN rodam no aparelho por AudioWorklet + WebAssembly (`@sapphi-red/web-noise-suppressor`, tudo empacotado, nada baixado); se o filtro falhar, grava sem ele e avisa. O **DeepFilterNet3** foi trocado pelo **GTCRN** porque o pacote do DFN3 baixa o modelo de um CDN de terceiros. **Testado no aparelho do responsável (2026-11-27):** o AudioWorklet **roda** no WebView, a gravação **não sai muda**, e o custo de CPU e bateria **não foi medido** (sem problema percebido). Qualidade: Desligado deixa o ruído de fundo; **Baixo** some com o fundo e corta levemente notas longas; **Médio** corta notas longas de forma média; **Alto**, de forma agressiva: **o Alto filtra mais forte que o Médio** (a ordem dos nomes está certa). O Médio e o Alto abafam demais as notas longas de instrumento: ver a I-51 (ajuste fino de compilação, ainda em rascunho). **Nomes na tela (2026-11-26):** a escolha é uma pílula só, com **Desligado · Baixo · Médio · Alto** e o nome técnico numa linha miúda embaixo (Baixo = filtro do Android, Médio = RNNoise, Alto = GTCRN). Essa ordem por força era um palpite (o GTCRN é um modelo maior) e **foi confirmada no aparelho** (2026-11-27): o Alto soa mais forte que o Médio. Histórico: **Opção 1 feita (2026-11-24):** o Gravador tem a caixa **Reduzir ruído** (desligada por padrão, lembrada em `prefs.reduzir-ruido`), que liga `noiseSuppression: true` do aparelho na PRÓXIMA gravação. **Respondido no aparelho do responsável (2026-11-27):** o Baixo (a opção 1, o filtro do Android) tira o fundo e corta levemente as notas longas; as opções 2 e 3 já estão na pílula como Médio (RNNoise) e Alto (GTCRN; o DeepFilterNet3 foi trocado por ele). O medidor lê o mesmo fluxo filtrado (a ressalva "o medidor lê o sinal cru" só vale para as opções 2 e 3).
 - **Origem:** pedido do responsável, 2026-11-19: "um filtro de som tipo Krisp; ele é de graça? dá uma verificada".
 - **Prioridade:** a definir (depois de o Gravador estar estável no aparelho: ver a **I-03**, já implementada, em `archive/roadmap-implementadas.md`).
 
@@ -973,7 +973,7 @@ Levantada no histórico inteiro do git (`src/lib/i18n/`, 596 commits da `main`) 
 
 ### Critérios de aceitação (propostos)
 
-- O ⓘ tem alvo de pelo menos 44 px, `aria-expanded` e `aria-label` traduzidos em pt, en e es.
+- O ⓘ tem alvo de pelo menos 2,75 rem, `aria-expanded` e `aria-label` traduzidos em pt, en e es.
 - Fechado por padrão; `aria-controls` só quando aberto.
 - Nenhum erro nem aviso de permissão fica escondido.
 - O e2e abre e fecha cada ⓘ.
@@ -1105,7 +1105,7 @@ No Media3 (a biblioteca do Android para isso) o nome é `MediaSession` com `Medi
 
 ---
 
-## I-48 — Registrar o nível de filtragem no contexto da gravação
+## I-48 — Registrar o nível de filtragem na gravação (em `MetaGravacao`, fora do contexto)
 
 - **Status:** anotada e **revisada** (2026-11-27, subagente Opus): o filtro a registrar é o **efetivo**, num campo próprio de `MetaGravacao`, fora do `contexto`.
 - **Origem:** o responsável, 2026-11-27, ao testar o envio da gravação com contexto: "anota aí, no contexto gravar o nível de filtragem".
@@ -1173,7 +1173,7 @@ Quem pratica um hino com o fone ouve o hino na tela do hino (aba Ouvir) e grava 
 
 **C. Aba "Gravar" dentro do hino (`Ouvir | Letra | Gravar`).** Um painel enxuto com o botão Gravar, o medidor, o tempo e a última gravação deste hino (ouvir e enviar). A lista completa continua no Gravador.
 - *Prós:* gravar, conferir e enviar sem deixar o hino; combina com o contexto (as gravações do hino ficam juntas); usa o padrão de abas que já existe.
-- *Contras:* o maior trabalho (duplica parte do `Gravador.svelte` e do `ItemGravacao.svelte`); mais uma aba em tela pequena (320 px); risco de duas telas mostrarem a mesma gravação em estados diferentes.
+- *Contras:* o maior trabalho (duplica parte do `Gravador.svelte` e do `ItemGravacao.svelte`); mais uma aba em tela pequena (20 rem); risco de duas telas mostrarem a mesma gravação em estados diferentes.
 
 **D. "Gravar com este hino" (um toque: tocar e gravar).** Variante da A, proposta pela revisão: o botão dá play no hino **e** começa a gravar no mesmo toque, e o contexto (I-38) fica garantido. Sem isso, se o hino estiver pausado quando a gravação começa, a gravação sai sem contexto.
 - *Prós:* é o caso de uso real (praticar com o hino no fone); contexto sempre certo.
@@ -1190,7 +1190,7 @@ Começar pela **A, na forma da D** (gravar com o hino, em um toque), mais o que 
 3. Ao parar a gravação dentro do hino, o que a pessoa vê: só a faixa some, ou aparece um aviso "Gravação guardada · Ouvir"?
 4. O chip "Voltar ao hino" vale só durante a gravação, ou sempre que houve um hino aberto há pouco?
 5. E se o **Qual nota é essa?** estiver ouvindo o microfone: o botão Gravar no hino fica desabilitado?
-6. A 320 px, onde cabe o botão, com o cabeçalho do hino já ocupado pelas ações de andamento e pelo karaokê?
+6. Na largura de 20 rem, onde cabe o botão, com o cabeçalho do hino já ocupado pelas ações de andamento e pelo karaokê?
 
 ### Impacto técnico (hipóteses)
 
@@ -1202,7 +1202,7 @@ Começar pela **A, na forma da D** (gravar com o hino, em um toque), mais o que 
 
 - Do hino com o fone ligado, gravar e parar em no máximo 2 toques, sem sair da tela.
 - Voltar do Gravador ao hino deixa a aba Ouvir e a posição como estavam.
-- Alvos de toque de pelo menos 44 px, nomes acessíveis em pt, en e es, e tudo cabe a 320 px.
+- Alvos de toque de pelo menos 2,75 rem, nomes acessíveis em pt, en e es, e tudo cabe em 20 rem.
 - A gravação em curso nunca fica sem o Parar visível.
 - Uma gravação iniciada no hino **sobrevive** à volta a qualquer aba e à troca de tela.
 - Se o serviço do Android recusar, a pessoa é avisada (ou o botão é bloqueado); a gravação não para sozinha.
@@ -1230,7 +1230,7 @@ No medidor do "Qual nota é essa?" (`QualNota.svelte`), a faixa "afinado" é uma
 
 | Zona | Distância | Fundo da faixa |
 |---|---|---|
-| Dentro | ≤ 5 cents (`AFINADO_CENTS`) | esverdeado, com a borda cheia (2 px sólidos) |
+| Dentro | ≤ 5 cents (`AFINADO_CENTS`) | esverdeado, com a borda cheia (0,125 rem sólidos) |
 | Perto | 5 a ~15 cents | alaranjado leve |
 | Longe | > 15 cents | como hoje (só a borda) |
 
@@ -1280,7 +1280,7 @@ A largura de hoje (10% da trilha) **é** a tolerância (±5 cents). Alargar só 
 
 ### Critérios de aceitação (propostos)
 
-- A faixa é mais alta que a bola e continua cabendo a 320 px e com fonte grande.
+- A faixa é mais alta que a bola e continua cabendo em 20 rem e com fonte grande.
 - Dentro de ±5 cents o fundo fica esverdeado e a borda cheia; entre 5 e 15, alaranjado; fora, como hoje.
 - Contraste da bola sobre cada fundo de pelo menos 3:1 nas seis paletas (verificado por conta, como acima).
 - No alto contraste não há tinta, só a borda mais grossa.
