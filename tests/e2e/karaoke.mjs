@@ -1962,6 +1962,9 @@ async function principal() {
   confere(avisoNoSobre.achou && avisoNoSobre.primeiro && /não oficial|no oficial|unofficial|not official/i.test(avisoNoSobre.texto), `o aviso de app não oficial fica fixo, como primeiro parágrafo do cartão Sobre, mesmo depois do Concordo: ${JSON.stringify(avisoNoSobre)}`);
   await av(`(() => { const d = document.querySelector('#cartao-saida'); if (d && !d.open) d.querySelector('summary').click(); return 1; })()`);
   await dormir(300);
+  const saidaInfo0 = await av(`(() => { const b = document.querySelector('#cartao-saida button.info'); const antes = { aberto: b?.getAttribute('aria-expanded'), texto: !!document.getElementById('saida-medida') }; b?.click(); return antes; })()`);
+  await dormir(200);
+  confere(saidaInfo0.aberto === 'false' && saidaInfo0.texto === false, `Saída de áudio: a explicação e a medida ficam escondidas até o ⓘ ser aberto: ${JSON.stringify(saidaInfo0)}`);
   const saida0 = await av(`(() => ({ modos: [...document.querySelectorAll('input[name="modo-saida"]')].map((i) => i.value + ':' + i.checked), medida: document.getElementById('saida-medida')?.textContent ?? '', desc: document.getElementById('saida-descricao')?.textContent ?? '' }))()`);
   confere(saida0.modos.join() === 'automatico:true,estavel:false,medio:false,atraso:false' && /medir|Measure|medir/i.test(saida0.medida) && saida0.desc.length > 10, `Saída de áudio: quatro modos (automático e buffer alto, médio e baixo) com o automático marcado, a descrição e o aviso de que ainda não há medida: ${JSON.stringify(saida0)}`);
   await av(`document.querySelector('input[name="modo-saida"][value="estavel"]').click(); 1`);
