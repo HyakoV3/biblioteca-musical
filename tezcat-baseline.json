@@ -1148,22 +1148,14 @@
     "value": 3
   },
   "src/lib/ogg.ts::ogg::Clean/Método::escreverOgg": {
-    "severity": "FAIL",
-    "value": 31
-  },
-  "src/lib/ogg.ts::ogg::Clean/Método::pagina": {
     "severity": "WARN",
-    "value": 25
+    "value": 20
+  },
+  "src/lib/ogg.ts::ogg::Clean/Nesting::escreverOgg": {
+    "severity": "WARN",
+    "value": 2
   },
   "src/lib/ogg.ts::ogg::Clean/Params::escreverOgg": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src/lib/ogg.ts::ogg::Clean/Params::pagina": {
-    "severity": "FAIL",
-    "value": 5
-  },
-  "src/lib/ogg.ts::ogg::OCP::escreverOgg": {
     "severity": "WARN",
     "value": 4
   },
