@@ -70,11 +70,10 @@ class PonteCompartilhar(private val atividade: MainActivity) {
             limparAntigos()
             val dir = File(raiz, agora.toString())
             dir.mkdirs()
-            val limpo = nome.replace(Regex("[^A-Za-z0-9._-]"), "_").take(80).ifEmpty { "gravacao" }
-            val f = File(dir, limpo)
+            val f = File(dir, nomeSaneado(nome))
             saida = FileOutputStream(f)
             arquivo = f
-            mime = if (tipo.matches(Regex("[a-z]+/[a-z0-9.+-]+"))) tipo else "audio/*"
+            mime = mimeValido(tipo)
             true
         } catch (e: Exception) {
             android.util.Log.w("bm", "compartilhar: não criou o arquivo", e)
@@ -118,26 +117,8 @@ class PonteCompartilhar(private val atividade: MainActivity) {
             return false
         }
         return try {
-            val uri = FileProvider.getUriForFile(atividade, "${atividade.packageName}.fileprovider", f)
-            val envio = Intent(Intent.ACTION_SEND).apply {
-                type = mime
-                putExtra(Intent.EXTRA_STREAM, uri)
-                if (texto.isNotBlank()) putExtra(Intent.EXTRA_TEXT, texto.take(4000))
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            val folha = Intent.createChooser(envio, titulo.take(80))
-            val abrir = FutureTask<Boolean> { // espera a folha abrir para devolver o resultado de verdade (`startActivity` falha na thread principal)
-                try {
-                    atividade.startActivity(folha)
-                    copiouContexto = copiarContexto(atividade, texto)
-                    true
-                } catch (e: Exception) {
-                    android.util.Log.w("bm", "compartilhar: não abriu a folha", e)
-                    false
-                }
-            }
-            atividade.runOnUiThread(abrir)
-            val abriu = abrir.get(5, TimeUnit.SECONDS)
+            val folha = montarFolha(atividade, f, mime, titulo, texto)
+            val abriu = abrirFolha(atividade, folha, texto) { copiouContexto = it }
             if (!abriu) cancelar() else arquivo = null // aberta: o arquivo fica para o app de destino ler
             abriu
         } catch (e: Exception) {
@@ -173,4 +154,38 @@ private fun copiarContexto(contexto: Context, texto: String): Boolean {
         android.util.Log.w("bm", "compartilhar: não copiou o contexto", e)
         false
     }
+}
+
+/** Deixa só letras, números e `._-` no nome do arquivo (até 80 caracteres); vazio vira "gravacao". */
+private fun nomeSaneado(nome: String): String = nome.replace(Regex("[^A-Za-z0-9._-]"), "_").take(80).ifEmpty { "gravacao" }
+
+/** Só aceita um tipo MIME no formato `tipo/subtipo`; qualquer outra coisa vira o tipo genérico de áudio. */
+private fun mimeValido(tipo: String): String = if (tipo.matches(Regex("[a-z]+/[a-z0-9.+-]+"))) tipo else "audio/*"
+
+/** Monta a folha de compartilhamento do sistema para o arquivo (com o texto abaixo do áudio, se houver). */
+private fun montarFolha(atividade: MainActivity, f: File, mime: String, titulo: String, texto: String): Intent {
+    val uri = FileProvider.getUriForFile(atividade, "${atividade.packageName}.fileprovider", f)
+    val envio = Intent(Intent.ACTION_SEND).apply {
+        type = mime
+        putExtra(Intent.EXTRA_STREAM, uri)
+        if (texto.isNotBlank()) putExtra(Intent.EXTRA_TEXT, texto.take(4000))
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    return Intent.createChooser(envio, titulo.take(80))
+}
+
+/** Abre a folha na thread principal e espera o resultado de verdade (`startActivity` falha ali); `aoCopiar` recebe se o contexto foi copiado. */
+private fun abrirFolha(atividade: MainActivity, folha: Intent, texto: String, aoCopiar: (Boolean) -> Unit): Boolean {
+    val abrir = FutureTask<Boolean> {
+        try {
+            atividade.startActivity(folha)
+            aoCopiar(copiarContexto(atividade, texto))
+            true
+        } catch (e: Exception) {
+            android.util.Log.w("bm", "compartilhar: não abriu a folha", e)
+            false
+        }
+    }
+    atividade.runOnUiThread(abrir)
+    return abrir.get(5, TimeUnit.SECONDS)
 }
