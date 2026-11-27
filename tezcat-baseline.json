@@ -587,34 +587,6 @@
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/busca-hinos.ts::busca-hinos::Clean/Nesting::buscarNumero": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/busca-hinos.ts::busca-hinos::Clean/Nesting::indexar": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/busca-hinos.ts::busca-hinos::Clean/Params::buscarNumero": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src/lib/busca-hinos.ts::busca-hinos::Clean/Params::destacar": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src/lib/busca-hinos.ts::busca-hinos::Clean/Params::pontuar": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src/lib/busca-hinos.ts::busca-hinos::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 371
-  },
-  "src/lib/busca-hinos.ts::busca-hinos::SRP::": {
-    "severity": "FAIL",
-    "value": 34
-  },
   "src/lib/cabem.ts::cabem::Clean/Params::quantosCabem": {
     "severity": "WARN",
     "value": 4
@@ -2754,5 +2726,25 @@
   "tools/verificar-traducoes.py::verificar-traducoes::OCP::main": {
     "severity": "FAIL",
     "value": 16
+  },
+  "src/lib/busca-hinos.ts::busca-hinos::Clean/Nesting::buscarNumero": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/busca-hinos.ts::busca-hinos::Clean/Nesting::indexar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/busca-hinos.ts::busca-hinos::Clean/Params::buscarNumero": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/busca-texto.ts::busca-texto::Clean/Params::destacar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/busca-texto.ts::busca-texto::Clean/Params::pontuar": {
+    "severity": "WARN",
+    "value": 3
   }
 }
