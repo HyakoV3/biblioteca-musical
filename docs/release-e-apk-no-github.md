@@ -68,7 +68,7 @@ Fica para depois: fixar por SHA as actions dos workflows do Claude e dar o escop
 
 ## Conteúdo
 
-Os APKs do GitHub saem **sem hinos embutidos** (o `BM_PACOTE` nunca entra no CI): o repositório é público e o conteúdo é de terceiros. Depois de instalar, o hinário e as partituras são **baixados pelo app** (ver `docs/pacote-do-hinario.md`). O AAB da Play Store tem teto de 200 MB (o APK tem ~10 MB).
+Os APKs do GitHub saem **só com o pacote de exemplo embutido** (5 hinos de domínio público, ver [`pacote-de-exemplo.md`](pacote-de-exemplo.md)), nunca com o hinário real (o `BM_PACOTE` nunca entra no CI): o repositório é público e o conteúdo é de terceiros. Depois de instalar, o hinário e as partituras são **baixados pelo app** (ver `docs/pacote-do-hinario.md`). O AAB da Play Store tem teto de 200 MB (o APK arm64 tem ~11,4 MiB: a `v0.3.9-rc10` tem 11.958.353 bytes e o AAB 7.074.619).
 
 ## O que a assinatura muda para quem testa
 

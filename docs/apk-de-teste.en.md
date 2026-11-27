@@ -15,7 +15,7 @@ The app is **independent and unofficial** (it has no connection with the Christi
 5. **Check the version** in Settings, "About the app", and say which one it is when reporting a problem.
 6. **To report:** tell the person who gave you the link what you did, what you expected and what happened, and the version. Do not send personal data.
 
-On the first launch the app offers to **download the hymnal** (about 4 MB); the scores and the recorded sounds are optional, in Settings, "Content". Once downloaded, everything works offline.
+The app already opens with **5 example hymns** (public domain, with lyrics and scores) so you can see how it works. On the first launch it offers to **download the hymnal** (about 4 MB); the scores and the recorded sounds are optional, in Settings, "Content". Once downloaded, everything works offline.
 
 ## For publishers
 

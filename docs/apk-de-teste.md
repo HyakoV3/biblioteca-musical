@@ -13,7 +13,7 @@ O app é **independente e não oficial** (não tem ligação com a Congregação
 5. **Confira a versão** em Ajustes, "Sobre o app", e diga qual é ao relatar um problema.
 6. **Para relatar:** conte ao responsável que lhe passou o link o que você fez, o que esperava e o que aconteceu, e a versão. Não envie dados pessoais.
 
-No primeiro acesso o app oferece **baixar o hinário** (cerca de 4 MB); as partituras e os sons gravados são opcionais, em Ajustes, "Conteúdo". Depois de baixados, tudo funciona sem internet.
+O app já abre com **5 hinos de exemplo** (domínio público, com letra e partitura), para você ver como funciona. No primeiro acesso ele oferece **baixar o hinário** (cerca de 4 MB); as partituras e os sons gravados são opcionais, em Ajustes, "Conteúdo". Depois de baixados, tudo funciona sem internet.
 
 ## Para quem publica
 
@@ -24,7 +24,7 @@ Um build pode, se preciso, levar um `hinario.json` **dentro do binário** (o his
 ## Como funciona
 
 - `src-tauri/build.rs` lê a variável `BM_PACOTE` (caminho de um `hinario.json`) e a copia para dentro do binário.
-  Sem a variável, o app não leva conteúdo nenhum além do pacote de exemplo fictício.
+  Sem a variável, o app não leva conteúdo nenhum além do pacote de exemplo (5 hinos de domínio público, com partituras).
 - Na primeira abertura, o app grava esse conteúdo como se a pessoa o tivesse instalado (`hinario::semear`).
   Ela pode removê-lo em **Ajustes**. **Desde o 060 os APKs de teste saem SEM o hinário embutido** (sem `BM_PACOTE`): o hinário é
   baixado pelo app, de uma pasta própria do servidor ([`pacote-do-hinario.md`](pacote-do-hinario.md)).
@@ -72,12 +72,13 @@ emulador pode ficar velho mesmo sem PR (foi o que aconteceu com os `compassos`).
 export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64          # o Java padrão (25) pode não servir ao Gradle
 export ANDROID_HOME=~/Android/Sdk ANDROID_SDK_ROOT=~/Android/Sdk
 export NDK_HOME=~/Android/Sdk/ndk/30.0.16248370
-npm run tauri android build -- --apk --target aarch64                      # sem hinário embutido (o padrão desde o 060)
+npm run tauri android build -- --apk --target aarch64                      # sem o hinário completo (o padrão desde o 060); o exemplo de 5 hinos vai sempre dentro
+# Para o emulador (x86_64), acrescente --target x86_64 (o APK sai universal, com as duas arquiteturas, ~23 MB)
 # BM_PACOTE=/caminho/do/hinario.json npm run tauri android build -- --apk --target aarch64   # só se for embutir um hinário
 ```
 
-Sai `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk` (~5 MB sem o hinário; ~6 MB com ele).
-**Conferir o tamanho:** bem acima disso, o APK está levando algo velho. Se o **nome da biblioteca Rust mudar** (o `name` do `[lib]` do `src-tauri/Cargo.toml`), apague as `lib*.so` antigas
+Sai `src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk` (**~11,4 MiB** só com arm64: o `v0.3.9-rc10` mede 11.958.353 bytes; ~6 MB com o hinário completo embutido, que hoje ninguém usa). Desde a #225 o **pacote de exemplo** (10 SVG e o `hinario.json`, ~0,9 MB) vai dentro da biblioteca nativa, que o APK guarda sem compressão (ver [`pacote-de-exemplo.md`](pacote-de-exemplo.md)).
+**Conferir o tamanho:** bem acima disso (arm64 só), o APK está levando algo velho. Se o **nome da biblioteca Rust mudar** (o `name` do `[lib]` do `src-tauri/Cargo.toml`), apague as `lib*.so` antigas
 de `src-tauri/gen/android/app/src/main/jniLibs/*/` antes de gerar: elas ficam lá (pasta gerada, fora do Git) e entram no APK sem uso (foi o que aconteceu do 062 ao 064, +3,8 MB).
 **Não use `--debug`**: o APK fica com ~270 MB.
 

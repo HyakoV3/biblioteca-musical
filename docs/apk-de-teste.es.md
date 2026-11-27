@@ -15,7 +15,7 @@ La app es **independiente y no oficial** (no tiene vínculo con la Congregación
 5. **Compruebe la versión** en Ajustes, "Acerca de la app", e indíquela al reportar un problema.
 6. **Para reportar:** cuente a quien le pasó el enlace qué hizo, qué esperaba y qué ocurrió, y la versión. No envíe datos personales.
 
-En el primer acceso la app ofrece **descargar el himnario** (cerca de 4 MB); las partituras y los sonidos grabados son opcionales, en Ajustes, "Contenido". Una vez descargados, todo funciona sin conexión.
+La app ya abre con **5 himnos de ejemplo** (dominio público, con letra y partitura) para que vea cómo funciona. En el primer acceso ofrece **descargar el himnario** (cerca de 4 MB); las partituras y los sonidos grabados son opcionales, en Ajustes, "Contenido". Una vez descargados, todo funciona sin conexión.
 
 ## Para quien publica
 
