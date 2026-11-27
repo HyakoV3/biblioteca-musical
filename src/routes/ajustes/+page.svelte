@@ -125,6 +125,8 @@
   });
   // A explicação de cada seção aparece enquanto o conteúdo NÃO está instalado (é a hora em que ela serve) e some depois; o ⓘ a traz de volta.
   let explicacoes = $state({ hinario: false, partituras: false, sons: false });
+  /** A explicação e a medida da Saída de áudio, escondidas até a pessoa pedir pelo ⓘ. */
+  let saidaInfo = $state(false);
   const algumSomInstalado = $derived(sons.pacotes.some((p) => sons.pacoteInstalado(p)));
   // O erro do download: código do pacote (rede, integridade...) ou texto do Rust (JSON de códigos), traduzido.
   const erroDasPartituras = $derived.by(() => {
@@ -279,8 +281,19 @@
   <!-- Saída de áudio: de onde o som sai e o modo do AudioContext para essa saída (o fone USB-C estala diferente do alto-falante). -->
   <section>
     <Cartao id="cartao-saida" titulo={t("ajustes.saida")} resumo={t(`saida.rota_curta.${rotaDeSaida}`)} bind:aberto={saidaAberta} aoAlternar={(a) => a && reler()}>
-      <p class="meta">{t("saida.explica")}</p>
-      <p class="rotulo-grupo" id="rotulo-saida">{t("saida.agora", { rota: t(`saida.rota.${rotaDeSaida}`) })}</p>
+      <div class="cab-secao">
+        <p class="rotulo-grupo" id="rotulo-saida">{t("saida.agora", { rota: t(`saida.rota.${rotaDeSaida}`) })}</p>
+        <button
+          type="button"
+          class="info"
+          aria-expanded={saidaInfo}
+          aria-controls={saidaInfo ? "saida-info" : undefined}
+          aria-label={t("ajustes.explicacao", { secao: t("ajustes.saida") })}
+          onclick={() => (saidaInfo = !saidaInfo)}
+        >
+          <Icone nome="info" tamanho={20} />
+        </button>
+      </div>
       <fieldset class="segmentos" aria-labelledby="rotulo-saida">
         {#each MODOS as m}
           <label class:ativo={modoDeSaida === m}>
@@ -290,8 +303,13 @@
         {/each}
       </fieldset>
       <p class="meta" id="saida-descricao">{t(`saida.desc.${modoDeSaida}`)}</p>
-      <p class="meta">{t("saida.vale_so")}</p>
-      <p class="meta" id="saida-medida">{textoDaMedida}</p>
+      {#if saidaInfo}
+        <div id="saida-info">
+          <p class="meta">{t("saida.explica")}</p>
+          <p class="meta">{t("saida.vale_so")}</p>
+          <p class="meta" id="saida-medida">{textoDaMedida}</p>
+        </div>
+      {/if}
     </Cartao>
   </section>
 
