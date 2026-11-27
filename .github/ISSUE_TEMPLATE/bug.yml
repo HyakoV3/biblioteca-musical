@@ -1,0 +1,71 @@
+name: Relatar um defeito
+description: Algo não funciona como deveria.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar. **Não anexe letras, partituras, áudios nem capturas de tela de hinos protegidos**: o conteúdo é de terceiros (veja o CONTRIBUTING). Falha de segurança **não** vai aqui: use o link "Falha de segurança" da página de nova issue.
+  - type: textarea
+    id: o-que-acontece
+    attributes:
+      label: O que acontece
+      description: Descreva o defeito e o que você esperava.
+    validations:
+      required: true
+  - type: textarea
+    id: passos
+    attributes:
+      label: Como reproduzir
+      placeholder: |
+        1. Abrir o hino 2
+        2. Tocar o hino todo
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: versao
+    attributes:
+      label: Versão do app
+      description: Em Ajustes, em Sobre.
+      placeholder: "0.3.9"
+    validations:
+      required: true
+  - type: dropdown
+    id: onde
+    attributes:
+      label: Onde aconteceu
+      options:
+        - Celular Android
+        - Tablet Android
+        - Emulador
+        - Outro
+    validations:
+      required: true
+  - type: input
+    id: aparelho
+    attributes:
+      label: Aparelho e versão do Android
+      placeholder: "Pixel 7, Android 15"
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área
+      multiple: true
+      options:
+        - Lista e busca
+        - Player (som, vozes, instrumentos)
+        - Letra e karaokê
+        - Partitura
+        - Afinador
+        - Metrônomo
+        - Gravador
+        - Ajustes e pacotes (hinário, partituras, sons)
+        - Acessibilidade
+        - Outra
+  - type: textarea
+    id: extra
+    attributes:
+      label: Capturas de tela, vídeo ou registro
+      description: Só de partes do app que não mostrem conteúdo protegido.
