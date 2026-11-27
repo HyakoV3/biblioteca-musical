@@ -17,7 +17,7 @@
   },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 158
+    "value": 177
   },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::SRP::": {
     "severity": "WARN",
@@ -409,7 +409,7 @@
   },
   "src/lib/ItemGravacao.svelte::ItemGravacao::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 229
+    "value": 230
   },
   "src/lib/ItemGravacao.svelte::ItemGravacao::OCP::enviar": {
     "severity": "WARN",
@@ -949,11 +949,11 @@
   },
   "src/lib/i18n/en.ts::en::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 555
+    "value": 556
   },
   "src/lib/i18n/es.ts::es::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 555
+    "value": 556
   },
   "src/lib/i18n/index.svelte.ts::index.svelte::Clean/Params::preencher": {
     "severity": "WARN",
@@ -969,7 +969,7 @@
   },
   "src/lib/i18n/pt.ts::pt::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 558
+    "value": 559
   },
   "src/lib/instrumentos.ts::instrumentos::OCP::tipoDaVoz": {
     "severity": "FAIL",
