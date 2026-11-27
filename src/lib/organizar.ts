@@ -14,6 +14,9 @@ export const SEM_FILTRO: Consulta = { filtro: "todas", busca: "" };
 /** Da mais nova para a mais antiga; empata pelo id (a mesma ordem do índice `porData`). */
 export const maisNovaPrimeiro = (a: MetaGravacao, b: MetaGravacao): number => b.criadaEm - a.criadaEm || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0);
 
+/** As versões locais (por id) de gravações cujo nome ou estrela mudou durante uma leitura. */
+type Alteradas = ReadonlyMap<string, MetaGravacao>;
+
 /**
  * O que a lista mostra depois de uma leitura completa que começou antes de mudanças: o que foi LIDO e não foi apagado desde o início, mais o que foi SALVO desde o início e a leitura
  * não trouxe. Quem foi salvo e também foi lido entra uma vez só. A ordem é da mais nova para a mais antiga.
@@ -22,7 +25,7 @@ export function mesclar(
   lidas: readonly MetaGravacao[],
   salvas: readonly MetaGravacao[],
   apagadas: ReadonlySet<string>,
-  alteradas: ReadonlyMap<string, MetaGravacao> = new Map(),
+  alteradas: Alteradas = new Map(),
 ): MetaGravacao[] {
   const porId = new Map<string, MetaGravacao>();
   for (const m of lidas) if (!apagadas.has(m.id)) porId.set(m.id, m);
