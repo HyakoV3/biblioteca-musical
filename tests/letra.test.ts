@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estrofes, maiorVerso, totalDeEstrofes, versoCurto } from "../src/lib/letra";
+import { estrofes, totalDeEstrofes } from "../src/lib/letra";
 import { marcasDaVez, sincroniaCombina, type Sincronia } from "../src/lib/karaoke";
 
 const LETRA = ["1. um dois", "tres", "", "Coro. alfa beta", "gama", "", "2. quatro", "", "3. cinco"];
@@ -67,23 +67,5 @@ describe("coro e final juntos", () => {
     const letra = ["1. um", "", "Coro. alfa", "", "Final. beta"];
     const s: Sincronia = { normal: [{ estrofe: 1, linhas: [[[0, 0, 2]]] }, { estrofe: 0, linhas: [[[2, 0, 4]]] }] };
     expect(sincroniaCombina(letra, s)).toBe(false);
-  });
-});
-
-describe("justificado: versos curtos", () => {
-  const partes = estrofes(["1. Senhor, tu és o meu pastor e nada me faltará", "Amém."]);
-  it("o maior verso do hino", () => {
-    expect(maiorVerso(partes)).toBe("Senhor, tu és o meu pastor e nada me faltará".length);
-    expect(maiorVerso([])).toBe(0);
-  });
-  it("só os muito curtos (até 2 palavras ou menos de 35% do maior) ficam fora do esticado", () => {
-    const m = maiorVerso(partes);
-    expect(versoCurto("Amém.", m)).toBe(true);
-    expect(versoCurto("Glória a Deus", m)).toBe(true); // 3 palavras, mas 13 de 45 caracteres é menos de 35%
-    expect(versoCurto("Glória a Deus nos céus", m)).toBe(false); // 3 ou mais palavras e mais de 35%
-    expect(versoCurto("Ó Senhor", m)).toBe(true); // 2 palavras
-    expect(versoCurto("Sim, Senhor, sim", m)).toBe(false);
-    expect(versoCurto("Senhor, tu és o meu pastor", m)).toBe(false); // antes (60%) ficava de fora
-    expect(versoCurto("a b c", 200)).toBe(true); // menos de 35% de um verso de 200
   });
 });

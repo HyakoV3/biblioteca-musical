@@ -30,16 +30,3 @@ export function estrofes(letra: string[]): Estrofe[] {
   }
   return saida;
 }
-
-/**
- * No alinhamento justificado cada verso é um parágrafo próprio, e o CSS nunca estica a ÚLTIMA linha de um parágrafo (que, num verso que cabe numa
- * linha só, é a linha inteira: nada era justificado). Por isso o justificado usa `text-align-last: justify` nos versos, e esta regra separa os versos
- * curtos demais ("Amém.", "Aleluia!"): esticados até a margem, ficariam com buracos enormes entre as palavras. Curto = até 2 palavras ou menos de 35% do maior verso do hino (com 60%, no hinário todo, 31% dos versos eram deixados de fora e só os mais longos pareciam justificados).
- */
-export function maiorVerso(partes: Estrofe[]): number {
-  return Math.max(0, ...partes.flatMap((e) => e.linhas.map((l) => l.length)));
-}
-
-export function versoCurto(linha: string, maior: number): boolean {
-  return linha.trim().split(/\s+/).length < 3 || linha.length < maior * 0.35;
-}

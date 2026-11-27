@@ -560,15 +560,15 @@ async function principal() {
   await dormir(1200);
   confere(!(await av("!!document.querySelector('.mini')")), "Parar logo depois de soltar o slider para tudo (o miniplayer some)");
   confere(!(await av("!!document.querySelector('.aviso.erro')")), "Parar durante o reagendamento não mostra erro falso");
-  // Aparência da letra (I-04): aumentar o tamanho e justificar mudam a letra na hora e ficam salvos no aparelho.
+  // Aparência da letra (I-04): aumentar o tamanho e centralizar mudam a letra na hora e ficam salvos no aparelho.
   const fonteAntes = await av("parseFloat(getComputedStyle(document.querySelector('.estrofe p')).fontSize)");
   const clicouAparencia = await av(`(() => {
     const botoes = [...document.querySelectorAll('#painel-letra .barra-letra button')];
     const por = (re) => botoes.find((b) => re.test(b.getAttribute('aria-label') ?? ''));
-    const mais = por(/increase/i), justificar = por(/justify/i);
-    if (!mais || !justificar) return false;
+    const mais = por(/increase/i), centralizar = por(/center/i);
+    if (!mais || !centralizar) return false;
     mais.click();
-    justificar.click();
+    centralizar.click();
     return true;
   })()`);
   confere(clicouAparencia, "controles de tamanho e alinhamento da letra encontrados e usados");
@@ -579,8 +579,8 @@ async function principal() {
     salvo: localStorage.getItem('prefs.letra'),
   })`);
   confere(aparencia.fonte > fonteAntes, `aumentar o tamanho cresce a letra: ${fonteAntes} → ${aparencia.fonte} px`);
-  confere(aparencia.alinha === "justify", `justificar muda o alinhamento da letra: ${aparencia.alinha}`);
-  confere(aparencia.salvo === '{"passo":2,"alinhamento":"justificado"}', `a escolha fica salva no aparelho: ${aparencia.salvo}`);
+  confere(aparencia.alinha === "center", `centralizar muda o alinhamento da letra: ${aparencia.alinha}`);
+  confere(aparencia.salvo === '{"passo":2,"alinhamento":"centro"}', `a escolha fica salva no aparelho: ${aparencia.salvo}`);
   // Alto contraste (I-06) com o aparelho no ESCURO: o escuro "do sistema" de cada estilo tem seletor mais específico (0,3,0) que o bloco
   // do modo (0,2,0) e o venceria se o :not(...) não o excluísse. Só um navegador de verdade confere isso (a cascata não é texto).
   await enviar("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
@@ -914,7 +914,7 @@ async function principal() {
   const partituraVolta = await av(`window.scrollY`);
   confere(rolagemAoEntrar <= 2 && Math.abs(letraVolta - 420) <= 2 && Math.abs(partituraVolta - 150) <= 2, `hino: cada aba guarda a própria rolagem (a que entra começa no topo, e ao voltar a anterior é restaurada): ${JSON.stringify({ rolagemAoEntrar, letraVolta, partituraVolta })}`);
 
-  // UX-002 e UX-001 a 320 px: o cabeçalho do hino não fica espremido (a ação desce ou cabe, o título tem largura e o apoio é de uma linha) e as quatro abas da tela inicial cabem.
+  // UX-002 e UX-001 a 320 px: o cabeçalho do hino não estoura (a ação fica sempre à direita, na linha do título, que usa o que sobra e é cortado com reticências; o apoio é de uma linha) e as quatro abas da tela inicial cabem.
   await enviar("Emulation.setDeviceMetricsOverride", { width: 320, height: 915, deviceScaleFactor: 1, mobile: true });
   confere(await abrirHino(999), "hino 999 carregado a 320 px");
   await av(`document.getElementById('aba-letra').click(); 1`);
@@ -922,10 +922,19 @@ async function principal() {
   const cab320 = await av(`(() => {
     const h = document.querySelector('header.barra'); const h1 = h.querySelector('h1'); const acao = h.querySelector('.acao'); const textos = h.querySelector('.textos'); const p = h.querySelector('.textos p');
     return { semRolagemLateral: document.documentElement.scrollWidth <= window.innerWidth, h1Largura: Math.round(h1.getBoundingClientRect().width),
-      acaoAbaixo: !!acao && acao.getBoundingClientRect().top >= textos.getBoundingClientRect().bottom - 1, acaoDentro: !!acao && acao.getBoundingClientRect().right <= window.innerWidth + 1,
+      acaoNaLinha: !!acao && acao.getBoundingClientRect().top < textos.getBoundingClientRect().bottom - 1, acaoDentro: !!acao && acao.getBoundingClientRect().right <= window.innerWidth + 1,
       apoioUmaLinha: !p || p.getBoundingClientRect().height <= parseFloat(getComputedStyle(p).fontSize) * 1.6 };
   })()`);
-  confere(cab320.semRolagemLateral && cab320.acaoDentro && cab320.h1Largura >= 110 && cab320.apoioUmaLinha, `a 320 px o cabeçalho do hino não estoura nem espreme o título, e o apoio fica numa linha: ${JSON.stringify(cab320)}`);
+  confere(cab320.semRolagemLateral && cab320.acaoDentro && cab320.acaoNaLinha && cab320.h1Largura >= 60 && cab320.apoioUmaLinha, `a 320 px o cabeçalho do hino não estoura nem espreme o título, e o apoio fica numa linha: ${JSON.stringify(cab320)}`);
+  // Título MUITO longo (como os de alguns hinos): os ícones da direita ficam na linha do título, sem descer, e o título fica numa linha só, cortado com reticências (a coluna dos ícones é reservada primeiro).
+  const cabLongo = await av(`(() => {
+    const h = document.querySelector('header.barra'); const h1 = h.querySelector('h1'); const acao = h.querySelector('.acao');
+    h1.textContent = '999 · ' + 'Título muito comprido de hino para provar o corte com reticências '.repeat(4);
+    const a = acao.getBoundingClientRect(); const t = h1.getBoundingClientRect();
+    return { acaoNaLinhaDoTitulo: a.top < t.bottom - 1 && a.bottom > t.top + 1, acaoADireita: a.left >= t.right - 1, acaoDentro: a.right <= window.innerWidth + 1,
+      cortado: h1.scrollWidth > h1.clientWidth + 1, reticencias: getComputedStyle(h1).textOverflow === 'ellipsis', umaLinha: h1.getBoundingClientRect().height < parseFloat(getComputedStyle(h1).lineHeight) * 1.5, alturaDoCabecalho: Math.round(h.getBoundingClientRect().height), semRolagemLateral: document.documentElement.scrollWidth <= window.innerWidth };
+  })()`);
+  confere(cabLongo.acaoNaLinhaDoTitulo && cabLongo.acaoADireita && cabLongo.acaoDentro && cabLongo.cortado && cabLongo.reticencias && cabLongo.umaLinha && cabLongo.alturaDoCabecalho <= 100 && cabLongo.semRolagemLateral, `a 320 px, com um título muito longo, os ícones ficam à direita na linha do título e o título fica numa linha só, cortado com reticências: ${JSON.stringify(cabLongo)}`);
   await enviar("Page.navigate", { url: `http://127.0.0.1:${PORTA_VITE}/` });
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`document.querySelectorAll('[role="tablist"] [role="tab"]').length === 4`)); ) await dormir(250);
   await dormir(400);
@@ -1024,18 +1033,38 @@ async function principal() {
   for (let fim = Date.now() + 20000; Date.now() < fim && !(await av(`!!document.getElementById('conteudo')`)); ) await dormir(250);
   // Os blocos de Ajustes são cartões fechados de saída, com o estado na linha de cima (I-24): o Conteúdo mostra o hinário, as partituras e os sons.
   const resumoFechado = await av(`(() => { const d = document.getElementById('conteudo'); return { aberto: d.open, resumo: d.querySelector('summary').innerText.replace(/\\s+/g, ' ') }; })()`);
-  confere(!resumoFechado.aberto && /\d+\s+(scores?|partituras?)/i.test(resumoFechado.resumo), `Ajustes: o cartão Conteúdo começa fechado e mostra o estado na linha de cima: ${JSON.stringify(resumoFechado)}`);
+  confere(!resumoFechado.aberto && /\d+\s+(scores?|partituras?|hymns?\/scores?|hinos?\/partituras?|himnos?\/partituras?)/i.test(resumoFechado.resumo), `Ajustes: o cartão Conteúdo começa fechado e mostra o estado na linha de cima: ${JSON.stringify(resumoFechado)}`);
   // O texto de um cartão fechado não é renderizado: abre o Conteúdo antes de ler o que há dentro (hinário, partituras, sons).
   await av("document.getElementById('conteudo').open = true; 1");
   await dormir(400);
   const semArquivo = await av(`document.querySelectorAll('input[type="file"]').length`);
   confere(semArquivo === 0, `Ajustes não tem mais o botão de importar hinário de arquivo: ${semArquivo} seletores`);
 
+  // Conteúdo: o resumo traz só as QUANTIDADES (sem o nome do hinário) e cada bloco diz quantos itens tem, o tamanho e o estado; com o conteúdo instalado a explicação
+  // de cada seção some (não ocupa espaço) e o ⓘ ao lado a mostra de volta; sem ele (os sons, aqui) a explicação aparece sozinha.
+  const blocoB = await av(`(() => {
+    const resumo = document.querySelector('#conteudo summary .resumo').innerText.replace(/\\s+/g, ' ').trim();
+    const linhas = [...document.querySelectorAll('#conteudo .pacote')].map((l) => l.innerText.replace(/\\s+/g, ' ').trim());
+    const infos = [...document.querySelectorAll('#conteudo button.info')];
+    return { resumo, linhas, nInfo: infos.length, expandidos: infos.map((b) => b.getAttribute('aria-expanded')), controles: infos.map((b) => b.getAttribute('aria-controls')),
+      explicaHinario: !!document.getElementById('explica-hinario'), explicaPartituras: !!document.getElementById('explica-partituras'), explicaSons: !!document.getElementById('explica-sons') };
+  })()`);
+  confere(/^\d+\s+(hymns?|hinos?|himnos?)\b/i.test(blocoB.resumo) && !/Hin[áa]rio\s+\d|Hymnal\s+\d/i.test(blocoB.resumo), `Conteúdo: o resumo do cartão traz só as quantidades, sem o nome do hinário: ${JSON.stringify(blocoB.resumo)}`);
+  confere(/\d+\s+(hymns?|hinos?|himnos?)\s·.*\s·\s(Installed|Instalado)/i.test(blocoB.linhas[0] ?? "") && /\d+\s+(scores?|partituras?)\s·.*\s·\s(Installed|Instaladas)/i.test(blocoB.linhas[1] ?? "") && /\d+\s+(instruments?|instrumentos?)\s·.*\s·\s/i.test(blocoB.linhas[2] ?? ""), `Conteúdo: cada bloco diz a quantidade, o tamanho e o estado numa linha: ${JSON.stringify(blocoB.linhas)}`);
+  confere(!blocoB.explicaHinario && !blocoB.explicaPartituras && blocoB.explicaSons && blocoB.nInfo === 2 && blocoB.expandidos.every((e) => e === "false") && blocoB.controles.every((c) => c === null), `Conteúdo: instalados, a explicação do hinário e das partituras some e o ⓘ aparece fechado (sem aria-controls); os sons, não instalados, mantêm a explicação: ${JSON.stringify(blocoB)}`);
+  await av(`document.querySelector('#conteudo button.info').click(); 1`);
+  await dormir(200);
+  const infoAberto = await av(`(() => { const b = document.querySelector('#conteudo button.info'); const p = document.getElementById('explica-hinario'); return { expandido: b.getAttribute('aria-expanded'), controla: b.getAttribute('aria-controls'), texto: !!p && p.innerText.length > 20 }; })()`);
+  await av(`document.querySelector('#conteudo button.info').click(); 1`);
+  await dormir(200);
+  const infoFechado = await av(`({ expandido: document.querySelector('#conteudo button.info').getAttribute('aria-expanded'), texto: !!document.getElementById('explica-hinario') })`);
+  confere(infoAberto.expandido === "true" && infoAberto.controla === "explica-hinario" && infoAberto.texto && infoFechado.expandido === "false" && !infoFechado.texto, `Conteúdo: o ⓘ mostra a explicação do hinário e esconde de novo: ${JSON.stringify({ infoAberto, infoFechado })}`);
+
   // O card Partituras (no molde dos sons gravados): com partituras instaladas mostra "Instaladas" e Remover; remover chama só o comando
   // de remover partituras; depois, sem pacote publicado (manifesto vazio), não há botão Baixar nem importação manual.
-  const card1 = await av(`(() => { const c = document.querySelector('#partituras'); return { achou: !!c, texto: c?.innerText ?? '', botoes: [...(c?.querySelectorAll('button') ?? [])].map((b) => b.textContent.trim()) }; })()`);
+  const card1 = await av(`(() => { const c = document.querySelector('#partituras'); return { achou: !!c, texto: c?.innerText ?? '', botoes: [...(c?.querySelectorAll('button:not(.info)') ?? [])].map((b) => b.textContent.trim()) }; })()`);
   confere(card1.achou && /installed|instaladas|instaladas/i.test(card1.texto) && card1.botoes.length === 1, `card Partituras com partituras instaladas: estado e um só botão (Remover): ${JSON.stringify({ botoes: card1.botoes })}`);
-  await av(`document.querySelector('#partituras button').click(); 1`);
+  await av(`document.querySelector('#partituras button:not(.info)').click(); 1`);
   await dormir(300);
   // Remover pede a confirmação na própria linha (UX-008): só ao confirmar o comando roda.
   await av(`document.querySelector('#partituras .confirma .perigo').click(); 1`);
@@ -2078,7 +2107,7 @@ async function principal() {
   await irParaAjustes(AJ);
   await av(`document.querySelector('#conteudo summary').click(); 1`);
   await dormir(300);
-  const linhaHinario = await av(`(() => { const l = [...document.querySelectorAll('#conteudo .pacote')].find((e) => e.querySelector('strong')?.textContent.trim() === 'Full hymnal'); return { achou: !!l, detalhe: l?.querySelector('.meta')?.textContent.trim() ?? null, remover: l?.querySelector('button')?.textContent.trim() ?? null }; })()`);
+  const linhaHinario = await av(`(() => { const l = [...document.querySelectorAll('#conteudo .pacote')].find((e) => /hymns|hinos|himnos/i.test(e.querySelector('.meta')?.textContent ?? '')); return { achou: !!l, detalhe: l?.querySelector('.meta')?.textContent.trim() ?? null, remover: l?.querySelector('button')?.textContent.trim() ?? null }; })()`);
   confere(linhaHinario.achou && /Installed/.test(linhaHinario.detalhe ?? "") && linhaHinario.remover === 'Remove', `Ajustes → Conteúdo: o hinário aparece como uma linha de pacote (instalado, com Remover): ${JSON.stringify(linhaHinario)}`);
   await av(`document.querySelector('#conteudo summary').click(); 1`);
   await dormir(200);

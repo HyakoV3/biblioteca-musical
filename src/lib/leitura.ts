@@ -5,7 +5,7 @@ export const ESCALAS_LETRA = [0.85, 1, 1.15, 1.3, 1.45, 1.6] as const;
 /** Índice do tamanho padrão (100%). */
 export const PASSO_PADRAO = 1;
 
-export const ALINHAMENTOS = ["esquerda", "direita", "justificado"] as const;
+export const ALINHAMENTOS = ["esquerda", "centro", "direita"] as const;
 export type Alinhamento = (typeof ALINHAMENTOS)[number];
 
 export type Leitura = { passo: number; alinhamento: Alinhamento };
@@ -25,8 +25,10 @@ export function normalizarLeitura(bruto: unknown): Leitura {
   const base = leituraPadrao();
   if (typeof bruto !== "object" || bruto === null) return base;
   const { passo, alinhamento } = bruto as Record<string, unknown>;
+  // O alinhamento "justificado" foi trocado por "centro": quem o tinha salvo passa a ver a letra centralizada.
+  const nome = alinhamento === "justificado" ? "centro" : alinhamento;
   return {
     passo: limitarPasso(passo),
-    alinhamento: ALINHAMENTOS.find((a) => a === alinhamento) ?? base.alinhamento,
+    alinhamento: ALINHAMENTOS.find((a) => a === nome) ?? base.alinhamento,
   };
 }

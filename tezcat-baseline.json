@@ -941,11 +941,11 @@
   },
   "src/lib/i18n/en.ts::en::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 547
+    "value": 554
   },
   "src/lib/i18n/es.ts::es::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 547
+    "value": 554
   },
   "src/lib/i18n/index.svelte.ts::index.svelte::Clean/Params::preencher": {
     "severity": "WARN",
@@ -961,7 +961,7 @@
   },
   "src/lib/i18n/pt.ts::pt::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 550
+    "value": 557
   },
   "src/lib/instrumentos.ts::instrumentos::OCP::tipoDaVoz": {
     "severity": "FAIL",
@@ -1453,45 +1453,41 @@
   },
   "src/routes/ajustes/+page.svelte::ajustes/+page::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 180
+    "value": 189
   },
   "src/routes/ajustes/+page.svelte::ajustes/+page::Clean/Template::": {
     "severity": "WARN",
-    "value": 255
+    "value": 276
   },
   "src/routes/ajustes/+page.svelte::ajustes/+page::SRP::": {
     "severity": "WARN",
-    "value": 18
+    "value": 17
   },
-  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Método::$effect@L139": {
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Método::$effect@L117": {
     "severity": "WARN",
     "value": 26
   },
-  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Método::$effect@L189": {
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Método::$effect@L167": {
     "severity": "WARN",
     "value": 25
   },
-  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Nesting::$effect@L139": {
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Nesting::$effect@L117": {
     "severity": "WARN",
     "value": 2
   },
-  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Nesting::$effect@L189": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Nesting::$effect@L73": {
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Nesting::$effect@L167": {
     "severity": "WARN",
     "value": 2
   },
   "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 251
+    "severity": "WARN",
+    "value": 229
   },
-  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::OCP::$effect@L139": {
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::OCP::$effect@L117": {
     "severity": "WARN",
     "value": 4
   },
-  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::OCP::$effect@L189": {
+  "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::OCP::$effect@L167": {
     "severity": "WARN",
     "value": 5
   },
@@ -1501,7 +1497,7 @@
   },
   "src/routes/hino/[numero]/+page.svelte::hino/[numero]/+page::SRP::": {
     "severity": "WARN",
-    "value": 20
+    "value": 18
   },
   "tests/amostras.ts::amostras::Clean/Nesting::hinoComFinal": {
     "severity": "WARN",
