@@ -70,6 +70,8 @@ código. Eles **não bloqueiam o *merge***: só as 4 verificações do CI bloque
 Seguimos **Conventional Commits** a partir de 2026-11-24: `tipo(escopo): resumo`, em português, com `feat`, `fix`, `docs`, `chore`, `ci`, `build`, `refactor`, `test` ou `perf`, e `!` depois do tipo numa mudança incompatível (ex.: `feat(sons): baixar do GitHub Release`, `ci(release): conferir permissões do APK`). O título da PR segue o mesmo formato (o merge é *squash*, então ele vira o commit). Dizer o **porquê** quando não for óbvio. Commits pequenos e coerentes valem
 mais que um grande. Sem atribuição automática de ferramentas nos commits e nas PRs deste repositório.
 
+**Responsável e etiqueta:** toda PR tem um *assignee* (quem a abriu) e uma etiqueta pelo tipo da mudança: `fix` é `bug`; funcionalidade nova é `feature`; melhoria de algo que já existe é `enhancement`; `chore`, `ci`, `build`, `refactor`, `test` e `perf` são `chore`; `docs` é `documentation` (e `accessibility` quando couber). O modelo da PR (`.github/PULL_REQUEST_TEMPLATE.md`) traz a lista de conferência.
+
 ## Relatar problemas
 
 Bug ou ideia: abra uma *issue* descrevendo o que você esperava e o que aconteceu (versão e commit aparecem no fim da tela **Ajustes**). **Falha de

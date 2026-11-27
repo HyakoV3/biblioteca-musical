@@ -980,6 +980,73 @@ Levantada no histórico inteiro do git (`src/lib/i18n/`, 596 commits da `main`) 
 
 ---
 
+## I-44 — Letras em português no pacote de exemplo
+
+- **Status:** anotada (2026-11-27).
+- **Origem:** o responsável, 2026-11-26/27, ao pedir os 5 hinos de exemplo: "usar o idioma original, a menos que se ache tradução em português com fonte datada".
+- **Prioridade:** baixa.
+
+### O problema
+
+O pacote de exemplo traz as letras no idioma original (alemão e inglês), porque nenhuma tradução em português teve a licença confirmada. Quem testa em português lê o título em português, mas canta letra estrangeira.
+
+### O que se deseja
+
+Uma tradução em português de cada letra, **só** de autor falecido há mais de 70 anos e com fonte datada e citável. O candidato achado é o "Castelo Forte é o Nosso Deus", de Jacob Eduardo von Hafe (1886, a partir da versão espanhola de Cabrera), na pt.wikisource.
+
+### Perguntas em aberto
+
+1. **Qual a data de morte do Hafe?** Não achei a página de autor; sem ela não dá para afirmar domínio público.
+2. **O texto da Wikisource é o de 1886?** Os hinários imprimem variações; precisa de uma fonte melhor.
+3. **E os outros quatro hinos?** "Noite Feliz", "Santo, Santo, Santo", "Maravilhosa Graça" e "Ode à Alegria" não foram pesquisados.
+4. **A música cabe na letra traduzida?** O alinhamento sílaba a nota (`letras.json`) refaz-se por tradução.
+
+### Critérios de aceitação (propostos)
+
+- Cada letra nova traz autor, ano, fonte e a prova da data de morte em `licencas-de-terceiros.md`.
+- O hinário passa a ter letra por idioma, ou o exemplo escolhe uma só (decisão a tomar; o formato hoje tem uma `letra` por hino).
+
+---
+
+## I-45 — Partituras do exemplo fora da biblioteca nativa (APK menor)
+
+- **Status:** anotada (2026-11-27).
+- **Origem:** medida do `v0.3.9-rc10`: os 10 SVG (~0,87 MB) entram por `include_str!`, e o APK guarda a biblioteca nativa **sem compressão** e **uma vez por arquitetura**. No APK universal isso foi +1,8 MB.
+- **Prioridade:** baixa.
+
+### O problema
+
+O exemplo pesa cerca de +0,9 MB por arquitetura no APK, quando comprimido seriam ~0,15 MB.
+
+### O que se deseja
+
+Levar os SVG como **recurso comprimido** do APK (assets do Android, lidos pelo lado nativo) em vez de texto dentro do binário, ou comprimi-los no próprio binário e descomprimir na leitura. Cada um continua passando por `svg::limpar`.
+
+### Perguntas em aberto
+
+1. **Quanto realmente pesa o exemplo?** Falta medir o `main` sem o exemplo contra o `main` com ele (a comparação feita incluiu duas outras PRs).
+2. **Asset do Tauri ou do Android?** O primeiro mantém uma só implementação; o segundo comprime melhor no APK.
+3. **Vale a complexidade?** O ganho é de uns 0,7 MB por arquitetura; um APK arm64 tem 11,4 MiB.
+
+### Critérios de aceitação (propostos)
+
+- Mesmo conteúdo, mesma limpeza, e os testes do `exemplo.rs` seguem valendo.
+- O APK universal encolhe o equivalente ao exemplo duplicado.
+
+---
+
+## I-46 — Créditos do pacote de exemplo em Ajustes
+
+- **Status:** anotada (2026-11-27).
+- **Origem:** o assistente, 2026-11-27: a procedência dos 5 hinos (Mutopia Project e Wikisource) está só em `licencas-de-terceiros.md`, não no app.
+- **Prioridade:** baixa (domínio público não exige crédito).
+
+### O que se deseja
+
+Uma linha em Ajustes, "Créditos e licenças" (`src/lib/licencas.ts`), citando o Mutopia Project (digitadores Steve Dunlop e Peter Chubb) e as edições das letras, com o link da página de cada peça. Decisão do responsável: vale como cortesia?
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
