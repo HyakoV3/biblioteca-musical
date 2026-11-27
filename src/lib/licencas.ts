@@ -152,20 +152,17 @@ export function semLicenca(c: Credito): boolean {
   return c.textos.length > 0 && c.textos.every((x) => x.tipo === "reservado");
 }
 
+/** Como cada tipo vira texto: recebe a linha de direitos (vazia quando não há). Um tipo novo entra aqui, sem mexer em `textoDaLicenca`. */
+const MONTAR_TEXTO: Record<TipoTexto, (direitos: string) => string> = {
+  mit: (direitos) => `MIT License\n\n${direitos}\n\n${TEXTO_MIT}`,
+  bsd3: (direitos) => `${direitos}\n\n${TEXTO_BSD_3}`,
+  apache2: () => TEXTO_APACHE_2,
+  generaluser: () => TEXTO_GENERALUSER,
+  ofl: (direitos) => `${direitos}\n\n${TEXTO_OFL}`,
+  reservado: (direitos) => direitos,
+};
+
 /** O texto de uma licença para um crédito (com a linha de direitos autorais, quando há). */
 export function textoDaLicenca(t: Credito["textos"][number]): string {
-  switch (t.tipo) {
-    case "mit":
-      return `MIT License\n\n${t.direitos ?? ""}\n\n${TEXTO_MIT}`;
-    case "bsd3":
-      return `${t.direitos ?? ""}\n\n${TEXTO_BSD_3}`;
-    case "apache2":
-      return TEXTO_APACHE_2;
-    case "generaluser":
-      return TEXTO_GENERALUSER;
-    case "ofl":
-      return `${t.direitos ?? ""}\n\n${TEXTO_OFL}`;
-    case "reservado":
-      return t.direitos ?? "";
-  }
+  return MONTAR_TEXTO[t.tipo](t.direitos ?? "");
 }

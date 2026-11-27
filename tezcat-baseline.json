@@ -1045,11 +1045,7 @@
   },
   "src/lib/licencas.ts::licencas::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 172
-  },
-  "src/lib/licencas.ts::licencas::OCP::textoDaLicenca": {
-    "severity": "FAIL",
-    "value": 7
+    "value": 169
   },
   "src/lib/metaGravacao.ts::metaGravacao::Clean/Nesting::normalizarMeta": {
     "severity": "WARN",
