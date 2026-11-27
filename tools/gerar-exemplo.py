@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -99,7 +100,7 @@ def desenhar(entrada: Path, saida: Path) -> dict[str, bytes] | None:
     spec.loader.exec_module(gp)
     opcoes = gp.opcoes_verovio
     gp.opcoes_verovio = lambda largura, escala: {**opcoes(largura, escala), "xmlIdSeed": 1}  # ids fixos: o mesmo MusicXML dá os mesmos bytes
-    copiador = f"{sys.executable} {RAIZ / 'tools' / 'exemplo' / 'copiar_musicxml.py'}"
+    copiador = shlex.join([sys.executable, str(RAIZ / "tools" / "exemplo" / "copiar_musicxml.py")])
     sys.argv = ["gerar-partituras", str(entrada), str(saida), "--musescore", copiador]
     return {p.name: p.read_bytes() for p in saida.glob("*.svg")} if gp.principal() == 0 else None
 

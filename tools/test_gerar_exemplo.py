@@ -42,6 +42,12 @@ def test_ligadura_de_expressao_entre_notas_iguais_vale_como_ligadura():
     assert not ev[2].ligada_a_seguinte and ev[3].melisma  # alturas diferentes: melisma, não ligadura
 
 
+def test_nota_que_fecha_um_arco_e_abre_outro_nao_perde_nenhum():
+    ev = _voz(r"c'4 ( d'4 ) ( e'4 ) f'4").eventos
+    assert ev[0].melisma is False and ev[1].melisma and ev[2].melisma  # o 1º arco cobre c-d; o 2º, d-e
+    assert not ev[3].melisma
+
+
 def test_global_traz_so_compasso_e_armadura():
     g = ler_global(r"\time 3/4 \key d \minor \tempo 4=90 \skip 1*4")
     assert g.compasso == (3, 4) and g.armadura == ("d", "minor")

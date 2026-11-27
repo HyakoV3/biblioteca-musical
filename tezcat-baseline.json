@@ -557,11 +557,11 @@
   },
   "src/lib/busca-hinos.ts::busca-hinos::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 360
+    "value": 371
   },
   "src/lib/busca-hinos.ts::busca-hinos::SRP::": {
     "severity": "FAIL",
-    "value": 32
+    "value": 34
   },
   "src/lib/cabem.ts::cabem::Clean/Params::quantosCabem": {
     "severity": "WARN",
@@ -1805,7 +1805,7 @@
   },
   "tools/exemplo/lilypond.py::lilypond::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 245
+    "value": 247
   },
   "tools/exemplo/lilypond.py::lilypond::OCP::_bloco": {
     "severity": "WARN",
@@ -1913,7 +1913,7 @@
   },
   "tools/gerar-exemplo.py::gerar-exemplo::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 170
+    "value": 171
   },
   "tools/gerar-exemplo.py::gerar-exemplo::OCP::gerar_svg": {
     "severity": "WARN",

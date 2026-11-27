@@ -171,10 +171,12 @@ def _resolver_ligaduras(eventos: list[Evento]) -> None:
         if e.tipo != "n":
             continue
         e.ligada_a_seguinte = e.tie and k + 1 < len(eventos)
-        aberto = k if e.sl_i else aberto
+        # Fecha antes de abrir: uma nota `)(` encerra o arco anterior e já começa o seguinte.
         if e.sl_f and aberto is not None:
             _fechar_arco(eventos, aberto, k)
             aberto = None
+        if e.sl_i:
+            aberto = k
 
 
 def _fechar_arco(eventos: list[Evento], a: int, k: int) -> None:

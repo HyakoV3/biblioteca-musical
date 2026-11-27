@@ -53,4 +53,20 @@ describe("busca por título em qualquer idioma", () => {
   it("hino sem `titulos` continua achável pelo título", () => {
     expect(nums("antigo")).toEqual([3]);
   });
+
+  it("os termos não casam 'emprestados' entre traduções diferentes", () => {
+    expect(nums("silent paz")).toEqual([]); // "silent" é do inglês e "paz" do espanhol
+    expect(nums("silent night")).toEqual([1]);
+  });
+
+  it("o título exato (original ou o de um idioma) ganha do que só começa com a consulta", () => {
+    const acervo: ItemBusca[] = [
+      { numero: 20, titulo: "Graça Divina", letra: [] },
+      { numero: 21, titulo: "Amazing Grace", titulos: { pt: "Graça" }, letra: [] },
+    ];
+    const i = indexar(acervo);
+    const ordem = (q: string) => buscar(i, q).resultados.map((r) => r.item.numero);
+    expect(ordem("graça")).toEqual([21, 20]); // o título pt do 21 é exatamente "Graça"
+    expect(ordem("amazing grace")).toEqual([21]);
+  });
 });

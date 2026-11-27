@@ -162,9 +162,8 @@ function extrairTom(bruta: string): { tom: Tom | null; resto: string[]; todos: s
 
 type Entrada<T extends ItemBusca> = {
   item: T;
-  tituloPalavras: string[];
-  /** O título normalizado inteiro (para "começa com a consulta"). */
-  tituloN: string;
+  /** Cada título do hino (o original e os de `titulos`), normalizado e em palavras: a busca pontua cada um separadamente e fica com o melhor, para os termos não casarem "emprestados" entre traduções. */
+  titulos: { inteiro: string; palavras: string[] }[];
   autoriaPalavras: string[];
   /** Cada linha da letra, em palavras normalizadas. */
   linhas: string[][];
@@ -185,14 +184,17 @@ export function indiceDe<T extends ItemBusca>(itens: readonly T[]): Indice<T> {
   return ind as Indice<T>;
 }
 
+function tituloIndexado(t: string): { inteiro: string; palavras: string[] } {
+  const inteiro = normalizar(t);
+  return { inteiro, palavras: palavrasDe(inteiro) };
+}
+
 /** Prepara o acervo uma vez (normaliza título, autoria e letra); cada busca depois só varre. */
 export function indexar<T extends ItemBusca>(itens: readonly T[]): Indice<T> {
   const entradas = itens.map<Entrada<T>>((item) => {
-    const tituloN = normalizar(todosOsTitulos(item).join(" "));
     return {
       item,
-      tituloN,
-      tituloPalavras: palavrasDe(tituloN),
+      titulos: todosOsTitulos(item).map(tituloIndexado),
       autoriaPalavras: palavrasDe(normalizar(item.autoria ?? "")),
       linhas: item.letra.map((l) => palavrasDe(normalizar(l))),
       tom: tomDoHino(item.tonalidade),
@@ -274,6 +276,15 @@ function destacar(textoOriginal: string, termos: readonly string[], inteira: (t:
 }
 
 function pontuar<T extends ItemBusca>(e: Entrada<T>, termos: readonly string[], consultaN: string): { r: Resultado<T>; pontos: number } | null {
+  let melhor: { r: Resultado<T>; pontos: number } | null = null;
+  for (const titulo of e.titulos) {
+    const atual = pontuarComTitulo(e, titulo, termos, consultaN);
+    if (atual && (!melhor || atual.pontos > melhor.pontos)) melhor = atual;
+  }
+  return melhor;
+}
+
+function pontuarComTitulo<T extends ItemBusca>(e: Entrada<T>, titulo: { inteiro: string; palavras: string[] }, termos: readonly string[], consultaN: string): { r: Resultado<T>; pontos: number } | null {
   let pontos = 0;
   let usouLetra = false;
   let usouAutoria = false;
@@ -283,8 +294,8 @@ function pontuar<T extends ItemBusca>(e: Entrada<T>, termos: readonly string[], 
   const soCurtos = termos.length === 1 && termos[0]!.length <= CURTO; // um termo curto sozinho não consulta a letra: só título e autoria
   for (const t of termos) {
     let melhor = 0;
-    if (e.tituloPalavras[0]?.startsWith(t)) melhor = PONTOS_TITULO_INICIO;
-    else if (comecaPalavra(e.tituloPalavras, t)) melhor = PONTOS_TITULO_PALAVRA;
+    if (titulo.palavras[0]?.startsWith(t)) melhor = PONTOS_TITULO_INICIO;
+    else if (comecaPalavra(titulo.palavras, t)) melhor = PONTOS_TITULO_PALAVRA;
     if (melhor < PONTOS_AUTORIA && comecaPalavra(e.autoriaPalavras, t)) {
       melhor = PONTOS_AUTORIA;
       usouAutoria = true;
@@ -299,8 +310,8 @@ function pontuar<T extends ItemBusca>(e: Entrada<T>, termos: readonly string[], 
     pontos += melhor;
   }
   if (naLetra.length > 1 && e.linhas.some((l) => naLetra.every((t) => casaNaLetra(l, t)))) pontos += BONUS_MESMA_LINHA;
-  if (consultaN && e.tituloN === consultaN) pontos += BONUS_TITULO_IGUAL;
-  else if (consultaN && e.tituloN.startsWith(consultaN)) pontos += BONUS_TITULO_COMECA;
+  if (consultaN && titulo.inteiro === consultaN) pontos += BONUS_TITULO_IGUAL;
+  else if (consultaN && titulo.inteiro.startsWith(consultaN)) pontos += BONUS_TITULO_COMECA;
 
   let destaque: Destaque | null = null;
   if (usouLetra) {
