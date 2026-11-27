@@ -1495,17 +1495,13 @@
     "severity": "WARN",
     "value": 3
   },
-  "src/lib/webm.ts::webm::Clean/Método::lerOpusDoWebm": {
-    "severity": "FAIL",
-    "value": 65
-  },
-  "src/lib/webm.ts::webm::Clean/Nesting::lerOpusDoWebm": {
+  "src/lib/webm.ts::webm::Clean/Params::lerElemento": {
     "severity": "WARN",
     "value": 3
   },
-  "src/lib/webm.ts::webm::OCP::lerOpusDoWebm": {
-    "severity": "FAIL",
-    "value": 18
+  "src/lib/webm.ts::webm::OCP::lerElemento": {
+    "severity": "WARN",
+    "value": 4
   },
   "src/routes/ajustes/+page.svelte::ajustes/+page::Clean/Nesting::remover": {
     "severity": "WARN",

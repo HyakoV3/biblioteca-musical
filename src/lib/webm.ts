@@ -6,7 +6,7 @@
 export type OpusEmWebm = { cabecalho: Uint8Array; pacotes: Uint8Array[]; descarte: number };
 
 const MESTRES = new Set([0x18538067, 0x1654ae6b, 0xae, 0x1f43b675, 0xa0]);
-const ID = { codec: 0x86, privado: 0x63a2, numero: 0xd7, bloco: 0xa3, blocoGrupo: 0xa1, descarte: 0x75a2 };
+const ID = { codec: 0x86, privado: 0x63a2, numero: 0xd7, bloco: 0xa3, blocoGrupo: 0xa1, descarte: 0x75a2, trilha: 0xae };
 
 /** Lê um ID (1 a 4 bytes, com os bits de tamanho mantidos). */
 function lerId(b: Uint8Array, i: number): { v: number; n: number } | null {
@@ -38,71 +38,97 @@ function lerTamanho(b: Uint8Array, i: number): { v: number; n: number } | null {
 /** Texto curto (CodecID, "OpusHead"): sem o preenchimento de zeros do fim e sem passar dos 64 bytes (um elemento enorme não estoura a pilha). */
 const texto = (b: Uint8Array) => String.fromCharCode(...b.subarray(0, 64)).replace(/\0+$/, "");
 
+/** Soma os bytes como inteiro big-endian, a partir de `n` (o sinal, no caso dos inteiros com sinal). */
+function acumular(dados: Uint8Array, n: number): number {
+  for (const c of dados) n = n * 256 + c;
+  return n;
+}
+
+/** Tudo o que a leitura vai juntando: a faixa que está sendo lida, a faixa Opus escolhida e o que se achou nela. */
+type Estado = {
+  faixaOpus: number;
+  faixaAtual: number;
+  codecAtual: string;
+  privado: Uint8Array | null;
+  cabecalho: Uint8Array | null;
+  pacotes: Uint8Array[];
+  descarte: number;
+};
+
+const novoEstado = (): Estado => ({ faixaOpus: -1, faixaAtual: -1, codecAtual: "", privado: null, cabecalho: null, pacotes: [], descarte: 0 });
+
+/** Fecha a faixa que estava sendo lida: se for a primeira de Opus, ela vira a faixa escolhida e o CodecPrivate dela, o cabeçalho. */
+function fechaFaixa(e: Estado): void {
+  if (e.codecAtual === "A_OPUS" && e.faixaOpus < 0 && e.faixaAtual >= 0) {
+    e.faixaOpus = e.faixaAtual;
+    e.cabecalho = e.privado;
+  }
+  e.faixaAtual = -1;
+  e.codecAtual = "";
+  e.privado = null;
+}
+
+/** Trata um elemento "folha". Devolve `false` quando o arquivo não é um que se entenda (a leitura toda vira `null`). `inteiro`: o elemento não foi cortado no fim do arquivo. */
+type Tratador = (e: Estado, dados: Uint8Array, inteiro: boolean) => boolean;
+
+/** DiscardPadding: inteiro com sinal, em nanossegundos: o fim do último bloco que o player deve ignorar. */
+const tratarDescarte: Tratador = (e, dados) => {
+  if (dados.length === 0 || dados.length > 6) return true;
+  const n = acumular(dados, dados[0]! & 0x80 ? -1 : 0);
+  e.descarte = Math.max(0, Math.round((n * 48) / 1000000));
+  return true;
+};
+
+/** SimpleBlock/Block: número da faixa, 2 bytes de tempo, flags e o pacote. Só guarda o da faixa Opus. */
+const tratarBloco: Tratador = (e, dados, inteiro) => {
+  fechaFaixa(e);
+  if (e.faixaOpus < 0) return false;
+  const num = lerTamanho(dados, 0);
+  if (!num || dados.length < num.n + 3) return false;
+  if (num.v !== e.faixaOpus) return true;
+  if (dados[num.n + 2]! & 0x06) return false; // lacing na faixa Opus: não tratado
+  if (inteiro) e.pacotes.push(dados.subarray(num.n + 3));
+  return true;
+};
+
+const TRATADORES = new Map<number, Tratador>([
+  [ID.codec, (e, dados) => ((e.codecAtual = texto(dados)), true)],
+  [ID.privado, (e, dados) => ((e.privado = dados), true)],
+  [ID.descarte, tratarDescarte],
+  [ID.numero, (e, dados) => ((e.faixaAtual = acumular(dados, 0)), true)],
+  [ID.bloco, tratarBloco],
+  [ID.blocoGrupo, tratarBloco],
+]);
+
+const FIM = -1;
+const INVALIDO = -2;
+
+/** Lê o elemento que começa em `i`: devolve onde começa o próximo, `FIM` se não dá para ler mais ou `INVALIDO`. */
+function lerElemento(b: Uint8Array, i: number, e: Estado): number {
+  const id = lerId(b, i);
+  const tam = id && lerTamanho(b, i + id.n);
+  if (!id || !tam) return FIM;
+  const ini = i + id.n + tam.n;
+  if (MESTRES.has(id.v)) {
+    if (id.v === ID.trilha) fechaFaixa(e); // um TrackEntry novo fecha o anterior
+    return ini;
+  }
+  if (tam.v < 0) return INVALIDO; // tamanho desconhecido num elemento que não é mestre: não é um arquivo que se entenda
+  const fim = Math.min(ini + tam.v, b.length);
+  return TRATADORES.get(id.v)?.(e, b.subarray(ini, fim), fim - ini === tam.v) === false ? INVALIDO : fim;
+}
+
 /** Devolve o Opus do WebM, ou `null` se não for WebM com áudio Opus (ou se usar "lacing", que o Chrome não usa). */
 export function lerOpusDoWebm(b: Uint8Array): OpusEmWebm | null {
-  let i = 0;
-  let faixaOpus = -1;
-  let faixaAtual = -1;
-  let codecAtual = "";
-  let privado: Uint8Array | null = null;
-  const pacotes: Uint8Array[] = [];
-  let descarte = 0;
-  let cabecalho: Uint8Array | null = null;
-
-  const fechaFaixa = () => {
-    if (codecAtual === "A_OPUS" && faixaOpus < 0 && faixaAtual >= 0) {
-      faixaOpus = faixaAtual;
-      cabecalho = privado;
-    }
-    faixaAtual = -1;
-    codecAtual = "";
-    privado = null;
-  };
-
-  while (i < b.length) {
-    const id = lerId(b, i);
-    if (!id) break;
-    const tam = lerTamanho(b, i + id.n);
-    if (!tam) break;
-    const ini = i + id.n + tam.n;
-    if (MESTRES.has(id.v)) {
-      if (id.v === 0xae) fechaFaixa(); // um TrackEntry novo fecha o anterior
-      i = ini;
-      continue;
-    }
-    if (tam.v < 0) return null; // tamanho desconhecido num elemento que não é mestre: não é um arquivo que se entenda
-    const fim = Math.min(ini + tam.v, b.length);
-    const dados = b.subarray(ini, fim);
-    if (id.v === ID.codec) codecAtual = texto(dados);
-    else if (id.v === ID.privado) privado = dados;
-    else if (id.v === ID.descarte && dados.length > 0 && dados.length <= 6) {
-      // inteiro com sinal, em nanossegundos: o fim do último bloco que o player deve ignorar
-      let n = dados[0]! & 0x80 ? -1 : 0;
-      for (const c of dados) n = n * 256 + c;
-      descarte = Math.max(0, Math.round((n * 48) / 1000000));
-    } else if (id.v === ID.numero) {
-      let n = 0;
-      for (const c of dados) n = n * 256 + c;
-      faixaAtual = n;
-    } else if (id.v === ID.bloco || id.v === ID.blocoGrupo) {
-      fechaFaixa();
-      if (faixaOpus < 0) return null;
-      const num = lerTamanho(dados, 0);
-      if (!num || dados.length < num.n + 3) return null;
-      if (num.v !== faixaOpus) {
-        i = fim;
-        continue;
-      }
-      if (dados[num.n + 2]! & 0x06) return null; // lacing na faixa Opus: não tratado
-      if (fim - ini === tam.v) pacotes.push(dados.subarray(num.n + 3));
-    }
-    i = fim;
+  const e = novoEstado();
+  for (let i = 0; i < b.length; ) {
+    i = lerElemento(b, i, e);
+    if (i === INVALIDO) return null;
+    if (i === FIM) break;
   }
-  fechaFaixa();
-  if (!cabecalho || pacotes.length === 0) return null;
-  const c: Uint8Array = cabecalho;
-  if (!opusHeadValido(c)) return null;
-  return { cabecalho: c, pacotes, descarte };
+  fechaFaixa(e);
+  if (!e.cabecalho || e.pacotes.length === 0 || !opusHeadValido(e.cabecalho)) return null;
+  return { cabecalho: e.cabecalho, pacotes: e.pacotes, descarte: e.descarte };
 }
 
 /** `OpusHead` (RFC 7845 §5.1): versão 0, ao menos 1 canal e, se o mapeamento não for o 0, a tabela de canais inteira. */
