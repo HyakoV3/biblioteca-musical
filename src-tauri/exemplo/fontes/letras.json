@@ -1,0 +1,258 @@
+{
+  "_leia": "Entrada de tools/gerar-exemplo.py. Cada marca da letra é uma nota do soprano que leva sílaba: 'sil-' abre/continua a palavra, '_' é uma nota sem sílaba (a sílaba anterior segue nela), '+' junta duas palavras numa nota. O alinhamento letra x nota é decisão editorial (as partituras do Mutopia não trazem letra). A procedência de cada item está em docs/licencas-de-terceiros.md. `titulo` é o título original (na língua da letra); `titulos` traz o nome consagrado em pt, en e es (a chave da língua original falta, de propósito).",
+  "hinario": {
+    "id": "exemplo",
+    "nome": "Hinário de exemplo (domínio público)"
+  },
+  "hinos": [
+    {
+      "numero": 1,
+      "titulo": "Ein feste Burg ist unser Gott",
+      "titulos": {
+        "pt": "Castelo Forte é Nosso Deus",
+        "en": "A Mighty Fortress Is Our God",
+        "es": "Castillo fuerte es nuestro Dios"
+      },
+      "letrista": "Martin Luther (1529)",
+      "compositor": "Martin Luther (melodia atribuída, c. 1529)",
+      "ly": "ein_feste_burg.ly",
+      "vozes_ly": [
+        "Soprano",
+        "Alto",
+        "Tenor",
+        "Bass"
+      ],
+      "andamento": 112,
+      "estrofes": [
+        [
+          "Ein fe- ste Burg _ ist un- _ ser Gott,",
+          "Ein gu- te Wehr und Waf- _ fen. _",
+          "Er hilft uns frei _ aus al- _ ler Not,",
+          "Die uns jetzt hat be- trof- _ fen. _",
+          "Der alt bö- se Feind, _",
+          "Mit Ernst er’s jetzt meint. _",
+          "Groß Macht und viel List _",
+          "Sein grau- sam Rüs- tung ist.",
+          "Auf Erd ist nicht seins- glei- _ chen. _"
+        ],
+        [
+          "Mit uns- rer Macht _ ist nichts _ ge- tan,",
+          "Wir sind gar bald ver- lo- _ ren. _",
+          "Es streit’t für uns _ der rech- _ te Mann,",
+          "Den Gott hat selbst er- ko- _ ren. _",
+          "Fragst du, wer der ist? _",
+          "Er heißt Je- sus Christ, _",
+          "Der Herr Ze- ba- oth, _",
+          "Und ist kein an- der Gott.",
+          "Das Feld muß er be- hal- _ ten. _"
+        ],
+        [
+          "Und wenn die Welt _ voll Teu- _ fel wär",
+          "Und wollt uns gar ver- schlin- _ gen, _",
+          "So fürch- ten wir _ uns nicht _ so sehr,",
+          "Es soll uns doch ge- lin- _ gen. _",
+          "Der Fürst die- ser Welt, _",
+          "Wie saur er sich stellt, _",
+          "Tut er uns doch nicht. _",
+          "Das macht, er ist ge- richt’t.",
+          "Ein Wört- lein kann ihn fäl- _ len. _"
+        ],
+        [
+          "Das Wort sie sol- _ len las- _ sen stahn",
+          "Und kein’ Dank da- zu ha- _ ben. _",
+          "Er ist bei uns _ wohl auf _ dem Plan",
+          "Mit sei- nem Geist und Ga- _ ben. _",
+          "Neh- men sie den Leib, _",
+          "Gut, Ehr, Kind und Weib, _",
+          "Laß fah- ren da- hin. _",
+          "Sie ha- ben’s kein Ge- winn.",
+          "Das Reich muß uns doch blei- _ ben. _"
+        ]
+      ]
+    },
+    {
+      "numero": 2,
+      "titulo": "Stille Nacht, heilige Nacht",
+      "titulos": {
+        "pt": "Noite Feliz",
+        "en": "Silent Night",
+        "es": "Noche de paz"
+      },
+      "letrista": "Joseph Mohr (1816)",
+      "compositor": "Franz Xaver Gruber (1818)",
+      "ly": "stille_nacht.ly",
+      "vozes_ly": [
+        "Soprano",
+        "Alto",
+        "Tenor",
+        "Bass"
+      ],
+      "andamento": 50,
+      "estrofes": [
+        [
+          "Stil- _ le Nacht! Hei- li- ge Nacht!",
+          "Al- les schläft; ein- sam wacht",
+          "Nur das trau- te hei- li- ge Paar. _",
+          "Hol- der Knab’ im lo- ckig- ten Haar, _",
+          "Schla- fe in himm- li- scher Ruh!",
+          "Schla- fe in himm- li- scher Ruh!"
+        ],
+        [
+          "Stil- _ le Nacht! Hei- li- ge Nacht!",
+          "Got- tes Sohn, o wie lacht",
+          "Lieb’ aus dei- nem gött- li- chen Mund, _",
+          "Da uns schlägt die ret- ten- de Stund’; _",
+          "Je- sus in dei- ner Ge- burt!",
+          "Je- sus in dei- ner Ge- burt!"
+        ],
+        [
+          "Stil- _ le Nacht! Hei- li- ge Nacht!",
+          "Die der Welt Heil ge- bracht,",
+          "Aus des Him- mels gol- de- nen Höhn, _",
+          "Uns der Gna- den Fül- le läßt sehn, _",
+          "Je- sum in Men- schen Ge- stalt!",
+          "Je- sum in Men- schen Ge- stalt!"
+        ]
+      ]
+    },
+    {
+      "numero": 3,
+      "titulo": "Holy, Holy, Holy",
+      "titulos": {
+        "pt": "Santo, Santo, Santo",
+        "es": "Santo, Santo, Santo"
+      },
+      "letrista": "Reginald Heber (1826)",
+      "compositor": "John Bacchus Dykes (1861)",
+      "ly": "nicaea.ly",
+      "vozes_ly": [
+        "Soprano",
+        "Alto",
+        "Tenor",
+        "Bass"
+      ],
+      "andamento": 110,
+      "estrofes": [
+        [
+          "Ho- ly, ho- ly, ho- ly! Lord God Al- might- y",
+          "Ear- ly in the morn- ing our song shall rise to thee;",
+          "Ho- ly, ho- ly, ho- ly mer- ci- ful and might- y!",
+          "God in Three Per- sons, bless- èd Trin- i- ty!"
+        ],
+        [
+          "Ho- ly, ho- ly, ho- ly! all+the saints a- dore thee,",
+          "Cast- ing down their gol- den crowns a- round+the glass- y sea;",
+          "Cher- u- bim and ser- a- phim fall- ing down be- fore+thee,",
+          "Which wert, and art, and ev- er- more shalt be."
+        ],
+        [
+          "Ho- ly, ho- ly, ho- ly! tho'+the dark- ness hide thee,",
+          "Though the+eye of sin- ful man thy glo- ry may not see,",
+          "On- ly thou art ho- ly, there is none be- side thee,",
+          "Per- fect in power, in love, and pu- ri- ty."
+        ],
+        [
+          "Ho- ly, ho- ly, ho- ly! Lord God Al- might- y",
+          "All thy works shall praise thy name, in+earth, and sky, and sea;",
+          "Ho- ly, ho- ly, ho- ly mer- ci- ful and might- y!",
+          "God in Three Per- sons, bless- èd Trin- i- ty!"
+        ]
+      ]
+    },
+    {
+      "numero": 4,
+      "titulo": "Amazing Grace",
+      "titulos": {
+        "pt": "Maravilhosa Graça",
+        "es": "Sublime gracia"
+      },
+      "letrista": "John Newton (1779)",
+      "compositor": "melodia New Britain, anônima (Virginia Harmony, 1831)",
+      "ly": "new_britain.ly",
+      "vozes_ly": [
+        "Soprano",
+        "Alto",
+        "Tenor",
+        "Bass"
+      ],
+      "andamento": 50,
+      "estrofes": [
+        [
+          "A- ma- zing _ grace! (how sweet the sound!)",
+          "That saved a _ wretch like me!",
+          "I once was lost, _ _ but now am found, _ _",
+          "Was blind, but _ now I see."
+        ],
+        [
+          "'Twas grace that _ taught my heart to fear,",
+          "And grace my _ fears re- lieved;",
+          "How pre- cious did _ _ that grace ap- pear _ _",
+          "The hour I _ first be- lieved!"
+        ],
+        [
+          "Through ma- ny _ dan- gers, toils, and snares.",
+          "I have al- _ rea- dy come;",
+          "'Tis grace has brought _ _ me safe thus far, _ _",
+          "And grace will _ lead me home."
+        ],
+        [
+          "The Lord has _ prom- ised good to me,",
+          "His word my _ hope se- cures;",
+          "He will my shield _ _ and por- tion be _ _",
+          "As long as _ life en- dures."
+        ]
+      ]
+    },
+    {
+      "numero": 5,
+      "titulo": "An die Freude",
+      "titulos": {
+        "pt": "Ode à Alegria",
+        "en": "Ode to Joy",
+        "es": "Oda a la Alegría"
+      },
+      "letrista": "Friedrich Schiller (1785; texto de 1808)",
+      "compositor": "Ludwig van Beethoven (1824)",
+      "ly": "ode.ly",
+      "vozes_ly": [
+        "sop",
+        "alto",
+        "tenor",
+        "bass"
+      ],
+      "andamento": 100,
+      "estrofes": [
+        [
+          "Freu- de, schö- ner Göt- ter- fun- ken,",
+          "Toch- ter aus E- li- si- um,",
+          "Wir be- tre- ten feu- er- trun- ken,",
+          "Himm- li- sche, dein Hei- lig- thum.",
+          "Dei- ne Zau- ber bin- den wie- der,",
+          "Was die Mo- de streng ge- theilt,",
+          "Al- le Men- schen wer- den Brü- der,",
+          "Wo dein sanf- ter Flü- gel weilt."
+        ],
+        [
+          "Wem der gro- ße Wurf ge- lun- gen,",
+          "Ei- nes Freun- des Freund zu seyn,",
+          "Wer ein hol- des Weib er- run- gen,",
+          "Mi- sche sei- nen Ju- bel ein!",
+          "Ja wer auch nur ei- ne See- le",
+          "Sein nennt auf dem Er- den- rund!",
+          "Und wer’s nie ge- konnt, der steh- le",
+          "Wei- nend sich aus die- sem Bund!"
+        ],
+        [
+          "Freu- de trin- ken al- le We- sen",
+          "An den Brüs- ten der Na- tur,",
+          "Al- le Gu- ten, al- le Bö- sen",
+          "Fol- gen ih- rer Ro- sen- spur.",
+          "Küs- se gab sie uns und Re- ben,",
+          "Ei- nen Freund, ge- prüft im Tod,",
+          "Wol- lust ward dem Wurm ge- ge- ben,",
+          "Und der Che- rub steht vor Gott."
+        ]
+      ]
+    }
+  ]
+}

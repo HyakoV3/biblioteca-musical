@@ -6,11 +6,11 @@ Thank you for wanting to help. The project is small, in Portuguese, and in **clo
 
 ## Golden rule: no hymnal content in Git
 
-This repository has **code only** and **fictional** test data (`src-tauri/exemplo/`, `tools/mscx2json/tests/fixtures/`, `tests/amostras.ts`). **Never** include lyrics, scores, audio or `.mscx` files of real hymns, nor screenshots showing them: the content belongs to third parties and only circulates with permission. Local content stays in `content/` and `docs/privado/`, which `.gitignore` already ignores. Do not put keys, passwords, keystores or internal addresses in Git (`docs/apk-de-teste.md` explains how the test APK is signed, without keeping the key).
+This repository has **code only** and **fictional** test data (`tools/mscx2json/tests/fixtures/`, `tests/amostras.ts`), with **one exception**: the example package (`src-tauri/exemplo/`) carries 5 **public-domain** hymns whose provenance is in `docs/licencas-de-terceiros.md` (to replace or add a hymn there, record the source and the edition's license there, and regenerate with `python3 tools/gerar-exemplo.py`). **Never** include lyrics, scores, audio or `.mscx` files of real hymns, nor screenshots showing them: the content belongs to third parties and only circulates with permission. Local content stays in `content/` and `docs/privado/`, which `.gitignore` already ignores. Do not put keys, passwords, keystores or internal addresses in Git (`docs/apk-de-teste.md` explains how the test APK is signed, without keeping the key).
 
 ## Before opening the PR
 
-Run what CI runs (fictional data only; nothing needs real content):
+Run what CI runs (fictional or public-domain data only; nothing needs real content):
 
 ```bash
 npm ci                              # (or npm install)

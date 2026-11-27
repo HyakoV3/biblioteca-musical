@@ -1,5 +1,5 @@
 //! Leitura do pacote de conteúdo (ver docs/FORMATO.md).
-//! O repositório só traz um pacote de exemplo com dados fictícios.
+//! O repositório só traz um pacote de exemplo, com 5 hinos de domínio público (procedência em docs/licencas-de-terceiros.md).
 
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -11,7 +11,7 @@ const VERSAO_SUPORTADA: u32 = 1;
 const ANDAMENTO_MIN: u32 = 20;
 const ANDAMENTO_MAX: u32 = 300;
 /// Conteúdo opcional levado dentro do binário por `BM_PACOTE` na hora do build (ver build.rs). Vazio no
-/// build comum. Não vai para o Git: o repositório só traz o pacote de exemplo fictício.
+/// build comum. Não vai para o Git: o repositório só traz o pacote de exemplo (domínio público).
 const INCLUSO: &str = include_str!(concat!(env!("OUT_DIR"), "/pacote_incluso.json"));
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -28,6 +28,9 @@ pub struct InfoHinario {
 pub struct Hino {
     pub numero: u32,
     pub titulo: String,
+    /// O nome do hino por idioma da interface (`pt`, `en`, `es`), opcional; `titulo` é o padrão e a reserva.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub titulos: Option<std::collections::BTreeMap<String, String>>,
     /// Crédito como aparece na partitura (letrista e/ou compositor), ex.: "Fulana de Tal".
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub autoria: Option<String>,
@@ -231,6 +234,7 @@ pub fn ler(json: &str) -> Result<Hinario, String> {
         if hino.sincronia.as_ref().is_some_and(|s| !s.valida()) {
             hino.sincronia = None;
         }
+        limpar_titulos(hino);
         // O destaque do compasso na partitura também é um extra: compassos malformados são descartados, sem recusar o hino.
         if hino.compassos.as_ref().is_some_and(|c| !c.valida()) {
             hino.compassos = None;
@@ -266,6 +270,19 @@ pub fn ler(json: &str) -> Result<Hinario, String> {
     Ok(h)
 }
 
+/// Os idiomas da interface que podem ter título próprio (`titulos`).
+const IDIOMAS_DO_TITULO: [&str; 3] = ["pt", "en", "es"];
+
+/// `titulos` é um extra: fica só o que serve (idioma conhecido, texto não vazio) e some se nada sobrar; o hino nunca é recusado por causa dele.
+fn limpar_titulos(hino: &mut Hino) {
+    if let Some(t) = hino.titulos.as_mut() {
+        t.retain(|k, v| IDIOMAS_DO_TITULO.contains(&k.as_str()) && !v.trim().is_empty());
+    }
+    if hino.titulos.as_ref().is_some_and(|t| t.is_empty()) {
+        hino.titulos = None;
+    }
+}
+
 /// Carrega `<dir>/hinario.json`; se não existir, usa o pacote de exemplo.
 /// Se existir mas estiver inválido, devolve o erro (não esconde com o exemplo).
 pub fn carregar(dir: Option<&Path>) -> Result<Pacote, String> {
@@ -293,7 +310,7 @@ pub fn carregar(dir: Option<&Path>) -> Result<Pacote, String> {
     Ok(Pacote {
         hinario: ler(EXEMPLO)?,
         exemplo: true,
-        partituras: Vec::new(),
+        partituras: crate::exemplo::numeros(),
         partituras_erro: None,
     })
 }
@@ -423,9 +440,23 @@ mod testes {
     fn exemplo_embutido_e_valido() {
         let h = ler(EXEMPLO).unwrap();
         assert_eq!(h.hinario.id, "exemplo");
-        assert_eq!(h.hinos.len(), 3);
-        assert_eq!(h.hinos[0].vozes.len(), 2);
+        assert_eq!(h.hinos.len(), 5);
+        assert_eq!(h.hinos[0].vozes.len(), 4);
         assert_eq!(h.hinos[0].vozes[0].notas[0], Nota(0.0, 1.0, 72));
+    }
+
+    #[test]
+    fn titulos_por_idioma_sao_lidos_limpos_e_opcionais() {
+        let json = r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[
+            {"numero":1,"titulo":"T","titulos":{"pt":"Título","en":"  ","fr":"Titre","es":"Título es"}},
+            {"numero":2,"titulo":"U","titulos":{"fr":"Titre"}},
+            {"numero":3,"titulo":"V"}]}"#;
+        let h = ler(json).unwrap();
+        let t1 = h.hinos[0].titulos.as_ref().unwrap();
+        assert_eq!(t1.keys().map(String::as_str).collect::<Vec<_>>(), ["es", "pt"]); // "en" vazio e "fr" desconhecido saem
+        assert!(h.hinos[1].titulos.is_none() && h.hinos[2].titulos.is_none()); // sem nada útil, ou sem o campo (hinário antigo): nenhum
+        assert!(!serde_json::to_string(&h.hinos[2]).unwrap().contains("titulos")); // e não volta para a interface
+        assert!(ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T","titulos":{"pt":3}}]}"#).is_err()); // tipo errado recusa
     }
 
     #[test]

@@ -10,7 +10,7 @@
   import Estado from "#lib/Estado.svelte";
   import Icone from "#lib/Icone.svelte";
   import { traduzirErro } from "#lib/erros";
-  import { i18n } from "#lib/i18n/index.svelte";
+  import { i18n } from "#lib/i18n/index.svelte"; import { tituloDoHino } from "#lib/titulo";
   import AndamentoDoTopo from "#lib/AndamentoDoTopo.svelte";
   import { estrofes } from "#lib/letra";
   import { marcaEm, marcasDaVez, sincroniaCombina, type Marca } from "#lib/karaoke";
@@ -283,7 +283,7 @@
   </main>
 {:else}
   <Barra
-    titulo={`${hino.numero} · ${hino.titulo}`}
+    titulo={`${hino.numero} · ${tituloDoHino(hino, i18n.idioma)}`}
     subtitulo={subtitulo}
     lang={idiomaConteudo}
     {voltar}

@@ -12,7 +12,7 @@ Aplicación gratuita y de código abierto para músicos en entrenamiento: estudi
 
 ## Sobre el contenido
 
-Este repositorio contiene **solo código**. Ningún himno real está aquí: letras, partituras y audios **no forman parte del repositorio** (quedan fuera de Git, en la carpeta `content/`, que se ignora) y solo deben distribuirse con autorización de quien tiene los derechos (la del transcriptor, Enéias Ramos, está registrada en [`docs/licencas-de-terceiros.md`](docs/licencas-de-terceiros.md); la de los autores de las letras y de la música, y la de la edición, no). **El himnario y las partituras tampoco vienen dentro de la app**: la persona los descarga una vez en Ajustes (el primer acceso ofrece la descarga del himnario) y quedan en el aparato, verificados por tamaño y SHA-256, con una barra de avance (90% la descarga, el resto la verificación y la instalación). Los paquetes llevan el SHA-256 en el nombre (`hinario-<sha8>.json`, `partituras-<sha8>.zip`) ([`docs/pacote-do-hinario.md`](docs/pacote-do-hinario.md) y [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md)). Los archivos de prueba (`src-tauri/exemplo/` y `tools/mscx2json/tests/fixtures/`) son **ficticios**. El formato de los datos está en [`docs/FORMATO.md`](docs/FORMATO.md).
+Este repositorio contiene **solo código**. La única excepción son los **5 himnos de dominio público** del paquete de ejemplo (`src-tauri/exemplo/`, con la procedencia de cada uno en [`docs/licencas-de-terceiros.md`](docs/licencas-de-terceiros.md)). Ningún otro himno real está aquí: letras, partituras y audios **no forman parte del repositorio** (quedan fuera de Git, en la carpeta `content/`, que se ignora) y solo deben distribuirse con autorización de quien tiene los derechos (la del transcriptor, Enéias Ramos, está registrada en [`docs/licencas-de-terceiros.md`](docs/licencas-de-terceiros.md); la de los autores de las letras y de la música, y la de la edición, no). **El himnario y las partituras tampoco vienen dentro de la app**: la persona los descarga una vez en Ajustes (el primer acceso ofrece la descarga del himnario) y quedan en el aparato, verificados por tamaño y SHA-256, con una barra de avance (90% la descarga, el resto la verificación y la instalación). Los paquetes llevan el SHA-256 en el nombre (`hinario-<sha8>.json`, `partituras-<sha8>.zip`) ([`docs/pacote-do-hinario.md`](docs/pacote-do-hinario.md) y [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md)). Los archivos de prueba de `tools/mscx2json/tests/fixtures/` son **ficticios**; el paquete de ejemplo (`src-tauri/exemplo/`) es de **dominio público**. El formato de los datos está en [`docs/FORMATO.md`](docs/FORMATO.md).
 
 El código se escribió desde cero: no se copió código ni archivos de otras aplicaciones.
 
@@ -52,7 +52,7 @@ npm run tauri dev            # escritorio
 npm run tauri android init   # una vez
 npm run tauri android dev    # Android
 npm run check                # tipos (svelte-check, incluye tests/)
-npm test                     # pruebas de la lógica (Vitest), solo con datos ficticios
+npm test                     # pruebas de la lógica (Vitest), solo con datos ficticios o de dominio público
 npm run test:e2e             # karaoke en un Chrome de verdad (necesita Chrome o Chromium)
 ```
 

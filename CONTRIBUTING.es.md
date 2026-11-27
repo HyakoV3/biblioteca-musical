@@ -6,11 +6,11 @@ Gracias por querer ayudar. El proyecto es pequeño, en portugués, y está en **
 
 ## Regla de oro: nada de himnario en Git
 
-Este repositorio tiene **solo código** y datos de prueba **ficticios** (`src-tauri/exemplo/`, `tools/mscx2json/tests/fixtures/`, `tests/amostras.ts`). **Nunca** incluya letras, partituras, audios ni archivos `.mscx` de himnos reales, ni capturas de pantalla con ellos: el contenido es de terceros y solo circula con autorización. El contenido local queda en `content/` y `docs/privado/`, que el `.gitignore` ya ignora. No ponga en Git claves, contraseñas, keystores ni direcciones internas (`docs/apk-de-teste.md` explica cómo se firma el APK de prueba, sin guardar la clave).
+Este repositorio tiene **solo código** y datos de prueba **ficticios** (`tools/mscx2json/tests/fixtures/`, `tests/amostras.ts`), con **una excepción**: el paquete de ejemplo (`src-tauri/exemplo/`) trae 5 himnos de **dominio público**, cuya procedencia está en `docs/licencas-de-terceiros.md` (para cambiar o sumar un himno allí, registre la fuente y la licencia de la edición allí, y regenere con `python3 tools/gerar-exemplo.py`). **Nunca** incluya letras, partituras, audios ni archivos `.mscx` de himnos reales, ni capturas de pantalla con ellos: el contenido es de terceros y solo circula con autorización. El contenido local queda en `content/` y `docs/privado/`, que el `.gitignore` ya ignora. No ponga en Git claves, contraseñas, keystores ni direcciones internas (`docs/apk-de-teste.md` explica cómo se firma el APK de prueba, sin guardar la clave).
 
 ## Antes de abrir la PR
 
-Ejecute lo que ejecuta el CI (solo datos ficticios; nada necesita contenido real):
+Ejecute lo que ejecuta el CI (solo datos ficticios o de dominio público; nada necesita contenido real):
 
 ```bash
 npm ci                              # (o npm install)

@@ -4,8 +4,8 @@
 
 > **Autorização:** o Enéias Ramos autorizou a distribuição (registrada em 2026-11-26 em [`licencas-de-terceiros.md`](licencas-de-terceiros.md), a única fonte). Os direitos das letras e músicas seguem sem registro.
 
-O **texto e a música dos hinos não vão dentro do app nem do Git**: são conteúdo de terceiros (ver `docs/licencas-de-terceiros.md`). O app baixa o hinário **uma vez**, pelo
-mesmo caminho conferido das partituras, e o guarda no aparelho. Sem ele, o app mostra só o pacote de exemplo fictício e, no primeiro acesso, um aviso oferece o download
+O **texto e a música dos hinos não vão dentro do app nem do Git**: são conteúdo de terceiros (ver `docs/licencas-de-terceiros.md`). A única exceção é o pacote de exemplo embutido, com 5 hinos de domínio público. O app baixa o hinário **uma vez**, pelo
+mesmo caminho conferido das partituras, e o guarda no aparelho. Sem ele, o app mostra só o pacote de exemplo (5 hinos de domínio público, com as partituras embutidas, `src-tauri/exemplo/`) e, no primeiro acesso, um aviso oferece o download
 (o botão segue em **Ajustes → Conteúdo → Hinário completo**, com Baixar e Remover, no desenho dos outros pacotes).
 
 ## Como funciona

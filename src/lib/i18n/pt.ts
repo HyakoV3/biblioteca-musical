@@ -163,6 +163,7 @@ export const pt = {
   "partituras.precisa_hinario": "Baixe primeiro o hinário completo (acima): as partituras só entram em um hinário já instalado.",
   "partituras.instaladas": "Instaladas",
   "partituras.nao_instaladas": "Não instaladas",
+  "partituras.embutidas": "Embutidas no exemplo: {total}",
   "partituras.indisponivel": "Ainda não disponíveis para baixar",
   "partituras.baixar": "Baixar ({tamanho})",
   "partituras.baixando": "Baixando… {n}%",

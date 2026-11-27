@@ -4,10 +4,13 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 import type { Sincronia } from "./karaoke";
 import { LIMITE_ZIP_BYTES, bytesParaBase64 } from "./pacote";
 import type { Voz } from "./sintetizador";
+import type { Titulos } from "./titulo";
 
 export type Hino = {
   numero: number;
   titulo: string;
+  /** O nome do hino em outros idiomas da interface (opcional; `titulo` é o padrão e a reserva). */
+  titulos?: Titulos | null;
   autoria?: string | null;
   tonalidade?: string | null;
   letra: string[];

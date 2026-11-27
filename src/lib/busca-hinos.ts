@@ -9,10 +9,14 @@
 //    Na letra, termo de 1 a 2 letras só vale como palavra inteira.
 // O item de busca já leva o `acervo`: a chave de um hino é acervo + número (hoje há um acervo só, mas o número deixará de ser único).
 
+import { todosOsTitulos } from "./titulo";
+
 /** O que o motor precisa saber de um hino (o `Hino` do app serve, sem conversão). */
 export type ItemBusca = {
   numero: number;
   titulo: string;
+  /** O nome em outros idiomas: a busca acha o hino por qualquer um deles. */
+  titulos?: { pt?: string; en?: string; es?: string } | null;
   autoria?: string | null;
   tonalidade?: string | null;
   letra: string[];
@@ -184,7 +188,7 @@ export function indiceDe<T extends ItemBusca>(itens: readonly T[]): Indice<T> {
 /** Prepara o acervo uma vez (normaliza título, autoria e letra); cada busca depois só varre. */
 export function indexar<T extends ItemBusca>(itens: readonly T[]): Indice<T> {
   const entradas = itens.map<Entrada<T>>((item) => {
-    const tituloN = normalizar(item.titulo);
+    const tituloN = normalizar(todosOsTitulos(item).join(" "));
     return {
       item,
       tituloN,

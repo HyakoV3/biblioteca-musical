@@ -1,3 +1,4 @@
+mod exemplo;
 mod hinario;
 mod pacote;
 mod svg;
@@ -59,7 +60,7 @@ async fn ler_partitura(
     numero: u32,
     paisagem: bool,
 ) -> Result<String, String> {
-    pacote::ler_partitura(&pasta_conteudo(&app)?, numero, paisagem)
+    exemplo::ler_partitura_do_app(&pasta_conteudo(&app)?, numero, paisagem)
 }
 
 /// Apaga o conteúdo importado e volta ao pacote de exemplo.

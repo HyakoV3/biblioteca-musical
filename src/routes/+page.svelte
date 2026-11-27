@@ -15,7 +15,7 @@
   import Icone from "#lib/Icone.svelte";
   import Estado from "#lib/Estado.svelte";
   import { traduzirErro } from "#lib/erros";
-  import { i18n } from "#lib/i18n/index.svelte";
+  import { i18n } from "#lib/i18n/index.svelte"; import { tituloDoHino } from "#lib/titulo";
   import { zerosAEsquerda } from "#lib/numero";
   import { buscar, indiceDe } from "#lib/busca-hinos";
   import { afterNavigate, goto } from "$app/navigation";
@@ -164,7 +164,7 @@
     {#if ultimo && mostrarContinuar && !biblioteca.busca}
       <a class="continuar" href={`/hino/${ultimo.numero}`}>
         <span class="continuar-rotulo">{t("biblioteca.continuar")}</span>
-        <span class="continuar-hino">{ultimo.numero} · {ultimo.titulo}</span>
+        <span class="continuar-hino">{ultimo.numero} · {tituloDoHino(ultimo, i18n.idioma)}</span>
       </a>
     {/if}
 
@@ -181,7 +181,7 @@
             <a href={`/hino/${h.numero}`} class:tocando={estado === "tocando"} class:pausado={estado === "pausado"} class:ultimo={ultimo?.numero === h.numero} aria-current={ultimo?.numero === h.numero ? "true" : undefined}>
               <span class="num"><span aria-hidden="true" class="zeros">{zerosAEsquerda(h.numero)}</span>{h.numero}</span>
               <span class="titulo">
-                <span>{h.titulo}</span>
+                <span>{tituloDoHino(h, i18n.idioma)}</span>
                 {#if h.autoria}
                   <span class="autoria">{#if d?.onde === "autoria"}{d.antes}<mark>{d.achado}</mark>{d.depois}{:else}{h.autoria}{/if}</span>
                 {/if}
