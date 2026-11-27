@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OPUS_WEBM_AO_VIVO, bytesDe } from "./fixtures/opus";
-import { BYTES_POR_PEDACO, apagarCopiasEnviadas, compartilharGravacao, nomeDoArquivo, podeCompartilhar, tipoSemCodec } from "../src/lib/compartilhar";
+import { BYTES_POR_PEDACO, apagarCopiasEnviadas, compartilharGravacao, contextoFoiCopiado, nomeDoArquivo, podeCompartilhar, tipoSemCodec } from "../src/lib/compartilhar";
 
 afterEach(() => {
   delete (globalThis as Record<string, unknown>).BmCompartilhar;
@@ -58,6 +58,18 @@ describe("ponte do Android", () => {
     const antiga = ponteFalsa();
     expect(await compartilharGravacao(audio(), "a.webm", "Enviar", "*Contexto*")).toBe("ok");
     expect(antiga.p.enviar).toHaveBeenCalledWith("Enviar");
+  });
+
+  it("contextoFoiCopiado lê o que a ponte diz; sem a ponte, ou numa ponte antiga, é falso", () => {
+    expect(contextoFoiCopiado()).toBe(false);
+    ponteFalsa();
+    expect(contextoFoiCopiado()).toBe(false);
+    ponteFalsa({ getCopiouContexto: () => true });
+    expect(contextoFoiCopiado()).toBe(true);
+    ponteFalsa({ getCopiouContexto: () => false });
+    expect(contextoFoiCopiado()).toBe(false);
+    ponteFalsa({ getCopiouContexto: () => { throw new Error("ponte caiu"); } });
+    expect(contextoFoiCopiado()).toBe(false);
   });
 
   it("só aparece quando há ponte ou Web Share", () => {

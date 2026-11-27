@@ -10,6 +10,8 @@ type Ponte = {
   enviar(titulo: string): boolean;
   /** Com um texto (o contexto em Markdown) que vai junto do áudio. Ponte antiga, sem este método: o texto não vai. */
   enviarComTexto?(titulo: string, texto: string): boolean;
+  /** O contexto do último envio foi copiado para a área de transferência? Ponte antiga, sem este método: não. */
+  getCopiouContexto?(): boolean;
   cancelar(): void;
   /** Apaga as cópias de gravações enviadas que ficaram no cache do app. Ponte antiga, sem este método: nada a apagar. */
   limparTudo?(): boolean;
@@ -44,6 +46,15 @@ function paraBase64(bytes: Uint8Array): string {
 export function apagarCopiasEnviadas(): boolean {
   try {
     return ponte()?.limparTudo?.() ?? true;
+  } catch {
+    return false;
+  }
+}
+
+/** Depois de um envio com texto: a ponte do Android copiou o contexto? Fora dela (Web Share) ou numa ponte antiga, nada é copiado: falso. */
+export function contextoFoiCopiado(): boolean {
+  try {
+    return ponte()?.getCopiouContexto?.() ?? false;
   } catch {
     return false;
   }

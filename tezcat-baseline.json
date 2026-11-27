@@ -17,7 +17,7 @@
   },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 174
+    "value": 177
   },
   "src-tauri/gen/android/app/src/main/java/br/pro/bibliotecamusical/PonteCompartilhar.kt::PonteCompartilhar::SRP::": {
     "severity": "WARN",
