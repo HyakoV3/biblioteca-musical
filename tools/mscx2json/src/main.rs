@@ -5,11 +5,13 @@
 //! (semínima = 1) e as notas em MIDI, como descrito em docs/FORMATO.md.
 
 mod cli;
+mod conclusao;
 mod conserto;
 mod conversao;
 mod coro;
 mod correcoes;
 mod estrutura;
+mod leitura;
 mod modelo;
 mod montagem;
 mod partes;
