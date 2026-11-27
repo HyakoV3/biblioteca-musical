@@ -1,7 +1,7 @@
 # Formato de dados
 
 O app lê um pacote de conteúdo local (pasta `content/`, não versionada). Exemplo com
-dados **fictícios**, só para mostrar a estrutura:
+dados **fictícios**, só para mostrar a estrutura (o pacote de exemplo embutido no app, `src-tauri/exemplo/hinario.json`, é outra coisa: 5 hinos reais de domínio público, gerados por `tools/gerar-exemplo.py`):
 
 ```json
 {
@@ -87,6 +87,11 @@ uma vez, em ordem.
   (`"pt-BR"`, `"es"`, `"en"`). Ele é independente do idioma da interface. Com ele, a tela marca o título e a
   letra no idioma certo, e o leitor de tela pronuncia corretamente mesmo com a interface em outra língua.
   Sem ele, o app não marca o idioma do texto dos hinos.
+- Em cada hino: `titulos` (opcional) é o **nome do hino por idioma da interface**: `{ "pt": "...", "en": "...", "es": "..." }`, cada chave opcional. `titulo` continua obrigatório e é o
+  **padrão e a reserva** (em geral o título original, na língua da letra). O app mostra `titulos[idioma da interface]` e, se a chave falta, `titulo`: por isso, quando a interface está na
+  língua original do hino, `titulos` não precisa repetir o título (a chave daquele idioma simplesmente falta). Hinário sem o campo funciona como sempre. É um extra: o Rust descarta idiomas
+  desconhecidos e textos vazios, sem recusar o hino (um valor que não é texto recusa o hinário, como qualquer erro de tipo). Vale na lista, no cabeçalho do hino, no miniplayer, na notificação, no
+  contexto das gravações e na busca, que acha o hino pelo título em qualquer dos idiomas (com a regra de acentos de sempre). O conversor `mscx2json` não gera `titulos` (o `.mscx` só tem um título).
 - Em cada hino: `autoria` (opcional) é o crédito como aparece na partitura, por exemplo
   `"Fulana de Tal"`. Aparece sob o título do hino e na lista. O conversor monta esse campo a partir dos
   textos de moldura com estilo `Lyricist` e `Composer` do MuseScore (letrista primeiro, sem repetir).
@@ -316,6 +321,6 @@ As partituras ficam em `content/partituras/`, com a marca `.hinario` (o `id` do 
 
 O app procura `hinario.json` em `<pasta de dados do app>/content/` (no Linux:
 `~/.local/share/br.pro.bibliotecamusical/content/`). Se o arquivo não existir,
-mostra o pacote de exemplo embutido (`src-tauri/exemplo/hinario.json`, dados fictícios).
+mostra o pacote de exemplo embutido (`src-tauri/exemplo/hinario.json`: 5 hinos de domínio público, SATB, com letra e sincronia). As partituras SVG desses 5 hinos (`src-tauri/exemplo/partituras/`, retrato e paisagem) também vão **embutidas no binário** (`src-tauri/src/exemplo.rs`) e só valem enquanto não há hinário instalado: o Rust as lista em `partituras` do pacote de exemplo e as entrega por `ler_partitura`, com a mesma limpeza de SVG das instaladas. Com um hinário instalado, só as partituras do disco valem.
 Se o arquivo existir mas estiver inválido, o app mostra o erro em vez de esconder com o exemplo.
 Apenas `versao: 1` é suportada.

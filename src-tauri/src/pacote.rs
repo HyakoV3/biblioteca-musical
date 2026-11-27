@@ -1656,7 +1656,7 @@ mod testes {
         let d = dir_com_hinario("remover");
         importar_zip(&d, &pacote_ok()).unwrap();
         let p = hinario::remover(&d).unwrap();
-        assert!(p.exemplo && p.partituras.is_empty());
+        assert!(p.exemplo && p.partituras == crate::exemplo::numeros());
         assert!(arquivos(&d).is_empty(), "{:?}", arquivos(&d));
         assert!(hinario::remover(&d).unwrap().exemplo); // idempotente
         std::fs::remove_dir_all(&d).ok();

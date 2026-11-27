@@ -13,12 +13,12 @@ TypeScript**. O alvo principal é o **Android**; o desktop funciona para desenvo
 
 ## Sobre o conteúdo
 
-Este repositório contém **somente código**. Nenhum hino real está aqui: letras, partituras e áudios **não fazem parte
+Este repositório contém **somente código**. A única exceção são os **5 hinos de domínio público** do pacote de exemplo (`src-tauri/exemplo/`, com a procedência de cada um em [`docs/licencas-de-terceiros.md`](docs/licencas-de-terceiros.md)). Nenhum outro hino real está aqui: letras, partituras e áudios **não fazem parte
 do repositório** (ficam fora do Git, na pasta `content/`, que é ignorada) e só devem ser distribuídos com autorização de
 quem detém os direitos (a do transcritor, Enéias Ramos, está registrada em [`docs/licencas-de-terceiros.md`](docs/licencas-de-terceiros.md); a dos autores das letras e músicas e da edição, não). **O hinário e as partituras também não vêm dentro do app**: a pessoa os baixa uma vez em Ajustes
 (o primeiro acesso oferece o download do hinário) e eles ficam no aparelho, conferidos por tamanho e SHA-256, com uma barra de andamento (90% o download, o resto a conferência e a instalação). Os pacotes levam o SHA-256 no nome (`hinario-<sha8>.json`, `partituras-<sha8>.zip`)
-([`docs/pacote-do-hinario.md`](docs/pacote-do-hinario.md) e [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md)). Os arquivos de teste (`src-tauri/exemplo/` e `tools/mscx2json/tests/fixtures/`) são
-**fictícios**. O formato dos dados está em [`docs/FORMATO.md`](docs/FORMATO.md).
+([`docs/pacote-do-hinario.md`](docs/pacote-do-hinario.md) e [`docs/pacote-de-partituras.md`](docs/pacote-de-partituras.md)). Os arquivos de teste de `tools/mscx2json/tests/fixtures/` são
+**fictícios**; o pacote de exemplo (`src-tauri/exemplo/`) é de **domínio público**. O formato dos dados está em [`docs/FORMATO.md`](docs/FORMATO.md).
 
 O código foi escrito do zero: nenhum código ou arquivo de outros aplicativos foi copiado.
 
@@ -68,7 +68,7 @@ npm run tauri dev            # desktop
 npm run tauri android init   # uma vez
 npm run tauri android dev    # Android
 npm run check                # tipos (svelte-check, inclui tests/)
-npm test                     # testes da lógica (Vitest), só com dados fictícios
+npm test                     # testes da lógica (Vitest), só com dados fictícios ou de domínio público
 npm run test:e2e             # karaokê num Chrome de verdade (precisa de Chrome ou Chromium)
 ```
 

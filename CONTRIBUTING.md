@@ -7,14 +7,15 @@ Obrigado por querer ajudar. O projeto é pequeno, em português, e está em **te
 
 ## Regra de ouro: nada de hinário no Git
 
-Este repositório tem **só código** e dados de teste **fictícios** (`src-tauri/exemplo/`, `tools/mscx2json/tests/fixtures/`, `tests/amostras.ts`).
+Este repositório tem **só código** e dados de teste **fictícios** (`tools/mscx2json/tests/fixtures/`, `tests/amostras.ts`), com **uma exceção**: o pacote de exemplo
+(`src-tauri/exemplo/`) traz 5 hinos de **domínio público**, cuja procedência está em `docs/licencas-de-terceiros.md` (para trocar ou somar um hino ali, registre a fonte e a licença da edição lá, e regere com `python3 tools/gerar-exemplo.py`).
 **Nunca** inclua letras, partituras, áudios ou arquivos `.mscx` de hinos reais, nem capturas de tela com eles: o conteúdo é de terceiros e só
 circula com autorização. Conteúdo local fica em `content/` e `docs/privado/`, que o `.gitignore` já ignora. Não coloque no Git chaves, senhas,
 keystores nem endereços internos (`docs/apk-de-teste.md` explica como o APK de teste é assinado, sem guardar a chave).
 
 ## Antes de abrir a PR
 
-Rode o que o CI roda (só dados fictícios; nada precisa de conteúdo real):
+Rode o que o CI roda (só dados fictícios ou de domínio público; nada precisa de conteúdo real):
 
 ```bash
 npm ci                              # (ou npm install)

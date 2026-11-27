@@ -16,7 +16,7 @@ import {
   vozesDaVez,
   type ParteDoTudo,
 } from "./vezes";
-import { lerVoz } from "./preferencias";
+import { i18n } from "./i18n/index.svelte"; import { lerVoz } from "./preferencias"; import { tituloDoHino } from "./titulo";
 import { Sintetizador, type Voz } from "./sintetizador";
 
 export type Estado = "parado" | "tocando" | "pausado";
@@ -159,7 +159,7 @@ async function tocar(hino: Hino, parte: Parte = "tudo") {
     }
     atual = {
       numero: hino.numero,
-      titulo: hino.titulo,
+      titulo: tituloDoHino(hino, i18n.idioma), // o que a pessoa vê (miniplayer, notificação, contexto da gravação) no idioma de agora
       parte,
       total,
       comFinal: temFinal(hino),

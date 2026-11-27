@@ -1994,6 +1994,14 @@ async function principal() {
   const resumoBaixando = await av(`document.querySelector('#conteudo summary')?.textContent.replace(/\\s+/g, ' ').trim()`);
   confere(/Downloading|Baixando|Descargando/i.test(resumoBaixando ?? ""), `o resumo do cartão Conteúdo mostra o download do hinário em andamento: "${resumoBaixando}"`);
   confere(semHinario.hinario === true && semHinario.partituras === false && semHinario.aviso, `só com o pacote de exemplo: o Baixar do hinário vale e o das partituras fica desabilitado, com o aviso do motivo: ${JSON.stringify(semHinario)}`);
+  // Com o pacote de exemplo E as partituras embutidas (o Rust as lista em `partituras`): o card diz "embutidas", não oferece Remover (não há o que apagar) e o Baixar segue desabilitado.
+  await av(`sessionStorage.removeItem('e2e-sem-partituras'); 1`);
+  await irParaAjustes(AJ);
+  await av(`(() => { const s = document.querySelector('#conteudo summary'); if (!s.parentElement.open) s.click(); return 1; })()`); // o cartão pode já estar aberto (lembrado)
+  await dormir(400);
+  const embutidas = await av(`(() => { const c = document.querySelector('#partituras'); return { texto: c?.innerText ?? '', remover: [...(c?.querySelectorAll('button') ?? [])].filter((b) => /Remove|Remover|Quitar/i.test(b.textContent)).length, baixar: [...(c?.querySelectorAll('button') ?? [])].filter((b) => /Download|Baixar|Descargar/i.test(b.textContent) && !b.disabled).length }; })()`);
+  confere(/Built into the example|Embutidas|Incluidas/i.test(embutidas.texto) && embutidas.remover === 0 && embutidas.baixar === 0, `exemplo com partituras embutidas: o card diz "embutidas", sem Remover e com o Baixar desabilitado: ${JSON.stringify(embutidas)}`);
+  await av(`sessionStorage.setItem('e2e-sem-partituras', '1'); 1`);
   await av(`sessionStorage.removeItem('e2e-exemplo'); sessionStorage.removeItem('e2e-download-pendurado'); 1`);
   await irParaAjustes(AJ);
   await av(`document.querySelector('#conteudo summary').click(); 1`);

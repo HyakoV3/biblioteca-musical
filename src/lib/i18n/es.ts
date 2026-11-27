@@ -163,6 +163,7 @@ export const es: Dicionario = {
   "partituras.precisa_hinario": "Descargue primero el himnario completo (arriba): las partituras solo entran en un himnario ya instalado.",
   "partituras.instaladas": "Instaladas",
   "partituras.nao_instaladas": "No instaladas",
+  "partituras.embutidas": "Incluidas en el ejemplo: {total}",
   "partituras.indisponivel": "Aún no disponibles para descargar",
   "partituras.baixar": "Descargar ({tamanho})",
   "partituras.baixando": "Descargando… {n}%",

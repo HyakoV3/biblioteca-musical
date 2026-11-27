@@ -119,9 +119,17 @@
   // --- Partituras (I-08): baixar do servidor e remover, no molde dos sons gravados. ---
   const instaladas = $derived(biblioteca.pacote?.partituras.length ?? 0);
   // "480 partituras · 19,4 MB · Instaladas" ou "0,2 MB · Não instaladas" (o tamanho só aparece quando há pacote publicado).
+  // Com só o pacote de exemplo, as partituras que aparecem são as EMBUTIDAS no app (não há o que remover nem baixar por cima).
+  const embutidas = $derived(biblioteca.pacote?.exemplo === true && instaladas > 0);
   const estadoPartituras = $derived.by(() => {
-    const estado = instaladas > 0 ? t("partituras.instaladas") : partituras.disponivel ? t("partituras.nao_instaladas") : t("partituras.indisponivel");
-    return [instaladas > 0 ? i18n.tn("plural.partituras", instaladas) : null, partituras.disponivel ? formatarMB(partituras.bytes, i18n.idioma) : null, estado].filter(Boolean).join(" · ");
+    const estado = embutidas
+      ? t("partituras.embutidas", { total: i18n.tn("plural.partituras", instaladas) })
+      : instaladas > 0
+        ? t("partituras.instaladas")
+        : partituras.disponivel
+          ? t("partituras.nao_instaladas")
+          : t("partituras.indisponivel");
+    return [!embutidas && instaladas > 0 ? i18n.tn("plural.partituras", instaladas) : null, partituras.disponivel ? formatarMB(partituras.bytes, i18n.idioma) : null, estado].filter(Boolean).join(" · ");
   });
   // A explicação de cada seção aparece enquanto o conteúdo NÃO está instalado (é a hora em que ela serve) e some depois; o ⓘ a traz de volta.
   let explicacoes = $state({ hinario: false, partituras: false, sons: false });
@@ -362,7 +370,7 @@
           textoBaixando={t("partituras.baixando", { n: porcentagemTotal(partituras.andamento.fase, partituras.andamento.progresso) })}
           textoConferindo={t("partituras.conferindo")}
           textoInstalando={t("partituras.instalando")}
-          instalado={instaladas > 0}
+          instalado={instaladas > 0 && !embutidas}
           rotuloRemover={t("partituras.remover")}
           aoRemover={() => partituras.remover()}
           confirmarRemocao={{ titulo: t("partituras.remover_titulo"), texto: t("partituras.remover_texto") }}
@@ -371,7 +379,7 @@
           aoBaixar={() => partituras.baixar()}
           desabilitarBaixar={instalando.ocupado || !hinarioInstalado}
         />
-        {#if !hinarioInstalado && instaladas === 0 && partituras.disponivel}
+        {#if !hinarioInstalado && (instaladas === 0 || embutidas) && partituras.disponivel}
           <!-- Sem o hinário completo as partituras não têm onde entrar: o botão Baixar fica desabilitado até o hinário ser baixado. -->
           <p class="meta" id="partituras-precisa-hinario">{t("partituras.precisa_hinario")}</p>
         {/if}

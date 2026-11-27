@@ -163,6 +163,7 @@ export const en: Dicionario = {
   "partituras.precisa_hinario": "Download the full hymnal first (above): scores can only be added to an installed hymnal.",
   "partituras.instaladas": "Installed",
   "partituras.nao_instaladas": "Not installed",
+  "partituras.embutidas": "Built into the example: {total}",
   "partituras.indisponivel": "Not yet available to download",
   "partituras.baixar": "Download ({tamanho})",
   "partituras.baixando": "Downloading… {n}%",

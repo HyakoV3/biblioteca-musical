@@ -83,13 +83,17 @@
     "severity": "WARN",
     "value": 3
   },
+  "src-tauri/src/exemplo.rs::exemplo::Clean/Params::ler_partitura_do_app": {
+    "severity": "WARN",
+    "value": 3
+  },
   "src-tauri/src/hinario.rs::hinario::Clean/Método::carregar": {
     "severity": "WARN",
     "value": 29
   },
   "src-tauri/src/hinario.rs::hinario::Clean/Método::ler": {
     "severity": "FAIL",
-    "value": 73
+    "value": 74
   },
   "src-tauri/src/hinario.rs::hinario::Clean/Nesting::carregar": {
     "severity": "WARN",
@@ -105,15 +109,19 @@
   },
   "src-tauri/src/hinario.rs::hinario::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 398
+    "value": 415
   },
   "src-tauri/src/hinario.rs::hinario::OCP::ler": {
     "severity": "FAIL",
     "value": 9
   },
+  "src-tauri/src/hinario.rs::hinario::SRP::": {
+    "severity": "WARN",
+    "value": 15
+  },
   "src-tauri/src/hinario.rs::hinario::testes::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 584
+    "value": 605
   },
   "src-tauri/src/lib.rs::lib::Clean/Params::importar_partituras": {
     "severity": "WARN",
@@ -549,11 +557,11 @@
   },
   "src/lib/busca-hinos.ts::busca-hinos::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 356
+    "value": 371
   },
   "src/lib/busca-hinos.ts::busca-hinos::SRP::": {
     "severity": "FAIL",
-    "value": 32
+    "value": 34
   },
   "src/lib/cabem.ts::cabem::Clean/Params::quantosCabem": {
     "severity": "WARN",
@@ -941,11 +949,11 @@
   },
   "src/lib/i18n/en.ts::en::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 554
+    "value": 555
   },
   "src/lib/i18n/es.ts::es::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 554
+    "value": 555
   },
   "src/lib/i18n/index.svelte.ts::index.svelte::Clean/Params::preencher": {
     "severity": "WARN",
@@ -961,7 +969,7 @@
   },
   "src/lib/i18n/pt.ts::pt::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 557
+    "value": 558
   },
   "src/lib/instrumentos.ts::instrumentos::OCP::tipoDaVoz": {
     "severity": "FAIL",
@@ -1453,7 +1461,7 @@
   },
   "src/routes/ajustes/+page.svelte::ajustes/+page::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 191
+    "value": 199
   },
   "src/routes/ajustes/+page.svelte::ajustes/+page::Clean/Template::": {
     "severity": "WARN",
@@ -1730,6 +1738,194 @@
   "tools/contraste.py::contraste::OCP::main": {
     "severity": "FAIL",
     "value": 32
+  },
+  "tools/exemplo/compassos.py::_Divisor::Clean/Nesting::evento": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/exemplo/compassos.py::compassos::Clean/Nesting::figuras": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/exemplo/compassos.py::compassos::Clean/Params::dividir": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/compassos.py::compassos::OCP::figuras": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/exemplo/letra.py::Alinhador::Clean/Nesting::estrofe": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/exemplo/letra.py::Alinhador::Clean/Params::_marca": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/exemplo/letra.py::Alinhador::OCP::estrofe": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "tools/exemplo/letra.py::letra::Clean/Params::_lirica": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/lilypond.py::_Leitor::OCP::passo": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/exemplo/lilypond.py::lilypond::Clean/Nesting::_bloco": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/lilypond.py::lilypond::Clean/Nesting::_comando": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/exemplo/lilypond.py::lilypond::Clean/Nesting::_resolver_ligaduras": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/exemplo/lilypond.py::lilypond::Clean/Params::_comando": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/lilypond.py::lilypond::Clean/Params::_fechar_arco": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/lilypond.py::lilypond::Clean/Params::_marca_solta": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/lilypond.py::lilypond::Clean/Params::_nota": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/exemplo/lilypond.py::lilypond::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 247
+  },
+  "tools/exemplo/lilypond.py::lilypond::OCP::_bloco": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/exemplo/lilypond.py::lilypond::OCP::_nota": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/exemplo/lilypond.py::lilypond::OCP::_resolver_ligaduras": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/exemplo/lilypond.py::lilypond::SRP::": {
+    "severity": "WARN",
+    "value": 17
+  },
+  "tools/exemplo/montagem.py::montagem::OCP::vozes_do_hino": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "tools/exemplo/mscx.py::mscx::Clean/Nesting::_figura": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/exemplo/mscx.py::mscx::Clean/Params::_ligacao": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/mscx.py::mscx::Clean/Params::_medida": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/exemplo/mscx.py::mscx::Clean/Params::_pauta": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/mscx.py::mscx::Clean/Params::montar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/mscx.py::mscx::OCP::_figura": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/exemplo/mscx.py::mscx::OCP::_medida": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "tools/exemplo/musicxml.py::musicxml::Clean/Nesting::_nota": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/exemplo/musicxml.py::musicxml::Clean/Params::_compasso": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/musicxml.py::musicxml::Clean/Params::_liga": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/musicxml.py::musicxml::Clean/Params::_nota": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/musicxml.py::musicxml::Clean/Params::_pausa": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/exemplo/musicxml.py::musicxml::Clean/Params::_vigas_da_nota": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/musicxml.py::musicxml::Clean/Params::_vizinho": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/exemplo/musicxml.py::musicxml::Clean/Params::montar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "tools/exemplo/musicxml.py::musicxml::OCP::_liga": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "tools/exemplo/musicxml.py::musicxml::OCP::_vigas": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "tools/exemplo/musicxml.py::musicxml::OCP::_vigas_da_nota": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/gerar-exemplo.py::gerar-exemplo::Clean/Nesting::com_titulos": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/gerar-exemplo.py::gerar-exemplo::Clean/Nesting::converter": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/gerar-exemplo.py::gerar-exemplo::Clean/Nesting::gravar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "tools/gerar-exemplo.py::gerar-exemplo::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 171
+  },
+  "tools/gerar-exemplo.py::gerar-exemplo::OCP::gerar_svg": {
+    "severity": "WARN",
+    "value": 5
+  },
+  "tools/gerar-exemplo.py::gerar-exemplo::OCP::gravar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tools/gerar-exemplo.py::gerar-exemplo::OCP::principal": {
+    "severity": "WARN",
+    "value": 4
   },
   "tools/gerar-icone-do-app.py::gerar-icone-do-app::Clean/Método::gerar": {
     "severity": "FAIL",
