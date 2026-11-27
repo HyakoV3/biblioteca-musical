@@ -51,6 +51,30 @@
     "severity": "WARN",
     "value": 3
   },
+  "src-tauri/src/hinario.rs::hinario::Clean/Nesting::carregar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/hinario.rs::hinario::Clean/Nesting::remover": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/hinario.rs::hinario::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 196
+  },
+  "src-tauri/src/hinario/leitura.rs::leitura::Clean/Método::ler": {
+    "severity": "WARN",
+    "value": 25
+  },
+  "src-tauri/src/hinario/leitura.rs::leitura::Clean/Nesting::conferir_notas": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/hinario/leitura.rs::leitura::Clean/Params::mesmas_vozes": {
+    "severity": "WARN",
+    "value": 3
+  },
   "src-tauri/src/lib.rs::lib::Clean/Params::importar_partituras": {
     "severity": "WARN",
     "value": 3
@@ -59,49 +83,9 @@
     "severity": "WARN",
     "value": 3
   },
-  "src-tauri/src/pacote.rs::pacote::Clean/Método::classificar": {
-    "severity": "WARN",
-    "value": 22
-  },
   "src-tauri/src/pacote.rs::pacote::Clean/Método::importar_zip_com_progresso": {
-    "severity": "FAIL",
-    "value": 105
-  },
-  "src-tauri/src/pacote.rs::pacote::Clean/Método::ler_partitura": {
     "severity": "WARN",
-    "value": 28
-  },
-  "src-tauri/src/pacote.rs::pacote::Clean/Método::ler_variante": {
-    "severity": "FAIL",
-    "value": 30
-  },
-  "src-tauri/src/pacote.rs::pacote::Clean/Método::numeros": {
-    "severity": "WARN",
-    "value": 24
-  },
-  "src-tauri/src/pacote.rs::pacote::Clean/Método::preparar": {
-    "severity": "FAIL",
-    "value": 76
-  },
-  "src-tauri/src/pacote.rs::pacote::Clean/Nesting::classificar": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/pacote.rs::pacote::Clean/Nesting::importar_zip_com_progresso": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/pacote.rs::pacote::Clean/Nesting::ler_partitura": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/pacote.rs::pacote::Clean/Nesting::numeros": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/pacote.rs::pacote::Clean/Nesting::preparar": {
-    "severity": "WARN",
-    "value": 3
+    "value": 27
   },
   "src-tauri/src/pacote.rs::pacote::Clean/Params::importar_base64_com": {
     "severity": "WARN",
@@ -123,61 +107,201 @@
     "severity": "WARN",
     "value": 4
   },
-  "src-tauri/src/pacote.rs::pacote::Clean/Params::ler_entrada": {
+  "src-tauri/src/pacote.rs::pacote::Clean/Params::preparar_ou_limpar": {
     "severity": "WARN",
     "value": 3
   },
-  "src-tauri/src/pacote.rs::pacote::Clean/Params::ler_partitura": {
+  "src-tauri/src/pacote.rs::pacote::Clean/Params::resultado": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/pacote.rs::pacote::Clean/Params::trocar_pastas": {
     "severity": "WARN",
     "value": 3
-  },
-  "src-tauri/src/pacote.rs::pacote::Clean/Params::ler_variante": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src-tauri/src/pacote.rs::pacote::Clean/Params::preparar": {
-    "severity": "FAIL",
-    "value": 7
   },
   "src-tauri/src/pacote.rs::pacote::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 522
+    "severity": "WARN",
+    "value": 175
   },
-  "src-tauri/src/pacote.rs::pacote::OCP::importar_zip_com_progresso": {
-    "severity": "FAIL",
-    "value": 11
+  "src-tauri/src/pacote/disco.rs::disco::Clean/Método::ler_partitura": {
+    "severity": "WARN",
+    "value": 28
   },
-  "src-tauri/src/pacote.rs::pacote::OCP::ler_partitura": {
+  "src-tauri/src/pacote/disco.rs::disco::Clean/Método::numeros": {
+    "severity": "WARN",
+    "value": 24
+  },
+  "src-tauri/src/pacote/disco.rs::disco::Clean/Nesting::ler_partitura": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/pacote/disco.rs::disco::Clean/Nesting::numeros": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/pacote/disco.rs::disco::Clean/Params::ler_partitura": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote/disco.rs::disco::Clean/Params::ler_variante": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote/disco.rs::disco::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 156
+  },
+  "src-tauri/src/pacote/disco.rs::disco::OCP::ler_partitura": {
     "severity": "WARN",
     "value": 4
   },
-  "src-tauri/src/pacote.rs::pacote::OCP::ler_variante": {
+  "src-tauri/src/pacote/entradas.rs::entradas::Clean/Método::listar_svgs": {
+    "severity": "WARN",
+    "value": 29
+  },
+  "src-tauri/src/pacote/entradas.rs::entradas::Clean/Nesting::listar_svgs": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/pacote/entradas.rs::entradas::Clean/Params::ler_entrada": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote/entradas.rs::entradas::OCP::listar_svgs": {
     "severity": "WARN",
     "value": 4
   },
-  "src-tauri/src/pacote.rs::pacote::OCP::preparar": {
-    "severity": "FAIL",
-    "value": 10
-  },
-  "src-tauri/src/pacote.rs::pacote::SRP::": {
+  "src-tauri/src/pacote/preparo.rs::preparo::Clean/Método::decidir": {
     "severity": "WARN",
     "value": 21
   },
-  "src-tauri/src/pacote.rs::pacote::testes::Clean/Método::classifica_so_os_nomes_exatos": {
+  "src-tauri/src/pacote/preparo.rs::preparo::Clean/Método::preparar": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "src-tauri/src/pacote/preparo.rs::preparo::Clean/Método::tratar": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "src-tauri/src/pacote/preparo.rs::preparo::Clean/Nesting::preparar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/pacote/preparo.rs::preparo::Clean/Nesting::tratar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/pacote/preparo.rs::preparo::Clean/Params::decidir": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/pacote/preparo.rs::preparo::Clean/Params::ler_texto": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/pacote/preparo.rs::preparo::Clean/Params::preparar": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote/preparo.rs::preparo::Clean/Params::recusa": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote/preparo.rs::preparo::Clean/Params::tratar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/pacote/preparo.rs::preparo::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 151
+  },
+  "src-tauri/src/pacote/preparo.rs::preparo::OCP::tratar": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/pacote/testes/apoio.rs::apoio::Clean/Método::arquivos": {
+    "severity": "WARN",
+    "value": 21
+  },
+  "src-tauri/src/pacote/testes/apoio.rs::apoio::Clean/Nesting::arquivos": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/pacote/testes/apoio.rs::apoio::Clean/Nesting::zip_de": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/pacote/testes/apoio.rs::apoio::Rust/Unwrap::zip_de": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/pacote/testes/disco.rs::disco::Rust/Unwrap::estraga_a_marca": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/pacote/testes/nomes.rs::nomes::tests::Clean/Método::classifica_so_os_nomes_exatos": {
     "severity": "WARN",
     "value": 76
   },
-  "src-tauri/src/pacote.rs::pacote::testes::Clean/Nesting::arquivos": {
+  "src-tauri/src/pacote/testes/real.rs::real::tests::Clean/Nesting::conteudo_real": {
     "severity": "WARN",
     "value": 3
   },
-  "src-tauri/src/pacote.rs::pacote::testes::Clean/Nesting::conteudo_real": {
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::elementos_por_id": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::escrever_atributos": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::escrever_filhos": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::sem_comentario_na_raiz": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::sem_use_encadeado": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Params::escrever": {
     "severity": "WARN",
     "value": 3
   },
-  "src-tauri/src/pacote.rs::pacote::testes::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 1381
+  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_atributos": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_filhos": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_texto": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 217
+  },
+  "src-tauri/src/svg.rs::svg::testes::Clean/Nesting::svgs_gerados_passam_na_limpeza": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/svg.rs::svg::testes::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 497
+  },
+  "src-tauri/src/svg/valores.rs::valores::Clean/Nesting::escapar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg/valores.rs::valores::Clean/Params::escapar": {
+    "severity": "WARN",
+    "value": 3
   },
   "src/lib/Abas.svelte::Abas::OCP::teclas": {
     "severity": "WARN",
@@ -2546,85 +2670,5 @@
   "tools/verificar-traducoes.py::verificar-traducoes::OCP::main": {
     "severity": "FAIL",
     "value": 16
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::elementos_por_id": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::escrever_atributos": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::escrever_filhos": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::sem_comentario_na_raiz": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::sem_use_encadeado": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_atributos": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_filhos": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_texto": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 217
-  },
-  "src-tauri/src/svg.rs::svg::testes::Clean/Nesting::svgs_gerados_passam_na_limpeza": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src-tauri/src/svg.rs::svg::testes::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 497
-  },
-  "src-tauri/src/svg/valores.rs::valores::Clean/Nesting::escapar": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg/valores.rs::valores::Clean/Params::escapar": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src-tauri/src/hinario.rs::hinario::Clean/Nesting::carregar": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/hinario.rs::hinario::Clean/Nesting::remover": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/hinario.rs::hinario::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 196
-  },
-  "src-tauri/src/hinario/leitura.rs::leitura::Clean/Método::ler": {
-    "severity": "WARN",
-    "value": 25
-  },
-  "src-tauri/src/hinario/leitura.rs::leitura::Clean/Nesting::conferir_notas": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/hinario/leitura.rs::leitura::Clean/Params::mesmas_vozes": {
-    "severity": "WARN",
-    "value": 3
   }
 }
