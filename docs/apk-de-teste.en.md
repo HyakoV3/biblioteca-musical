@@ -9,7 +9,7 @@
 The app is **independent and unofficial** (it has no connection with the Christian Congregation in Brazil) and is in **closed testing**: it can still make mistakes. To install it:
 
 1. **Download the newest version** from the project's [Releases](https://github.com/HyakoV3/biblioteca-musical/releases) page (the one at the top of the list).
-2. **Download the file that ends in `.apk`** (for example `bibliotecamusical-0.3.8.apk`). Ignore the `.aab` and the `SHA256SUMS`: they are not for installing.
+2. **Download the file that ends in `.apk`** (for example `bibliotecamusical-0.3.9.apk`). Ignore the `.aab` and the `SHA256SUMS`: they are not for installing.
 3. **Allow installation from outside the store** when Android asks (the "Install unknown apps" option of the browser or the file manager) and tap the file to install it.
 4. **When updating, install over the top**: do not uninstall. **Uninstalling deletes the saved recordings and the downloaded packages** (the app does not back up recordings). If you must uninstall, first share, with the Recorder's **Share** button, the recordings you want to keep.
 5. **Check the version** in Settings, "About the app", and say which one it is when reporting a problem.

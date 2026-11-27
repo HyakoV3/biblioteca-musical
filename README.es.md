@@ -6,7 +6,7 @@ Aplicación gratuita y de código abierto para músicos en entrenamiento: estudi
 
 > **Aviso:** proyecto **no oficial**, sin vínculo con la Congregación Cristiana en Brasil (Congregação Cristã no Brasil). La app no se vende y no puede usarse para vender contenido.
 
-**Estado:** en desarrollo, en prueba cerrada con músicos (versión 0.3.8). Todavía no hay versión publicada en una tienda. ¿Quiere ayudar? Vea [`CONTRIBUTING.es.md`](CONTRIBUTING.es.md); para fallas de seguridad, [`SECURITY.es.md`](SECURITY.es.md).
+**Estado:** en desarrollo, en prueba cerrada con músicos (versión 0.3.9). Todavía no hay versión publicada en una tienda. ¿Quiere ayudar? Vea [`CONTRIBUTING.es.md`](CONTRIBUTING.es.md); para fallas de seguridad, [`SECURITY.es.md`](SECURITY.es.md).
 
 > Los documentos detallados de `docs/` están escritos en portugués, el idioma de trabajo del proyecto. Los archivos enlazados abajo apuntan a ellos.
 
