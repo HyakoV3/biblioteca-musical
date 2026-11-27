@@ -687,45 +687,61 @@
     "severity": "FAIL",
     "value": 362
   },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Método::abrirUma": {
-    "severity": "FAIL",
-    "value": 36
-  },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Método::atualizar": {
+  "src/lib/gravacoes-banco.ts::gravacoes-banco::Clean/Nesting::abrirUma": {
     "severity": "WARN",
-    "value": 23
+    "value": 2
   },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Método::banco": {
+  "src/lib/gravacoes-banco.ts::gravacoes-banco::Clean/Nesting::criarDepositos": {
     "severity": "WARN",
-    "value": 27
+    "value": 2
   },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Método::recuperarUma": {
-    "severity": "FAIL",
-    "value": 31
-  },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Método::salvar": {
+  "src/lib/gravacoes-banco.ts::gravacoes-banco::Clean/Nesting::tentarAbrir": {
     "severity": "WARN",
-    "value": 28
+    "value": 2
   },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::aberto": {
+  "src/lib/gravacoes-banco.ts::gravacoes-banco::Clean/Nesting::transacao": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacoes-banco.ts::gravacoes-banco::Clean/Params::comLimite": {
     "severity": "WARN",
     "value": 3
+  },
+  "src/lib/gravacoes-banco.ts::gravacoes-banco::Clean/Params::transacao": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/gravacoes-banco.ts::gravacoes-banco::OCP::criarDepositos": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/gravacoes-registros.ts::gravacoes-registros::Clean/Nesting::metaRecuperada": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacoes-registros.ts::gravacoes-registros::Clean/Nesting::novaMeta": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacoes-registros.ts::gravacoes-registros::Clean/Nesting::varrer": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravacoes-registros.ts::gravacoes-registros::Clean/Params::guardarArquivo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacoes-registros.ts::gravacoes-registros::Clean/Params::metaRecuperada": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravacoes-registros.ts::gravacoes-registros::Clean/Params::novaMeta": {
+    "severity": "WARN",
+    "value": 4
   },
   "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::abrirSessao": {
     "severity": "WARN",
     "value": 2
-  },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::abrirUma": {
-    "severity": "FAIL",
-    "value": 4
-  },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::atualizar": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::banco": {
-    "severity": "FAIL",
-    "value": 4
   },
   "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::blob": {
     "severity": "WARN",
@@ -736,22 +752,10 @@
     "value": 2
   },
   "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::listar": {
-    "severity": "FAIL",
-    "value": 4
-  },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::recuperarSessoes": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::recuperarUma": {
-    "severity": "WARN",
-    "value": 3
-  },
   "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::resumo": {
-    "severity": "FAIL",
-    "value": 4
-  },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::salvar": {
     "severity": "WARN",
     "value": 2
   },
@@ -764,60 +768,24 @@
     "value": 5
   },
   "src/lib/gravacoes.ts::Gravacoes::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 273
+    "severity": "WARN",
+    "value": 177
   },
   "src/lib/gravacoes.ts::Gravacoes::DIP::": {
     "severity": "WARN",
-    "value": 3
-  },
-  "src/lib/gravacoes.ts::Gravacoes::OCP::abrirUma": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src/lib/gravacoes.ts::Gravacoes::OCP::atualizar": {
-    "severity": "WARN",
-    "value": 5
-  },
-  "src/lib/gravacoes.ts::Gravacoes::OCP::banco": {
-    "severity": "WARN",
-    "value": 4
+    "value": 2
   },
   "src/lib/gravacoes.ts::Gravacoes::SRP::": {
     "severity": "FAIL",
-    "value": 21
-  },
-  "src/lib/gravacoes.ts::LimiteEstourado::DIP::": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src/lib/gravacoes.ts::gravacoes::Clean/Método::transacao": {
-    "severity": "WARN",
-    "value": 24
-  },
-  "src/lib/gravacoes.ts::gravacoes::Clean/Nesting::formatarData": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/gravacoes.ts::gravacoes::Clean/Nesting::transacao": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src/lib/gravacoes.ts::gravacoes::Clean/Params::comLimite": {
-    "severity": "WARN",
-    "value": 3
+    "value": 22
   },
   "src/lib/gravacoes.ts::gravacoes::Clean/Params::formatarData": {
     "severity": "WARN",
     "value": 3
   },
-  "src/lib/gravacoes.ts::gravacoes::Clean/Params::transacao": {
-    "severity": "WARN",
-    "value": 4
-  },
   "src/lib/gravacoes.ts::gravacoes::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 397
+    "severity": "WARN",
+    "value": 238
   },
   "src/lib/gravador.ts::DetectorDeSom::DIP::": {
     "severity": "FAIL",

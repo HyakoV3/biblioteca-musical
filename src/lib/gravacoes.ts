@@ -1,94 +1,27 @@
 // As gravações guardadas do Gravador (I-03): ficam no IndexedDB da própria WebView, só neste aparelho (nada sai dele) e sobrevivem a fechar o app; somem
 // quando a pessoa as apaga ou limpa os dados do app. Dois depósitos: `meta` (nome, data, duração, tamanho: leve, é o que a lista lê, página por página)
 // e `blobs` (o arquivo de áudio, lido só quando a pessoa toca em "Ouvir"). Sem limite de quantidade: a lista pagina e a tela mostra o espaço usado.
+// A conexão, o esquema do banco e a transação ficam em `gravacoes-banco.ts`; os registros e as peças puras, em `gravacoes-registros.ts`; este arquivo reexporta o que é público deles.
 
 import type { ContextoGravacao } from "./contexto";
 import { rastro } from "./gravador";
-import { limparTitulo, normalizarMeta } from "./metaGravacao";
+import { abrirComTentativas, pedido, transacao } from "./gravacoes-banco";
+import { aplicarMudancas, faixaDaSessao, guardarArquivo, metaRecuperada, novaMeta, novoId, removerSessao, varrer } from "./gravacoes-registros";
+import type { MetaGravacao, Mudancas, Pagina, Posicao, Resumo, SessaoAberta } from "./gravacoes-registros";
+import { normalizarMeta } from "./metaGravacao";
 
-/** Campos opcionais: `contexto` (I-38) só existe nas gravações feitas ouvindo o metrônomo ou um hino no fone; `titulo` e `favorita` (I-39) só quando a pessoa renomeia ou marca a estrela. As antigas não os têm (acrescentar campos não muda o banco). */
-export type MetaGravacao = { id: string; criadaEm: number; segundos: number; tipo: string; bytes: number; contexto?: ContextoGravacao; titulo?: string; favorita?: boolean };
-/** O que a pessoa pode mudar numa gravação: o nome (nulo ou vazio volta ao nome padrão) e a estrela. */
-export type Mudancas = { titulo?: string | null; favorita?: boolean };
-/** Onde a página anterior terminou: a próxima começa logo depois (da mais nova para a mais antiga). */
-export type Posicao = { criadaEm: number; id: string };
-export type Pagina = { itens: MetaGravacao[]; temMais: boolean };
-export type Resumo = { quantidade: number; bytes: number };
+export type { MetaGravacao, Mudancas, Pagina, Posicao, Resumo, SessaoAberta } from "./gravacoes-registros";
+export { BANCO, ESPERA_AO_ABRIR_MS, LIMITE_PARA_GUARDAR_MS, LimiteEstourado, TENTATIVAS_DE_ABRIR, comLimite } from "./gravacoes-banco";
 
 /** Quantas gravações a lista carrega por vez. */
 export const TAMANHO_DA_PAGINA = 10;
 
-export const BANCO = "bm-gravacoes";
-// Versão 2 (AND-002): `sessoes` e `pedacos`, onde a gravação em curso vai sendo guardada, um pedaço por vez, para sobreviver à queda do app.
-const VERSAO = 2;
-
-/** Uma gravação que começou e ainda não foi fechada: se o app cair, é o que `recuperarSessoes` transforma em gravação guardada. */
-export type SessaoAberta = { id: string; criadaEm: number; tipo: string; contexto?: ContextoGravacao };
-
 /** "17/11 10:46" (dia e mês na ordem do idioma, mais hora e minuto); com `comAno`, "17/11/2025 10:46". */
 export function formatarData(criadaEm: number, idioma: string, comAno = false): string {
   if (!Number.isFinite(criadaEm)) return "";
-  return new Intl.DateTimeFormat(idioma, { day: "2-digit", month: "2-digit", ...(comAno ? { year: "numeric" } : {}), hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(criadaEm));
-}
-
-const pedido = <T>(r: IDBRequest<T>): Promise<T> =>
-  new Promise((ok, falha) => {
-    r.onsuccess = () => ok(r.result);
-    r.onerror = () => falha(r.error ?? new Error("falha no armazenamento"));
-  });
-
-/** Roda `fn` numa transação e devolve o que ela devolver DEPOIS de a transação terminar de verdade (confirmada); qualquer erro ou cota estourada rejeita. */
-function transacao<T>(banco: IDBDatabase, lojas: string[], modo: IDBTransactionMode, fn: (t: IDBTransaction) => Promise<T> | T): Promise<T> {
-  return new Promise((ok, falha) => {
-    let resultado: T;
-    const t = banco.transaction(lojas, modo);
-    t.oncomplete = () => ok(resultado);
-    t.onerror = () => falha(t.error ?? new Error("falha no armazenamento"));
-    t.onabort = () => falha(t.error ?? new Error("transação cancelada"));
-    const desistir = (e: unknown) => {
-      falha(e);
-      try {
-        t.abort(); // desfaz tudo o que a transação já pediu: ou entra tudo ou nada
-      } catch {
-        /* já terminou */
-      }
-    };
-    let devolvido: Promise<T> | T;
-    try {
-      devolvido = fn(t);
-    } catch (e) {
-      return desistir(e); // um erro síncrono no meio (um valor que não pode ser guardado) também desfaz o que já foi pedido
-    }
-    Promise.resolve(devolvido).then((r) => (resultado = r), desistir);
-  });
-}
-
-/** Quanto se espera cada tentativa de abrir o banco (ms) e quantas se fazem: três vezes 3 s cabem folgadas no limite de 10 s para guardar. */
-export const ESPERA_AO_ABRIR_MS = 3000;
-export const TENTATIVAS_DE_ABRIR = 3;
-const MOTIVO_SEM_RESPOSTA = "o armazenamento não respondeu a esta tentativa de abrir";
-
-/** Quanto se espera o armazenamento guardar uma gravação antes de desistir e deixá-la na tela (ms). */
-export const LIMITE_PARA_GUARDAR_MS = 10000;
-
-/** O prazo de `comLimite` acabou (a escrita pode ainda terminar): um erro próprio, para quem trata não precisar comparar o texto da mensagem. */
-export class LimiteEstourado extends Error {
-  constructor(motivo: string) {
-    super(motivo);
-    this.name = "LimiteEstourado";
-  }
-}
-
-/**
- * Espera `promessa`, mas rejeita com `motivo` se ela não terminar em `ms`. Uma escrita no IndexedDB que nunca confirma (visto só no CI) deixaria a tela esperando para
- * sempre, sem erro e sem a gravação; assim a tela mostra o erro e deixa a gravação ao alcance (ouvir e enviar). O temporizador é desfeito quando a promessa termina.
- */
-export function comLimite<T>(promessa: Promise<T>, ms: number, motivo: string): Promise<T> {
-  let relogio: ReturnType<typeof setTimeout> | undefined;
-  const estouro = new Promise<never>((_, falha) => {
-    relogio = setTimeout(() => falha(new LimiteEstourado(motivo)), ms);
-  });
-  return Promise.race([promessa, estouro]).finally(() => clearTimeout(relogio));
+  const opcoes: Intl.DateTimeFormatOptions = { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false };
+  if (comAno) opcoes.year = "numeric";
+  return new Intl.DateTimeFormat(idioma, opcoes).format(new Date(criadaEm));
 }
 
 export class Gravacoes {
@@ -99,66 +32,14 @@ export class Gravacoes {
   /** `fabrica` devolve o IndexedDB (um falso nos testes). */
   constructor(private readonly fabrica: () => IDBFactory | undefined = () => (typeof indexedDB === "undefined" ? undefined : indexedDB)) {}
 
-  /** Uma tentativa de abrir o banco. Se o navegador não responder (nem sucesso, nem erro, nem bloqueio), a promessa fica pendente: quem chama põe o limite. */
-  private abrirUma(idb: IDBFactory): Promise<IDBDatabase> {
-    return new Promise<IDBDatabase>((ok, falha) => {
-      const r = idb.open(BANCO, VERSAO);
-      r.onupgradeneeded = () => {
-        rastro("armazenamento: criando ou atualizando o banco");
-        const b = r.result;
-        // Cada depósito só é criado se falta: o mesmo código cria o banco do zero (versão 2) e atualiza o da versão 1, sem tocar nas gravações que já estão lá.
-        if (!b.objectStoreNames.contains("meta")) {
-          const meta = b.createObjectStore("meta", { keyPath: "id" });
-          meta.createIndex("porData", ["criadaEm", "id"]); // da mais nova para a mais antiga, com o id desempatando
-        }
-        if (!b.objectStoreNames.contains("blobs")) b.createObjectStore("blobs");
-        if (!b.objectStoreNames.contains("sessoes")) b.createObjectStore("sessoes", { keyPath: "id" });
-        if (!b.objectStoreNames.contains("pedacos")) b.createObjectStore("pedacos"); // chave: [id da sessão, número do pedaço]
-      };
-      r.onsuccess = () => {
-        const b = r.result;
-        rastro("armazenamento: banco aberto");
-        // Se o navegador fechar a conexão (dados limpos, erro de disco) ou outra versão pedir para fechá-la, esquece-a: a próxima chamada reabre. Sem isso, toda
-        // transação passaria a lançar `InvalidStateError` até reiniciar o app.
-        b.onclose = () => {
-          this.abrindo = null;
-        };
-        b.onversionchange = () => {
-          b.close();
-          this.abrindo = null;
-        };
-        ok(b);
-      };
-      r.onerror = () => falha(r.error ?? new Error("não abriu o armazenamento"));
-      r.onblocked = () => {
-        rastro("armazenamento: abertura bloqueada por outra conexão");
-        falha(new Error("armazenamento bloqueado"));
-      };
-    });
-  }
-
   private banco(): Promise<IDBDatabase> {
     if (this.abrindo) return this.abrindo;
     const idb = this.fabrica();
     if (!idb) return Promise.reject(new Error("armazenamento indisponível"));
-    // No Chrome de um runner lento (CI) o `open()` às vezes NUNCA responde: sem sucesso, sem erro, sem bloqueio, e a tela ficava esperando para sempre. Cada tentativa tem um limite curto; se
-    // estoura, abandona aquela solicitação (se ela chegar depois, a conexão é fechada) e pede de novo. Depois de `TENTATIVAS_DE_ABRIR` sem resposta, falha com uma mensagem clara.
-    const aberto = (async () => {
-      for (let i = 1; i <= TENTATIVAS_DE_ABRIR; i++) {
-        const tentativa = this.abrirUma(idb);
-        try {
-          return await comLimite(tentativa, ESPERA_AO_ABRIR_MS, MOTIVO_SEM_RESPOSTA);
-        } catch (e) {
-          if (!(e instanceof Error && e.message === MOTIVO_SEM_RESPOSTA)) throw e;
-          tentativa.then((b) => b.close(), () => {}); // abandonada: se abrir tarde, não deixa a conexão pendurada
-          rastro(`armazenamento: sem resposta ao abrir (tentativa ${i} de ${TENTATIVAS_DE_ABRIR})`);
-          if (i === TENTATIVAS_DE_ABRIR) throw new Error("o armazenamento não respondeu ao abrir");
-        }
-      }
-      throw new Error("o armazenamento não respondeu ao abrir");
-    })();
     // Uma falha ao abrir não fica guardada: a próxima chamada tenta de novo.
-    this.abrindo = aberto.catch((e) => {
+    this.abrindo = abrirComTentativas(idb, () => {
+      this.abrindo = null;
+    }).catch((e) => {
       this.abrindo = null;
       throw e;
     });
@@ -177,23 +58,12 @@ export class Gravacoes {
     rastro(`bytes lidos em ${Math.round(performance.now() - comeco)} ms; abrindo o armazenamento`);
     const banco = await this.banco();
     rastro(`armazenamento pronto em ${Math.round(performance.now() - comeco)} ms`);
-    const meta: MetaGravacao = {
-      id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-      criadaEm: Date.now(),
-      segundos: Number.isFinite(segundos) && segundos > 0 ? segundos : 0,
-      tipo,
-      bytes: blob.size,
-      ...(contexto ? { contexto } : {}),
-    };
+    const meta = novaMeta(blob, tipo, segundos, contexto);
     // Com `sessao` (a gravação que veio dos pedaços), a sessão sai NA MESMA transação: se o app cair entre uma coisa e outra, a próxima abertura não recupera uma segunda cópia do que já está guardado.
     if (sessao) this.encerradas.add(sessao);
     await transacao(banco, sessao ? ["meta", "blobs", "sessoes", "pedacos"] : ["meta", "blobs"], "readwrite", (t) => {
-      t.objectStore("meta").put(meta);
-      t.objectStore("blobs").put({ dados, tipo }, meta.id);
-      if (sessao) {
-        t.objectStore("sessoes").delete(sessao);
-        t.objectStore("pedacos").delete(globalThis.IDBKeyRange.bound([sessao, 0], [sessao, Infinity]));
-      }
+      guardarArquivo(t, meta, dados);
+      if (sessao) removerSessao(t, sessao);
     });
     rastro(`transação confirmada em ${Math.round(performance.now() - comeco)} ms`);
     return meta;
@@ -202,7 +72,7 @@ export class Gravacoes {
   /** Abre uma sessão de gravação (AND-002): daqui em diante os pedaços entram por `guardarPedaco`. Devolve o id da sessão. */
   async abrirSessao(tipo: string, contexto?: ContextoGravacao | null): Promise<string> {
     const banco = await this.banco();
-    const sessao: SessaoAberta = { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, criadaEm: Date.now(), tipo, ...(contexto ? { contexto } : {}) };
+    const sessao: SessaoAberta = { id: novoId(), criadaEm: Date.now(), tipo, ...(contexto ? { contexto } : {}) };
     await transacao(banco, ["sessoes"], "readwrite", (t) => {
       t.objectStore("sessoes").put(sessao);
     });
@@ -224,10 +94,7 @@ export class Gravacoes {
   async descartarSessao(sessao: string): Promise<void> {
     this.encerradas.add(sessao);
     const banco = await this.banco();
-    await transacao(banco, ["sessoes", "pedacos"], "readwrite", (t) => {
-      t.objectStore("sessoes").delete(sessao);
-      t.objectStore("pedacos").delete(globalThis.IDBKeyRange.bound([sessao, 0], [sessao, Infinity]));
-    });
+    await transacao(banco, ["sessoes", "pedacos"], "readwrite", (t) => removerSessao(t, sessao));
   }
 
   /**
@@ -240,44 +107,35 @@ export class Gravacoes {
     const recuperadas: MetaGravacao[] = [];
     for (const s of sessoes) {
       if (excluir.includes(s.id) || this.encerradas.has(s.id)) continue;
-      // Uma sessão que não dá para recuperar (pouco espaço: a cópia inteira precisa de mais lugar que os pedaços) NÃO impede as outras: fica como está e a próxima abertura tenta de novo.
-      try {
-        const meta = await this.recuperarUma(banco, s);
-        if (meta) recuperadas.push(meta);
-      } catch (e) {
-        console.warn(`gravador: não foi possível recuperar a gravação ${s.id}`, e);
-      }
+      const meta = await this.tentarRecuperar(banco, s);
+      if (meta) recuperadas.push(meta);
     }
     return recuperadas;
   }
 
+  /** Uma sessão que não dá para recuperar (pouco espaço: a cópia inteira precisa de mais lugar que os pedaços) NÃO impede as outras: fica como está e a próxima abertura tenta de novo. */
+  private async tentarRecuperar(banco: IDBDatabase, s: SessaoAberta): Promise<MetaGravacao | null> {
+    try {
+      return await this.recuperarUma(banco, s);
+    } catch (e) {
+      console.warn(`gravador: não foi possível recuperar a gravação ${s.id}`, e);
+      return null;
+    }
+  }
+
   private async recuperarUma(banco: IDBDatabase, s: SessaoAberta): Promise<MetaGravacao | null> {
-    const faixa = globalThis.IDBKeyRange.bound([s.id, 0], [s.id, Infinity]);
+    const faixa = faixaDaSessao(s.id);
     const pedacos = (await transacao(banco, ["pedacos"], "readonly", (t) => pedido(t.objectStore("pedacos").getAll(faixa)))) as { dados: ArrayBuffer }[];
     const blob = new Blob(
       pedacos.map((p) => p.dados),
       { type: s.tipo },
     );
-    const meta: MetaGravacao | null =
-      blob.size > 0
-        ? {
-            id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-            criadaEm: s.criadaEm,
-            segundos: pedacos.length,
-            tipo: s.tipo,
-            bytes: blob.size,
-            ...(s.contexto ? { contexto: { ...s.contexto, mudouDurante: true } } : {}),
-          }
-        : null;
+    const meta = blob.size > 0 ? metaRecuperada(s, pedacos.length, blob.size) : null;
     const dados = meta ? await blob.arrayBuffer() : null;
     // Numa transação só: a gravação entra e a sessão sai (ou nada muda, e a próxima abertura tenta de novo).
     await transacao(banco, ["meta", "blobs", "sessoes", "pedacos"], "readwrite", (t) => {
-      if (meta && dados) {
-        t.objectStore("meta").put(meta);
-        t.objectStore("blobs").put({ dados, tipo: s.tipo }, meta.id);
-      }
-      t.objectStore("sessoes").delete(s.id);
-      t.objectStore("pedacos").delete(faixa);
+      if (meta && dados) guardarArquivo(t, meta, dados);
+      removerSessao(t, s.id);
     });
     this.encerradas.add(s.id);
     return meta;
@@ -289,16 +147,14 @@ export class Gravacoes {
     return transacao(banco, ["meta"], "readonly", (t) => {
       const faixa = antes ? globalThis.IDBKeyRange.upperBound([antes.criadaEm, antes.id], true) : undefined;
       const coletadas: MetaGravacao[] = [];
-      return new Promise<Pagina>((ok, falha) => {
-        const r = t.objectStore("meta").index("porData").openCursor(faixa, "prev");
-        r.onerror = () => falha(r.error ?? new Error("falha ao ler"));
-        r.onsuccess = () => {
-          const c = r.result;
-          if (!c || coletadas.length > limite) return ok({ itens: coletadas.slice(0, limite), temMais: coletadas.length > limite });
-          coletadas.push(c.value as MetaGravacao);
-          c.continue();
-        };
-      });
+      const cursor = t.objectStore("meta").index("porData").openCursor(faixa, "prev");
+      // Lê uma a mais que o limite: é assim que se sabe se há outra página.
+      const passo = (valor: unknown): boolean => {
+        if (coletadas.length > limite) return false;
+        coletadas.push(valor as MetaGravacao);
+        return true;
+      };
+      return varrer(cursor, passo, () => ({ itens: coletadas.slice(0, limite), temMais: coletadas.length > limite }));
     });
   }
 
@@ -323,17 +179,7 @@ export class Gravacoes {
       const loja = t.objectStore("meta");
       const atual = (await pedido(loja.get(id))) as MetaGravacao | undefined;
       if (!atual) return null;
-      const novo: MetaGravacao = { ...atual };
-      if ("titulo" in mudancas) {
-        const v = limparTitulo(mudancas.titulo);
-        if (v) novo.titulo = v;
-        else delete novo.titulo;
-      }
-      if ("favorita" in mudancas) {
-        if (mudancas.favorita) novo.favorita = true;
-        else delete novo.favorita;
-      }
-      const final = normalizarMeta(novo); // grava o que a tela vai mostrar: um título inválido que já estava no banco sai agora
+      const final = aplicarMudancas(atual, mudancas);
       loja.put(final);
       return final;
     });
@@ -371,17 +217,12 @@ export class Gravacoes {
     return transacao(banco, ["meta"], "readonly", (t) => {
       let quantidade = 0;
       let bytes = 0;
-      return new Promise<Resumo>((ok, falha) => {
-        const r = t.objectStore("meta").openCursor();
-        r.onerror = () => falha(r.error ?? new Error("falha ao ler"));
-        r.onsuccess = () => {
-          const c = r.result;
-          if (!c) return ok({ quantidade, bytes });
-          quantidade++;
-          bytes += (c.value as MetaGravacao).bytes;
-          c.continue();
-        };
-      });
+      const passo = (valor: unknown): boolean => {
+        quantidade++;
+        bytes += (valor as MetaGravacao).bytes;
+        return true;
+      };
+      return varrer(t.objectStore("meta").openCursor(), passo, () => ({ quantidade, bytes }));
     });
   }
 
