@@ -5,8 +5,8 @@
 /** `descarte`: amostras (48 kHz) do fim do último bloco que não são áudio (DiscardPadding). */
 export type OpusEmWebm = { cabecalho: Uint8Array; pacotes: Uint8Array[]; descarte: number };
 
-const MESTRES = new Set([0x18538067, 0x1654ae6b, 0xae, 0x1f43b675, 0xa0]);
 const ID = { codec: 0x86, privado: 0x63a2, numero: 0xd7, bloco: 0xa3, blocoGrupo: 0xa1, descarte: 0x75a2, trilha: 0xae };
+const MESTRES = new Set([0x18538067, 0x1654ae6b, ID.trilha, 0x1f43b675, 0xa0]);
 
 /** Lê um ID (1 a 4 bytes, com os bits de tamanho mantidos). */
 function lerId(b: Uint8Array, i: number): { v: number; n: number } | null {

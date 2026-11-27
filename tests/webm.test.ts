@@ -26,7 +26,11 @@ const idBytes = (id: number) => {
   for (let v = id; v > 0; v = Math.floor(v / 256)) r.unshift(v & 0xff);
   return r;
 };
-const tamanho = (n: number) => (n < 127 ? [0x80 | n] : [0x40 | (n >> 8), n & 0xff]);
+const tamanho = (n: number) => {
+  if (n < 127) return [0x80 | n];
+  if (n < 16383) return [0x40 | (n >> 8), n & 0xff];
+  throw new Error("tamanho grande demais para o helper");
+};
 const el = (id: number, dados: number[] | Uint8Array, desconhecido = false) => [...idBytes(id), ...(desconhecido ? [0xff] : tamanho(dados.length)), ...dados];
 
 const opusHead = (canais = 1) => [...new TextEncoder().encode("OpusHead"), 1, canais, 0x38, 0x01, 0x80, 0xbb, 0, 0, 0, 0, 0];
