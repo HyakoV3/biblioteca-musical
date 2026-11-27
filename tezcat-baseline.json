@@ -251,70 +251,6 @@
     "severity": "FAIL",
     "value": 1381
   },
-  "src-tauri/src/svg.rs::svg::Clean/Método::escrever": {
-    "severity": "FAIL",
-    "value": 77
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Método::limpar_com": {
-    "severity": "WARN",
-    "value": 24
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Método::sem_use_encadeado": {
-    "severity": "WARN",
-    "value": 20
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Método::valor_final": {
-    "severity": "WARN",
-    "value": 23
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::escapar": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::escrever": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::limpar_com": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::sem_use_encadeado": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Nesting::valor_final": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escapar": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Params::escrever": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src-tauri/src/svg.rs::svg::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 317
-  },
-  "src-tauri/src/svg.rs::svg::OCP::escrever": {
-    "severity": "FAIL",
-    "value": 13
-  },
-  "src-tauri/src/svg.rs::svg::OCP::valor_final": {
-    "severity": "WARN",
-    "value": 5
-  },
-  "src-tauri/src/svg.rs::svg::testes::Clean/Nesting::svgs_gerados_passam_na_limpeza": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src-tauri/src/svg.rs::svg::testes::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 497
-  },
   "src/lib/Abas.svelte::Abas::OCP::teclas": {
     "severity": "WARN",
     "value": 5
@@ -2682,5 +2618,61 @@
   "tools/verificar-traducoes.py::verificar-traducoes::OCP::main": {
     "severity": "FAIL",
     "value": 16
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::elementos_por_id": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::escrever_atributos": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::escrever_filhos": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::sem_comentario_na_raiz": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Nesting::sem_use_encadeado": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Params::escrever": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_atributos": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_filhos": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Params::escrever_texto": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src-tauri/src/svg.rs::svg::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 217
+  },
+  "src-tauri/src/svg.rs::svg::testes::Clean/Nesting::svgs_gerados_passam_na_limpeza": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src-tauri/src/svg.rs::svg::testes::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 497
+  },
+  "src-tauri/src/svg/valores.rs::valores::Clean/Nesting::escapar": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src-tauri/src/svg/valores.rs::valores::Clean/Params::escapar": {
+    "severity": "WARN",
+    "value": 3
   }
 }
