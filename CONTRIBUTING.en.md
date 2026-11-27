@@ -50,6 +50,8 @@ Each PR from the repository itself gets an **automatic review** (the `review` jo
 
 We follow **Conventional Commits** since 2026-11-24: `type(scope): summary`, in Portuguese, with `feat`, `fix`, `docs`, `chore`, `ci`, `build`, `refactor`, `test` or `perf`, and `!` after the type for a breaking change (e.g. `feat(sons): baixar do GitHub Release`, `ci(release): conferir permissões do APK`). The PR title follows the same format (the merge is a *squash*, so it becomes the commit). Say the **why** when it is not obvious. Small, coherent commits are worth more than one big one. No automatic tool attribution in this repository's commits and PRs.
 
+**Assignee and label:** every PR has an *assignee* (whoever opened it) and a label for the type of change: `fix` is `bug`; a new feature is `feature`; an improvement to something that exists is `enhancement`; `chore`, `ci`, `build`, `refactor`, `test` and `perf` are `chore`; `docs` is `documentation` (plus `accessibility` when it fits). The PR template (`.github/PULL_REQUEST_TEMPLATE.md`) has the checklist.
+
 ## Reporting problems
 
 A bug or an idea: open an *issue* describing what you expected and what happened (the version and commit appear at the bottom of the **Settings** screen). **Security flaw:** do not open a public *issue*, follow [`SECURITY.en.md`](SECURITY.en.md).

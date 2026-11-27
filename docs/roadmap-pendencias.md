@@ -175,3 +175,17 @@ Itens de rotina que não são ideias de produto e que só a conversa tinha (conf
       `som-sem-religar-webview` só difere da `main` em comentários (o código entrou pela PR #142); `conversor-refrao` (4 *patches*),
       `worktree-card-i30-eneas` (2, os mesmos do `conversor-refrao`) e `docs-auditoria-perfis` (1) têm conteúdo próprio. O responsável decide quais apagar.
 
+## 9. Pacote de exemplo (5 hinos de domínio público) e a rodada de 2026-11-27
+
+O que ficou em aberto depois da #225 e do `v0.3.9-rc10`. O guia do pacote é [`pacote-de-exemplo.md`](pacote-de-exemplo.md); a procedência, [`licencas-de-terceiros.md`](licencas-de-terceiros.md).
+
+- [ ] **Ver e ouvir os 5 hinos no celular** (aba Partitura em retrato e paisagem, o compasso e as notas acendendo com o karaokê, as ligaduras, a letra no idioma original). Só o hino 2 e a lista foram vistos, no emulador. **(depende do responsável)**
+- [ ] **Comparar a partitura desenhada com o PDF do Mutopia.** As notas foram conferidas contra o `.mid`; o desenho, só a olho em dois hinos.
+- [ ] **Harmonizadores sem crédito.** As páginas do Mutopia não dizem quem harmonizou cada edição (a fonte citada é o cyberhymnal.org, não conferido). O CPDL não abriu (desafio anti-robô do Cloudflare); as edições dele ficam como alternativa, com a licença conferida.
+- [ ] **Andamentos lentos** nos hinos 2 e 4 (50, os do `.mid` do Mutopia): decidir se o exemplo adota um andamento mais usual. **(depende do responsável)**
+- [ ] **Isolar o peso do exemplo no APK** (o `main` puro contra o `main` com o exemplo) e decidir a ideia **I-45**. As letras em português são a **I-44**; os créditos no app, a **I-46**.
+- [ ] **Tezcat:** o baseline cresceu em **57 avisos (WARN)**, todos em `tools/exemplo/`, `tools/gerar-exemplo.py`, `src-tauri/src/exemplo.rs` e nos testes do `hinario.rs`; nenhum FAIL. Vale reduzi-los aos poucos (o baseline só deve encolher).
+- [ ] **`gerar-partituras.py`: `achar_musescore` aceitar uma lista** em vez de uma string (comentário do Vandame na #225: caminho com espaço e Windows com `shlex`). Hoje o gerador do exemplo monta o comando com `shlex.join`, o que cobre o Linux.
+- [ ] **e2e do Ajustes:** na rodada da #225 houve uma falha "depois de confirmar a remoção o foco não se perde no `<body>`" que não se repetiu; acompanhar se volta (junto do e2e do Gravador, que já oscila).
+- [ ] **Release final:** a `v0.3.9-rc10` é pré-lançamento; falta a tag sem sufixo e, se for o caso, `ENVIAR_PLAY_STORE=true` (ver [`release-e-apk-no-github.md`](release-e-apk-no-github.md)). A automação de bump e RC é a **I-42**.
+- [ ] **Imagem de pré-visualização do repositório** (seção 1) e o que continuar da seção 7.

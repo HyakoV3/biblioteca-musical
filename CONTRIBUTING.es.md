@@ -50,6 +50,8 @@ Cada PR del propio repositorio recibe una **revisión automática** (el job `rev
 
 Seguimos **Conventional Commits** desde 2026-11-24: `tipo(alcance): resumen`, en portugués, con `feat`, `fix`, `docs`, `chore`, `ci`, `build`, `refactor`, `test` o `perf`, y `!` después del tipo en un cambio incompatible (ej.: `feat(sons): baixar do GitHub Release`, `ci(release): conferir permissões do APK`). El título de la PR sigue el mismo formato (el merge es *squash*, así que se vuelve el commit). Diga el **porqué** cuando no sea obvio. Commits pequeños y coherentes valen más que uno grande. Sin atribución automática de herramientas en los commits ni en las PR de este repositorio.
 
+**Responsable y etiqueta:** toda PR tiene un *assignee* (quien la abrió) y una etiqueta según el tipo de cambio: `fix` es `bug`; una funcionalidad nueva es `feature`; una mejora de algo que ya existe es `enhancement`; `chore`, `ci`, `build`, `refactor`, `test` y `perf` son `chore`; `docs` es `documentation` (y `accessibility` cuando corresponda). La plantilla de la PR (`.github/PULL_REQUEST_TEMPLATE.md`) trae la lista de verificación.
+
 ## Reportar problemas
 
 Un error o una idea: abra una *issue* describiendo lo que esperaba y lo que pasó (la versión y el commit aparecen al final de la pantalla **Ajustes**). **Falla de seguridad:** no abra una *issue* pública, siga [`SECURITY.es.md`](SECURITY.es.md).
