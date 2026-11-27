@@ -1453,11 +1453,11 @@
   },
   "src/routes/ajustes/+page.svelte::ajustes/+page::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 189
+    "value": 191
   },
   "src/routes/ajustes/+page.svelte::ajustes/+page::Clean/Template::": {
     "severity": "WARN",
-    "value": 276
+    "value": 292
   },
   "src/routes/ajustes/+page.svelte::ajustes/+page::SRP::": {
     "severity": "WARN",
