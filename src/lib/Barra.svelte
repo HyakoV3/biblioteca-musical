@@ -64,7 +64,7 @@
     margin: 0; font-size: 1.2rem; line-height: 1.25;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  p { margin: 0; font-size: 0.78rem; color: var(--suave); }
+  p { margin: 0; font-size: 0.78rem; color: var(--suave); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .acao { flex: none; }
   /* Com `quebra`: o título fica numa linha só e a ação, se faltar espaço, desce para a linha de baixo (à direita) em vez de espremer o título. */
   .linha.quebra { flex-wrap: wrap; row-gap: 0; }
