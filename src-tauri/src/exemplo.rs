@@ -10,11 +10,31 @@ use std::path::Path;
 
 /// (número do hino, retrato, paisagem).
 const PARTITURAS: [(u32, &str, &str); 5] = [
-    (1, include_str!("../exemplo/partituras/hino-1.svg"), include_str!("../exemplo/partituras/hino-1-paisagem.svg")),
-    (2, include_str!("../exemplo/partituras/hino-2.svg"), include_str!("../exemplo/partituras/hino-2-paisagem.svg")),
-    (3, include_str!("../exemplo/partituras/hino-3.svg"), include_str!("../exemplo/partituras/hino-3-paisagem.svg")),
-    (4, include_str!("../exemplo/partituras/hino-4.svg"), include_str!("../exemplo/partituras/hino-4-paisagem.svg")),
-    (5, include_str!("../exemplo/partituras/hino-5.svg"), include_str!("../exemplo/partituras/hino-5-paisagem.svg")),
+    (
+        1,
+        include_str!("../exemplo/partituras/hino-1.svg"),
+        include_str!("../exemplo/partituras/hino-1-paisagem.svg"),
+    ),
+    (
+        2,
+        include_str!("../exemplo/partituras/hino-2.svg"),
+        include_str!("../exemplo/partituras/hino-2-paisagem.svg"),
+    ),
+    (
+        3,
+        include_str!("../exemplo/partituras/hino-3.svg"),
+        include_str!("../exemplo/partituras/hino-3-paisagem.svg"),
+    ),
+    (
+        4,
+        include_str!("../exemplo/partituras/hino-4.svg"),
+        include_str!("../exemplo/partituras/hino-4-paisagem.svg"),
+    ),
+    (
+        5,
+        include_str!("../exemplo/partituras/hino-5.svg"),
+        include_str!("../exemplo/partituras/hino-5-paisagem.svg"),
+    ),
 ];
 
 /// Os números dos hinos do exemplo que têm partitura embutida, em ordem.
@@ -50,8 +70,12 @@ mod testes {
         assert_eq!(numeros(), [1, 2, 3, 4, 5]);
         for n in numeros() {
             for paisagem in [false, true] {
-                let svg = ler(n, paisagem).unwrap_or_else(|e| panic!("hino {n} (paisagem: {paisagem}): {e}"));
-                assert!(svg.starts_with("<svg") && svg.contains("class=\"measure\""), "hino {n}");
+                let svg = ler(n, paisagem)
+                    .unwrap_or_else(|e| panic!("hino {n} (paisagem: {paisagem}): {e}"));
+                assert!(
+                    svg.starts_with("<svg") && svg.contains("class=\"measure\""),
+                    "hino {n}"
+                );
             }
         }
     }
@@ -73,7 +97,11 @@ mod testes {
         let d = std::env::temp_dir().join(format!("bm_exemplo_{}", std::process::id()));
         std::fs::remove_dir_all(&d).ok();
         std::fs::create_dir_all(&d).unwrap();
-        assert!(ler_partitura_do_app(&d, 1, true).unwrap().starts_with("<svg"));
+        assert!(
+            ler_partitura_do_app(&d, 1, true)
+                .unwrap()
+                .starts_with("<svg")
+        );
         std::fs::write(d.join("hinario.json"), "{}").unwrap();
         let e = ler_partitura_do_app(&d, 1, false).unwrap_err();
         assert!(e.contains("sem_partitura"), "{e}");

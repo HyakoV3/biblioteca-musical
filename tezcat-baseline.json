@@ -121,7 +121,7 @@
   },
   "src-tauri/src/hinario.rs::hinario::testes::Clean/Tamanho::": {
     "severity": "FAIL",
-    "value": 598
+    "value": 605
   },
   "src-tauri/src/lib.rs::lib::Clean/Params::importar_partituras": {
     "severity": "WARN",

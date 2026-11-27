@@ -453,9 +453,16 @@ mod testes {
             {"numero":3,"titulo":"V"}]}"#;
         let h = ler(json).unwrap();
         let t1 = h.hinos[0].titulos.as_ref().unwrap();
-        assert_eq!(t1.keys().map(String::as_str).collect::<Vec<_>>(), ["es", "pt"]); // "en" vazio e "fr" desconhecido saem
+        assert_eq!(
+            t1.keys().map(String::as_str).collect::<Vec<_>>(),
+            ["es", "pt"]
+        ); // "en" vazio e "fr" desconhecido saem
         assert!(h.hinos[1].titulos.is_none() && h.hinos[2].titulos.is_none()); // sem nada útil, ou sem o campo (hinário antigo): nenhum
-        assert!(!serde_json::to_string(&h.hinos[2]).unwrap().contains("titulos")); // e não volta para a interface
+        assert!(
+            !serde_json::to_string(&h.hinos[2])
+                .unwrap()
+                .contains("titulos")
+        ); // e não volta para a interface
         assert!(ler(r#"{"versao":1,"hinario":{"id":"a","nome":"A"},"hinos":[{"numero":1,"titulo":"T","titulos":{"pt":3}}]}"#).is_err()); // tipo errado recusa
     }
 
