@@ -6,7 +6,7 @@ A free, open-source app for musicians in training: study hymns by listening to e
 
 > **Notice:** **unofficial** project, with no connection to the Christian Congregation in Brazil (Congregação Cristã no Brasil). The app is not sold and cannot be used to sell content.
 
-**Status:** under development, in closed testing with musicians (version 0.3.8). There is no store release yet. Want to help? See [`CONTRIBUTING.en.md`](CONTRIBUTING.en.md); for security flaws, [`SECURITY.en.md`](SECURITY.en.md).
+**Status:** under development, in closed testing with musicians (version 0.3.9). There is no store release yet. Want to help? See [`CONTRIBUTING.en.md`](CONTRIBUTING.en.md); for security flaws, [`SECURITY.en.md`](SECURITY.en.md).
 
 > The in-depth documents under `docs/` are written in Portuguese, the project's working language. The files linked below point to them.
 

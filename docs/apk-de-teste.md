@@ -7,7 +7,7 @@
 O app é **independente e não oficial** (não tem ligação com a Congregação Cristã no Brasil) e está em **teste fechado**: ainda pode errar. Para instalar:
 
 1. **Baixe a versão mais nova** na página de [Releases](https://github.com/HyakoV3/biblioteca-musical/releases) do projeto (a de cima da lista).
-2. **Baixe o arquivo que termina em `.apk`** (por exemplo `bibliotecamusical-0.3.8.apk`). Ignore o `.aab` e o `SHA256SUMS`: não são para instalar.
+2. **Baixe o arquivo que termina em `.apk`** (por exemplo `bibliotecamusical-0.3.9.apk`). Ignore o `.aab` e o `SHA256SUMS`: não são para instalar.
 3. **Permita a instalação de fora da loja** quando o Android perguntar (a opção "Instalar apps desconhecidos" do navegador ou do gerenciador de arquivos) e toque no arquivo para instalar.
 4. **Ao atualizar, instale por cima**: não desinstale. **Desinstalar apaga as gravações guardadas e os pacotes baixados** (o app não faz cópia de segurança das gravações). Se precisar desinstalar, mande antes, pelo botão **Enviar** do Gravador, as gravações que quiser guardar.
 5. **Confira a versão** em Ajustes, "Sobre o app", e diga qual é ao relatar um problema.
