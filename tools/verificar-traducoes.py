@@ -27,26 +27,53 @@ def parametros(texto):
     return sorted(re.findall(r"\{(\w+)\}", texto))
 
 
+def codigos_de_idioma():
+    """Só arquivos cujo nome é um código de idioma (pt, es, en, pt-BR...); ignora index.svelte.ts etc."""
+    return sorted(p.stem for p in PASTA.glob("*.ts") if re.fullmatch(r"[a-z]{2,3}(-[A-Za-z0-9]+)?", p.stem))
+
+
+def problemas_de_chaves(c, d, ref):
+    """Chaves faltando ou sobrando de um idioma em relação à referência."""
+    problemas = [f"{c}: falta a chave {k!r}" for k in sorted(set(ref) - set(d))]
+    problemas += [f"{c}: chave {k!r} não existe em {REFERENCIA}" for k in sorted(set(d) - set(ref))]
+    return problemas
+
+
+def problema_de_parametros(c, k, valor_ref, valor):
+    """Mensagem se os parâmetros {x} do texto diferem dos da referência; None se iguais."""
+    if parametros(valor_ref) == parametros(valor):
+        return None
+    return f"{c}: {k!r} tem parâmetros {parametros(valor)}, esperado {parametros(valor_ref)}"
+
+
+def problemas_de_parametros(c, d, ref):
+    """Textos de um idioma cujos parâmetros diferem dos do português (só nas chaves comuns)."""
+    achados = (problema_de_parametros(c, k, v, d[k]) for k, v in ref.items() if k in d)
+    return [p for p in achados if p]
+
+
+def problemas_de_plural(c, d):
+    """Chaves de plural sem a forma '.outros'."""
+    bases = {k.rsplit(".", 1)[0] for k in d if k.startswith("plural.") and k.rsplit(".", 1)[1] in SUFIXOS_PLURAL}
+    return [f"{c}: a chave de plural {b!r} não tem a forma '.outros'" for b in sorted(bases) if f"{b}.outros" not in d]
+
+
+def problemas_do_idioma(c, d, ref):
+    """Todos os problemas de um idioma, na ordem: chaves, parâmetros, plurais."""
+    problemas = []
+    if c != REFERENCIA:
+        problemas += problemas_de_chaves(c, d, ref)
+        problemas += problemas_de_parametros(c, d, ref)
+    return problemas + problemas_de_plural(c, d)
+
+
 def main():
-    # Só arquivos cujo nome é um código de idioma (pt, es, en, pt-BR...); ignora index.svelte.ts etc.
-    codigos = sorted(p.stem for p in PASTA.glob("*.ts") if re.fullmatch(r"[a-z]{2,3}(-[A-Za-z0-9]+)?", p.stem))
+    codigos = codigos_de_idioma()
     dicts = {c: ler(c) for c in codigos}
     ref = dicts[REFERENCIA]
     problemas = []
-
     for c, d in dicts.items():
-        if c != REFERENCIA:
-            for k in sorted(set(ref) - set(d)):
-                problemas.append(f"{c}: falta a chave {k!r}")
-            for k in sorted(set(d) - set(ref)):
-                problemas.append(f"{c}: chave {k!r} não existe em {REFERENCIA}")
-            for k, v in ref.items():
-                if k in d and parametros(v) != parametros(d[k]):
-                    problemas.append(f"{c}: {k!r} tem parâmetros {parametros(d[k])}, esperado {parametros(v)}")
-        bases = {k.rsplit(".", 1)[0] for k in d if k.startswith("plural.") and k.rsplit(".", 1)[1] in SUFIXOS_PLURAL}
-        for b in sorted(bases):
-            if f"{b}.outros" not in d:
-                problemas.append(f"{c}: a chave de plural {b!r} não tem a forma '.outros'")
+        problemas += problemas_do_idioma(c, d, ref)
 
     print(f"idiomas: {', '.join(codigos)} | chaves por idioma: {', '.join(f'{c} {len(d)}' for c, d in dicts.items())}")
     if problemas:
