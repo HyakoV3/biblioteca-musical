@@ -16,25 +16,40 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parent.parent
-SEMVER = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+Plano = dict[str, str]  # arquivo -> conteúdo novo
+Versoes = tuple[str, str]  # (antiga, nova)
+# X.Y.Z estrito: sem zeros à esquerda (Cargo e semver os recusam), só dígitos ASCII, sem sufixo.
+SEMVER = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", re.ASCII)
+TEMPO_DO_TZT = 600  # segundos
+INSTALAR_TZT = "pipx install git+https://github.com/HyakoV3/tezcat.git"
+# `\r?\n`: o checkout pode vir com CRLF (Windows); os arquivos são lidos e gravados byte a byte, sem converter a quebra de linha.
+QL = r"\r?\n"
 
 
-def como_tupla(versao: str) -> tuple[int, int, int]:
-    m = SEMVER.match(versao)
+def como_tupla(versao: str, origem: str) -> tuple[int, int, int]:
+    m = SEMVER.fullmatch(versao)
     if not m:
-        sys.exit(f"versão inválida: {versao!r} (use X.Y.Z, sem o sufixo -rcN: o sufixo vai só na tag)")
+        sys.exit(f"{origem}: versão inválida {versao!r} (use X.Y.Z, sem zeros à esquerda e sem o sufixo -rcN: o sufixo vai só na tag)")
     return int(m[1]), int(m[2]), int(m[3])
 
 
 def versao_atual() -> str:
-    return json.loads((RAIZ / "package.json").read_text(encoding="utf-8"))["version"]
+    try:
+        versao = json.loads((RAIZ / "package.json").read_text(encoding="utf-8")).get("version")
+    except (OSError, ValueError, AttributeError) as erro:
+        sys.exit(f"package.json ilegível: {erro}")
+    if not isinstance(versao, str):
+        sys.exit('package.json sem campo "version" válido')
+    return versao
 
 
 @dataclass(frozen=True)
@@ -55,14 +70,14 @@ def trocar(texto: str, regra: Regra, nova: str) -> str:
 
 
 def regras(antiga: str) -> list[Regra]:
+    """Cada padrão se ancora no nome do pacote: outras dependências podem ter a mesma versão do app, e `version` solto casaria com elas."""
     a = re.escape(antiga)
     return [
         Regra("package.json", rf'^(  "version": "){a}(")'),
-        Regra("package-lock.json", rf'^(\s+"version": "){a}(",?)$', 2),
-        Regra("src-tauri/Cargo.toml", rf'^(version = "){a}(")'),
+        Regra("package-lock.json", rf'("name": "bibliotecamusical",{QL}[ ]+"version": "){a}(")', 2),
+        Regra("src-tauri/Cargo.toml", rf'(\[package\]{QL}name = "bibliotecamusical"{QL}version = "){a}(")'),
         Regra("src-tauri/tauri.conf.json", rf'^(  "version": "){a}(")'),
-        # No Cargo.lock só a estrofe de `bibliotecamusical` muda: outras dependências podem ter a mesma versão.
-        Regra("src-tauri/Cargo.lock", rf'(name = "bibliotecamusical"\nversion = "){a}(")'),
+        Regra("src-tauri/Cargo.lock", rf'(name = "bibliotecamusical"{QL}version = "){a}(")'),
         Regra("README.md", rf"(versão ){a}(\))"),
         Regra("README.en.md", rf"(version ){a}(\))"),
         Regra("README.es.md", rf"(versión ){a}(\))"),
@@ -73,24 +88,46 @@ def regras(antiga: str) -> list[Regra]:
     ]
 
 
-def planejar(antiga: str, nova: str) -> dict[str, str]:
+def planejar(antiga: str, nova: str) -> Plano:
     """Todo o conteúdo novo, em memória: só se grava depois que TUDO deu certo (não deixa o repositório pela metade)."""
-    return {r.arquivo: trocar((RAIZ / r.arquivo).read_text(encoding="utf-8"), r, nova) for r in regras(antiga)}
+    return {r.arquivo: trocar((RAIZ / r.arquivo).read_bytes().decode("utf-8"), r, nova) for r in regras(antiga)}
 
 
-def gravar(plano: dict[str, str]) -> None:
-    for caminho, conteudo in plano.items():
-        (RAIZ / caminho).write_text(conteudo, encoding="utf-8")
+def gravar(plano: Plano) -> None:
+    """Escreve tudo em `.bump.tmp` ao lado de cada arquivo e só então troca (os erros comuns, de permissão e de disco cheio, aparecem na
+    primeira fase, antes de qualquer arquivo real mudar). Não converte quebras de linha: os bytes seguem como estavam."""
+    temporarios: dict[str, Path] = {}
+    try:
+        for caminho, conteudo in plano.items():
+            tmp = (RAIZ / caminho).with_name(Path(caminho).name + ".bump.tmp")
+            tmp.write_bytes(conteudo.encode("utf-8"))
+            temporarios[caminho] = tmp
+        for caminho, tmp in temporarios.items():
+            os.replace(tmp, RAIZ / caminho)
+    finally:
+        for tmp in temporarios.values():
+            tmp.unlink(missing_ok=True)
+
+
+def comando_do_tezcat(antiga: str, nova: str) -> list[str]:
+    return ["tzt", ".", "--profile", "strict", "--no-baseline", "--changelog-inject", "--version", nova, "--prev-version", antiga, "--changelog-file", "CHANGELOG.md"]
 
 
 def resumo_do_tezcat(antiga: str, nova: str) -> int:
-    """Injeta o bloco "Code Quality" do tzt em CHANGELOG.md (cria o arquivo se não existir)."""
-    comando = ["tzt", ".", "--profile", "strict", "--no-baseline", "--changelog-inject", "--version", nova, "--prev-version", antiga, "--changelog-file", "CHANGELOG.md"]
+    """Injeta o bloco "Code Quality" do tzt em CHANGELOG.md (cria o arquivo se não existir). Devolve 0 se deu certo."""
     try:
-        return subprocess.run(comando, cwd=RAIZ, check=False).returncode
-    except FileNotFoundError:
-        print("tzt não encontrado (pipx install git+https://github.com/HyakoV3/tezcat.git): o CHANGELOG.md ficou sem o resumo.", file=sys.stderr)
+        return subprocess.run(comando_do_tezcat(antiga, nova), cwd=RAIZ, check=False, timeout=TEMPO_DO_TZT).returncode
+    except subprocess.TimeoutExpired:
+        print(f"O tzt passou de {TEMPO_DO_TZT} s e foi interrompido.", file=sys.stderr)
+        return 124
+    except OSError as erro:
+        print(f"Não deu para rodar o tzt: {erro}", file=sys.stderr)
         return 2
+
+
+def exigir_tzt(sem_tezcat: bool) -> None:
+    if not sem_tezcat and shutil.which("tzt") is None:
+        sys.exit(f"tzt não encontrado ({INSTALAR_TZT}). Nada foi gravado; instale, ou use --sem-tezcat.")
 
 
 def argumentos() -> argparse.Namespace:
@@ -101,24 +138,44 @@ def argumentos() -> argparse.Namespace:
     return ap.parse_args()
 
 
-def main() -> int:
-    args = argumentos()
-    antiga, nova = versao_atual(), args.versao
-    if como_tupla(nova) <= como_tupla(antiga):
+def conferir_ordem(antiga: str, nova: str) -> None:
+    anterior = como_tupla(antiga, "package.json")
+    if como_tupla(nova, "argumento") <= anterior:
         sys.exit(f"a nova versão ({nova}) tem de ser maior que a atual ({antiga}).")
-    plano = planejar(antiga, nova)
-    print(f"{antiga} -> {nova}: {len(plano)} arquivo(s)")
-    for caminho in plano:
+
+
+def mostrar(plano: Plano, versoes: Versoes, sem_tezcat: bool) -> None:
+    antiga, nova = versoes
+    extras = [] if sem_tezcat else ["CHANGELOG.md (tzt --changelog-inject)"]
+    print(f"{antiga} -> {nova}: {len(plano) + len(extras)} arquivo(s)")
+    for caminho in [*plano, *extras]:
         print(f"  {caminho}")
-    if not args.aplicar:
-        print("\nNada foi gravado (simulação). Para valer, acrescente --aplicar.")
-        return 0
-    gravar(plano)
-    if not args.sem_tezcat and resumo_do_tezcat(antiga, nova) != 0:
-        print("O resumo do Tezcat falhou; a versão foi subida mesmo assim.", file=sys.stderr)
+    if extras and shutil.which("tzt") is None:
+        print(f"  ! tzt não encontrado: com --aplicar isto vai recusar ({INSTALAR_TZT}), ou use --sem-tezcat.")
+
+
+def concluir(sem_tezcat: bool, antiga: str, nova: str) -> int:
+    if not sem_tezcat and resumo_do_tezcat(antiga, nova) != 0:
+        manual = " ".join(comando_do_tezcat(antiga, nova))
+        print(f"A versão foi subida, mas o resumo do Tezcat falhou. Rode à mão: {manual}", file=sys.stderr)
+        return 1
     print("\nFalta (não é automático): a linha da versão na tabela de docs/apk-de-teste.md (leva o hash do commit); depois npm run check, npm test,")
     print(f"PR, merge, e a tag v{nova} (ou v{nova}-rcN). Ver docs/release-e-apk-no-github.md.")
     return 0
+
+
+def main() -> int:
+    args = argumentos()
+    antiga, nova = versao_atual(), args.versao
+    conferir_ordem(antiga, nova)
+    plano = planejar(antiga, nova)
+    mostrar(plano, (antiga, nova), args.sem_tezcat)
+    if not args.aplicar:
+        print("\nNada foi gravado (simulação). Para valer, acrescente --aplicar.")
+        return 0
+    exigir_tzt(args.sem_tezcat)
+    gravar(plano)
+    return concluir(args.sem_tezcat, antiga, nova)
 
 
 if __name__ == "__main__":
