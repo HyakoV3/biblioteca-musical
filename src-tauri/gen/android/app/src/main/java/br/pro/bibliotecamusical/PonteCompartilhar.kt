@@ -105,19 +105,14 @@ class PonteCompartilhar(private val atividade: MainActivity) {
     @Synchronized
     fun enviarComTexto(titulo: String, texto: String): Boolean {
         val f = arquivo
-        try {
-            saida?.close()
-        } catch (e: Exception) {
-            cancelar()
-            return false
-        }
-        saida = null
-        if (f == null || !f.exists() || f.length() == 0L) {
+        val fechou = fecharSaida(saida)
+        if (fechou) saida = null
+        if (!fechou || f == null || !f.exists() || f.length() == 0L) {
             cancelar()
             return false
         }
         return try {
-            val folha = montarFolha(atividade, f, mime, titulo, texto)
+            val folha = montarFolha(atividade, DadosEnvio(f, mime, titulo, texto))
             val abriu = abrirFolha(atividade, folha, texto) { copiouContexto = it }
             if (!abriu) cancelar() else arquivo = null // aberta: o arquivo fica para o app de destino ler
             abriu
@@ -162,16 +157,28 @@ private fun nomeSaneado(nome: String): String = nome.replace(Regex("[^A-Za-z0-9.
 /** Só aceita um tipo MIME no formato `tipo/subtipo`; qualquer outra coisa vira o tipo genérico de áudio. */
 private fun mimeValido(tipo: String): String = if (tipo.matches(Regex("[a-z]+/[a-z0-9.+-]+"))) tipo else "audio/*"
 
+/** Fecha o arquivo em escrita. Devolve false se o fechamento falhou (quem chama cancela o envio). */
+private fun fecharSaida(saida: FileOutputStream?): Boolean =
+    try {
+        saida?.close()
+        true
+    } catch (e: Exception) {
+        false
+    }
+
+/** O que vai na folha de compartilhamento: o arquivo, o tipo MIME, o título da folha e o texto que acompanha o áudio. */
+private class DadosEnvio(val arquivo: File, val mime: String, val titulo: String, val texto: String)
+
 /** Monta a folha de compartilhamento do sistema para o arquivo (com o texto abaixo do áudio, se houver). */
-private fun montarFolha(atividade: MainActivity, f: File, mime: String, titulo: String, texto: String): Intent {
-    val uri = FileProvider.getUriForFile(atividade, "${atividade.packageName}.fileprovider", f)
+private fun montarFolha(atividade: MainActivity, dados: DadosEnvio): Intent {
+    val uri = FileProvider.getUriForFile(atividade, "${atividade.packageName}.fileprovider", dados.arquivo)
     val envio = Intent(Intent.ACTION_SEND).apply {
-        type = mime
+        type = dados.mime
         putExtra(Intent.EXTRA_STREAM, uri)
-        if (texto.isNotBlank()) putExtra(Intent.EXTRA_TEXT, texto.take(4000))
+        if (dados.texto.isNotBlank()) putExtra(Intent.EXTRA_TEXT, dados.texto.take(4000))
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    return Intent.createChooser(envio, titulo.take(80))
+    return Intent.createChooser(envio, dados.titulo.take(80))
 }
 
 /** Abre a folha na thread principal e espera o resultado de verdade (`startActivity` falha ali); `aoCopiar` recebe se o contexto foi copiado. */
