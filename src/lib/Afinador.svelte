@@ -193,6 +193,7 @@
       {#each Array.from({ length: 12 }, (_, n) => n) as n (n)}
         <label class:ativo={classe === n}>
           <input
+            class="radio-oculto"
             type="radio"
             name="nota"
             value={n}
@@ -277,7 +278,6 @@
   .opcoes { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--minimo, 4.5rem), 1fr)); gap: 0.4rem; margin: 0; padding: 0; border: 0; }
   .tempos { margin: 0; padding: 0; border: 0; min-width: 0; }
   .opcoes label { position: relative; }
-  .opcoes input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
   .opcoes span {
     display: flex; align-items: center; justify-content: center; gap: var(--espaco-p); min-height: var(--toque); box-sizing: border-box;
     padding: 0 0.4rem; border-radius: var(--raio); font-size: 1rem;

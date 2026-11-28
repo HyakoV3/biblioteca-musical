@@ -260,12 +260,12 @@
   <Cartao titulo={t("player.cartao_ajustes")} bind:aberto={cartoes.ajustes} name="cartoes-ouvir" grade>
     {#snippet resumo()}{resumoAjustes}{/snippet}
       <!-- Andamento e transposição têm o mesmo desenho: o rótulo em cima e os controles numa linha inteira embaixo. No andamento são dois passos de cada lado (−5 −1 [valor] +1 +5), e quatro botões não cabem ao lado do rótulo; na transposição, − [n semitons] +. -->
-      <div class="passo-linha empilhado">
+      <div class="passo-linha linha-entre empilhado">
         <span class="rotulo">{t("player.andamento_rotulo")}</span>
         <ControleAndamento {cfg} {editavel} padrao={padraoAndamento} />
       </div>
 
-      <div class="passo-linha empilhado">
+      <div class="passo-linha linha-entre empilhado">
         <span class="rotulo">{t("player.transposicao")}</span>
         <Passo
           rotulo={t("player.transposicao")}
@@ -393,7 +393,6 @@
   .tempos { display: flex; justify-content: space-between; margin-top: 0.3rem; font-size: 0.85rem; color: var(--suave); font-variant-numeric: tabular-nums; }
   .dica { margin: 0; }
 
-  .passo-linha { display: flex; align-items: center; justify-content: space-between; gap: var(--espaco); }
   .rotulo { font-size: 0.95rem; }
   /* Andamento: rótulo em cima e os cinco itens (−5 −1 valor +1 +5) repartindo a largura toda. Botões de texto. */
   .passo-linha.empilhado { flex-wrap: wrap; }

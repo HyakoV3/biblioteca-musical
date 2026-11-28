@@ -53,12 +53,12 @@
     {#if filtrosAbertos}
       <div class="painel-filtros" id="painel-filtros">
         <label class="so-metronomo" class:ativo={consulta.filtro === "metronomo"}>
-          <input type="radio" name="filtro-gravacoes" value="metronomo" checked={consulta.filtro === "metronomo"} onchange={() => escolherFiltro("metronomo")} />
+          <input class="radio-oculto" type="radio" name="filtro-gravacoes" value="metronomo" checked={consulta.filtro === "metronomo"} onchange={() => escolherFiltro("metronomo")} />
           <span>{#if consulta.filtro === "metronomo"}<Icone nome="ok" tamanho={16} />{/if}{t("gravador.filtro_metronomo")}</span>
         </label>
         <label class="busca">
           <span class="meta">{t("gravador.buscar")}</span>
-          <input id="buscar-gravacoes" bind:this={buscaEl} type="search" autocomplete="off" enterkeyhint="search" value={consulta.busca} oninput={(e) => aoMudar({ busca: e.currentTarget.value })} />
+          <input class="campo-texto" id="buscar-gravacoes" bind:this={buscaEl} type="search" autocomplete="off" enterkeyhint="search" value={consulta.busca} oninput={(e) => aoMudar({ busca: e.currentTarget.value })} />
         </label>
       </div>
     {/if}
@@ -68,12 +68,10 @@
 <style>
   .controles { display: grid; gap: 0.6rem; }
   .busca { display: grid; gap: var(--espaco-p); }
-  .busca input { box-sizing: border-box; width: 100%; min-height: var(--toque); padding: 0 0.75rem; font: inherit; border: var(--borda-padrao); border-radius: var(--raio); background: var(--superficie); color: var(--texto); }
   .filtros { margin: 0; padding: 0; border: 0; min-width: 0; }
   .linha-filtros { display: flex; gap: 0.4rem; align-items: stretch; }
   .filtros-rapidos { flex: 1; min-width: 0; }
   .filtros label { position: relative; flex: 1 1 auto; }
-  .filtros input[type="radio"] { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
   .filtros label > span:not(.meta) { display: flex; align-items: center; justify-content: center; gap: var(--espaco-p); min-height: var(--toque); box-sizing: border-box; padding: 0 0.5rem; border-radius: var(--raio); border: var(--borda-padrao); background: var(--superficie); color: var(--texto); }
   .filtros label.ativo > span:not(.meta) { border: var(--borda-destaque); font-weight: 700; }
   .filtros input[type="radio"]:focus-visible + span { outline: var(--anel-foco); outline-offset: var(--anel-foco-recuo); }
