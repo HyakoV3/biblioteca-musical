@@ -8,6 +8,37 @@ const ponte = (): Ponte | null => (globalThis as { BmServico?: Ponte }).BmServic
 
 let ligadoCom: string | null = null;
 
+/** Registra em `globalThis[chave]` o aviso que o Android chama; devolve a função que o remove (só se ainda for o mesmo). */
+function registrarAviso(chave: string, quando: () => void): () => void {
+  const g = globalThis as unknown as Record<string, (() => void) | undefined>;
+  g[chave] = quando;
+  return () => {
+    if (g[chave] === quando) delete g[chave];
+  };
+}
+
+/** Pede à ponte que ligue um serviço pelo método `metodo`: `true` se o Android o assumiu; sem a ponte, com ponte antiga ou com falha, `false` (a falha vai para o console). */
+function ligarPelaPonte(metodo: "iniciarGravacao" | "iniciarMetronomo", quem: string): boolean {
+  try {
+    const p = ponte();
+    if (!p?.[metodo]) return false;
+    p[metodo]();
+    return true;
+  } catch (e) {
+    console.warn(`servico: a ponte do serviço ${quem} falhou`, e);
+    return false;
+  }
+}
+
+/** Pede à ponte que solte um serviço pelo método `metodo`; uma falha vai para o console e nunca propaga. */
+function desligarPelaPonte(metodo: "pararGravacao" | "pararMetronomo", quem: string): void {
+  try {
+    ponte()?.[metodo]?.();
+  } catch (e) {
+    console.warn(`servico: a ponte do serviço ${quem} falhou`, e);
+  }
+}
+
 /**
  * Liga o serviço quando o hino passa a tocar, atualiza o título da notificação se o hino mudou e o desliga ao pausar, parar ou terminar.
  * Chamar de novo com o mesmo estado não faz nada. Uma falha da ponte nunca derruba o som: vai para o console.
@@ -36,35 +67,13 @@ export function aoPararPelaNotificacao(quando: () => void): void {
  * Devolve `true` se o Android assumiu a gravação (aí o app NÃO deve parar de gravar ao sair da tela); fora do Android, ou se a ponte falhar,
  * devolve `false` e o app continua parando a gravação ao ir para segundo plano (o navegador tira o microfone da página escondida).
  */
-export function ligarServicoDeGravacao(): boolean {
-  try {
-    const p = ponte();
-    if (!p?.iniciarGravacao) return false;
-    p.iniciarGravacao();
-    return true;
-  } catch (e) {
-    console.warn("servico: a ponte do serviço de gravação falhou", e);
-    return false;
-  }
-}
+export const ligarServicoDeGravacao = (): boolean => ligarPelaPonte("iniciarGravacao", "de gravação");
 
 /** A gravação terminou (ou nunca começou): solta o serviço. Sem efeito fora do Android. */
-export function desligarServicoDeGravacao(): void {
-  try {
-    ponte()?.pararGravacao?.();
-  } catch (e) {
-    console.warn("servico: a ponte do serviço de gravação falhou", e);
-  }
-}
+export const desligarServicoDeGravacao = (): void => desligarPelaPonte("pararGravacao", "de gravação");
 
 /** O botão "Parar" da notificação, durante uma gravação: `quando` deve parar a gravação de verdade. */
-export function aoPararGravacaoPelaNotificacao(quando: () => void): () => void {
-  const g = globalThis as { __bmGravacaoParadaPelaNotificacao?: () => void };
-  g.__bmGravacaoParadaPelaNotificacao = quando;
-  return () => {
-    if (g.__bmGravacaoParadaPelaNotificacao === quando) delete g.__bmGravacaoParadaPelaNotificacao;
-  };
-}
+export const aoPararGravacaoPelaNotificacao = (quando: () => void): (() => void) => registrarAviso("__bmGravacaoParadaPelaNotificacao", quando);
 
 /**
  * Há um fone de ouvido (com fio, USB ou Bluetooth) ligado? Com ele o hino pode tocar enquanto o Gravador grava, porque o som não volta ao microfone.
@@ -83,56 +92,22 @@ export function foneConectado(): boolean {
  * O Android recusou ou derrubou o serviço de gravação depois de a ponte já ter dito que o assumira: `quando` deve tirar a proteção da gravação
  * (e, se o app está em segundo plano, pará-la, porque o microfone se foi). Devolve a função que remove o aviso.
  */
-export function aoFalharServicoDeGravacao(quando: () => void): () => void {
-  const g = globalThis as { __bmServicoDeGravacaoFalhou?: () => void };
-  g.__bmServicoDeGravacaoFalhou = quando;
-  return () => {
-    if (g.__bmServicoDeGravacaoFalhou === quando) delete g.__bmServicoDeGravacaoFalhou;
-  };
-}
+export const aoFalharServicoDeGravacao = (quando: () => void): (() => void) => registrarAviso("__bmServicoDeGravacaoFalhou", quando);
 
 /**
  * O metrônomo ligou: liga o serviço em primeiro plano (tipo mídia, wake lock sem limite) para o clique seguir com a tela bloqueada. Devolve `true` se o Android o assumiu;
  * fora do Android, ou com uma ponte antiga, devolve `false` (o clique segue só enquanto a página tiver os temporizadores).
  */
-export function ligarServicoDoMetronomo(): boolean {
-  try {
-    const p = ponte();
-    if (!p?.iniciarMetronomo) return false;
-    p.iniciarMetronomo();
-    return true;
-  } catch (e) {
-    console.warn("servico: a ponte do serviço do metrônomo falhou", e);
-    return false;
-  }
-}
+export const ligarServicoDoMetronomo = (): boolean => ligarPelaPonte("iniciarMetronomo", "do metrônomo");
 
 /** O metrônomo parou: solta o serviço (ele só se encerra se hino e gravação também estão parados). */
-export function desligarServicoDoMetronomo(): void {
-  try {
-    ponte()?.pararMetronomo?.();
-  } catch (e) {
-    console.warn("servico: a ponte do serviço do metrônomo falhou", e);
-  }
-}
+export const desligarServicoDoMetronomo = (): void => desligarPelaPonte("pararMetronomo", "do metrônomo");
 
 /** O botão "Parar" da notificação com o metrônomo ligado: `quando` deve parar o clique de verdade. Devolve a função que remove o aviso. */
-export function aoPararMetronomoPelaNotificacao(quando: () => void): () => void {
-  const g = globalThis as { __bmMetronomoParadoPelaNotificacao?: () => void };
-  g.__bmMetronomoParadoPelaNotificacao = quando;
-  return () => {
-    if (g.__bmMetronomoParadoPelaNotificacao === quando) delete g.__bmMetronomoParadoPelaNotificacao;
-  };
-}
+export const aoPararMetronomoPelaNotificacao = (quando: () => void): (() => void) => registrarAviso("__bmMetronomoParadoPelaNotificacao", quando);
 
 /** O Android recusou ou derrubou o serviço do metrônomo: `quando` deve parar o clique e avisar na tela. Devolve a função que remove o aviso. */
-export function aoFalharServicoDoMetronomo(quando: () => void): () => void {
-  const g = globalThis as { __bmServicoDoMetronomoFalhou?: () => void };
-  g.__bmServicoDoMetronomoFalhou = quando;
-  return () => {
-    if (g.__bmServicoDoMetronomoFalhou === quando) delete g.__bmServicoDoMetronomoFalhou;
-  };
-}
+export const aoFalharServicoDoMetronomo = (quando: () => void): (() => void) => registrarAviso("__bmServicoDoMetronomoFalhou", quando);
 
 /**
  * De onde o som sai agora: "usb", "fio" (3,5 mm), "bluetooth" ou "alto-falante". Fora do Android, sem a ponte (um APK antigo) ou se ela falhar,
