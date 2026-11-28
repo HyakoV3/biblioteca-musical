@@ -551,21 +551,21 @@
     "severity": "WARN",
     "value": 10
   },
-  "src/lib/escuta.ts::Escuta::Clean/Método::iniciar": {
-    "severity": "FAIL",
-    "value": 45
+  "src/lib/escuta.ts::Escuta::Clean/Nesting::vigiarFaixas": {
+    "severity": "WARN",
+    "value": 2
   },
-  "src/lib/escuta.ts::Escuta::Clean/Nesting::iniciar": {
+  "src/lib/escuta.ts::Escuta::Clean/Params::vigiarFaixas": {
     "severity": "WARN",
     "value": 3
   },
-  "src/lib/escuta.ts::Escuta::DIP::": {
-    "severity": "FAIL",
-    "value": 4
-  },
-  "src/lib/escuta.ts::Escuta::OCP::iniciar": {
+  "src/lib/escutaAudio.ts::escutaAudio::Clean/Nesting::pedirMicrofone": {
     "severity": "WARN",
-    "value": 5
+    "value": 3
+  },
+  "src/lib/escutaAudio.ts::escutaAudio::Clean/Params::iniciarLeitura": {
+    "severity": "WARN",
+    "value": 3
   },
   "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Método::guardar": {
     "severity": "WARN",
