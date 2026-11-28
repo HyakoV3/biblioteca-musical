@@ -3,8 +3,9 @@
 dos instrumentos do pacote de sons gravados, para sons-fonte/FluidR3_GM/ (fora do Git e fora de static/, para não ir no APK).
 
 Uso (a partir da raiz do projeto):
-    python3 tools/baixar-sons-gm.py            # baixa os que faltam
-    python3 tools/baixar-sons-gm.py --refazer  # baixa de novo todos
+    python3 tools/baixar-sons-gm.py                    # só LISTA o que baixaria (simulação: sem rede, nada é gravado)
+    python3 tools/baixar-sons-gm.py --aplicar          # baixa os que faltam (também vale --apply)
+    python3 tools/baixar-sons-gm.py --aplicar --refazer  # baixa de novo todos
 
 Cada arquivo é conferido: o tamanho tem de bater com o `Content-Length` do servidor e o conteúdo tem de ser lido do jeito
 do smplr (JSON.parse do objeto de notas), com notas em base64 de mp3. Só leitura de dados: nada é executado.
@@ -16,6 +17,7 @@ import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from aplicar import aplicar_ou_simular, flag_aplicar  # noqa: E402
 from smplr import ler_como_o_smplr  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -30,10 +32,27 @@ INSTRUMENTOS = {
 }
 
 
+def _baixar(nome):
+    """Baixa um arquivo e o confere (tamanho e formato). Devolve (bytes, notas) ou encerra com mensagem."""
+    with urllib.request.urlopen(f"{BASE}/{nome}-mp3.js", timeout=120) as r:
+        esperado = int(r.headers.get("Content-Length", -1))
+        dados = r.read()
+    if esperado >= 0 and len(dados) != esperado:
+        sys.exit(f"{nome}: veio {len(dados)} bytes, o servidor disse {esperado}")
+    notas = ler_como_o_smplr(dados.decode("utf-8"))
+    if not notas or not all(v.startswith("data:audio/mp3;base64,") for v in notas.values()):
+        sys.exit(f"{nome}: conteúdo fora do formato esperado")
+    return dados, notas
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--refazer", action="store_true")
+    flag_aplicar(ap)
     args = ap.parse_args()
+    faltam = [n for n in INSTRUMENTOS if args.refazer or not (DESTINO / f"{n}-mp3.js").exists()]
+    if not aplicar_ou_simular(args.aplicar, f"baixaria {len(faltam)} de {len(INSTRUMENTOS)} arquivo(s) de {BASE} para {DESTINO}: {', '.join(faltam) or 'nenhum'}"):
+        return
     DESTINO.mkdir(parents=True, exist_ok=True)
     total = 0
     for nome, app in INSTRUMENTOS.items():
@@ -41,14 +60,7 @@ def main():
         if destino.exists() and not args.refazer:
             print(f"{nome:12} já existe, pulando")
             continue
-        with urllib.request.urlopen(f"{BASE}/{nome}-mp3.js", timeout=120) as r:
-            esperado = int(r.headers.get("Content-Length", -1))
-            dados = r.read()
-        if esperado >= 0 and len(dados) != esperado:
-            sys.exit(f"{nome}: veio {len(dados)} bytes, o servidor disse {esperado}")
-        notas = ler_como_o_smplr(dados.decode("utf-8"))
-        if not notas or not all(v.startswith("data:audio/mp3;base64,") for v in notas.values()):
-            sys.exit(f"{nome}: conteúdo fora do formato esperado")
+        dados, notas = _baixar(nome)
         destino.write_bytes(dados)
         total += len(dados)
         print(f"{nome:12} ({app:12}) {len(dados)/1e6:5.2f} MB, {len(notas)} notas")

@@ -25,6 +25,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from aplicar import aplicar_ou_simular, flag_aplicar  # noqa: E402
 from smplr import ler_como_o_smplr  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -62,6 +63,7 @@ def ler_argumentos():
     ap.add_argument("--instrumentos", nargs="+", metavar="NOME", help="só estes (ex.: drawbar_organ flute); padrão: todos os da entrada")
     ap.add_argument("--pacote", default="sons", help="nome do pacote, gravado no manifesto (ex.: sons-001)")
     ap.add_argument("--banco", default="FluidR3_GM", help="nome do banco de origem, gravado no manifesto (ex.: GeneralUserGS-2.0.3)")
+    flag_aplicar(ap)
     return ap.parse_args()
 
 
@@ -89,8 +91,8 @@ def escolher_arquivos(entrada: Path, instrumentos):
     return arquivos
 
 
-def preparar_instrumento(arq: Path, saida: Path, faixa):
-    """Corta um instrumento à faixa, grava em `saida`, confere a releitura e imprime o resumo. Devolve a linha do manifesto."""
+def preparar_instrumento(arq: Path, saida: Path, faixa, gravar=True):
+    """Corta um instrumento à faixa, grava em `saida` (só se `gravar`), confere a releitura e imprime o resumo. Devolve a linha do manifesto."""
     minimo, maximo = faixa
     instrumento = nome_do_instrumento(arq)
     todas = ler_como_o_smplr(arq.read_text(encoding="utf-8"))
@@ -102,7 +104,8 @@ def preparar_instrumento(arq: Path, saida: Path, faixa):
     if ler_como_o_smplr(texto) != mantidas:
         sys.exit(f"{instrumento}: o arquivo gravado não bate com o original")
     dados = texto.encode("utf-8")
-    (saida / arq.name).write_bytes(dados)
+    if gravar:
+        (saida / arq.name).write_bytes(dados)
     print(f"{instrumento:14} {len(todas):3} -> {len(mantidas):3} notas | {arq.stat().st_size/1e6:5.2f} MB -> {len(dados)/1e6:5.2f} MB")
     return {
         "instrumento": instrumento,
@@ -117,9 +120,13 @@ def main():
     args = ler_argumentos()
     arquivos = escolher_arquivos(args.entrada, args.instrumentos)
     saida = args.saida.expanduser()
-    saida.mkdir(parents=True, exist_ok=True)
+    if args.aplicar:
+        saida.mkdir(parents=True, exist_ok=True)
 
-    lista = [preparar_instrumento(arq, saida, args.faixa) for arq in arquivos]
+    lista = [preparar_instrumento(arq, saida, args.faixa, args.aplicar) for arq in arquivos]
+    nomes = ", ".join(a["instrumento"] for a in lista)
+    if not aplicar_ou_simular(args.aplicar, f"prepararia {len(lista)} instrumento(s) ({nomes}) em {saida}, mais o manifesto.json"):
+        return
 
     manifesto = {"versao": 1, "pacote": args.pacote, "banco": args.banco, "faixa": list(args.faixa), "arquivos": lista}
     (saida / "manifesto.json").write_text(json.dumps(manifesto, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")

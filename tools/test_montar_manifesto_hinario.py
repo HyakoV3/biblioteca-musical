@@ -62,7 +62,7 @@ def test_saida_que_nao_da_para_gravar_sai_com_erro_e_codigo_2(tmp_path, capsys, 
 
     arquivo = tmp_path / "hinario.json"
     arquivo.write_text("{}", encoding="utf-8")
-    monkeypatch.setattr(sys, "argv", ["x", "https://exemplo.org/a.json", str(arquivo), "--saida", str(tmp_path)])
+    monkeypatch.setattr(sys, "argv", ["x", "https://exemplo.org/a.json", str(arquivo), "--saida", str(tmp_path), "--aplicar"])
     montar = lambda link, arq: {"pacote": {"bytes": 1, "sha256": "0" * 64}}  # noqa: E731
     assert pacote.principal_pacote("d", "arquivo", tmp_path / "padrao.json", montar) == 2
     assert capsys.readouterr().err.startswith("erro:")

@@ -63,7 +63,7 @@ class Principal(unittest.TestCase):
 
     def test_corta_a_faixa_e_grava_manifesto(self):
         saida = self.dir / "out"
-        codigo, texto = roda("--entrada", str(self.entrada), "--saida", str(saida), "--faixa", "40", "70", "--pacote", "p1", "--banco", "B1")
+        codigo, texto = roda("--entrada", str(self.entrada), "--saida", str(saida), "--faixa", "40", "70", "--pacote", "p1", "--banco", "B1", "--aplicar")
         self.assertIsNone(codigo)
         m = json.loads((saida / "manifesto.json").read_text(encoding="utf-8"))
         self.assertEqual({k: m[k] for k in ("versao", "pacote", "banco", "faixa")}, {"versao": 1, "pacote": "p1", "banco": "B1", "faixa": [40, 70]})
@@ -79,7 +79,7 @@ class Principal(unittest.TestCase):
 
     def test_so_os_instrumentos_pedidos(self):
         saida = self.dir / "out"
-        codigo, _ = roda("--entrada", str(self.entrada), "--saida", str(saida), "--instrumentos", "organ")
+        codigo, _ = roda("--entrada", str(self.entrada), "--saida", str(saida), "--instrumentos", "organ", "--aplicar")
         self.assertIsNone(codigo)
         self.assertEqual([a["instrumento"] for a in json.loads((saida / "manifesto.json").read_text())["arquivos"]], ["organ"])
         self.assertFalse((saida / "flute-mp3.js").exists())

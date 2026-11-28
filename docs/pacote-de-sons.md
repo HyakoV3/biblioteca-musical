@@ -41,9 +41,9 @@ bancos (mesma escala, volume igualado), decidiu trocar todos pelo **GeneralUser 
   projeto e de ffmpeg; indique o `index.js` dele em `SPESSASYNTH`). Cada nota: programa General MIDI do instrumento,
   velocidade 100, **sem reverb nem coro**, 2,6 s ligada e 0,5 s de cauda, mono, MP3 a 80 kbps, notas 30 a 86, no mesmo
   formato `<instrumento>-mp3.js` do banco anterior (o app não precisa de carregador novo; conferido no `smplr` real).
-  Depois `tools/preparar-sons.py --entrada <saida> --banco GeneralUserGS-2.0.3 --pacote sons-002 --instrumentos ...` por
-  grupo e `tools/montar-manifesto-sons.py --link todos=<link>`.
-- **Tamanho:** **38,2 MB** descompactados (os 16), contra 29,4 MB do FluidR3 (o MP3 a 80 kbps é mais alto que o do banco anterior, ~65 kbps). **O download (zip) é menor: 26,6 MB**; o manifesto o guarda em `bytesZip` (gerado por `tools/montar-manifesto-sons.py --zip todos=<zip>`), e é esse o número do botão "Baixar" e da barra de progresso. Sem `bytesZip`, o app mostra a soma dos arquivos (maior que o download).
+  Depois `tools/preparar-sons.py --entrada <saida> --banco GeneralUserGS-2.0.3 --pacote sons-002 --instrumentos ... --aplicar` por
+  grupo e `tools/montar-manifesto-sons.py --link todos=<link> --aplicar`.
+- **Tamanho:** **38,2 MB** descompactados (os 16), contra 29,4 MB do FluidR3 (o MP3 a 80 kbps é mais alto que o do banco anterior, ~65 kbps). **O download (zip) é menor: 26,6 MB**; o manifesto o guarda em `bytesZip` (gerado por `tools/montar-manifesto-sons.py --zip todos=<zip> --aplicar`), e é esse o número do botão "Baixar" e da barra de progresso. Sem `bytesZip`, o app mostra a soma dos arquivos (maior que o download).
   Para voltar a ~30 MB basta baixar o `KBPS` do renderizador para 64.
 - **Volume:** `ganho` de cada instrumento recalculado para **todos no mesmo nível médio no ouvido**, −24,6 dB (a mediana de
   antes, então o volume geral não mudou): `python3 tools/analisar-timbres.py --fonte <amostras> --calibrar --escrever`.
@@ -57,7 +57,7 @@ bancos (mesma escala, volume igualado), decidiu trocar todos pelo **GeneralUser 
 
 ```sh
 sh tools/baixar-sons-teste.sh        # baixa os arquivos originais do banco para sons-fonte/ (fora do Git)
-python3 tools/preparar-sons.py --pacote sons-001 --saida <pasta de saída>/sons-001
+python3 tools/preparar-sons.py --pacote sons-001 --saida <pasta de saída>/sons-001 --aplicar
 # ou só alguns:  --instrumentos drawbar_organ flute clarinet
 ```
 
@@ -105,7 +105,7 @@ O `smplr` lê o arquivo com `JSON.parse` e decodifica o áudio; **não executa**
 
 - **Manifesto** em `src/lib/sons/manifesto.json`, gerado por `tools/montar-manifesto-sons.py` (junta os manifestos dos
   grupos e os links). Hoje há **um pacote só, `todos`**, com os 16 instrumentos, no link da pasta `BibliotecaMusical`
-  (29,4 MB). Quando cada grupo tiver o seu link: `python3 tools/montar-manifesto-sons.py --link orgao=URL --link madeiras=URL ...`.
+  (29,4 MB). Quando cada grupo tiver o seu link: `python3 tools/montar-manifesto-sons.py --link orgao=URL --link madeiras=URL ... --aplicar`.
 - **Ajustes, "Sons gravados":** lista os pacotes do manifesto com o tamanho, o estado (instalado ou não), o botão
   **Baixar** (com barra de progresso) e **Remover**, e traduz os erros.
 - **Download** pelo lado nativo (`@tauri-apps/plugin-http`; o link do File Browser não manda CORS), com a rede **restrita ao

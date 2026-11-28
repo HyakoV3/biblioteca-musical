@@ -19,6 +19,9 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from aplicar import aplicar_ou_simular, flag_aplicar  # noqa: E402
+
 RAIZ = Path(__file__).resolve().parent.parent
 GRUPOS = ("orgao", "madeiras", "metais", "cordas")
 LIMITE_ZIP = 100 * 1024 * 1024  # o mesmo de LIMITE_ZIP em src/lib/sons/extrair.ts: acima disso o app recusa o download
@@ -109,14 +112,17 @@ def main():
     ap.add_argument("--saida", type=Path, default=RAIZ / "src" / "lib" / "sons" / "manifesto.json")
     ap.add_argument("--link", action="append", default=[], metavar="ID=URL", required=True)
     ap.add_argument("--zip", action="append", default=[], metavar="ID=ARQUIVO", help="o zip que esse link entrega (grava o tamanho dele)")
+    flag_aplicar(ap)
     args = ap.parse_args()
 
     por_grupo = {g: _ler_grupo(args.dist, g) for g in GRUPOS}
     pacotes = montar_pacotes(por_grupo, args.link, _ler_tamanhos_zip(args.zip))
 
+    _resumir(pacotes)
+    if not aplicar_ou_simular(args.aplicar, f"gravaria o manifesto de {len(pacotes)} pacote(s) em {args.saida}"):
+        return
     args.saida.parent.mkdir(parents=True, exist_ok=True)
     args.saida.write_text(json.dumps({"versao": 1, "pacotes": pacotes}, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    _resumir(pacotes)
     print("gravado em", args.saida)
 
 

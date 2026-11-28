@@ -169,7 +169,7 @@ class Manifesto(unittest.TestCase):
             tmp = Path(t)
             z = self.zip_de_teste(tmp)
             saida = tmp / "sub" / "manifesto.json"
-            with mock.patch.object(sys, "argv", ["x", "https://x/p.zip", str(z), "--saida", str(saida)]), contextlib.redirect_stdout(io.StringIO()):
+            with mock.patch.object(sys, "argv", ["x", "https://x/p.zip", str(z), "--saida", str(saida), "--aplicar"]), contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(mm.principal(), 0)
             lido = json.loads(saida.read_text(encoding="utf-8"))
             self.assertEqual(lido["pacote"]["bytes"], z.stat().st_size)

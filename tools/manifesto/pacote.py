@@ -9,6 +9,9 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import NamedTuple
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from aplicar import aplicar_ou_simular, flag_aplicar  # noqa: E402
+
 # O `montar` de cada script: recebe o link e o arquivo e devolve o manifesto (ou levanta ValueError).
 Montar = Callable[[str, Path], dict]
 
@@ -47,18 +50,22 @@ def gravar_manifesto(saida: Path, manifesto: dict) -> None:
 
 
 def principal_pacote(descricao: str, argumento: str, padrao: Path, montar: Montar) -> int:
-    """A linha de comando `LINK ARQUIVO [--saida X]`: monta, grava e resume. Devolve o código de saída (2 se o link, o arquivo ou a gravação não servem)."""
+    """A linha de comando `LINK ARQUIVO [--saida X] [--aplicar]`: monta e resume; só grava com `--aplicar` (sem ele, simula). Devolve o código de saída (2 se o link, o arquivo ou a gravação não servem)."""
     ap = argparse.ArgumentParser(description=descricao)
     ap.add_argument("link")
     ap.add_argument(argumento, type=Path)
     ap.add_argument("--saida", type=Path, default=padrao)
+    flag_aplicar(ap)
     a = ap.parse_args()
     try:
         manifesto = montar(a.link, getattr(a, argumento))
+        p = manifesto["pacote"]
+        resumo = f"{a.saida}: {p['bytes']:,} bytes, sha256 {p['sha256'][:12]}…"
+        if not aplicar_ou_simular(a.aplicar, f"gravaria o manifesto em {resumo}"):
+            return 0
         gravar_manifesto(a.saida, manifesto)
     except (OSError, ValueError) as e:
         print(f"erro: {e}", file=sys.stderr)
         return 2
-    p = manifesto["pacote"]
-    print(f"{a.saida}: {p['bytes']:,} bytes, sha256 {p['sha256'][:12]}…")
+    print(resumo)
     return 0
