@@ -4,6 +4,9 @@ import { Metronomo } from "./metronomo";
 import { aoFalharServicoDoMetronomo, aoPararMetronomoPelaNotificacao, desligarServicoDoMetronomo, ligarServicoDoMetronomo } from "./servico";
 import { adicionarRecente, lerMetronomo, salvarMetronomo, type Recente } from "./metronomoPrefs";
 
+/** Guarda o andamento, o compasso e os recentes (o que o estado mostra). */
+const guardar = (e: { bpm: number; compasso: number; recentes: Recente[] }): void => salvarMetronomo({ bpm: e.bpm, compasso: e.compasso, recentes: e.recentes });
+
 class EstadoMetronomo {
   private readonly nucleo = new Metronomo();
   bpm = $state(60);
@@ -49,20 +52,16 @@ class EstadoMetronomo {
     this.nucleo.definirCompasso(p.compasso);
   }
 
-  private guardar(): void {
-    salvarMetronomo({ bpm: this.bpm, compasso: this.compasso, recentes: this.recentes });
-  }
-
   mudarBpm(bpm: number): void {
     this.nucleo.definirBpm(bpm);
     this.bpm = this.nucleo.bpm;
-    this.guardar();
+    guardar(this);
   }
 
   mudarCompasso(compasso: number): void {
     this.nucleo.definirCompasso(compasso);
     this.compasso = this.nucleo.compasso;
-    this.guardar();
+    guardar(this);
   }
 
   /** Usa um item da lista: troca na hora o andamento e o compasso (ligado, segue tocando no novo). */
@@ -70,7 +69,7 @@ class EstadoMetronomo {
     this.mudarCompasso(r.compasso);
     this.mudarBpm(r.bpm);
     this.recentes = adicionarRecente(this.recentes, { bpm: this.bpm, compasso: this.compasso });
-    this.guardar();
+    guardar(this);
   }
 
   /** Liga. Chamar a partir de um toque. Entra na lista dos últimos usados. */
@@ -80,7 +79,7 @@ class EstadoMetronomo {
     this.interrompido = false;
     this.erroServico = false;
     this.recentes = adicionarRecente(this.recentes, { bpm: this.bpm, compasso: this.compasso });
-    this.guardar();
+    guardar(this);
     try {
       await this.nucleo.iniciar();
     } catch (e) {
