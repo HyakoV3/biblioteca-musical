@@ -40,9 +40,9 @@ jobs:
           python3 tools/verificar-traducoes.py
           python3 tools/verificar-movimento.py
           python3 tools/contraste.py
-          # as ferramentas em Python rodam todas pelo pytest; o gerador de ícone usa o Pillow. Ambiente virtual, porque o Python do sistema recusa `pip install` direto (PEP 668)
+          # as ferramentas em Python rodam todas pelo pytest; o gerador de ícone usa o Pillow e o analisador de timbres, o numpy. Ambiente virtual, porque o Python do sistema recusa `pip install` direto (PEP 668)
           python3 -m venv "$RUNNER_TEMP/venv-tools"
-          "$RUNNER_TEMP/venv-tools/bin/pip" install --quiet pillow pytest
+          "$RUNNER_TEMP/venv-tools/bin/pip" install --quiet pillow pytest numpy
           "$RUNNER_TEMP/venv-tools/bin/python" -m pytest tools
 
   conversor:
