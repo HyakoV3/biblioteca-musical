@@ -55,14 +55,19 @@ export function criarHalo(el: Element): SVGEllipseElement | null {
   return a;
 }
 
-/** Só rola se o compasso saiu da vista (entre a barra de cima e as de baixo, e dentro da `regiao` da partitura); a rolagem é suave só se a pessoa não pediu menos movimento. */
-export function garantirVisivel(el: Element, regiao: Element | null | undefined) {
-  const r = el.getBoundingClientRect();
+/** A caixa `r` saiu da vista na vertical: passou da barra de cima (cabeçalho) ou das de baixo (miniplayer e navegação), com 8 de folga. */
+export function foraDaVistaVertical(r: Pick<DOMRect, "top" | "bottom">): boolean {
   const topo = (document.querySelector("header")?.getBoundingClientRect().bottom ?? 0) + 8;
   const css = getComputedStyle(document.documentElement);
   const reservado = (parseFloat(css.getPropertyValue("--altura-miniplayer")) || 0) + (parseFloat(css.getPropertyValue("--altura-navegacao")) || 0);
+  return r.top < topo || r.bottom > window.innerHeight - reservado - 8;
+}
+
+/** Só rola se o compasso saiu da vista (entre a barra de cima e as de baixo, e dentro da `regiao` da partitura); a rolagem é suave só se a pessoa não pediu menos movimento. */
+export function garantirVisivel(el: Element, regiao: Element | null | undefined) {
+  const r = el.getBoundingClientRect();
   const limites = regiao?.getBoundingClientRect();
-  const foraVertical = r.top < topo || r.bottom > window.innerHeight - reservado - 8;
+  const foraVertical = foraDaVistaVertical(r);
   const foraHorizontal = !!limites && (r.left < limites.left || r.right > limites.right);
   if (foraVertical || foraHorizontal) el.scrollIntoView({ block: "center", inline: "center" });
 }

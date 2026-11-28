@@ -16,7 +16,7 @@
   import { marcaEm, marcasDaVez, sincroniaCombina, type Marca } from "#lib/karaoke";
   import { usarVoltar } from "#lib/navegacao";
   import Partitura from "#lib/Partitura.svelte";
-  import { estadoDaPartitura, temAbaPartitura } from "#lib/partitura";
+  import { estadoDaPartitura, temAbaPartitura } from "#lib/partitura"; import { foraDaVistaVertical } from "#lib/partituraDestaque";
   import Player from "#lib/Player.svelte";
   import { ESCALAS_LETRA, PASSO_PADRAO, escalaDoPasso, limitarPasso, type Alinhamento } from "#lib/leitura";
   import ControleDeTamanho from "#lib/ControleDeTamanho.svelte";
@@ -176,11 +176,7 @@
     const el = document.getElementById(`linha-${chave}`);
     if (!el) return;
     const rolar = () => {
-      const r = el.getBoundingClientRect();
-      const topo = (document.querySelector("header")?.getBoundingClientRect().bottom ?? 0) + 8;
-      const css = getComputedStyle(document.documentElement);
-      const reservado = (parseFloat(css.getPropertyValue("--altura-miniplayer")) || 0) + (parseFloat(css.getPropertyValue("--altura-navegacao")) || 0);
-      if (r.top < topo || r.bottom > window.innerHeight - reservado - 8) el.scrollIntoView({ block: "center" });
+      if (foraDaVistaVertical(el.getBoundingClientRect())) el.scrollIntoView({ block: "center" });
     };
     const restante = ESPERA_ROLAGEM_MANUAL_MS - (performance.now() - rolagemManualEm);
     if (restante <= 0) return rolar();
