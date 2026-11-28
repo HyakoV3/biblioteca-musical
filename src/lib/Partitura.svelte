@@ -9,6 +9,7 @@
   import Estado from "./Estado.svelte";
   import { traduzirErro } from "./erros";
   import { i18n } from "./i18n/index.svelte";
+  import { propsControleTamanho, rotulosControleTamanho } from "./controleTamanho";
   import { CONSULTA_PAISAGEM, ESCALAS_PARTITURA, ZOOM_PADRAO, escalaDoZoom, limitarZoom, varianteDaTela, type EstadoPartitura, type Variante } from "./partitura";
   import { lerZoomPartitura, salvarZoomPartitura } from "./preferencias";
   import ControleDeTamanho from "./ControleDeTamanho.svelte";
@@ -243,18 +244,8 @@
 {:else}
   <div class="barra-zoom">
     <ControleDeTamanho
-      rotulos={{
-        grupo: t("partitura.zoom"),
-        diminuir: t("partitura.diminuir"),
-        restaurar: t("partitura.restaurar", { n: Math.round(ESCALAS_PARTITURA[ZOOM_PADRAO] * 100) }),
-        aumentar: t("partitura.aumentar"),
-      }}
-      podeDiminuir={passo > 0}
-      podeAumentar={passo < ESCALAS_PARTITURA.length - 1}
-      noPadrao={passo === ZOOM_PADRAO}
-      aoDiminuir={() => mudarZoom("menos")}
-      aoRestaurar={() => mudarZoom("padrao")}
-      aoAumentar={() => mudarZoom("mais")}
+      rotulos={rotulosControleTamanho(t, { grupo: "partitura.zoom", diminuir: "partitura.diminuir", restaurar: "partitura.restaurar", aumentar: "partitura.aumentar" }, ESCALAS_PARTITURA[ZOOM_PADRAO])}
+      {...propsControleTamanho(passo, ESCALAS_PARTITURA.length, ZOOM_PADRAO, mudarZoom)}
     />
   </div>
 
