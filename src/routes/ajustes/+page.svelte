@@ -184,11 +184,32 @@
       resultado = { tipo: "erro", texto: t("remover.erro", { erro: traduzirErro(String(err), t) }) };
     }
   }
+  // As props de andamento de um LinhaPacote (fase, progresso e os textos de cada fase) a partir do andamento de um pacote.
+  function andamentoDe(prefixo: "hinario" | "partituras" | "sons", a: { fase: string; progresso: number }) {
+    const fase = a.fase === "baixando" || a.fase === "conferindo" || a.fase === "instalando" ? a.fase : "ocioso";
+    return {
+      fase,
+      progresso: a.progresso,
+      textoBaixando: t(`${prefixo}.baixando` as Chave, { n: porcentagemTotal(a.fase as never, a.progresso) }),
+      textoConferindo: t(`${prefixo}.conferindo` as Chave),
+      textoInstalando: t(`${prefixo}.instalando` as Chave),
+    } as const;
+  }
 </script>
 
 <svelte:head><title>{t("ajustes.titulo")} · Biblioteca Musical</title></svelte:head>
 
 <!-- "Em nome do Senhor Jesus": ao lado do título quando cabe e, se não couber (tela estreita, letra grande), na linha de baixo, à direita (`quebra`): o título não quebra no meio da palavra. -->
+<!-- As opções de um grupo de escolha única (segmentos): um rádio escondido por opção, com o ✓ na escolhida. O texto vem de `<prefixo>.<id>`. -->
+{#snippet opcoes(nome: string, ids: readonly string[], atual: string, escolher: (id: any) => void, prefixo: string)}
+  {#each ids as id}
+    <label class:ativo={atual === id}>
+      <input class="radio-oculto" type="radio" name={nome} value={id} checked={atual === id} onchange={() => escolher(id)} />
+      <span class="opcao-tema">{#if atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`${prefixo}.${id}` as Chave)}</span>
+    </label>
+  {/each}
+{/snippet}
+
 <!-- O título de uma seção do Conteúdo. Instalada a seção, a explicação some e o ⓘ ao lado a mostra ou esconde (aria-controls só enquanto o texto existe). -->
 {#snippet cabecalho(chave: "hinario" | "partituras" | "sons", titulo: string, instalado: boolean, id?: string)}
   <div class="cab-secao linha-entre">
@@ -230,22 +251,12 @@
            ao grupo (aria-labelledby), então texto visível e nome acessível são sempre o mesmo. -->
       <p class="rotulo-grupo" id="rotulo-modo">{t("ajustes.modo")}</p>
       <fieldset class="segmentos modo" aria-labelledby="rotulo-modo">
-        {#each TEMAS as id}
-          <label class:ativo={tema.atual === id}>
-            <input class="radio-oculto" type="radio" name="tema" value={id} checked={tema.atual === id} onchange={() => (tema.atual = id)} />
-            <span class="opcao-tema">{#if tema.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`tema.${id}`)}</span>
-          </label>
-        {/each}
+        {@render opcoes("tema", TEMAS, tema.atual, (id) => (tema.atual = id), "tema")}
       </fieldset>
       <p class="rotulo-grupo" id="rotulo-estilo">{t("ajustes.estilo")}</p>
       <!-- O Alto contraste tem paleta própria: com ele o estilo não vale, então o grupo fica desativado e uma nota diz por quê. -->
       <fieldset class="segmentos" aria-labelledby="rotulo-estilo" disabled={tema.atual === "alto-contraste"}>
-        {#each ESTILOS as id}
-          <label class:ativo={estilo.atual === id}>
-            <input class="radio-oculto" type="radio" name="estilo" value={id} checked={estilo.atual === id} onchange={() => (estilo.atual = id)} />
-            <span class="opcao-tema">{#if estilo.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`estilo.${id}`)}</span>
-          </label>
-        {/each}
+        {@render opcoes("estilo", ESTILOS, estilo.atual, (id) => (estilo.atual = id), "estilo")}
       </fieldset>
       {#if tema.atual === "alto-contraste"}<p class="meta">{t("ajustes.estilo_alto_contraste")}</p>{/if}
     </Cartao>
@@ -264,12 +275,7 @@
       <!-- Os nomes das notas (Afinador e tonalidade dos hinos): em sílabas (Dó, Ré, Mi… e Si♭), em letras (C, D, E… e B♭) ou automático (segue o idioma). -->
       <p class="rotulo-grupo" id="rotulo-notas">{t("ajustes.notas")}</p>
       <fieldset class="segmentos" aria-labelledby="rotulo-notas">
-        {#each NOTACOES as id}
-          <label class:ativo={notacao.atual === id}>
-            <input class="radio-oculto" type="radio" name="notacao" value={id} checked={notacao.atual === id} onchange={() => (notacao.atual = id)} />
-            <span class="opcao-tema">{#if notacao.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`notacao.${id}`)}</span>
-          </label>
-        {/each}
+        {@render opcoes("notacao", NOTACOES, notacao.atual, (id) => (notacao.atual = id), "notacao")}
       </fieldset>
     </Cartao>
   </section>
@@ -291,12 +297,7 @@
         </button>
       </div>
       <fieldset class="segmentos" aria-labelledby="rotulo-saida">
-        {#each MODOS as m}
-          <label class:ativo={modoDeSaida === m}>
-            <input class="radio-oculto" type="radio" name="modo-saida" value={m} checked={modoDeSaida === m} onchange={() => escolherModo(m)} />
-            <span class="opcao-tema">{#if modoDeSaida === m}<Icone nome="ok" tamanho={18} />{/if}{t(`saida.${m}`)}</span>
-          </label>
-        {/each}
+        {@render opcoes("modo-saida", MODOS, modoDeSaida, escolherModo, "saida")}
       </fieldset>
       <p class="meta" id="saida-descricao">{t(`saida.desc.${modoDeSaida}`)}</p>
       {#if saidaInfo}
@@ -324,11 +325,7 @@
       <LinhaPacote
         titulo={hinarioInstalado && biblioteca.pacote ? biblioteca.pacote.hinario.hinario.nome : t("hinario.pacote")}
         detalhe={estadoHinario}
-        fase={hinario.andamento.fase === "baixando" || hinario.andamento.fase === "conferindo" || hinario.andamento.fase === "instalando" ? hinario.andamento.fase : "ocioso"}
-        progresso={hinario.andamento.progresso}
-        textoBaixando={t("hinario.baixando", { n: porcentagemTotal(hinario.andamento.fase, hinario.andamento.progresso) })}
-        textoConferindo={t("hinario.conferindo")}
-        textoInstalando={t("hinario.instalando")}
+        {...andamentoDe("hinario", hinario.andamento)}
         instalado={hinarioInstalado || !!biblioteca.erro}
         rotuloRemover={t("hinario.remover")}
         aoRemover={remover}
@@ -353,11 +350,7 @@
         <LinhaPacote
           titulo={t("partituras.pacote")}
           detalhe={estadoPartituras}
-          fase={partituras.andamento.fase === "baixando" || partituras.andamento.fase === "conferindo" || partituras.andamento.fase === "instalando" ? partituras.andamento.fase : "ocioso"}
-          progresso={partituras.andamento.progresso}
-          textoBaixando={t("partituras.baixando", { n: porcentagemTotal(partituras.andamento.fase, partituras.andamento.progresso) })}
-          textoConferindo={t("partituras.conferindo")}
-          textoInstalando={t("partituras.instalando")}
+          {...andamentoDe("partituras", partituras.andamento)}
           instalado={instaladas > 0 && !embutidas}
           rotuloRemover={t("partituras.remover")}
           aoRemover={() => partituras.remover()}
@@ -399,11 +392,7 @@
           <LinhaPacote
             titulo={t(`sons.pacote_${p.id}` as Chave)}
             detalhe={`${i18n.tn("plural.instrumentos", p.arquivos.length)} · ${tamanho} · ${instalado ? t("sons.instalado") : t("sons.nao_instalado")}`}
-            fase={and.fase === "baixando" || and.fase === "conferindo" || and.fase === "instalando" ? and.fase : "ocioso"}
-            progresso={and.progresso}
-            textoBaixando={t("sons.baixando", { n: porcentagemTotal(and.fase, and.progresso) })}
-            textoConferindo={t("sons.conferindo")}
-            textoInstalando={t("sons.instalando")}
+            {...andamentoDe("sons", and)}
             {instalado}
             rotuloRemover={t("sons.remover")}
             aoRemover={() => sons.remover(p.id)}
