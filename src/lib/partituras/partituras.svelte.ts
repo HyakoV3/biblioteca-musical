@@ -3,17 +3,9 @@
 import { biblioteca, type Recusada } from "../biblioteca.svelte";
 import { instalando } from "../instalando.svelte";
 import { baixarZip } from "../sons/baixar";
-import { ErroPacote, sha256Hex, type CodigoErro } from "../sons/extrair";
-import { baixarEInstalar, extrairDaPastaReal, type Fase } from "./baixar";
+import { ErroPacote, sha256Hex } from "../sons/extrair";
+import { baixarEInstalar, extrairDaPastaReal, type Andamento } from "./baixar";
 import { MANIFESTO } from "./manifesto";
-
-export type Andamento = {
-  fase: "ocioso" | Fase | "erro";
-  /** 0 a 1, só durante o download. */
-  progresso: number;
-  /** Quando `fase` é "erro": o código do erro do pacote (rede, integridade...) ou o texto bruto vindo do Rust (a tela traduz). */
-  erro: { codigo: CodigoErro } | { bruto: string } | null;
-};
 
 const OCIOSO: Andamento = { fase: "ocioso", progresso: 0, erro: null };
 
