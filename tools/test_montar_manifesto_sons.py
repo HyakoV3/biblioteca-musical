@@ -48,7 +48,7 @@ def _rodar(monkeypatch, tmp_path, zips):
         (dist / g / "manifesto.json").write_text(
             json.dumps({"arquivos": [{"instrumento": g, "arquivo": f"{g}-mp3.js", "bytes": 10, "sha256": "ab" * 32}]}), encoding="utf-8"
         )
-    argv = ["x", "--dist", str(dist), "--saida", str(tmp_path / "m.json"), "--link", f"todos={URL}"] + [a for z in zips for a in ("--zip", z)]
+    argv = ["x", "--dist", str(dist), "--saida", str(tmp_path / "m.json"), "--link", f"todos={URL}"] + [a for z in zips for a in ("--zip", z)] + ["--aplicar"]
     monkeypatch.setattr(_sys, "argv", argv)
     mod.main()
     return json.loads((tmp_path / "m.json").read_text(encoding="utf-8"))

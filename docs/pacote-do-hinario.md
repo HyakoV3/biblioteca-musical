@@ -1,6 +1,6 @@
 # Pacote do hinário (baixável)
 
-> **Hospedagem (2026-11-24):** o hinário (e as partituras) passaram para o repositório público **separado** `HyakoV3/biblioteca-musical-pacotes` (Release `hinario-<sha8>`, arquivo `.json` direto), para que uma eventual reclamação sobre o conteúdo não alcance o repositório do app. O manifesto do app aponta para esse asset; o link do servidor, abaixo, vale só para APKs antigos (o app novo **não aceita mais** o endereço do servidor: `capabilities/default.json` só permite o GitHub). Para trocar: gerar o `hinario-<sha8>.json`, criar o Release no repositório de pacotes e refazer o manifesto com `python3 tools/montar-manifesto-hinario.py <url do asset> <arquivo>`.
+> **Hospedagem (2026-11-24):** o hinário (e as partituras) passaram para o repositório público **separado** `HyakoV3/biblioteca-musical-pacotes` (Release `hinario-<sha8>`, arquivo `.json` direto), para que uma eventual reclamação sobre o conteúdo não alcance o repositório do app. O manifesto do app aponta para esse asset; o link do servidor, abaixo, vale só para APKs antigos (o app novo **não aceita mais** o endereço do servidor: `capabilities/default.json` só permite o GitHub). Para trocar: gerar o `hinario-<sha8>.json`, criar o Release no repositório de pacotes e refazer o manifesto com `python3 tools/montar-manifesto-hinario.py <url do asset> <arquivo> --aplicar` (sem `--aplicar` o script só simula).
 
 > **Autorização:** o Enéias Ramos autorizou a distribuição (registrada em 2026-11-26 em [`licencas-de-terceiros.md`](licencas-de-terceiros.md), a única fonte). Os direitos das letras e músicas seguem sem registro.
 
@@ -27,7 +27,7 @@ N=hinario-$(sha256sum hinario.json | cut -c1-8).json
 cp hinario.json ~/Development/auxiliar/pacotes/$N
 # 2. subir para a pasta PRÓPRIA do hinário no servidor:  /mnt/downloads/BibliotecaMusicalHinario/$N
 # 3. refazer o manifesto (o link público da pasta do hinário) e gerar um APK novo:
-python3 tools/montar-manifesto-hinario.py "<link público>" ~/Development/auxiliar/pacotes/$N
+python3 tools/montar-manifesto-hinario.py "<link público>" ~/Development/auxiliar/pacotes/$N --aplicar   # sem --aplicar só simula
 ```
 
 Regras: **não troque o conteúdo de um arquivo que já está publicado** (o manifesto dos APKs antigos recusaria o arquivo novo); suba com nome novo (o SHA-256 no nome já garante que muda com o conteúdo) e refaça o manifesto.

@@ -87,7 +87,7 @@ mv partituras.zip partituras-$(sha256sum partituras.zip | cut -c1-8).zip   # o n
 
 # 3. no servidor de arquivos (o mesmo dos sons): uma pasta PRÓPRIA, fora de BibliotecaMusicalSons/, com o zip dentro, e o link público só dela;
 #    depois o manifesto do app, com o nome, o tamanho e o SHA-256 do zip
-python3 tools/montar-manifesto-partituras.py <link público da pasta> partituras-<sha8>.zip
+python3 tools/montar-manifesto-partituras.py <link público da pasta> partituras-<sha8>.zip --aplicar   # sem --aplicar só simula
 ```
 
 **Conferir os compassos antes de publicar (PART-001):** o hinário traz o índice do compasso a acender e a partitura é que desenha os compassos. Este verificador compara, hino a hino e nas duas versões, o maior índice de `compassos` com o número de `g.measure` do SVG, e confere que o retrato e a paisagem têm o mesmo número. **Rode antes de publicar o hinário ou as partituras** (a pasta dos SVG do passo 1 ou o zip do passo 2):
