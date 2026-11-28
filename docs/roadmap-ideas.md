@@ -1356,6 +1356,37 @@ Misturar o som **filtrado** com o **original** (seco e molhado) antes do gravado
 
 ---
 
+## I-52 — Revisar todo o Python (`tools/`) com o Tezcat
+
+- **Status:** anotada
+- **Origem:** o responsável, 2026-11-27, ao fechar a refatoração do app: "revisar tudo do Python com o Tezcat, para a gente fazer depois".
+- **Prioridade:** baixa (os scripts não rodam no app; mexer neles não muda nada para quem usa).
+
+### O problema
+- O Python ficou **fora da meta** da refatoração do Tezcat (que cobriu Kotlin, Svelte/TypeScript e Rust). Medido em 2026-11-27 no perfil `strict`: **74 unidades, nota média 91,5, 61 FAIL**. Os piores: `tools/analisar-timbres.py` e `tools/gerar-partituras.py` (13 cada), `tools/contraste.py` (5, com um `main` de 86 linhas e 32 ramos), `tools/test_gerar_partituras.py` (630 linhas, `falso` com 9 parâmetros), `tools/montar-manifesto-sons.py`, `tools/preparar-sons.py`, `tools/verificar-*.py`.
+- Nove desses FAIL estão em `content/hinario-480/pipeline/`, que o Git **ignora** e o Tezcat varre mesmo assim: eles aparecem como "regressões" fixas no `tools/tezcat.sh` da máquina do responsável e nunca nos worktrees nem no CI.
+- O bloco "🔬 Code Quality" que o `tools/bump.py` injeta no `CHANGELOG.md` conta o Python: um release com o app em 0 FAIL ainda mostra "❌ OCP 31" por causa dos scripts.
+
+### O que se deseja
+- O **mesmo tratamento do app**: refatorar em blocos menores (funções curtas, `main` que só orquestra), deduplicar o que se repete e **testes de caracterização** antes de mexer. PRs pequenas, **uma por arquivo**, baseline só encolhendo, nota média do Python acima de 90 com 0 FAIL.
+- Em vez de hash da saída em memória, a caracterização dos geradores (`gerar-partituras.py`, `montar-pacote.py`, `montar-manifesto-*.py`) deve comparar a **saída gerada** (arquivos, com hash) antes e depois, para provar que o conteúdo não mudou.
+
+### Perguntas em aberto
+- O `content/hinario-480/pipeline/` entra? Hoje é ignorado pelo Git (vive só na máquina do responsável): ou se versiona, ou sai da varredura (`skip_dirs` no `tezcat.toml`, com o motivo escrito). Sem isso, os 9 FAIL ficam para sempre.
+- Os scripts de `tools/` devem aparecer na nota do release? Alternativa: tirá-los da varredura de release (o bloco do `CHANGELOG.md` passa a refletir só o app) e medi-los à parte.
+- Vale unificar o que os scripts têm em comum (leitura do manifesto, `main` com `argparse`, escrita de arquivos) num módulo pequeno de `tools/`?
+
+### Impacto técnico (hipóteses)
+- O risco é regredir o conteúdo gerado (partituras, pacotes, manifestos), não o app: os testes de `tools/test_*.py` cobrem parte; o resto pede a caracterização por saída acima.
+- `tools/test_gerar_partituras.py` (630 linhas) pede o mesmo fatiamento que se fez nos testes de gravações: arquivos por tema com um `apoio` compartilhado.
+
+### Critérios de aceitação (propostos)
+- 0 FAIL e média acima de 90 no Python, com o baseline só encolhendo.
+- Nenhuma mudança na saída gerada (hash igual antes e depois) e `python3 -m unittest` verde.
+- A decisão sobre `content/…/pipeline` e sobre o bloco do release registrada em `tezcat.toml` e em `docs/tezcat-violacoes.md`.
+
+---
+
 ## Modelo para novas ideias
 
 ```markdown
