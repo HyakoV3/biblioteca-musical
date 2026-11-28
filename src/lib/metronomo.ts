@@ -13,7 +13,7 @@ import { Vigia } from "./metronomoVigia";
 import { criarContexto } from "./saidaAudio";
 
 export * from "./metronomoAgenda";
-export * from "./metronomoClique";
+export { CLIQUE_FORTE, CLIQUE_FRACO, CLIQUE_MEDIO, atrasoDeSaida, ehComposto, perfilDoClique } from "./metronomoClique";
 export * from "./metronomoPosicao";
 
 export type OpcoesMetronomo = {

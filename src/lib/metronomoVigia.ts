@@ -8,6 +8,7 @@ export class Vigia {
 
   /** Liga o temporizador e, ao esconder a página (o navegador freia os temporizadores), agenda já a janela grande, antes do próximo (atrasado) tick. */
   ligar(): void {
+    this.desligar();
     this.temporizador = setInterval(() => this.olhar(), INTERVALO_MS);
     if (typeof document !== "undefined") document.addEventListener("visibilitychange", this.aoVisibilidade);
   }
