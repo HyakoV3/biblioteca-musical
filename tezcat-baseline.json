@@ -867,49 +867,37 @@
     "severity": "FAIL",
     "value": 12
   },
-  "src/lib/metronomo.ts::Metronomo::Clean/Método::iniciar": {
-    "severity": "WARN",
-    "value": 28
-  },
-  "src/lib/metronomo.ts::Metronomo::Clean/Método::olharAdiante": {
-    "severity": "WARN",
-    "value": 20
-  },
-  "src/lib/metronomo.ts::Metronomo::Clean/Nesting::cancelarAgendados": {
-    "severity": "WARN",
-    "value": 2
-  },
   "src/lib/metronomo.ts::Metronomo::Clean/Nesting::fechar": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/metronomo.ts::Metronomo::Clean/Nesting::iniciar": {
+  "src/lib/metronomo.ts::Metronomo::Clean/Nesting::ligar": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/metronomo.ts::Metronomo::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 152
-  },
-  "src/lib/metronomo.ts::Metronomo::OCP::iniciar": {
-    "severity": "WARN",
-    "value": 5
-  },
   "src/lib/metronomo.ts::Metronomo::SRP::": {
-    "severity": "FAIL",
-    "value": 18
+    "severity": "WARN",
+    "value": 11
   },
-  "src/lib/metronomo.ts::metronomo::Clean/Params::posicaoDoPendulo": {
+  "src/lib/metronomoClique.ts::metronomoClique::Clean/Nesting::cancelarAgendados": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/metronomoClique.ts::metronomoClique::Clean/Params::soarClique": {
     "severity": "WARN",
     "value": 3
   },
-  "src/lib/metronomo.ts::metronomo::Clean/Params::progressoNoCompasso": {
+  "src/lib/metronomoLeitura.ts::LeituraDoMetronomo::SRP::": {
+    "severity": "WARN",
+    "value": 8
+  },
+  "src/lib/metronomoPosicao.ts::metronomoPosicao::Clean/Params::posicaoDoPendulo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/metronomoPosicao.ts::metronomoPosicao::Clean/Params::progressoNoCompasso": {
     "severity": "WARN",
     "value": 4
-  },
-  "src/lib/metronomo.ts::metronomo::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 370
   },
   "src/lib/metronomoPrefs.ts::metronomoPrefs::Clean/Nesting::normalizarPref": {
     "severity": "WARN",
