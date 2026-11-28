@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { en } from "../src/lib/i18n/en";
 import { es } from "../src/lib/i18n/es";
 import { pt } from "../src/lib/i18n/pt";
-import { ERROS_DO_RUST, traduzirErro } from "../src/lib/erros";
+import { ERROS_DO_RUST, traduzirErro, traduzirErroDoDownload } from "../src/lib/erros";
+import { erroDoPacote } from "../src/lib/partituras/baixar";
+import { ErroPacote } from "../src/lib/sons/extrair";
 
 // Tradutor falso: devolve a chave e os parâmetros, para conferir o que a função entrega.
 const t = (c: string, p?: Record<string, string | number>) => `${c} ${JSON.stringify(p ?? {})}`;
@@ -79,5 +81,29 @@ describe("traduzirErro (erros do Rust)", () => {
         expect([...texto.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort(), `${idioma} ${codigo}`).toEqual([...nomes].sort());
       }
     }
+  });
+});
+
+describe("traduzirErroDoDownload e erroDoPacote", () => {
+  const td = (e: Parameters<typeof traduzirErroDoDownload>[0]) => traduzirErroDoDownload(e, t as never);
+
+  it("sem erro, texto vazio", () => {
+    expect(td(null)).toBe("");
+  });
+
+  it("código de rede tem texto próprio; qualquer outro código cai no de arquivo", () => {
+    expect(td({ codigo: "rede" })).toBe("sons.erro_rede {}");
+    expect(td({ codigo: "integridade" })).toBe("sons.erro_arquivo {}");
+  });
+
+  it("texto bruto passa pela tradução dos erros do Rust", () => {
+    expect(td({ bruto: rust("vazio") })).toBe("erro.rust.vazio {}");
+    expect(td({ bruto: "falhou" })).toBe("falhou");
+  });
+
+  it("erroDoPacote guarda o código do ErroPacote ou o texto de qualquer outro erro", () => {
+    expect(erroDoPacote(new ErroPacote("rede", "detalhe"))).toEqual({ codigo: "rede" });
+    expect(erroDoPacote(new Error("x"))).toEqual({ bruto: "Error: x" });
+    expect(erroDoPacote("solto")).toEqual({ bruto: "solto" });
   });
 });

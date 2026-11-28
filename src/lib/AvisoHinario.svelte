@@ -6,7 +6,7 @@
   import { instalando } from "./instalando.svelte";
   import { porcentagemTotal, progressoTotal } from "./pacote";
   import { i18n } from "./i18n/index.svelte";
-  import { traduzirErro } from "./erros";
+  import { traduzirErroDoDownload } from "./erros";
   import { formatarMB } from "./sons/formato";
 
   // O aviso do primeiro acesso: com só o pacote de exemplo, oferece baixar o hinário (o texto e a música dos hinos não vão dentro do app). "Agora não" o dispensa,
@@ -28,12 +28,7 @@
     dispensado = true;
   }
 
-  const textoDoErro = $derived.by(() => {
-    const e = hinario.andamento.erro;
-    if (!e) return "";
-    if ("codigo" in e) return t(e.codigo === "rede" ? "sons.erro_rede" : "sons.erro_arquivo");
-    return traduzirErro(e.bruto, t);
-  });
+  const textoDoErro = $derived(traduzirErroDoDownload(hinario.andamento.erro, t));
 </script>
 
 <dialog bind:this={janela} class="aviso-hinario" aria-labelledby="aviso-hinario-titulo" oncancel={(e) => (e.preventDefault(), dispensar())}>

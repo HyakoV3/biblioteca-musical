@@ -16,7 +16,7 @@
   import { reproducao } from "#lib/reproducao.svelte";
   import { ESTILOS, TEMAS, estilo, tema } from "#lib/tema.svelte";
   import { CREDITOS, semLicenca, textoDaLicenca } from "#lib/licencas";
-  import { traduzirErro } from "#lib/erros";
+  import { traduzirErro, traduzirErroDoDownload } from "#lib/erros";
   import { listaCurta, porcentagemTotal } from "#lib/pacote";
   import { hinario } from "#lib/hinario/hinario.svelte";
   import { NOTACOES } from "#lib/notacao";
@@ -109,12 +109,7 @@
     const estado = hinarioInstalado ? t("hinario.instalado") : hinario.disponivel ? t("hinario.nao_instalado") : t("hinario.indisponivel");
     return [hinarioInstalado ? i18n.tn("plural.hinos", quantosHinos) : null, hinario.disponivel ? formatarMB(hinario.bytes, i18n.idioma) : null, estado].filter(Boolean).join(" · ");
   });
-  const erroDoHinario = $derived.by(() => {
-    const e = hinario.andamento.erro;
-    if (!e) return "";
-    if ("codigo" in e) return t(e.codigo === "rede" ? "sons.erro_rede" : "sons.erro_arquivo");
-    return traduzirErro(e.bruto, t);
-  });
+  const erroDoHinario = $derived(traduzirErroDoDownload(hinario.andamento.erro, t));
 
   // --- Partituras (I-08): baixar do servidor e remover, no molde dos sons gravados. ---
   const instaladas = $derived(biblioteca.pacote?.partituras.length ?? 0);
@@ -137,14 +132,7 @@
   let saidaInfo = $state(false);
   const algumSomInstalado = $derived(sons.pacotes.some((p) => sons.pacoteInstalado(p)));
   // O erro do download: código do pacote (rede, integridade...) ou texto do Rust (JSON de códigos), traduzido.
-  const erroDasPartituras = $derived.by(() => {
-    const e = partituras.andamento.erro;
-    if (!e) return "";
-    if ("codigo" in e) {
-      return t(e.codigo === "rede" ? "sons.erro_rede" : "sons.erro_arquivo");
-    }
-    return traduzirErro(e.bruto, t);
-  });
+  const erroDasPartituras = $derived(traduzirErroDoDownload(partituras.andamento.erro, t));
 
   // --- Resumos dos cartões fechados. ---
   const resumoAparencia = $derived(

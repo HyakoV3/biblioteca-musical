@@ -3,9 +3,9 @@
 import { biblioteca } from "../biblioteca.svelte";
 import { instalando } from "../instalando.svelte";
 import { reproducao } from "../reproducao.svelte";
-import { baixarEInstalar, extrairDaPastaReal, type Andamento } from "../partituras/baixar";
+import { baixarEInstalar, erroDoPacote, extrairDaPastaReal, type Andamento } from "../partituras/baixar";
 import { baixarZip } from "../sons/baixar";
-import { ErroPacote, sha256Hex } from "../sons/extrair";
+import { sha256Hex } from "../sons/extrair";
 import { MANIFESTO_HINARIO } from "./manifesto";
 import { textoDoHinario } from "./texto";
 
@@ -36,7 +36,7 @@ async function baixar() {
     );
     andamento = OCIOSO;
   } catch (e) {
-    andamento = { fase: "erro", progresso: 0, erro: e instanceof ErroPacote ? { codigo: e.codigo } : { bruto: String(e) } };
+    andamento = { fase: "erro", progresso: 0, erro: erroDoPacote(e) };
   } finally {
     instalando.liberar();
   }
