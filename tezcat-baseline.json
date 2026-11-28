@@ -1039,46 +1039,6 @@
     "severity": "WARN",
     "value": 4
   },
-  "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Método::irPara": {
-    "severity": "WARN",
-    "value": 22
-  },
-  "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Método::reagendar": {
-    "severity": "FAIL",
-    "value": 44
-  },
-  "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Método::tocar": {
-    "severity": "FAIL",
-    "value": 63
-  },
-  "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Nesting::reagendar": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Nesting::tocar": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src/lib/reproducao.svelte.ts::reproducao.svelte::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 413
-  },
-  "src/lib/reproducao.svelte.ts::reproducao.svelte::OCP::continuar": {
-    "severity": "WARN",
-    "value": 5
-  },
-  "src/lib/reproducao.svelte.ts::reproducao.svelte::OCP::irPara": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src/lib/reproducao.svelte.ts::reproducao.svelte::OCP::tocar": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src/lib/reproducao.svelte.ts::reproducao.svelte::SRP::": {
-    "severity": "FAIL",
-    "value": 28
-  },
   "src/lib/ruido.ts::ruido::Clean/Nesting::criarFiltro": {
     "severity": "WARN",
     "value": 2
