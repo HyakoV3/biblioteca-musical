@@ -731,69 +731,69 @@
     "severity": "WARN",
     "value": 238
   },
-  "src/lib/gravador.ts::DetectorDeSom::DIP::": {
-    "severity": "FAIL",
-    "value": 6
-  },
-  "src/lib/gravador.ts::Gravador::Clean/Método::ligarFiltro": {
-    "severity": "FAIL",
-    "value": 43
-  },
-  "src/lib/gravador.ts::Gravador::Clean/Método::parar": {
-    "severity": "FAIL",
-    "value": 35
-  },
-  "src/lib/gravador.ts::Gravador::Clean/Método::soltar": {
+  "src/lib/filtroNeuralNoGravador.ts::filtroNeuralNoGravador::Clean/Método::ligarFiltroNeural": {
     "severity": "WARN",
-    "value": 29
+    "value": 20
   },
-  "src/lib/gravador.ts::Gravador::Clean/Nesting::abrirMedidor": {
+  "src/lib/filtroNeuralNoGravador.ts::filtroNeuralNoGravador::Clean/Nesting::ligarFiltroNeural": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/gravador.ts::Gravador::Clean/Nesting::ligarFiltro": {
+  "src/lib/filtroNeuralNoGravador.ts::filtroNeuralNoGravador::Clean/Params::carregarFiltro": {
     "severity": "WARN",
-    "value": 2
+    "value": 3
+  },
+  "src/lib/filtroNeuralNoGravador.ts::filtroNeuralNoGravador::Clean/Params::ligarFiltroNeural": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/filtroNeuralNoGravador.ts::filtroNeuralNoGravador::OCP::carregarFiltro": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/gravador.ts::Gravador::Clean/Método::comecar": {
+    "severity": "WARN",
+    "value": 22
   },
   "src/lib/gravador.ts::Gravador::Clean/Nesting::parar": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/gravador.ts::Gravador::Clean/Nesting::soltar": {
+  "src/lib/gravador.ts::Gravador::DIP::": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/gravador.ts::Gravador::Clean/Tamanho::": {
+  "src/lib/gravador.ts::Gravador::OCP::comecar": {
     "severity": "WARN",
-    "value": 183
-  },
-  "src/lib/gravador.ts::Gravador::DIP::": {
-    "severity": "FAIL",
-    "value": 6
-  },
-  "src/lib/gravador.ts::Gravador::OCP::ligarFiltro": {
-    "severity": "WARN",
-    "value": 5
-  },
-  "src/lib/gravador.ts::Gravador::OCP::parar": {
-    "severity": "FAIL",
-    "value": 6
+    "value": 4
   },
   "src/lib/gravador.ts::Gravador::SRP::": {
-    "severity": "FAIL",
-    "value": 15
+    "severity": "WARN",
+    "value": 11
   },
-  "src/lib/gravador.ts::gravador::Clean/Nesting::corrigirDuracao": {
+  "src/lib/medidorDoGravador.ts::MedidorDoGravador::Clean/Nesting::abrir": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/gravador.ts::gravador::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 427
-  },
-  "src/lib/gravador.ts::gravador::SRP::": {
+  "src/lib/medidorDoGravador.ts::MedidorDoGravador::DIP::": {
     "severity": "WARN",
-    "value": 15
+    "value": 3
+  },
+  "src/lib/recorderDoGravador.ts::recorderDoGravador::Clean/Método::pararEEntregar": {
+    "severity": "WARN",
+    "value": 24
+  },
+  "src/lib/recorderDoGravador.ts::recorderDoGravador::Clean/Params::guardarPedaco": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "src/lib/recorderDoGravador.ts::recorderDoGravador::Clean/Params::ligarOuvintes": {
+    "severity": "WARN",
+    "value": 4
+  },
+  "tests/gravadorFiltro.test.ts::gravadorFiltro.test::Clean/Nesting::preparar": {
+    "severity": "WARN",
+    "value": 3
   },
   "src/lib/hinario/hinario.svelte.ts::hinario.svelte::Clean/Método::baixar": {
     "severity": "WARN",
