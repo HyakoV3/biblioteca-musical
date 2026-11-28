@@ -71,18 +71,14 @@ export function agendarNota(ctx: BaseAudioContext, ondas: Ondas, destino: AudioN
   const env = ctx.createGain();
   osc.setPeriodicWave(onda);
   osc.frequency.value = f0;
-  const fimNota = ini + Math.max(dur, 0.05);
-  const janela: Janela = { ini, fim: fimNota };
+  const janela: Janela = { ini, fim: ini + Math.max(dur, 0.05) };
   agendarEnvoltoria(env, perfil, janela);
-  if (perfil.abertura) {
-    osc.connect(criarFiltroDeAbertura(ctx, perfil.abertura, f0, ini)).connect(env).connect(destino);
-  } else {
-    osc.connect(env).connect(destino);
-  }
+  const entrada: AudioNode = perfil.abertura ? osc.connect(criarFiltroDeAbertura(ctx, perfil.abertura, f0, ini)) : osc;
+  entrada.connect(env).connect(destino);
   const fontes: AudioScheduledSourceNode[] = [osc];
   if (perfil.vibrato) fontes.push(agendarVibrato(ctx, perfil.vibrato, osc, janela));
 
   osc.start(ini);
-  osc.stop(fimNota + 0.02);
+  osc.stop(janela.fim + 0.02);
   return fontes;
 }
