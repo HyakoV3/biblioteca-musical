@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Sobe a versão do app em todos os lugares que a citam e injeta o resumo do Tezcat no CHANGELOG.md.
 
-    tools/bump.py 0.3.10            sobe, e registra a qualidade do código (tzt) em CHANGELOG.md
-    tools/bump.py 0.3.10 --simular  só mostra o que mudaria, sem gravar nada
-    tools/bump.py 0.3.10 --sem-tezcat   não roda o tzt (nem toca o CHANGELOG.md)
+    tools/bump.py 0.3.10            só MOSTRA o que mudaria (é o padrão: nada é gravado)
+    tools/bump.py 0.3.10 --aplicar  grava: sobe a versão e registra a qualidade do código (tzt) em CHANGELOG.md (também vale --apply)
+    tools/bump.py 0.3.10 --aplicar --sem-tezcat   sobe a versão, mas não roda o tzt (nem toca o CHANGELOG.md)
 
 Os três lugares que o workflow de release confere (package.json, src-tauri/Cargo.toml, src-tauri/tauri.conf.json) mudam sempre juntos, com
 os lockfiles e os textos que dizem "versão X" (READMEs, exemplo de nome do APK, modelo de bug). NÃO mexe no que é histórico (tags rc, tabela
@@ -96,7 +96,7 @@ def resumo_do_tezcat(antiga: str, nova: str) -> int:
 def argumentos() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Sobe a versão do app e registra a qualidade do código (Tezcat).")
     ap.add_argument("versao", help="a nova versão, X.Y.Z (sem -rcN)")
-    ap.add_argument("--simular", action="store_true", help="mostra o que mudaria e não grava nada")
+    ap.add_argument("--aplicar", "--apply", action="store_true", help="grava as mudanças (sem isto só mostra o que mudaria)")
     ap.add_argument("--sem-tezcat", action="store_true", help="não roda o tzt nem toca o CHANGELOG.md")
     return ap.parse_args()
 
@@ -110,7 +110,8 @@ def main() -> int:
     print(f"{antiga} -> {nova}: {len(plano)} arquivo(s)")
     for caminho in plano:
         print(f"  {caminho}")
-    if args.simular:
+    if not args.aplicar:
+        print("\nNada foi gravado (simulação). Para valer, acrescente --aplicar.")
         return 0
     gravar(plano)
     if not args.sem_tezcat and resumo_do_tezcat(antiga, nova) != 0:
