@@ -3,19 +3,11 @@
 import { biblioteca } from "../biblioteca.svelte";
 import { instalando } from "../instalando.svelte";
 import { reproducao } from "../reproducao.svelte";
-import { baixarEInstalar, extrairDaPastaReal, type Fase } from "../partituras/baixar";
+import { baixarEInstalar, extrairDaPastaReal, type Andamento } from "../partituras/baixar";
 import { baixarZip } from "../sons/baixar";
-import { ErroPacote, sha256Hex, type CodigoErro } from "../sons/extrair";
+import { ErroPacote, sha256Hex } from "../sons/extrair";
 import { MANIFESTO_HINARIO } from "./manifesto";
 import { textoDoHinario } from "./texto";
-
-export type Andamento = {
-  fase: "ocioso" | Fase | "erro";
-  /** 0 a 1, só durante o download. */
-  progresso: number;
-  /** Quando `fase` é "erro": o código do erro do pacote (rede, integridade...) ou o texto bruto vindo do Rust (a tela traduz). */
-  erro: { codigo: CodigoErro } | { bruto: string } | null;
-};
 
 const OCIOSO: Andamento = { fase: "ocioso", progresso: 0, erro: null };
 let andamento = $state<Andamento>(OCIOSO);
