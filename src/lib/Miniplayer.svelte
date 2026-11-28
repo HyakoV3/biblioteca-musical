@@ -68,9 +68,9 @@
     background: var(--superficie);
     padding-bottom: var(--inset-miniplayer, env(safe-area-inset-bottom));
   }
-  .linha { display: flex; align-items: center; gap: 0.5rem; min-height: 3.5rem; } /* + 1,25rem do slider (em cima) = 4,75rem */
+  .linha { display: flex; align-items: center; gap: var(--espaco); min-height: var(--toque-grande); } /* + 1,25rem do slider (em cima) = 4,75rem */
   .acao {
-    flex: none; width: 3rem; height: 3rem; font-size: 1.2rem; border-radius: 0.75rem;
+    flex: none; width: 3rem; height: 3rem; font-size: 1.2rem; border-radius: var(--raio);
     border: 0; background: transparent; color: var(--texto); cursor: pointer;
   }
   .info { flex: 1; min-width: 0; display: flex; flex-direction: column; text-decoration: none; color: var(--texto); }

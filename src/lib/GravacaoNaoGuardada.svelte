@@ -24,7 +24,7 @@
 </section>
 
 <style>
-  .resultado { display: grid; gap: 0.6rem; padding: 0.9rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
+  .resultado { display: grid; gap: 0.6rem; padding: 0.9rem; border: var(--borda-padrao); border-radius: var(--raio); background: var(--superficie); }
   .resultado h2 { margin: 0; font-size: 1rem; }
   .resultado audio { width: 100%; }
   .resultado p { margin: 0; }

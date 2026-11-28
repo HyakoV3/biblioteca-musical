@@ -142,9 +142,9 @@
 </div>
 
 <style>
-  .metronomo { display: flex; flex-direction: column; gap: 1rem; }
+  .metronomo { display: flex; flex-direction: column; gap: var(--espaco-g); }
   .andamento { display: flex; }
-  .compasso { display: flex; gap: 1rem; }
+  .compasso { display: flex; gap: var(--espaco-g); }
   .grupo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.375rem; }
   .compasso .rotulo { color: var(--suave); font-size: 0.9rem; }
 
@@ -157,7 +157,7 @@
   .ponta.esquerda { left: -0.125rem; }
   .ponta.direita { right: -0.125rem; }
   .bola { position: absolute; top: calc(50% - 0.75rem); left: 0; width: 1.5rem; height: 1.5rem; box-sizing: border-box; border-radius: 50%; background: var(--ouro-linha); border: 0.125rem solid var(--texto); }
-  .tempos { display: flex; justify-content: center; align-items: center; gap: 0.5rem; min-height: 1.75rem; }
+  .tempos { display: flex; justify-content: center; align-items: center; gap: var(--espaco); min-height: 1.75rem; }
   .tempo { width: 0.75rem; height: 0.75rem; border-radius: 50%; border: 0.125rem solid var(--suave); box-sizing: border-box; }
   .tempo.forte { width: 1.5rem; height: 1.5rem; border-color: var(--texto); }
   /* Compostos: o 1º clique de cada grupo de 3 é de tamanho médio, e os grupos se separam. */
@@ -166,5 +166,5 @@
   .por-tempo { margin: 0; text-align: center; color: var(--suave); font-size: 0.875rem; }
   .tempo.aceso { background: var(--ouro-linha); border-color: var(--ouro-linha); }
 
-  .grande { min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
+  .grande { min-height: var(--toque-grande); font-size: 1.15rem; gap: var(--espaco); }
 </style>

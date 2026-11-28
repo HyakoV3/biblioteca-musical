@@ -52,13 +52,13 @@
     border-bottom: 0.0625rem solid var(--borda);
     padding-top: env(safe-area-inset-top);
   }
-  .linha { display: flex; align-items: center; gap: 0.5rem; min-height: 3.5rem; }
+  .linha { display: flex; align-items: center; gap: var(--espaco); min-height: var(--toque-grande); }
   .voltar {
-    min-width: 3rem; min-height: 3rem; margin-left: -0.6rem; font-size: 1.5rem; line-height: 1;
-    background: transparent; border: 0; color: inherit; cursor: pointer; border-radius: 0.75rem;
+    min-width: 3rem; min-height: var(--toque); margin-left: -0.6rem; font-size: 1.5rem; line-height: 1;
+    background: transparent; border: 0; color: inherit; cursor: pointer; border-radius: var(--raio);
   }
   /* Do tamanho do botão de Ajustes (3rem x 3rem, o `.botao-icone` da tela inicial), com o mesmo raio: logo e botão formam o par das pontas da barra. */
-  .logo { flex: none; width: 3rem; height: 3rem; border-radius: 0.75rem; }
+  .logo { flex: none; width: 3rem; height: 3rem; border-radius: var(--raio); }
   .textos { flex: 1; min-width: 0; padding: 0.25rem 0; }
   h1 {
     margin: 0; font-size: 1.2rem; line-height: 1.25;

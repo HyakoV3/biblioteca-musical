@@ -63,13 +63,13 @@
 
 <style>
   .aviso-hinario {
-    box-sizing: border-box; width: min(32rem, calc(100% - 2rem)); margin: auto; /* margem lateral de 1rem em tela estreita */ padding: 1.25rem; border: 0.0625rem solid var(--borda-controle); border-radius: 1rem;
+    box-sizing: border-box; width: min(32rem, calc(100% - 2rem)); margin: auto; /* margem lateral de 1rem em tela estreita */ padding: 1.25rem; border: var(--borda-padrao); border-radius: 1rem;
     background: var(--fundo); color: var(--texto);
   }
   .aviso-hinario::backdrop { background: rgb(0 0 0 / 0.55); }
   h2 { margin: 0 0 0.75rem; font-size: 1.2rem; }
   p { margin: 0 0 0.75rem; }
   progress { width: 100%; height: 0.625rem; accent-color: var(--acento); margin-bottom: 0.5rem; }
-  .acoes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem; }
-  .acoes .botao { min-height: 3rem; }
+  .acoes { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--espaco); margin-top: 0.5rem; }
+  .acoes .botao { min-height: var(--toque); }
 </style>

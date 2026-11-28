@@ -20,8 +20,8 @@
 
 <style>
   /* Uma faixa com o ponto, o texto e o Parar (o ponto é só enfeite: o texto diz "Gravando"). */
-  .gravando-aviso { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; border: 0.0625rem solid var(--ouro-linha); border-radius: 0.75rem; background: var(--superficie); }
+  .gravando-aviso { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 0.75rem; margin-bottom: 0.75rem; border: 0.0625rem solid var(--ouro-linha); border-radius: var(--raio); background: var(--superficie); }
   .gravando-aviso .ponto { width: 0.9rem; height: 0.9rem; border-radius: 50%; background: currentColor; flex: none; }
   .gravando-aviso .texto { flex: 1; min-width: 0; font-variant-numeric: tabular-nums; }
-  .gravando-aviso button { min-height: 3rem; }
+  .gravando-aviso button { min-height: var(--toque); }
 </style>

@@ -18,6 +18,7 @@
  *   --ouro            preenchimento da parte que toca (texto em --ouro-sobre)
  *   --ouro-linha      linhas, barra de progresso e marca do final (no claro é mais escuro, para dar contraste)
  */
+
 :root {
   color-scheme: light dark;
 
@@ -36,6 +37,24 @@
   --ouro: #f8b000;
   --ouro-sobre: #10151d;
   --ouro-linha: #946200;
+}
+
+/*
+ * Medidas repetidas pelos componentes (iguais em todos os temas). Só rem. Usar o token em vez do valor solto.
+ * Os que citam cor (--borda-padrao, --borda-destaque, --anel-foco) leem a cor do tema em :root, onde ela é definida.
+ */
+:root {
+  --raio: 0.75rem;
+  --borda-padrao: 0.0625rem solid var(--borda-controle);
+  --borda-destaque: 0.125rem solid var(--acento);
+  --anel-foco: 0.1875rem solid var(--foco);
+  --anel-foco-recuo: 0.125rem;
+  --toque-minimo: 2.75rem;
+  --toque: 3rem;
+  --toque-grande: 3.5rem;
+  --espaco-p: 0.25rem;
+  --espaco: 0.5rem;
+  --espaco-g: 1rem;
 }
 
 @media (prefers-color-scheme: dark) {

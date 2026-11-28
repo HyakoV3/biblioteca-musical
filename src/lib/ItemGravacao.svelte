@@ -306,30 +306,30 @@
 </li>
 
 <style>
-  .gravacao-item { display: grid; gap: 0.5rem; padding: 0.8rem 0.9rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); list-style: none; }
+  .gravacao-item { display: grid; gap: var(--espaco); padding: 0.8rem 0.9rem; border: var(--borda-padrao); border-radius: var(--raio); background: var(--superficie); list-style: none; }
   .topo { display: grid; gap: 0.15rem; }
   .nome { font-size: 1rem; }
-  .marca { justify-self: start; padding: 0.1rem 0.5rem; border: 0.125rem solid var(--acento); border-radius: 0.75rem; font-size: 0.85rem; font-weight: 700; }
+  .marca { justify-self: start; padding: 0.1rem 0.5rem; border: var(--borda-destaque); border-radius: var(--raio); font-size: 0.85rem; font-weight: 700; }
   .info, .erro-item { margin: 0; font-variant-numeric: tabular-nums; }
   audio { width: 100%; }
-  .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .acoes .botao { flex: 1 1 5.5rem; min-height: 2.75rem; }
+  .acoes { display: flex; flex-wrap: wrap; gap: var(--espaco); }
+  .acoes .botao { flex: 1 1 5.5rem; min-height: var(--toque-minimo); }
   /* Confirmando: borda e texto em destaque (não só a cor: o texto do botão muda para "Apagar mesmo?"). */
-  .linha-nome { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-  .estrela { flex: none; min-width: 2.75rem; min-height: 2.75rem; font-size: 1.5rem; line-height: 1; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); color: var(--texto); cursor: pointer; }
-  .estrela[aria-pressed="true"] { border: 0.125rem solid var(--acento); }
-  .renomear { display: grid; gap: 0.5rem; }
-  .renomear label { display: grid; gap: 0.25rem; }
-  .renomear input { box-sizing: border-box; width: 100%; min-height: 3rem; padding: 0 0.75rem; font: inherit; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); color: var(--texto); }
-  .botoes-nome { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-  .botoes-nome .botao { flex: 1 1 5.5rem; min-height: 2.75rem; }
-  .contexto summary { cursor: pointer; min-height: 2.75rem; display: flex; align-items: center; }
+  .linha-nome { display: flex; align-items: center; justify-content: space-between; gap: var(--espaco); }
+  .estrela { flex: none; min-width: 2.75rem; min-height: var(--toque-minimo); font-size: 1.5rem; line-height: 1; border: var(--borda-padrao); border-radius: var(--raio); background: var(--superficie); color: var(--texto); cursor: pointer; }
+  .estrela[aria-pressed="true"] { border: var(--borda-destaque); }
+  .renomear { display: grid; gap: var(--espaco); }
+  .renomear label { display: grid; gap: var(--espaco-p); }
+  .renomear input { box-sizing: border-box; width: 100%; min-height: var(--toque); padding: 0 0.75rem; font: inherit; border: var(--borda-padrao); border-radius: var(--raio); background: var(--superficie); color: var(--texto); }
+  .botoes-nome { display: flex; flex-wrap: wrap; gap: var(--espaco); }
+  .botoes-nome .botao { flex: 1 1 5.5rem; min-height: var(--toque-minimo); }
+  .contexto summary { cursor: pointer; min-height: var(--toque-minimo); display: flex; align-items: center; }
   .linhas-contexto { margin: 0 0 0.25rem; padding-left: 1.25rem; }
-  .envio-contexto { box-sizing: border-box; width: min(32rem, calc(100% - 2rem)); margin: auto; padding: 1.25rem; border: 0.0625rem solid var(--borda-controle); border-radius: 1rem; background: var(--fundo); color: var(--texto); }
+  .envio-contexto { box-sizing: border-box; width: min(32rem, calc(100% - 2rem)); margin: auto; padding: 1.25rem; border: var(--borda-padrao); border-radius: 1rem; background: var(--fundo); color: var(--texto); }
   .envio-contexto::backdrop { background: rgb(0 0 0 / 0.55); }
   .envio-contexto h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
-  .previa { margin: 0.5rem 0 0.8rem; padding: 0.6rem 0.7rem; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 0.95rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.5rem; }
-  .botoes { display: grid; gap: 0.5rem; }
-  .botoes .botao { min-height: 2.75rem; }
+  .previa { margin: 0.5rem 0 0.8rem; padding: 0.6rem 0.7rem; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 0.95rem; border: var(--borda-padrao); border-radius: 0.5rem; }
+  .botoes { display: grid; gap: var(--espaco); }
+  .botoes .botao { min-height: var(--toque-minimo); }
   .perigo { border-width: 0.125rem; border-color: var(--perigo); font-weight: 700; }
 </style>

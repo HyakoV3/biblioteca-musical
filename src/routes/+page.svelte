@@ -242,9 +242,9 @@
 <style>
   .busca { position: relative; margin-bottom: 0.8rem; }
   input[type="search"] {
-    width: 100%; box-sizing: border-box; min-height: 3rem; padding: 0.7rem 3rem 0.7rem 0.9rem;
+    width: 100%; box-sizing: border-box; min-height: var(--toque); padding: 0.7rem 3rem 0.7rem 0.9rem;
     font-size: 1rem; color: var(--texto); background: var(--superficie);
-    border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem;
+    border: var(--borda-padrao); border-radius: var(--raio);
     -webkit-appearance: none; appearance: none;
   }
   input[type="search"]::placeholder { color: var(--suave); opacity: 1; }
@@ -255,9 +255,9 @@
   }
   ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.4rem; }
   li > a {
-    min-height: 3.5rem; box-sizing: border-box; display: flex; align-items: center; gap: 0.8rem;
+    min-height: var(--toque-grande); box-sizing: border-box; display: flex; align-items: center; gap: 0.8rem;
     padding: 0.5rem 0.9rem; text-decoration: none; color: var(--texto);
-    background: var(--superficie); border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem;
+    background: var(--superficie); border: var(--borda-padrao); border-radius: var(--raio);
   }
   /* O hino que toca: borda na cor de destaque (um fio a mais por fora, sem mexer no tamanho da caixa) e o ícone de som; pausado, a borda fica mais fraca e o ícone é o de pausa. */
   li > a.tocando { border-color: var(--acento); box-shadow: 0 0 0 0.0625rem var(--acento); }
@@ -267,8 +267,8 @@
   li > a.ultimo.tocando { border-color: var(--acento); box-shadow: 0 0 0 0.125rem var(--acento); }
   li > a.ultimo.pausado { border-color: color-mix(in srgb, var(--acento) 55%, var(--borda-controle)); box-shadow: 0 0 0 0.125rem color-mix(in srgb, var(--acento) 55%, var(--borda-controle)); }
   .continuar {
-    display: flex; flex-direction: column; gap: 0.1rem; min-height: 3rem; box-sizing: border-box; padding: 0.5rem 0.9rem; margin-bottom: 0.8rem;
-    text-decoration: none; color: var(--texto); background: var(--superficie); border: 0.0625rem solid var(--ouro-linha); border-radius: 0.75rem;
+    display: flex; flex-direction: column; gap: 0.1rem; min-height: var(--toque); box-sizing: border-box; padding: 0.5rem 0.9rem; margin-bottom: 0.8rem;
+    text-decoration: none; color: var(--texto); background: var(--superficie); border: 0.0625rem solid var(--ouro-linha); border-radius: var(--raio);
   }
   .continuar-rotulo { font-size: 0.85rem; color: var(--suave); }
   .continuar-hino { font-weight: 700; overflow-wrap: anywhere; }

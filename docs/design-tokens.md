@@ -31,6 +31,19 @@ usa cor fixa; todos usam estes nomes.
 | `--sucesso` | Avisos de sucesso |
 | `--foco` | Anel de foco |
 
+## Medidas repetidas
+
+Além das cores, o `tema.css` guarda, num bloco `:root` próprio (iguais em todos os temas), as medidas que os componentes repetiam. Use o token em vez do valor solto, sempre em rem:
+
+| Token | Valor |
+|---|---|
+| `--raio` | `0.75rem` (raio dos controles e cartões) |
+| `--borda-padrao` | `0.0625rem solid var(--borda-controle)` |
+| `--borda-destaque` | `0.125rem solid var(--acento)` (opção selecionada) |
+| `--anel-foco` / `--anel-foco-recuo` | `0.1875rem solid var(--foco)` / `0.125rem` |
+| `--toque-minimo` / `--toque` / `--toque-grande` | `2.75rem` / `3rem` / `3.5rem` (alturas mínimas de toque) |
+| `--espaco-p` / `--espaco` / `--espaco-g` | `0.25rem` / `0.5rem` / `1rem` (usados em `gap`) |
+
 ## Cor de destaque: azul para agir, dourado para a posição
 
 O azul (`--acento`, no estilo normal) continua nas **ações**. O dourado (o mesmo do ícone) marca **onde se está na música**: a parte que toca, a barra de progresso, a aba selecionada e o ⚑ do final. Prévia lado a lado em [`design/identidade/previa-dourado.png`](../design/identidade/previa-dourado.png).

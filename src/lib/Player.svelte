@@ -381,29 +381,29 @@
 </section>
 
 <style>
-  .player { display: grid; gap: 1rem; }
-  .principal { display: flex; gap: 0.5rem; }
-  .principal :global(.botao) { gap: 0.5rem; }
+  .player { display: grid; gap: var(--espaco-g); }
+  .principal { display: flex; gap: var(--espaco); }
+  .principal :global(.botao) { gap: var(--espaco); }
   /* O título fica no centro do botão, como se estivesse sozinho; a duração é um subtítulo menor, deslocado para baixo (sem parênteses), igual antes e durante a reprodução, então o botão não muda quando o Parar aparece. */
-  .tocar { flex: 1; min-height: 3.5rem; padding-block: 1.1rem; font-size: 1.15rem; position: relative; }
+  .tocar { flex: 1; min-height: var(--toque-grande); padding-block: 1.1rem; font-size: 1.15rem; position: relative; }
   .tocar .duracao { position: absolute; left: 0; right: 0; bottom: 0.3rem; text-align: center; font-size: 0.75rem; font-weight: 400; line-height: 1; opacity: 0.85; pointer-events: none; }
   .texto-tocar { text-align: center; }
   .duracao { white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .parar { min-height: 3.5rem; }
+  .parar { min-height: var(--toque-grande); }
   .tempos { display: flex; justify-content: space-between; margin-top: 0.3rem; font-size: 0.85rem; color: var(--suave); font-variant-numeric: tabular-nums; }
   .dica { margin: 0; }
 
-  .passo-linha { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .passo-linha { display: flex; align-items: center; justify-content: space-between; gap: var(--espaco); }
   .rotulo { font-size: 0.95rem; }
   /* Andamento: rótulo em cima e os cinco itens (−5 −1 valor +1 +5) repartindo a largura toda. Botões de texto. */
   .passo-linha.empilhado { flex-wrap: wrap; }
   /* Botões compactos ("▶ Intro", "▶ 1ª", "▶ 3ª ⚑") que dividem a linha inteira. O que toca fica em destaque. */
   /* As partes (Intro, 1ª, 2ª...) na pílula padrão do app (a mesma do `Segmentado`): um contorno com o canto de 0.75rem e, dentro, um respiro e as partes lado a lado. Aqui os segmentos são
      botões de tocar (não uma escolha): a parte que soa tem um anel, e o dourado do progresso enche DENTRO do segmento dela. Com muitas partes (Intro e até 8 vezes) a pílula quebra em linhas. */
-  .vezes { display: flex; flex-wrap: wrap; gap: 0.15rem; padding: 0.2rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
+  .vezes { display: flex; flex-wrap: wrap; gap: 0.15rem; padding: 0.2rem; border: var(--borda-padrao); border-radius: var(--raio); background: var(--superficie); }
   /* Cada botão ocupa uma fatia igual da linha (flex: 1 1 0). Com muitas vezes (até 8 + Intro), quebram de linha e
      cada linha também se reparte por inteiro. */
-  .vez { flex: 1 1 0; gap: 0.35rem; min-width: 3rem; min-height: 2.75rem; padding: 0 0.4rem; position: relative; overflow: hidden; border: 0; border-radius: 0.55rem; background: transparent; }
+  .vez { flex: 1 1 0; gap: 0.35rem; min-width: 3rem; min-height: var(--toque-minimo); padding: 0 0.4rem; position: relative; overflow: hidden; border: 0; border-radius: 0.55rem; background: transparent; }
   .rotulo-vez { display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem; }
   /* A parte que soa: base normal (a cor do cartão) com borda dourada, e por cima o dourado enchendo da esquerda para a
      direita. As duas camadas têm o mesmo tamanho e o mesmo rótulo, e a de cima é recortada no quanto já passou, então o
@@ -414,11 +414,11 @@
     background: var(--ouro); color: var(--ouro-sobre); pointer-events: none;
   }
 
-  .vozes { display: grid; gap: 0.5rem; }
-  .voz { display: grid; grid-template-columns: 3rem minmax(5.5rem, 8rem) 1fr; align-items: center; gap: 0.5rem; }
+  .vozes { display: grid; gap: var(--espaco); }
+  .voz { display: grid; grid-template-columns: 3rem minmax(5.5rem, 8rem) 1fr; align-items: center; gap: var(--espaco); }
   .chave {
-    min-width: 3rem; min-height: 3rem; font-size: 1.2rem; border-radius: 0.75rem; cursor: pointer;
-    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+    min-width: 3rem; min-height: var(--toque); font-size: 1.2rem; border-radius: var(--raio); cursor: pointer;
+    border: var(--borda-padrao); background: var(--superficie); color: var(--texto);
   }
   /* Voz silenciada: rótulo "silenciada", nome riscado e interruptor tracejado (não depende só de cor). */
   .voz.silenciada .chave { border-style: dashed; opacity: 0.75; }
@@ -426,19 +426,19 @@
   .identidade { display: flex; flex-direction: column; min-width: 0; }
   .nome { font-weight: 600; overflow-wrap: anywhere; }
   .estado-voz { font-size: 0.8rem; color: var(--suave); font-variant-numeric: tabular-nums; }
-  input[type="range"] { width: 100%; min-height: 3rem; accent-color: var(--acento); }
+  input[type="range"] { width: 100%; min-height: var(--toque); accent-color: var(--acento); }
 
   /* Cards: o primeiro (Tocar) é fixo (a moldura `.cartao` é global); os outros são o Cartao.svelte, que abre e fecha e mostra um resumo
      na linha de cima. */
   .corpo { display: grid; gap: 0.8rem; padding: 0.9rem; }
   /* minmax(0, 1fr) + largura limitada: sem isso, o nome mais longo ("Órgão de palhetas gravado (teste)") alarga o
      seletor e ele passa da borda do painel. */
-  .inst-linha { display: grid; grid-template-columns: minmax(5.5rem, 8rem) minmax(0, 1fr); align-items: center; gap: 0.5rem; }
+  .inst-linha { display: grid; grid-template-columns: minmax(5.5rem, 8rem) minmax(0, 1fr); align-items: center; gap: var(--espaco); }
   .inst-controles { display: grid; gap: 0.4rem; min-width: 0; }
   /* Alternador Sintetizado | Gravado: o escolhido leva ✓ e negrito, além da cor. */
-  .alternador { display: flex; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; overflow: hidden; }
+  .alternador { display: flex; border: var(--borda-padrao); border-radius: var(--raio); overflow: hidden; }
   .alt {
-    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; min-height: 2.75rem;
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; min-height: var(--toque-minimo);
     padding: 0 0.4rem; font-size: 0.95rem; border: 0; background: var(--superficie); color: var(--texto); cursor: pointer;
   }
   .alt + .alt { border-left: 0.0625rem solid var(--borda-controle); }
@@ -446,8 +446,8 @@
   .alt:disabled { opacity: 0.5; cursor: not-allowed; }
   select {
     width: 100%; min-width: 0; max-width: 100%; text-overflow: ellipsis;
-    min-height: 3rem; font-size: 1rem; border-radius: 0.75rem; padding: 0 0.5rem;
-    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+    min-height: var(--toque); font-size: 1rem; border-radius: var(--raio); padding: 0 0.5rem;
+    border: var(--borda-padrao); background: var(--superficie); color: var(--texto);
   }
   .secundario { background: transparent; font-size: 0.95rem; }
   button:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }

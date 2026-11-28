@@ -267,9 +267,9 @@
 </div>
 
 <style>
-  .afinador { display: grid; gap: 1rem; }
+  .afinador { display: grid; gap: var(--espaco-g); }
   .afinador > p { margin: 0; }
-  .grande { position: relative; overflow: hidden; min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
+  .grande { position: relative; overflow: hidden; min-height: var(--toque-grande); font-size: 1.15rem; gap: var(--espaco); }
   /* O fio de progresso do temporizador, na borda de baixo do botão (a cor do texto do botão, um pouco apagada). */
   .barra { position: absolute; left: 0; bottom: 0; height: 0.3125rem; background: var(--acento-texto); opacity: 0.75; }
 
@@ -279,12 +279,12 @@
   .opcoes label { position: relative; }
   .opcoes input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
   .opcoes span {
-    display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 3rem; box-sizing: border-box;
-    padding: 0 0.4rem; border-radius: 0.75rem; font-size: 1rem;
-    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+    display: flex; align-items: center; justify-content: center; gap: var(--espaco-p); min-height: var(--toque); box-sizing: border-box;
+    padding: 0 0.4rem; border-radius: var(--raio); font-size: 1rem;
+    border: var(--borda-padrao); background: var(--superficie); color: var(--texto);
   }
-  .opcoes .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
-  .opcoes input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
+  .opcoes .ativo span { border: var(--borda-destaque); font-weight: 700; }
+  .opcoes input:focus-visible + span { outline: var(--anel-foco); outline-offset: var(--anel-foco-recuo); }
 
   /* A pílula: o Play fica na ponta da linha de cima do cartão; o título fica à esquerda da divisória e o sinal de abrir e fechar vem antes dela. O botão COBRE a borda do cartão nesse trecho
      (começa em 0, e não a 1px dentro dela) e leva a MESMA borda e o MESMO raio externo (0,75rem): assim ele encosta no topo, na direita e na divisória em qualquer densidade de tela e tamanho de
@@ -294,18 +294,18 @@
   .tocar-pilula {
     position: absolute; inset: 0 0 auto auto; width: calc(4.5rem + 0.0625rem); height: calc(3rem + 0.0625rem); box-sizing: border-box; overflow: hidden;
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.05rem; padding: 0;
-    border: 0.0625rem solid var(--borda-controle); border-bottom: 0; border-radius: 0 0.75rem 0 0;
+    border: var(--borda-padrao); border-bottom: 0; border-radius: 0 0.75rem 0 0;
     background: var(--acento); color: var(--acento-texto); cursor: pointer; font: inherit;
   }
   /* O triângulo do Play ocupa de 8 a 19 na caixa de 24 do ícone: o centro dele cai 1,5 px à direita do centro da caixa. Recuar 1 px o põe no meio do botão. */
   .tocar-pilula :global(.icone) { translate: -0.0625rem 0; }
   /* Fechado, o botão cobre a altura toda do cartão (a borda de baixo também). */
   .tocar-pilula.fechada { height: calc(3rem + 0.125rem); border-bottom: 0.0625rem solid var(--borda-controle); border-radius: 0 0.75rem 0.75rem 0; }
-  .tocar-pilula:focus-visible { outline: 0.1875rem solid var(--foco); outline-offset: -0.25rem; }
+  .tocar-pilula:focus-visible { outline: var(--anel-foco); outline-offset: -0.25rem; }
   .resta { font-size: 0.75rem; line-height: 1; font-variant-numeric: tabular-nums; }
 
   .linha { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; }
-  .oitava { display: flex; align-items: center; gap: 0.5rem; }
+  .oitava { display: flex; align-items: center; gap: var(--espaco); }
   .valor-oitava { min-width: 4.5rem; text-align: center; }
   .freq { font-variant-numeric: tabular-nums; font-weight: 600; }
 </style>

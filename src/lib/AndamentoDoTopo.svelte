@@ -28,14 +28,14 @@
 </div>
 
 <style>
-  .andamento { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-width: 3rem; min-height: 3rem; padding: 0 0.5rem; line-height: 1.05; }
+  .andamento { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-width: 3rem; min-height: var(--toque); padding: 0 0.5rem; line-height: 1.05; }
   .valor { font-size: 1.05rem; font-weight: 600; font-variant-numeric: tabular-nums; }
   .un { font-size: 0.7rem; color: var(--suave); }
   /* O painel abre logo abaixo da barra, à direita, na camada de cima (fecha ao tocar fora ou no Esc). */
   .painel {
     position: fixed; inset: auto; top: calc(env(safe-area-inset-top) + 3.75rem); right: 0.5rem; left: auto; margin: 0;
     width: min(22rem, calc(100vw - 1rem)); padding: 0.75rem; box-sizing: border-box;
-    background: var(--fundo); color: var(--texto); border: 0.0625rem solid var(--borda); border-radius: 0.75rem;
+    background: var(--fundo); color: var(--texto); border: 0.0625rem solid var(--borda); border-radius: var(--raio);
   }
   .painel:not(:popover-open) { display: none; }
   .titulo { margin: 0 0 0.5rem; font-size: 0.95rem; }
