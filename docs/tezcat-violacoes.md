@@ -38,7 +38,7 @@
 
 **Critério revisado (pela avaliação do Opus):** um WARN **vale a pena** quando **custa ponto** (está acima do limiar) e, se for neutro (exatamente no limiar), só quando o arquivo já está aberto para um FAIL. **Nesting e Params** em código de áudio e de gravação valem pela testabilidade, mesmo sem custar nota. Ficam para depois: o `Clean/Tamanho` de arquivo sem FAIL e os WARN neutros isolados.
 
-**Arquivos de dados (`pt.ts`, `en.ts`, `es.ts`, ~555 linhas cada):** são dados, não código. O caminho legítimo não é afrouxar o limiar do projeto inteiro (isso esconderia dívida), e sim um `tezcat.toml` com `[scan] skip_files` para esses três, com o motivo escrito. Não levam a marca [junto].
+**Arquivos de dados (`pt.ts`, `en.ts`, `es.ts`, ~555 linhas cada):** são dados, não código. Em vez de afrouxar o limiar do projeto inteiro (isso esconderia dívida), o `tezcat.toml` os tira da varredura com `[scan] skip_files`, com o motivo escrito no próprio arquivo. A paridade das chaves segue garantida pelo tipo `Dicionario` e pelo `tools/verificar-traducoes.py` no CI. Resolvido em 2026-11-27.
 
 Cada arquivo abaixo leva a marca **[junto]** quando seus WARN entram na mesma PR dos FAIL, e **[avaliar]** quando o arquivo não tem FAIL (exceto os de dados i18n, que não entram na meta).
 
