@@ -271,7 +271,7 @@ largura. **A paisagem só vale com o retrato do mesmo hino** (sem ele é recusad
 
 O app manda o zip ao Rust como **texto base64** (`invoke("importar_partituras", { zip })`), e não como corpo binário: **no Android o Tauri
 não entrega corpo binário** (só o `postMessage`, que é texto). O tamanho do texto é conferido antes de decodificar. Num pacote de 15 MB
-isso são ~20 MB de texto na chamada. `tools/montar-pacote.py pasta-dos-svg pacote.zip` monta o zip; os SVG vêm de `tools/gerar-partituras.py`.
+isso são ~20 MB de texto na chamada. `tools/montar-pacote.py pasta-dos-svg pacote.zip --aplicar` monta o zip; os SVG vêm de `tools/gerar-partituras.py`.
 O Rust confere tudo antes de gravar:
 
 - **Hinário instalado.** Sem hinário importado, a instalação é recusada (`partituras_sem_hinario`); um zip sem nenhum SVG também

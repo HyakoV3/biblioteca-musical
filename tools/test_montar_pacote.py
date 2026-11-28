@@ -62,7 +62,7 @@ class Zip(unittest.TestCase):
             (pasta / nome).write_text(SVG, encoding="utf-8")
         saida = tmp / "saida" / "pacote.zip"
         out, err = io.StringIO(), io.StringIO()
-        with mock.patch.object(sys, "argv", ["montar-pacote.py", str(pasta), str(saida)]), \
+        with mock.patch.object(sys, "argv", ["montar-pacote.py", str(pasta), str(saida), "--aplicar"]), \
                 contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             codigo = m.principal()
         return codigo, saida, out.getvalue(), err.getvalue()
@@ -131,7 +131,7 @@ class Zip(unittest.TestCase):
             (tmp / "vazia").mkdir()
             for pasta in (tmp / "vazia", tmp / "nao-existe"):
                 saida = tmp / "z.zip"
-                with mock.patch.object(sys, "argv", ["x", str(pasta), str(saida)]), contextlib.redirect_stderr(io.StringIO()):
+                with mock.patch.object(sys, "argv", ["x", str(pasta), str(saida), "--aplicar"]), contextlib.redirect_stderr(io.StringIO()):
                     self.assertEqual(m.principal(), 2, str(pasta))
                 self.assertFalse(saida.exists())
 

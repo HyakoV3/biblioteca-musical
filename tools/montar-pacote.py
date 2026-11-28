@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Monta o pacote .zip de partituras (I-08): só partituras/hino-N.svg e partituras/hino-N-paisagem.svg, que o app baixa do servidor.
 
-Uso:  python3 tools/montar-pacote.py PASTA_SVG SAIDA.zip
+Uso:  python3 tools/montar-pacote.py PASTA_SVG SAIDA.zip [--aplicar]
+
+Sem --aplicar (também vale --apply) só SIMULA: lista o que entraria no zip, sem criar a pasta nem o zip. Com --aplicar monta o pacote.
 
 PASTA_SVG  os hino-<número>.svg (retrato) e hino-<número>-paisagem.svg que tools/gerar-partituras.py gera.
 SAIDA.zip  o pacote. Depois: tools/montar-manifesto-partituras.py (nome, tamanho e SHA-256 para o manifesto do app) e, no servidor, o link
@@ -17,6 +19,9 @@ import re
 import sys
 import zipfile
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from aplicar import aplicar_ou_simular, flag_aplicar  # noqa: E402
 
 SVG = re.compile(r"^hino-([1-9][0-9]{0,8})(-paisagem)?\.svg$")
 DATA_FIXA = (1980, 1, 1, 0, 0, 0)  # o início do tempo do zip: sem isto cada geração teria bytes diferentes
@@ -74,10 +79,17 @@ def resumo(saida: Path, svgs: dict) -> str:
     return f"{saida}: {retratos} partituras ({paisagens} com versão de paisagem); {tamanho:,} bytes ({tamanho / 1048576:.1f} MiB)"
 
 
+def descricao(saida: Path, svgs: dict) -> str:
+    """O que a simulação diz: quantos SVG entram e em que zip, com a lista dos nomes no zip."""
+    nomes = ", ".join(nome_no_zip(n, p) for n, p in sorted(svgs))
+    return f"montaria {saida} com {len(svgs)} SVG: {nomes}"
+
+
 def principal() -> int:
     ap = argparse.ArgumentParser(description="Monta o pacote .zip de partituras (partituras/hino-N.svg e hino-N-paisagem.svg).")
     ap.add_argument("svgs", type=Path)
     ap.add_argument("saida", type=Path)
+    flag_aplicar(ap)
     a = ap.parse_args()
 
     if not a.svgs.is_dir():
@@ -88,6 +100,8 @@ def principal() -> int:
     if not svgs:
         print(f"erro: nenhum hino-<número>.svg em {a.svgs}", file=sys.stderr)
         return 2
+    if not aplicar_ou_simular(a.aplicar, descricao(a.saida, svgs)):
+        return 0
     a.saida.parent.mkdir(parents=True, exist_ok=True)
     escrever_zip(a.saida, svgs)
     print(resumo(a.saida, svgs))
