@@ -185,14 +185,14 @@
     }
   }
   // As props de andamento de um LinhaPacote (fase, progresso e os textos de cada fase) a partir do andamento de um pacote.
-  function andamentoDe(prefixo: "hinario" | "partituras" | "sons", a: { fase: string; progresso: number }) {
+  function andamentoDe(prefixo: "hinario" | "partituras" | "sons", a: { fase: Parameters<typeof porcentagemTotal>[0]; progresso: number }) {
     const fase = a.fase === "baixando" || a.fase === "conferindo" || a.fase === "instalando" ? a.fase : "ocioso";
     return {
       fase,
       progresso: a.progresso,
-      textoBaixando: t(`${prefixo}.baixando` as Chave, { n: porcentagemTotal(a.fase as never, a.progresso) }),
-      textoConferindo: t(`${prefixo}.conferindo` as Chave),
-      textoInstalando: t(`${prefixo}.instalando` as Chave),
+      textoBaixando: t(`${prefixo}.baixando` as const, { n: porcentagemTotal(a.fase, a.progresso) }),
+      textoConferindo: t(`${prefixo}.conferindo` as const),
+      textoInstalando: t(`${prefixo}.instalando` as const),
     } as const;
   }
 </script>
@@ -200,12 +200,12 @@
 <svelte:head><title>{t("ajustes.titulo")} · Biblioteca Musical</title></svelte:head>
 
 <!-- "Em nome do Senhor Jesus": ao lado do título quando cabe e, se não couber (tela estreita, letra grande), na linha de baixo, à direita (`quebra`): o título não quebra no meio da palavra. -->
-<!-- As opções de um grupo de escolha única (segmentos): um rádio escondido por opção, com o ✓ na escolhida. O texto vem de `<prefixo>.<id>`. -->
-{#snippet opcoes(nome: string, ids: readonly string[], atual: string, escolher: (id: any) => void, prefixo: string)}
+<!-- As opções de um grupo de escolha única (segmentos): um rádio escondido por opção, com o ✓ na escolhida. O texto de cada opção vem de `rotulo` (cada chamada monta a chave literal, e o build confere que a tradução existe). -->
+{#snippet opcoes(nome: string, ids: readonly string[], atual: string, escolher: (id: string) => void, rotulo: (id: string) => string)}
   {#each ids as id}
     <label class:ativo={atual === id}>
       <input class="radio-oculto" type="radio" name={nome} value={id} checked={atual === id} onchange={() => escolher(id)} />
-      <span class="opcao-tema">{#if atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`${prefixo}.${id}` as Chave)}</span>
+      <span class="opcao-tema">{#if atual === id}<Icone nome="ok" tamanho={18} />{/if}{rotulo(id)}</span>
     </label>
   {/each}
 {/snippet}
@@ -251,12 +251,12 @@
            ao grupo (aria-labelledby), então texto visível e nome acessível são sempre o mesmo. -->
       <p class="rotulo-grupo" id="rotulo-modo">{t("ajustes.modo")}</p>
       <fieldset class="segmentos modo" aria-labelledby="rotulo-modo">
-        {@render opcoes("tema", TEMAS, tema.atual, (id) => (tema.atual = id), "tema")}
+        {@render opcoes("tema", TEMAS, tema.atual, (id) => (tema.atual = id as typeof tema.atual), (id) => t(`tema.${id as (typeof TEMAS)[number]}`))}
       </fieldset>
       <p class="rotulo-grupo" id="rotulo-estilo">{t("ajustes.estilo")}</p>
       <!-- O Alto contraste tem paleta própria: com ele o estilo não vale, então o grupo fica desativado e uma nota diz por quê. -->
       <fieldset class="segmentos" aria-labelledby="rotulo-estilo" disabled={tema.atual === "alto-contraste"}>
-        {@render opcoes("estilo", ESTILOS, estilo.atual, (id) => (estilo.atual = id), "estilo")}
+        {@render opcoes("estilo", ESTILOS, estilo.atual, (id) => (estilo.atual = id as typeof estilo.atual), (id) => t(`estilo.${id as (typeof ESTILOS)[number]}`))}
       </fieldset>
       {#if tema.atual === "alto-contraste"}<p class="meta">{t("ajustes.estilo_alto_contraste")}</p>{/if}
     </Cartao>
@@ -275,7 +275,7 @@
       <!-- Os nomes das notas (Afinador e tonalidade dos hinos): em sílabas (Dó, Ré, Mi… e Si♭), em letras (C, D, E… e B♭) ou automático (segue o idioma). -->
       <p class="rotulo-grupo" id="rotulo-notas">{t("ajustes.notas")}</p>
       <fieldset class="segmentos" aria-labelledby="rotulo-notas">
-        {@render opcoes("notacao", NOTACOES, notacao.atual, (id) => (notacao.atual = id), "notacao")}
+        {@render opcoes("notacao", NOTACOES, notacao.atual, (id) => (notacao.atual = id as typeof notacao.atual), (id) => t(`notacao.${id as (typeof NOTACOES)[number]}`))}
       </fieldset>
     </Cartao>
   </section>
@@ -297,7 +297,7 @@
         </button>
       </div>
       <fieldset class="segmentos" aria-labelledby="rotulo-saida">
-        {@render opcoes("modo-saida", MODOS, modoDeSaida, escolherModo, "saida")}
+        {@render opcoes("modo-saida", MODOS, modoDeSaida, (id) => escolherModo(id as Modo), (id) => t(`saida.${id as (typeof MODOS)[number]}`))}
       </fieldset>
       <p class="meta" id="saida-descricao">{t(`saida.desc.${modoDeSaida}`)}</p>
       {#if saidaInfo}
