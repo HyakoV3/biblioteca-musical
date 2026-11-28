@@ -12,7 +12,10 @@ def _flatpak(entrada: Path, trabalho: Path):
     """O comando do Flatpak do MuseScore, ou None se ele não estiver instalado. O Flatpak só enxerga as pastas que se pedem: a de entrada (leitura) e a de trabalho."""
     if not shutil.which("flatpak"):
         return None
-    achou = subprocess.run(["flatpak", "info", "org.musescore.MuseScore"], capture_output=True)
+    try:
+        achou = subprocess.run(["flatpak", "info", "org.musescore.MuseScore"], capture_output=True, timeout=30)
+    except (subprocess.TimeoutExpired, OSError):
+        return None
     if achou.returncode != 0:
         return None
     return ["flatpak", "run", f"--filesystem={entrada}:ro", f"--filesystem={trabalho}", "org.musescore.MuseScore"]

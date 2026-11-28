@@ -39,14 +39,26 @@ class AcharMusescore(unittest.TestCase):
         class Ok:
             returncode = 0
 
-        with mock.patch.object(shutil, "which", lambda c: "/usr/bin/flatpak" if c == "flatpak" else None), \
+        with mock.patch.dict(os.environ), \
+                mock.patch.object(shutil, "which", lambda c: "/usr/bin/flatpak" if c == "flatpak" else None), \
                 mock.patch.object(subprocess, "run", lambda *a, **k: Ok()):
             os.environ.pop("BM_MUSESCORE", None)
             cmd = g.achar_musescore(self.entrada, self.trabalho, None)
         self.assertEqual(cmd, ["flatpak", "run", "--filesystem=/ent:ro", "--filesystem=/trab", "org.musescore.MuseScore"])
 
+    def test_flatpak_que_trava_ou_nao_executa_vale_como_nao_instalado(self):
+        for erro in (subprocess.TimeoutExpired("flatpak", 30), OSError("sem permissão")):
+            def falha(*a, _erro=erro, **k):
+                raise _erro
+
+            with mock.patch.dict(os.environ), \
+                    mock.patch.object(shutil, "which", lambda c: "/usr/bin/flatpak" if c == "flatpak" else None), \
+                    mock.patch.object(subprocess, "run", falha):
+                os.environ.pop("BM_MUSESCORE", None)
+                self.assertIsNone(g.achar_musescore(self.entrada, self.trabalho, None))
+
     def test_sem_nada_instalado_devolve_none(self):
-        with mock.patch.object(shutil, "which", lambda c: None):
+        with mock.patch.dict(os.environ), mock.patch.object(shutil, "which", lambda c: None):
             os.environ.pop("BM_MUSESCORE", None)
             self.assertIsNone(g.achar_musescore(self.entrada, self.trabalho, None))
 
