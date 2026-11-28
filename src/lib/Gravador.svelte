@@ -1,19 +1,24 @@
 <script lang="ts">
   import { onDestroy, onMount, tick, untrack } from "svelte";
-  import Segmentado from "./Segmentado.svelte";
   import Aviso from "./Aviso.svelte";
   import Icone from "./Icone.svelte";
   import ItemGravacao from "./ItemGravacao.svelte";
-  import { corrigirDuracao, formatarTamanho, formatarTempo, nomeDoFormato, type Gravacao, type MotivoDoErro } from "./gravador";
-  import { formatarData, gravacoes, type MetaGravacao, type Mudancas } from "./gravacoes";
-  import { PAGINA, SEM_FILTRO, agrupar, chaveDeBusca, filtrar, janela, mesclar, nomeDaGravacao, resumir, type Consulta, type Filtro, type Grupo } from "./organizar";
+  import RuidoGravador from "./RuidoGravador.svelte";
+  import FiltrosGravacoes from "./FiltrosGravacoes.svelte";
+  import GravacaoNaoGuardada from "./GravacaoNaoGuardada.svelte";
+  import { formatarTamanho, formatarTempo, type Gravacao, type MotivoDoErro } from "./gravador";
+  import { gravacoes, type MetaGravacao } from "./gravacoes";
+  import { PAGINA, SEM_FILTRO, agrupar, filtrar, janela, resumir, type Consulta, type Grupo } from "./organizar";
   import { i18n } from "./i18n/index.svelte";
-  import { apagarCopiasEnviadas } from "./compartilhar";
   import { emCurso, type Resultado } from "./gravacaoEmCurso.svelte";
   import { reproducao } from "./reproducao.svelte";
-  import { FILTROS_DE_RUIDO, type FiltroDeRuido } from "./filtroDeRuido";
+  import { type FiltroDeRuido } from "./filtroDeRuido";
   import { lerFiltroDeRuido, salvarFiltroDeRuido } from "./preferencias";
-  
+  import { criarChaveDe } from "./gravadorChave";
+  import { focarItem } from "./gravadorFoco";
+  import { ListaDeGravacoes } from "./gravadorLista.svelte";
+  import { calcularFixadas, montarLinhas, ordemDaTela, rotuloDoGrupo, type Fixada } from "./gravadorLinhas";
+
   // A aba Gravador (I-03, primeira versão): grava o microfone, ouve de volta e descarta. Nada sai do aparelho. A permissão de microfone é pedida só
   // ao tocar em "Gravar". Gravar para o hino que estiver tocando (o alto-falante entraria no microfone). O microfone é devolvido ao aparelho ao parar,
   // ao sair da aba e ao esconder o app. `ativa` diz se a aba está à vista.
@@ -34,38 +39,14 @@
   let gravacao = $state<Gravacao | null>(null);
   /** A sessão de recuperação da gravação que está na tela sem ter sido guardada (some se a pessoa a descarta). */
   let sessaoDaGravacao: Promise<string | null> | null = null;
-  /** Todas as gravações guardadas (só os metadados; o áudio fica no banco), da mais nova para a mais antiga. `$state.raw`: a lista é trocada por inteira, por cópia, sem um proxy por registro. */
-  let todas = $state.raw<MetaGravacao[]>([]);
-  let listaPronta = $state(false);
-  /** Quantidade e espaço, derivados da lista na memória (e não de um cursor no banco a cada mudança). */
-  const resumo = $derived(resumir(todas));
-  /** A leitura da lista falhou: aparece o aviso com "Tentar de novo". */
-  let erroCarga = $state(false);
-  /** Apagar falhou. */
-  let erroAcao = $state(false);
   let erroGuardar = $state(false);
-  /**
-   * O que mudou enquanto a leitura completa corria: o que foi SALVO e o que foi APAGADO desde o início dela. Ao chegar, a leitura é mesclada com isso (`mesclar`), em vez de substituir a lista
-   * (senão uma gravação feita durante a leitura sumiria, e uma apagada voltaria). Nulo fora de uma leitura.
-   */
-  let registro: { salvas: MetaGravacao[]; apagadas: Set<string>; alteradas: Map<string, MetaGravacao> } | null = null;
-  /** Numera as leituras: "Apagar todas" ou uma leitura mais nova descarta a anterior. */
-  let carga = 0;
+  let erro = $state<MotivoDoErro | null>(null);
   /** Busca e filtro de origem (limpos ao sair e ao reabrir: não são lembrados). */
   let consulta = $state<Consulta>({ ...SEM_FILTRO });
-  /** Quantas gravações a lista mostra (cresce de PAGINA em PAGINA com "Mostrar mais"). */
-  let mostrando = $state(PAGINA);
-  /** A gravação que acabou de ser feita: aparece sempre, mesmo fora do filtro, até a próxima troca de filtro ou busca. */
-  let novaId = $state<string | null>(null);
+  /** O painel dos filtros (busca e "Com metrônomo"): fica aqui, e não no subcomponente, para sobreviver à lista esvaziar (a busca continua valendo). */
+  let filtrosAbertos = $state(false);
   /** O "agora" dos grupos por dia (Hoje, Ontem...): renovado ao voltar à aba e a cada minuto, para "Hoje" não ficar errado depois da meia-noite. */
   let agora = $state(Date.now());
-  /** Qual gravação da lista está tocando (só uma por vez). */
-  let tocandoId = $state<string | null>(null);
-  let confirmandoTudo = $state(false);
-  let relogioTudo: ReturnType<typeof setTimeout> | null = null;
-  let erro = $state<MotivoDoErro | null>(null);
-  /** O componente foi desmontado: o que chegar depois (a escrita atrasada de uma gravação) não pode mexer no que já não existe. */
-  let destruido = false;
 
   const textoErro: Record<MotivoDoErro, Parameters<typeof i18n.t>[0]> = {
     negada: "gravador.erro_negada",
@@ -74,11 +55,21 @@
     falhou: "gravador.erro_falhou",
   };
 
-  /** Ação do <audio>: corrige a duração de um WebM sem ela (ver `corrigirDuracao`). */
-  function duracaoReal(audio: HTMLAudioElement) {
-    const desfazer = corrigirDuracao(audio);
-    return { destroy: desfazer };
-  }
+  // ---- achar, filtrar e paginar (I-39) ----
+  // O estado e as ações da lista moram em `gravadorLista.svelte.ts`; a ordem da tela (para o foco) vem das linhas derivadas abaixo.
+  const lista: ListaDeGravacoes = new ListaDeGravacoes(() => ordemDaTela(fixadas, naJanela));
+  /** Quantidade e espaço, derivados da lista na memória (e não de um cursor no banco a cada mudança). */
+  const resumo = $derived(resumir(lista.todas));
+  const chaveDe = criarChaveDe((k, p) => t(k as Parameters<typeof t>[0], p), () => i18n.idioma);
+  const filtradas = $derived(filtrar(lista.todas, consulta, chaveDe));
+  const idsFiltradas = $derived(new Set(filtradas.map((m) => m.id)));
+  const naJanela = $derived(janela(filtradas, lista.mostrando));
+  const idsNaJanela = $derived(new Set(naJanela.map((m) => m.id)));
+  const grupos = $derived(agrupar(naJanela, agora));
+  const fixadas: Fixada[] = $derived(calcularFixadas({ novaId: lista.novaId, tocandoId: lista.tocandoId, todas: lista.todas, idsNaJanela, idsFiltradas }));
+  const linhas = $derived(montarLinhas(fixadas, grupos));
+  const consultaAtiva = $derived(consulta.filtro !== "todas" || consulta.busca.trim() !== "");
+  const rotulo = (g: Grupo) => rotuloDoGrupo(g, { hoje: t("gravador.grupo_hoje"), ontem: t("gravador.grupo_ontem"), semana: t("gravador.grupo_semana") }, i18n.idioma);
 
   function descartar() {
     if (gravacao) URL.revokeObjectURL(gravacao.url);
@@ -100,7 +91,7 @@
       erro = null;
       filtroFalhou = null;
       descartarPorEscolha();
-      tocandoId = null; // uma gravação da lista que tocava também: o alto-falante entraria na nova
+      lista.tocandoId = null; // uma gravação da lista que tocava também: o alto-falante entraria na nova
     }
     const r = await emCurso.alternar(filtro);
     if (r && !r.cancelada) {
@@ -109,160 +100,64 @@
     }
   }
 
+  function escolherRuido(f: FiltroDeRuido) {
+    filtro = f;
+    salvarFiltroDeRuido(f);
+    filtroFalhou = null;
+  }
+
   /** Como a gravação terminou: guardada (entra no topo da lista), vazia (erro) ou não guardada (fica na tela para a pessoa ouvir antes de perder). */
   function aoTerminar(r: Resultado) {
     descartar(); // uma gravação não guardada anterior, se ainda estava na tela, não fica com a URL presa
-    if (r.tipo === "vazia") {
-      erro = "falhou";
-      return;
-    }
-    if (r.tipo === "guardada") {
-      inserir(r.meta);
-      return;
-    }
+    if (r.tipo === "vazia") erro = "falhou";
+    else if (r.tipo === "guardada") lista.inserir(r.meta);
+    else manterNaTela(r);
+  }
+
+  /** A gravação não coube no armazenamento: fica na tela para ouvir, e a escrita atrasada, se terminar, a leva para a lista. */
+  function manterNaTela(r: Extract<Resultado, { tipo: "nao-guardada" }>) {
     const nova = r.gravacao;
     erroGuardar = true;
     gravacao = nova;
     sessaoDaGravacao = r.sessao;
-    // Se a escrita terminar depois do limite, a gravação JÁ está guardada: a lista e a contagem precisam saber (ou, se a pessoa já a descartou, ela é apagada de volta).
     void r.depois.then(
-      (meta) => {
-        console.warn("gravador: a gravação foi guardada depois do limite de espera");
-        if (destruido) return;
-        if (gravacao === nova) {
-          inserir(meta);
-          erroGuardar = false;
-          descartar();
-        } else {
-          void gravacoes.apagar(meta.id).catch(() => {});
-        }
-      },
+      (meta) => aoGuardarDepois(nova, meta),
       () => {},
     );
   }
 
-  /** Põe uma gravação recém-guardada no topo da lista (e a marca como "nova", para ela não sumir de um filtro que não a inclui). */
-  function inserir(meta: MetaGravacao) {
-    registro?.salvas.push(meta);
-    todas = mesclar(todas, [meta], new Set());
-    novaId = meta.id;
+  /** Se a escrita terminar depois do limite, a gravação JÁ está guardada: a lista e a contagem precisam saber (ou, se a pessoa já a descartou, ela é apagada de volta). */
+  function aoGuardarDepois(nova: Gravacao, meta: MetaGravacao) {
+    console.warn("gravador: a gravação foi guardada depois do limite de espera");
+    if (lista.destruida) return;
+    if (gravacao !== nova) {
+      void gravacoes.apagar(meta.id).catch(() => {});
+      return;
+    }
+    lista.inserir(meta);
+    erroGuardar = false;
+    descartar();
   }
 
-  function remover(ids: readonly string[]) {
-    for (const id of ids) registro?.apagadas.add(id);
-    const fora = new Set(ids);
-    todas = todas.filter((m) => !fora.has(m.id));
+  /** Mudou a busca ou o filtro: volta à primeira página e a "nova" deixa de ser fixada. */
+  function mudarConsulta(parcial: Partial<Consulta>) {
+    consulta = { ...consulta, ...parcial };
+    lista.mostrando = PAGINA;
+    lista.novaId = null;
   }
 
-  /** Lê todos os metadados de uma vez e os mescla com o que mudou durante a leitura. */
-  async function carregarTudo() {
-    const minha = ++carga;
-    const meu = (registro = { salvas: [], apagadas: new Set<string>(), alteradas: new Map<string, MetaGravacao>() });
-    try {
-      const lidas = await gravacoes.listarTodas();
-      if (destruido || minha !== carga) return; // "Apagar todas" ou uma leitura mais nova aconteceu no meio: esta é do passado
-      todas = mesclar(lidas, meu.salvas, meu.apagadas, meu.alteradas);
-      erroCarga = false;
-    } catch (e) {
-      console.warn("gravador: não foi possível ler as gravações", e);
-      if (minha === carga) erroCarga = true;
-    } finally {
-      if (minha === carga) {
-        registro = null;
-        listaPronta = true;
-      }
-    }
-  }
-
-  // ---- achar, filtrar e paginar (I-39) ----
-  let cacheDeChaves = new WeakMap<MetaGravacao, string>();
-  let idiomaDoCache = i18n.idioma;
-  /** A chave de busca de uma gravação, calculada UMA vez por registro (e de novo se a língua da tela mudar). */
-  function chaveDe(m: MetaGravacao): string {
-    if (idiomaDoCache !== i18n.idioma) {
-      cacheDeChaves = new WeakMap();
-      idiomaDoCache = i18n.idioma;
-    }
-    let c = cacheDeChaves.get(m);
-    if (c === undefined) {
-      const data = formatarData(m.criadaEm, i18n.idioma);
-      c = chaveDeBusca(m, (x) => nomeDaGravacao(x, (k, p) => t(k as Parameters<typeof t>[0], p), i18n.idioma), () => data);
-      cacheDeChaves.set(m, c);
-    }
-    return c;
-  }
-  const filtradas = $derived(filtrar(todas, consulta, chaveDe));
-  const idsFiltradas = $derived(new Set(filtradas.map((m) => m.id)));
-  const naJanela = $derived(janela(filtradas, mostrando));
-  const idsNaJanela = $derived(new Set(naJanela.map((m) => m.id)));
-  const grupos = $derived(agrupar(naJanela, agora));
-  /** Em destaque, no topo, fora dos grupos: a recém-gravada e a que toca, quando a janela não as mostra. Fora do filtro levam uma marca que explica por que estão ali. */
-  const fixadas = $derived.by(() => {
-    const lista: { meta: MetaGravacao; marca?: "nova" | "tocando" }[] = [];
-    for (const id of [novaId, tocandoId]) {
-      if (!id || idsNaJanela.has(id) || lista.some((f) => f.meta.id === id)) continue;
-      const meta = todas.find((m) => m.id === id);
-      if (meta) lista.push({ meta, marca: idsFiltradas.has(id) ? undefined : id === tocandoId ? "tocando" : "nova" });
-    }
-    return lista;
-  });
-  type Linha = { chave: string; tipo: "grupo"; grupo: Grupo } | { chave: string; tipo: "item"; meta: MetaGravacao; marca?: "nova" | "tocando" };
-  /** As linhas da lista, na ordem da tela: os destaques, e depois cada grupo por dia com o seu cabeçalho. A chave do item é só o id: ele não é recriado ao mudar de lugar. */
-  const linhas = $derived.by(() => {
-    const l: Linha[] = fixadas.map((f) => ({ chave: `i:${f.meta.id}`, tipo: "item", meta: f.meta, marca: f.marca }));
-    for (const g of grupos) {
-      l.push({ chave: `g:${g.chave}`, tipo: "grupo", grupo: g });
-      for (const meta of g.itens) l.push({ chave: `i:${meta.id}`, tipo: "item", meta });
-    }
-    return l;
-  });
-  const consultaAtiva = $derived(consulta.filtro !== "todas" || consulta.busca.trim() !== "");
-  const FILTROS_RAPIDOS: Filtro[] = ["todas", "favoritas", "hino"];
-  /** O painel dos filtros (busca e "Com metrônomo"): começa fechado; fechado, um ponto no chevron avisa que há filtro escondido. */
-  let filtrosAbertos = $state(false);
-  let buscaEl = $state<HTMLInputElement>();
-  const filtroEscondido = $derived(consulta.busca.trim() !== "" || consulta.filtro === "metronomo");
-  async function alternarFiltros() {
-    filtrosAbertos = !filtrosAbertos;
-    if (filtrosAbertos) {
-      await tick();
-      buscaEl?.focus();
-    }
-  }
-
-  function mudouConsulta() {
-    mostrando = PAGINA;
-    novaId = null;
-  }
-  function escolherFiltro(f: Filtro) {
-    consulta.filtro = f;
-    mudouConsulta();
-  }
-  function aoBuscar(v: string) {
-    consulta.busca = v;
-    mudouConsulta();
-  }
-  function limparFiltros() {
-    consulta = { ...SEM_FILTRO };
-    mudouConsulta();
-  }
-  const focarItem = (id: string | undefined) => (id ? (document.querySelector(`[data-id="${CSS.escape(id)}"] button`) as HTMLElement | null) : null)?.focus();
   /** Mostra mais PAGINA gravações e leva o foco ao primeiro item novo (o botão some quando chega a última leva, e o foco cairia no começo da página). */
   async function mostrarMais() {
     const primeiro = filtradas[naJanela.length]?.id;
-    mostrando += PAGINA;
+    lista.mostrando += PAGINA;
     await tick();
     focarItem(primeiro);
   }
-  const rotuloDoGrupo = (g: Grupo) =>
-    g.tipo === "hoje" ? t("gravador.grupo_hoje") : g.tipo === "ontem" ? t("gravador.grupo_ontem") : g.tipo === "semana" ? t("gravador.grupo_semana") : inicialMaiuscula(new Intl.DateTimeFormat(i18n.idioma, { month: "long", year: "numeric" }).format(new Date(g.ano, g.mes, 1)));
-  /** "novembro de 2026" em pt e es sai em minúscula, entre "Hoje" e "Ontem" com maiúscula: o grupo do mês também começa por maiúscula. */
-  const inicialMaiuscula = (s: string) => s.charAt(0).toLocaleUpperCase(i18n.idioma) + s.slice(1);
 
   // Um só anúncio ao leitor de tela (quantos resultados e quantos aparecem), com atraso, e não a cada tecla.
   let anuncio = $state("");
   $effect(() => {
-    if (!listaPronta || (!consultaAtiva && mostrando <= PAGINA)) {
+    if (!lista.listaPronta || (!consultaAtiva && lista.mostrando <= PAGINA)) {
       anuncio = "";
       return;
     }
@@ -272,115 +167,23 @@
     return () => clearTimeout(id);
   });
 
-  /** Muda o nome ou a estrela de uma gravação. Se ela já não existe (apagada em outro lugar), sai da lista. Devolve se deu certo. */
-  async function atualizarUma(id: string, mudancas: Mudancas): Promise<boolean> {
-    // O foco não pode se perder quando a mudança TIRA o item da lista (tirar a estrela com o filtro "Favoritas"), nem quando o MOVE (da janela para o destaque: o navegador tira o foco
-    // de um nó movido): vai ao item seguinte, ao próprio item ou, sem nenhum, ao título.
-    const ordem = [...fixadas.map((f) => f.meta.id), ...naJanela.map((m) => m.id)];
-    const i = ordem.indexOf(id);
-    const proximo = ordem[i + 1] ?? ordem[i - 1];
-    const tinhaFoco = document.activeElement?.closest("[data-id]")?.getAttribute("data-id") === id;
-    const recuperarFoco = async () => {
-      await tick();
-      if (!tinhaFoco) return;
-      const ativo = document.activeElement;
-      if (ativo && ativo !== document.body) return; // o foco está em algum lugar: não mexe
-      const doItem = document.querySelector(`[data-id="${CSS.escape(id)}"] .estrela`) as HTMLElement | null;
-      if (doItem) doItem.focus();
-      else if (proximo && document.querySelector(`[data-id="${CSS.escape(proximo)}"]`)) focarItem(proximo);
-      else document.getElementById("titulo-guardadas")?.focus();
-    };
-    try {
-      const novo = await gravacoes.atualizar(id, mudancas);
-      if (!novo) {
-        // Apagada em outro lugar: sai da lista como em `apagarUma` (e deixa de ser a que toca).
-        remover([id]);
-        if (tocandoId === id) tocandoId = null;
-        if (novaId === id) novaId = null;
-        await recuperarFoco();
-        return true;
-      }
-      registro?.alteradas.set(id, novo);
-      todas = todas.map((m) => (m.id === id ? novo : m));
-      erroAcao = false;
-      await recuperarFoco();
-      return true;
-    } catch (e) {
-      console.warn("gravador: não foi possível salvar a alteração", e);
-      return false;
-    }
-  }
-
   /** Uma gravação da lista pausou ou terminou: deixa de ser a "que toca" (só se ainda era ela). */
   function aoPararItem(id: string) {
-    if (tocandoId === id) tocandoId = null;
+    if (lista.tocandoId === id) lista.tocandoId = null;
   }
 
   /** Uma gravação da lista começou a tocar: só ela toca, o hino cala e uma gravação em andamento PARA (o alto-falante entraria nela). */
   function aoTocarItem(id: string) {
-    tocandoId = id;
+    lista.tocandoId = id;
     reproducao.parar();
     if (emCurso.gravando) void emCurso.parar();
   }
 
-  async function apagarUma(id: string) {
-    // Para onde vai o foco: o item seguinte da tela (ou o anterior); sem nenhum, o título da lista.
-    const ordem = [...fixadas.map((f) => f.meta.id), ...naJanela.map((m) => m.id)];
-    const i = ordem.indexOf(id);
-    const proximo = ordem[i + 1] ?? ordem[i - 1];
-    try {
-      await gravacoes.apagar(id);
-      remover([id]);
-      if (tocandoId === id) tocandoId = null;
-      if (novaId === id) novaId = null;
-      erroAcao = false;
-      await tick();
-      if (proximo && document.querySelector(`[data-id="${CSS.escape(proximo)}"]`)) focarItem(proximo);
-      else document.getElementById("titulo-guardadas")?.focus();
-    } catch (e) {
-      console.warn("gravador: não foi possível apagar", e);
-      erroAcao = true;
-    }
-  }
-
-  async function apagarTodas() {
-    if (!confirmandoTudo) {
-      confirmandoTudo = true;
-      relogioTudo = setTimeout(() => (confirmandoTudo = false), 4000);
-      return;
-    }
-    if (relogioTudo !== null) clearTimeout(relogioTudo);
-    relogioTudo = null;
-    confirmandoTudo = false;
-    try {
-      await gravacoes.apagarTodas();
-      // As cópias que o "Enviar" deixou no cache do Android também saem. Se alguma não sair, as gravações do app já foram apagadas: fica só o registro no console.
-      if (!apagarCopiasEnviadas()) console.warn("gravador: não consegui apagar todas as cópias enviadas do cache do aparelho");
-      carga++; // só agora, que apagou: uma leitura em andamento é descartada (traria gravações que já não existem); se apagar falhar, ela segue
-      registro = null;
-      todas = [];
-      listaPronta = true; // sabemos o que há: nada
-      tocandoId = null;
-      novaId = null;
-      mostrando = PAGINA;
-      erroAcao = false;
-      erroCarga = false;
-    } catch (e) {
-      console.warn("gravador: não foi possível apagar tudo", e);
-      erroAcao = true;
-    }
-  }
-
   $effect(() => {
-    if (!ativa) {
-      // Com o serviço do Android assumindo a gravação, ela SEGUE ao trocar de aba (gravar com o metrônomo no fone); o aviso das outras abas tem o Parar.
-      if (untrack(() => emCurso.gravando && emCurso.protegida)) {
-        tocandoId = null;
-        return;
-      }
-      void emCurso.sair(); // cancela um pedido de microfone que esperava, ou para a gravação, e DEVOLVE o microfone: o que já foi gravado fica
-      tocandoId = null; // a aba saiu de cena: nenhuma gravação da lista segue tocando
-    }
+    if (ativa) return;
+    // Com o serviço do Android assumindo a gravação, ela SEGUE ao trocar de aba (gravar com o metrônomo no fone); o aviso das outras abas tem o Parar.
+    if (!untrack(() => emCurso.gravando && emCurso.protegida)) void emCurso.sair(); // cancela um pedido de microfone que esperava, ou para a gravação, e DEVOLVE o microfone: o que já foi gravado fica
+    lista.tocandoId = null; // a aba saiu de cena: nenhuma gravação da lista segue tocando
   });
   // Os grupos por dia usam o "agora": renova ao voltar à aba e a cada minuto.
   $effect(() => {
@@ -398,12 +201,11 @@
     void emCurso
       .recuperar()
       .catch((e) => console.warn("gravador: não foi possível recuperar gravações pela metade", e))
-      .then(carregarTudo);
+      .then(() => lista.carregarTudo());
   });
 
   onDestroy(() => {
-    destruido = true;
-    if (relogioTudo !== null) clearTimeout(relogioTudo);
+    lista.destruir();
     emCurso.aoDesmontarATela(); // com o serviço do Android a gravação SEGUE; sem ele, para e guarda
     descartar();
   });
@@ -423,22 +225,7 @@
     {/if}
   </button>
 
-  <!-- A pílula do filtro de ruído: um grupo de escolha única, de um controle só (Desligado, Baixo, Médio, Alto), travado enquanto grava. O nome técnico do filtro escolhido vem numa linha miúda embaixo. -->
-  <fieldset class="ruido" id="filtro-de-ruido" disabled={gravando}>
-    <legend class="meta">{t("gravador.reduzir_ruido")}</legend>
-    <Segmentado
-      nome="filtro-de-ruido"
-      valor={filtro}
-      opcoes={FILTROS_DE_RUIDO.map((f) => ({ valor: f, rotulo: t(`gravador.ruido_${f}`) }))}
-      aoEscolher={(f) => {
-        filtro = f;
-        salvarFiltroDeRuido(f);
-        filtroFalhou = null;
-      }}
-    />
-    <p class="meta ruido-tecnico" id="ruido-tecnico">{t(`gravador.ruido_tec_${filtro}`)}</p>
-    {#if filtro === "rnnoise" || filtro === "gtcrn"}<p class="meta" id="ruido-aviso">{t("gravador.ruido_aviso")}</p>{/if}
-  </fieldset>
+  <RuidoGravador {filtro} {gravando} aoEscolher={escolherRuido} />
   {#if filtroFalhou}<Aviso tipo="info">{t("gravador.erro_filtro", { filtro: t(`gravador.ruido_tec_${filtroFalhou}`) })}</Aviso>{/if}
 
   {#if erro}<Aviso tipo="erro">{t(textoErro[erro])}</Aviso>{/if}
@@ -448,17 +235,7 @@
   {#if gravando && semSom}<Aviso tipo="info"><span id="sem-som">{t("gravador.sem_som")}</span></Aviso>{/if}
   <p class="so-leitor" role="status">{#if gravando}{ouviu ? t("gravador.recebendo") : t("gravador.gravando")}{:else if gravacao}{t("gravador.pronta", { tempo: formatarTempo(gravacao.segundos) })}{/if}</p>
 
-  <!-- Só aparece quando a gravação NÃO pôde ser guardada: a pessoa a ouve antes de perdê-la. -->
-  {#if gravacao}
-    <section class="resultado" aria-labelledby="titulo-gravacao">
-      <h2 id="titulo-gravacao">{t("gravador.sua_gravacao")}</h2>
-      <audio id="ouvir-gravacao" controls src={gravacao.url} use:duracaoReal></audio>
-      <p class="meta" id="info-gravacao">
-        {formatarTempo(gravacao.segundos)} · {formatarTamanho(gravacao.bytes, i18n.idioma)} · {nomeDoFormato(gravacao.tipo)}
-      </p>
-      <button id="descartar" class="botao" onclick={descartarPorEscolha}>{t("gravador.descartar")}</button>
-    </section>
-  {/if}
+  {#if gravacao}<GravacaoNaoGuardada {gravacao} aoDescartar={descartarPorEscolha} />{/if}
 
   <section class="guardadas" aria-labelledby="titulo-guardadas">
     <div class="cabeca">
@@ -467,80 +244,39 @@
         <span class="meta" id="resumo-gravacoes">{i18n.tn("plural.gravacoes", resumo.quantidade)} · {formatarTamanho(resumo.bytes, i18n.idioma)}</span>
       {/if}
     </div>
-    {#if erroAcao}<Aviso tipo="erro">{t("gravador.erro_lista")}</Aviso>{/if}
-    {#if erroCarga}
+    {#if lista.erroAcao}<Aviso tipo="erro">{t("gravador.erro_lista")}</Aviso>{/if}
+    {#if lista.erroCarga}
       <Aviso tipo="erro">{t("gravador.erro_ler")}</Aviso>
-      <button id="tentar-lista" class="botao" onclick={carregarTudo}>{t("erro.tentar")}</button>
+      <button id="tentar-lista" class="botao" onclick={() => lista.carregarTudo()}>{t("erro.tentar")}</button>
     {/if}
-    {#if todas.length > 0}
-      <!-- Os filtros no título (I-39): os três mais usados ficam à mão, e o chevron abre a busca e o filtro "Com metrônomo". Tudo é UM grupo de escolha única (os quatro botões de rádio têm o mesmo nome). -->
-      <div class="controles">
-        <fieldset class="filtros" id="filtro-gravacoes">
-          <legend class="so-leitor">{t("gravador.filtro_legenda")}</legend>
-          <div class="linha-filtros">
-            <div class="filtros-rapidos">
-              <Segmentado
-                nome="filtro-gravacoes"
-                valor={consulta.filtro}
-                opcoes={FILTROS_RAPIDOS.map((f) => ({ valor: f, rotulo: t(`gravador.filtro_${f}`) }))}
-                aoEscolher={escolherFiltro}
-              />
-            </div>
-            <button
-              type="button"
-              id="mais-filtros"
-              class="mais-filtros"
-              class:escondido={!filtrosAbertos && filtroEscondido}
-              aria-expanded={filtrosAbertos}
-              aria-controls={filtrosAbertos ? "painel-filtros" : undefined}
-              title={t("gravador.mais_filtros")}
-              onclick={alternarFiltros}
-            >
-              <Icone nome={filtrosAbertos ? "fechar" : "abrir"} tamanho={22} />
-              <!-- O nome do botão vem do conteúdo (um aria-label o substituiria e o aviso do filtro escondido nunca seria lido). -->
-              <span class="so-leitor">{t("gravador.mais_filtros")}{#if !filtrosAbertos && filtroEscondido}{" — "}{t("gravador.filtro_escondido")}{/if}</span>
-            </button>
-          </div>
-          {#if filtrosAbertos}
-            <div class="painel-filtros" id="painel-filtros">
-              <label class="so-metronomo" class:ativo={consulta.filtro === "metronomo"}>
-                <input type="radio" name="filtro-gravacoes" value="metronomo" checked={consulta.filtro === "metronomo"} onchange={() => escolherFiltro("metronomo")} />
-                <span>{#if consulta.filtro === "metronomo"}<Icone nome="ok" tamanho={16} />{/if}{t("gravador.filtro_metronomo")}</span>
-              </label>
-              <label class="busca">
-                <span class="meta">{t("gravador.buscar")}</span>
-                <input id="buscar-gravacoes" bind:this={buscaEl} type="search" autocomplete="off" enterkeyhint="search" value={consulta.busca} oninput={(e) => aoBuscar(e.currentTarget.value)} />
-              </label>
-            </div>
-          {/if}
-        </fieldset>
-      </div>
+    {#if lista.todas.length > 0}
+      <FiltrosGravacoes {consulta} aoMudar={mudarConsulta} bind:filtrosAbertos />
       <!-- UMA lista só, com chave por item: a gravação que toca muda de lugar (da janela para o destaque, de "Hoje" para "Ontem") sem ser desmontada, e o áudio segue. Os cabeçalhos de dia são
            linhas da lista (`<li>` com `<h3>`), para a navegação por títulos continuar. -->
       <ul class="lista" id="lista-gravacoes">
         {#each linhas as l (l.chave)}
           {#if l.tipo === "grupo"}
-            <li class="grupo" role="presentation"><h3 class="titulo-grupo">{rotuloDoGrupo(l.grupo)}</h3></li>
+            <li class="grupo" role="presentation"><h3 class="titulo-grupo">{rotulo(l.grupo)}</h3></li>
           {:else}
-            <ItemGravacao meta={l.meta} marca={l.marca} {tocandoId} aoTocar={aoTocarItem} aoApagar={apagarUma} aoParar={aoPararItem} aoAtualizar={atualizarUma} />
+            <ItemGravacao meta={l.meta} marca={l.marca} tocandoId={lista.tocandoId} aoTocar={aoTocarItem} aoApagar={(id) => lista.apagarUma(id)} aoParar={aoPararItem} aoAtualizar={(id, m) => lista.atualizarUma(id, m)} />
           {/if}
         {/each}
       </ul>
       {#if filtradas.length === 0}
         <p class="meta" id="sem-resultado">{t("gravador.nenhuma_filtro")}</p>
-        <button id="limpar-filtros" class="botao" onclick={limparFiltros}>{t("gravador.limpar_filtros")}</button>
+        <button id="limpar-filtros" class="botao" onclick={() => mudarConsulta(SEM_FILTRO)}>{t("gravador.limpar_filtros")}</button>
       {/if}
       {#if naJanela.length < filtradas.length}
         <p class="meta" id="contador-gravacoes">{t("gravador.mostrando", { a: naJanela.length, b: filtradas.length })}</p>
         <button id="mostrar-mais" class="botao" onclick={mostrarMais}>{t("gravador.mostrar_mais", { n: Math.min(PAGINA, filtradas.length - naJanela.length) })}</button>
       {/if}
-      {#if listaPronta && !erroCarga}
+      {#if lista.listaPronta && !lista.erroCarga}
         <!-- Só com a lista completa conhecida: "Apagar todas" apaga TUDO o que está guardado, e o número da confirmação tem de ser o verdadeiro. -->
-        <button id="apagar-todas" class="botao" class:perigo={confirmandoTudo} onclick={apagarTodas}>
-          {confirmandoTudo ? i18n.tn("plural.apagar_todas", resumo.quantidade) : t("gravador.apagar_todas")}
+        <button id="apagar-todas" class="botao" class:perigo={lista.confirmacao.pedida} onclick={() => lista.apagarTodas()}>
+          {lista.confirmacao.pedida ? i18n.tn("plural.apagar_todas", resumo.quantidade) : t("gravador.apagar_todas")}
         </button>
       {/if}
-    {:else if listaPronta && !erroCarga && !erroAcao}
+    {:else if lista.listaPronta && !lista.erroCarga && !lista.erroAcao}
       <p class="meta" id="lista-vazia">{t("gravador.nenhuma")}</p>
     {/if}
     <p class="so-leitor" aria-live="polite">{anuncio}</p>
@@ -557,38 +293,11 @@
   /* O círculo de "gravar": desenhado em CSS (o conjunto de ícones do app não tem um); a cor não é o único sinal, o botão diz "Gravar". */
   .bolinha { width: 1.1rem; height: 1.1rem; border-radius: 50%; background: currentColor; flex: none; }
   .tempo { font-variant-numeric: tabular-nums; }
-  .resultado { display: grid; gap: 0.6rem; padding: 0.9rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
-  .resultado h2 { margin: 0; font-size: 1rem; }
-  .resultado audio { width: 100%; }
-  .resultado p { margin: 0; }
   .guardadas { display: grid; gap: 0.7rem; }
   .cabeca { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 1rem; }
   .cabeca h2 { margin: 0; font-size: 1rem; }
   .lista { display: grid; gap: 0.7rem; margin: 0; padding: 0; }
   .grupo { list-style: none; }
   .titulo-grupo { margin: 0.4rem 0 0; font-size: 0.95rem; }
-  .controles { display: grid; gap: 0.6rem; }
-  .busca { display: grid; gap: 0.25rem; }
-  .busca input { box-sizing: border-box; width: 100%; min-height: 3rem; padding: 0 0.75rem; font: inherit; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); color: var(--texto); }
-  .filtros { margin: 0; padding: 0; border: 0; min-width: 0; }
-  .linha-filtros { display: flex; gap: 0.4rem; align-items: stretch; }
-  .filtros-rapidos { flex: 1; min-width: 0; }
-  .filtros label { position: relative; flex: 1 1 auto; }
-  .filtros input[type="radio"] { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-  .filtros label > span:not(.meta) { display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 3rem; box-sizing: border-box; padding: 0 0.5rem; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); }
-  .filtros label.ativo > span:not(.meta) { border: 0.125rem solid var(--acento); font-weight: 700; }
-  .filtros input[type="radio"]:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
-  .mais-filtros { position: relative; flex: 0 0 3rem; min-height: 3rem; display: flex; align-items: center; justify-content: center; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); cursor: pointer; }
-  .mais-filtros:focus-visible { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
-  /* O ponto: há busca ou "Com metrônomo" ligados com o painel fechado. */
-  .mais-filtros.escondido { border: 0.125rem solid var(--acento); }
-  .mais-filtros.escondido::after { content: ""; position: absolute; top: 0.3rem; right: 0.3rem; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--acento); }
-  .painel-filtros { display: grid; gap: 0.6rem; margin-top: 0.6rem; }
-  .so-metronomo { display: block; }
   .perigo { border-width: 0.125rem; border-color: var(--perigo); font-weight: 700; }
-  /* "Reduzir ruído": uma linha com a caixa e o texto (alvo de toque de 3 rem), e a dica embaixo. */
-  /* A pílula do filtro de ruído: 4 opções de escolha única, que quebram de linha em tela estreita. */
-  .ruido { margin: 0 0 0.75rem; padding: 0; border: 0; min-width: 0; }
-  .ruido legend { padding: 0; margin-bottom: 0.25rem; }
-  .ruido-tecnico { margin: 0.35rem 0 0; font-size: 0.8rem; text-align: center; min-height: 1.1rem; }
 </style>

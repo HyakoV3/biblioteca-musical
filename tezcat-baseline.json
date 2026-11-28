@@ -327,61 +327,53 @@
     "severity": "WARN",
     "value": 16
   },
-  "src/lib/Gravador.svelte::Gravador::Clean/Método::aoTerminar": {
-    "severity": "FAIL",
-    "value": 30
-  },
-  "src/lib/Gravador.svelte::Gravador::Clean/Método::apagarTodas": {
-    "severity": "WARN",
-    "value": 27
-  },
-  "src/lib/Gravador.svelte::Gravador::Clean/Método::atualizarUma": {
-    "severity": "FAIL",
-    "value": 37
-  },
-  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::$effect@L374": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::aoTerminar": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::atualizarUma": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::carregarTudo": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::fixadas": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::linhas": {
+  "src/lib/Gravador.svelte::Gravador::Clean/Nesting::aoGuardarDepois": {
     "severity": "WARN",
     "value": 2
   },
   "src/lib/Gravador.svelte::Gravador::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 410
-  },
-  "src/lib/Gravador.svelte::Gravador::OCP::aoTerminar": {
     "severity": "WARN",
-    "value": 4
-  },
-  "src/lib/Gravador.svelte::Gravador::OCP::atualizarUma": {
-    "severity": "FAIL",
-    "value": 7
-  },
-  "src/lib/Gravador.svelte::Gravador::OCP::recuperarFoco": {
-    "severity": "WARN",
-    "value": 4
+    "value": 212
   },
   "src/lib/Gravador.svelte::Gravador::SRP::": {
-    "severity": "FAIL",
-    "value": 35
+    "severity": "WARN",
+    "value": 19
+  },
+  "src/lib/gravadorChave.ts::gravadorChave::Clean/Nesting::criarChaveDe": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravadorFoco.ts::gravadorFoco::Clean/Params::recuperarFoco": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravadorLinhas.ts::gravadorLinhas::Clean/Nesting::calcularFixadas": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravadorLinhas.ts::gravadorLinhas::Clean/Nesting::montarLinhas": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravadorLinhas.ts::gravadorLinhas::Clean/Params::rotuloDoGrupo": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravadorLista.svelte.ts::ListaDeGravacoes::Clean/Nesting::carregarTudo": {
+    "severity": "WARN",
+    "value": 2
+  },
+  "src/lib/gravadorLista.svelte.ts::ListaDeGravacoes::Clean/Params::receber": {
+    "severity": "WARN",
+    "value": 3
+  },
+  "src/lib/gravadorLista.svelte.ts::ListaDeGravacoes::SRP::": {
+    "severity": "WARN",
+    "value": 11
+  },
+  "src/lib/gravadorLista.svelte.ts::gravadorLista.svelte::Clean/Tamanho::": {
+    "severity": "WARN",
+    "value": 163
   },
   "src/lib/ItemGravacao.svelte::ItemGravacao::Clean/Método::ouvir": {
     "severity": "WARN",
