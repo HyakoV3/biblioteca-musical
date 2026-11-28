@@ -14,37 +14,45 @@ const CHAVE = "tema";
 
 const ehTema = (x: unknown): x is Tema => typeof x === "string" && (TEMAS as readonly string[]).includes(x);
 
-function inicial(): Tema {
+/** Lê a preferência salva; sem armazenamento, ou com valor que não vale, devolve o padrão. */
+function lerSalvo<T extends string>(chave: string, vale: (x: unknown) => x is T, padrao: T): T {
   try {
-    const salvo = localStorage.getItem(CHAVE);
-    if (ehTema(salvo)) return salvo;
+    const salvo = localStorage.getItem(chave);
+    if (vale(salvo)) return salvo;
   } catch {
-    /* sem armazenamento: segue o sistema */
+    /* sem armazenamento: fica o padrão */
   }
-  return "sistema";
+  return padrao;
 }
+
+/** Grava a preferência; se não der, ela só vale nesta sessão. */
+function gravar(chave: string, valor: string) {
+  try {
+    localStorage.setItem(chave, valor);
+  } catch {
+    /* preferência não salva */
+  }
+}
+
+/** Define o atributo `data-<nome>` do <html>, ou o remove quando o valor é o padrão do CSS. */
+function aplicarAtributo(nome: "tema" | "estilo", valor: string, padrao: string) {
+  if (valor === padrao) delete document.documentElement.dataset[nome];
+  else document.documentElement.dataset[nome] = valor;
+}
+
+const inicial = (): Tema => lerSalvo(CHAVE, ehTema, "sistema");
 
 /** Aplica o tema ao documento (chamado pelo layout sempre que a escolha muda). */
 export function aplicarTema(t: Tema) {
-  if (t === "sistema") delete document.documentElement.dataset.tema;
-  else document.documentElement.dataset.tema = t;
+  aplicarAtributo("tema", t, "sistema");
 }
 
 // --- Estilo de cor (normal, pergaminho, marinho), independente do modo acima ---
-function estiloInicial(): Estilo {
-  try {
-    const salvo = localStorage.getItem(CHAVE_ESTILO);
-    if (ehEstilo(salvo)) return salvo;
-  } catch {
-    /* sem armazenamento: estilo normal */
-  }
-  return "normal";
-}
+const estiloInicial = (): Estilo => lerSalvo(CHAVE_ESTILO, ehEstilo, "normal");
 
 /** Aplica o estilo ao documento. O normal é o padrão do CSS, então não leva atributo. */
 export function aplicarEstilo(e: Estilo) {
-  if (e === "normal") delete document.documentElement.dataset.estilo;
-  else document.documentElement.dataset.estilo = e;
+  aplicarAtributo("estilo", e, "normal");
 }
 
 let estiloAtual = $state<Estilo>(estiloInicial());
@@ -55,11 +63,7 @@ export const estilo = {
   },
   set atual(v: Estilo) {
     estiloAtual = v;
-    try {
-      localStorage.setItem(CHAVE_ESTILO, v);
-    } catch {
-      /* preferência não salva */
-    }
+    gravar(CHAVE_ESTILO, v);
   },
 };
 
@@ -71,10 +75,6 @@ export const tema = {
   },
   set atual(v: Tema) {
     atual = v;
-    try {
-      localStorage.setItem(CHAVE, v);
-    } catch {
-      /* preferência não salva */
-    }
+    gravar(CHAVE, v);
   },
 };
