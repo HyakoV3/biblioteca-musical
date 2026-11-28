@@ -73,7 +73,7 @@ export async function guardarGravacao(d: Dependencias, sessoes: SessoesDeRecuper
   const comeco = d.agora();
   // A sessão sai na MESMA transação que guarda a gravação (se o app cair no meio, nada fica duplicado na próxima abertura).
   const idDaSessao = sessao ? await sessao : null;
-  const r = await guardarComPrazo(d.armazenamento.salvar(nova.blob, nova.tipo, nova.segundos, contexto, idDaSessao));
+  const r = await guardarComPrazo(d.armazenamento.salvar({ blob: nova.blob, tipo: nova.tipo, segundos: nova.segundos, contexto, sessao: idDaSessao }));
   if (r.guardada) {
     rastro(`guardada em ${Math.round(d.agora() - comeco)} ms`);
     URL.revokeObjectURL(nova.url); // o arquivo já está no armazenamento; a lista o lê de lá quando a pessoa tocar em Ouvir

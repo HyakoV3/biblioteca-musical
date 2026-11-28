@@ -15,7 +15,7 @@ describe("conexão com o banco", () => {
 
   it("se o navegador fecha a conexão (onclose), a próxima chamada reabre e funciona", async () => {
     const g = compartilhado();
-    const m = await g.salvar(audio(100), "audio/webm", 1);
+    const m = await g.salvar({ blob: audio(100), tipo: "audio/webm", segundos: 1 });
     const banco = await conexao(g)!;
     banco.close(); // o navegador fechou a conexão por baixo
     banco.onclose?.(new Event("close"));
@@ -26,11 +26,11 @@ describe("conexão com o banco", () => {
 
   it("se outra versão pede para fechar (onversionchange), fecha, esquece e reabre depois", async () => {
     const g = compartilhado();
-    await g.salvar(audio(100), "audio/webm", 1);
+    await g.salvar({ blob: audio(100), tipo: "audio/webm", segundos: 1 });
     const banco = await conexao(g)!;
     banco.onversionchange?.(new Event("versionchange") as IDBVersionChangeEvent);
     expect(conexao(g)).toBeNull();
-    await g.salvar(audio(50), "audio/webm", 1); // reabriu
+    await g.salvar({ blob: audio(50), tipo: "audio/webm", segundos: 1 }); // reabriu
     expect(await g.resumo()).toEqual({ quantidade: 2, bytes: 150 });
   });
 });
@@ -41,7 +41,7 @@ describe("abrir o banco quando o navegador não responde (o open() que nunca vol
     try {
       const { fabrica, chamadas } = fabricaMuda(1);
       const g = new Gravacoes(() => fabrica);
-      const pronto = g.salvar(audio(500), "audio/webm", 3);
+      const pronto = g.salvar({ blob: audio(500), tipo: "audio/webm", segundos: 3 });
       await vi.advanceTimersByTimeAsync(ESPERA_AO_ABRIR_MS + 10);
       vi.useRealTimers(); // o fake-indexeddb precisa dos timers de verdade para concluir
       const m = await pronto;

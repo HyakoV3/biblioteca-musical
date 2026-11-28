@@ -635,53 +635,37 @@
     "severity": "WARN",
     "value": 4
   },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::abrirSessao": {
+  "src/lib/gravacoes-consultas.ts::ConsultasDasGravacoes::Clean/Nesting::blob": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::blob": {
+  "src/lib/gravacoes-consultas.ts::ConsultasDasGravacoes::Clean/Nesting::listar": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::guardarPedaco": {
+  "src/lib/gravacoes-consultas.ts::ConsultasDasGravacoes::Clean/Nesting::resumo": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::listar": {
+  "src/lib/gravacoes-sessoes.ts::SessoesDasGravacoes::Clean/Nesting::abrirSessao": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Nesting::resumo": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Params::guardarPedaco": {
+  "src/lib/gravacoes-sessoes.ts::SessoesDasGravacoes::Clean/Params::guardarPedaco": {
     "severity": "WARN",
     "value": 3
   },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Params::salvar": {
-    "severity": "FAIL",
-    "value": 5
-  },
-  "src/lib/gravacoes.ts::Gravacoes::Clean/Tamanho::": {
+  "src/lib/gravacoes-sessoes.ts::SessoesDasGravacoes::SRP::": {
     "severity": "WARN",
-    "value": 177
+    "value": 8
   },
   "src/lib/gravacoes.ts::Gravacoes::DIP::": {
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/gravacoes.ts::Gravacoes::SRP::": {
-    "severity": "FAIL",
-    "value": 22
-  },
   "src/lib/gravacoes.ts::gravacoes::Clean/Params::formatarData": {
     "severity": "WARN",
     "value": 3
-  },
-  "src/lib/gravacoes.ts::gravacoes::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 238
   },
   "src/lib/filtroNeuralNoGravador.ts::filtroNeuralNoGravador::Clean/Método::ligarFiltroNeural": {
     "severity": "WARN",
