@@ -18,6 +18,7 @@
   import Partitura from "#lib/Partitura.svelte";
   import { estadoDaPartitura, temAbaPartitura } from "#lib/partitura"; import { foraDaVistaVertical } from "#lib/partituraDestaque";
   import Player from "#lib/Player.svelte";
+  import { propsControleTamanho, rotulosControleTamanho } from "#lib/controleTamanho";
   import { ESCALAS_LETRA, PASSO_PADRAO, escalaDoPasso, limitarPasso, type Alinhamento } from "#lib/leitura";
   import ControleDeTamanho from "#lib/ControleDeTamanho.svelte";
   import { telaLigada } from "#lib/telaLigada.svelte";
@@ -300,18 +301,8 @@
       {#if partes.length > 0}
         <div class="barra-letra" role="group" aria-label={t("letra.aparencia")}>
           <ControleDeTamanho
-            rotulos={{
-              grupo: t("letra.tamanho"),
-              diminuir: t("letra.diminuir"),
-              restaurar: t("letra.restaurar", { n: Math.round(ESCALAS_LETRA[PASSO_PADRAO] * 100) }),
-              aumentar: t("letra.aumentar"),
-            }}
-            podeDiminuir={passoLetra > 0}
-            podeAumentar={passoLetra < ESCALAS_LETRA.length - 1}
-            noPadrao={passoLetra === PASSO_PADRAO}
-            aoDiminuir={() => tamanhoLetra("menos")}
-            aoRestaurar={() => tamanhoLetra("padrao")}
-            aoAumentar={() => tamanhoLetra("mais")}
+            rotulos={rotulosControleTamanho(t, { grupo: "letra.tamanho", diminuir: "letra.diminuir", restaurar: "letra.restaurar", aumentar: "letra.aumentar" }, ESCALAS_LETRA[PASSO_PADRAO])}
+            {...propsControleTamanho(passoLetra, ESCALAS_LETRA.length, PASSO_PADRAO, tamanhoLetra)}
           />
           <div class="grupo" role="group" aria-label={t("letra.alinhamento")}>
             <button class="botao-barra" aria-label={t("letra.alinhar_esquerda")} aria-pressed={alinhamento === "esquerda"} onclick={() => alinharLetra("esquerda")}>
