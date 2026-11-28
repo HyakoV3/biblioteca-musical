@@ -547,17 +547,9 @@
     "severity": "WARN",
     "value": 150
   },
-  "src/lib/detector.ts::Estabilizador::Clean/Método::entrar": {
+  "src/lib/detector.ts::Estabilizador::SRP::": {
     "severity": "WARN",
-    "value": 26
-  },
-  "src/lib/detector.ts::Estabilizador::Clean/Nesting::entrar": {
-    "severity": "FAIL",
-    "value": 4
-  },
-  "src/lib/detector.ts::Estabilizador::OCP::entrar": {
-    "severity": "WARN",
-    "value": 5
+    "value": 10
   },
   "src/lib/escuta.ts::Escuta::Clean/Método::iniciar": {
     "severity": "FAIL",
