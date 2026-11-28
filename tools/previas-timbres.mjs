@@ -177,7 +177,7 @@ const NA_PAGINA = `async (dados) => {
   // Só os instrumentos com timbre por altura (I-15: medido ou derivado de medidas) mudaram: nos outros o "antes" é idêntico ao "agora" e não se repete.
   const medido = medido_(dados.id);
   const antes = medido ? await renderizar((ctx, d) => { for (const [t, dur, m] of notas) notaAntiga(ctx, d, dados.id, m, 0.05 + t, dur); }) : null;
-  const agora = await renderizar((ctx, d) => { const ondas = new Map(); for (const [t, dur, m] of notas) agendarNota(ctx, ondas, d, dados.id, m, 0.05 + t, dur); });
+  const agora = await renderizar((ctx, d) => { const ondas = new Map(); for (const [t, dur, m] of notas) agendarNota(ctx, ondas, d, { id: dados.id, midi: m, ini: 0.05 + t, dur }); });
   const gravado = !dados.real ? null : await renderizar(async (ctx, d) => {
     const saida = ctx.createGain(); saida.gain.value = REALISTAS[dados.real].ganho; saida.connect(d);
     const buffers = {};
