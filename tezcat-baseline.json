@@ -567,23 +567,11 @@
     "severity": "WARN",
     "value": 5
   },
-  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Método::guardar": {
-    "severity": "WARN",
-    "value": 20
-  },
   "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Método::iniciar": {
-    "severity": "FAIL",
-    "value": 53
-  },
-  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Método::parar": {
     "severity": "WARN",
-    "value": 22
+    "value": 23
   },
   "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Nesting::alternar": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Nesting::guardar": {
     "severity": "WARN",
     "value": 2
   },
@@ -595,41 +583,17 @@
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Params::guardar": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::Clean/Tamanho::": {
-    "severity": "WARN",
-    "value": 196
-  },
   "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::DIP::": {
     "severity": "WARN",
     "value": 3
   },
   "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::OCP::iniciar": {
-    "severity": "FAIL",
-    "value": 8
+    "severity": "WARN",
+    "value": 4
   },
   "src/lib/gravacaoEmCurso.svelte.ts::GravacaoEmCurso::SRP::": {
-    "severity": "FAIL",
-    "value": 16
-  },
-  "src/lib/gravacaoEmCurso.svelte.ts::gravacaoEmCurso.svelte::Clean/Método::lerContextoReal": {
     "severity": "WARN",
-    "value": 23
-  },
-  "src/lib/gravacaoEmCurso.svelte.ts::gravacaoEmCurso.svelte::Clean/Nesting::guardarComPrazo": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/gravacaoEmCurso.svelte.ts::gravacaoEmCurso.svelte::Clean/Nesting::lerContextoReal": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src/lib/gravacaoEmCurso.svelte.ts::gravacaoEmCurso.svelte::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 362
+    "value": 11
   },
   "src/lib/gravacoes-banco.ts::gravacoes-banco::Clean/Nesting::abrirUma": {
     "severity": "WARN",
