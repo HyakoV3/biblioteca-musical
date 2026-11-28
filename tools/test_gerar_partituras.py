@@ -7,7 +7,6 @@ import argparse
 import contextlib
 import importlib.util
 import io
-import os
 import subprocess
 import sys
 import tempfile
@@ -16,67 +15,12 @@ from pathlib import Path
 from unittest import mock
 
 AQUI = Path(__file__).resolve().parent
+sys.path.insert(0, str(AQUI))
+from partituras.gravacao import SUFIXO_PAISAGEM  # noqa: E402
+
 spec = importlib.util.spec_from_file_location("gerar_partituras", AQUI / "gerar-partituras.py")
 g = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(g)
-
-class RemoverAndamento(unittest.TestCase):
-    TEMPO = ('<direction placement="above"><direction-type><words>(</words></direction-type><direction-type><metronome><beat-unit>eighth</beat-unit>'
-             '<per-minute>112</per-minute></metronome></direction-type><sound tempo="56"/></direction>')
-
-    def test_tira_o_texto_e_deixa_o_sound_tempo(self):
-        self.assertEqual(g.remover_andamento(self.TEMPO), '<direction placement="above"><sound tempo="56"/></direction>')
-
-    def test_nao_toca_nas_outras_direcoes(self):
-        outras = ('<direction placement="above"><direction-type><words>*</words></direction-type></direction>'
-                  '<direction><direction-type><dynamics><p/></dynamics></direction-type></direction>')
-        self.assertEqual(g.remover_andamento(outras), outras)
-
-    def test_so_a_direcao_do_andamento_perde_o_texto(self):
-        xml = '<m>' + self.TEMPO + '<direction><direction-type><words>Coro</words></direction-type></direction></m>'
-        self.assertEqual(g.remover_andamento(xml), '<m><direction placement="above"><sound tempo="56"/></direction><direction><direction-type><words>Coro</words></direction-type></direction></m>')
-
-    def test_metronome_sem_sound_tambem_sai(self):
-        xml = '<direction><direction-type><metronome><per-minute>60</per-minute></metronome></direction-type></direction>'
-        self.assertEqual(g.remover_andamento(xml), '<direction></direction>')
-
-    def test_sem_andamento_nada_muda(self):
-        xml = '<score><part><measure><note><pitch/></note></measure></part></score>'
-        self.assertEqual(g.remover_andamento(xml), xml)
-
-
-class RemoverLetra(unittest.TestCase):
-    def test_tira_o_lyric_e_o_que_ha_dentro(self):
-        xml = '<note><pitch/><lyric number="1" default-y="-67"><syllabic>end</syllabic><text>nho,</text></lyric></note>'
-        self.assertEqual(g.remover_letra(xml), "<note><pitch/></note>")
-
-    def test_tira_todas_as_letras_de_varias_vozes_e_linhas(self):
-        xml = "<n><lyric number=\"1\"><text>a</text></lyric><lyric number=\"2\">\n<text>b</text>\n</lyric></n>"
-        self.assertEqual(g.remover_letra(xml), "<n></n>")
-
-    def test_tira_o_sinal_de_elisao_que_vem_dentro_da_letra(self):
-        elisao = chr(0xE552)
-        xml = f'<lyric><text>nho,</text><text font-family="MScore Text">{elisao}</text><text>em</text></lyric>'
-        self.assertEqual(g.remover_letra(xml), "")
-
-    def test_lyric_vazio_de_uma_tag_so(self):
-        self.assertEqual(g.remover_letra('<a/><lyric number="1"/><b/>'), "<a/><b/>")
-
-    def test_nao_toca_nos_elementos_que_so_comecam_igual(self):
-        # <lyric-font> e <lyric-language> ficam em <defaults>; um padrão frouxo apagaria o trecho entre eles e o primeiro </lyric>
-        xml = ('<defaults><lyric-font font-family="FreeSerif" font-size="10"/><lyric-language xml:lang="pt"/></defaults>'
-               '<note><lyric><text>x</text></lyric></note><note2/>')
-        self.assertEqual(g.remover_letra(xml), '<defaults><lyric-font font-family="FreeSerif" font-size="10"/><lyric-language xml:lang="pt"/></defaults><note></note><note2/>')
-
-    def test_sem_letra_nada_muda(self):
-        xml = "<score><part><measure><note><pitch/></note></measure></part></score>"
-        self.assertEqual(g.remover_letra(xml), xml)
-
-    def test_o_resto_da_partitura_fica_inteiro(self):
-        com = "".join(f'<note id="{i}"><pitch/><lyric><text>t{i}</text></lyric></note>' for i in range(50))
-        sem = "".join(f'<note id="{i}"><pitch/></note>' for i in range(50))
-        self.assertEqual(g.remover_letra(com), sem)
-
 
 class NumeroDoHino(unittest.TestCase):
     def test_nomes_validos(self):
@@ -97,41 +41,6 @@ class InteiroPositivo(unittest.TestCase):
         for texto in ("0", "-1", "-700", "abc", "", "1.5", "7e2"):
             with self.assertRaises(argparse.ArgumentTypeError, msg=texto):
                 g.inteiro_positivo(texto)
-
-
-class AcharMusescore(unittest.TestCase):
-    def setUp(self):
-        self.entrada = Path("/ent")
-        self.trabalho = Path("/trab")
-
-    def test_o_argumento_vence_a_variavel_de_ambiente(self):
-        with mock.patch.dict(os.environ, {"BM_MUSESCORE": "do-ambiente"}):
-            self.assertEqual(g.achar_musescore(self.entrada, self.trabalho, "meu mscore --x"), ["meu", "mscore", "--x"])
-
-    def test_a_variavel_de_ambiente_vale_sem_argumento(self):
-        with mock.patch.dict(os.environ, {"BM_MUSESCORE": "do-ambiente"}):
-            self.assertEqual(g.achar_musescore(self.entrada, self.trabalho, None), ["do-ambiente"])
-
-    def test_usa_o_primeiro_comando_do_path(self):
-        com = {"musescore4": "/usr/bin/musescore4", "musescore": "/usr/bin/musescore"}
-        with mock.patch.dict(os.environ, {}, clear=False), mock.patch.object(g.shutil, "which", lambda c: com.get(c)):
-            os.environ.pop("BM_MUSESCORE", None)
-            self.assertEqual(g.achar_musescore(self.entrada, self.trabalho, None), ["musescore4"])
-
-    def test_flatpak_pede_acesso_as_duas_pastas(self):
-        class Ok:
-            returncode = 0
-
-        with mock.patch.object(g.shutil, "which", lambda c: "/usr/bin/flatpak" if c == "flatpak" else None), \
-                mock.patch.object(g.subprocess, "run", lambda *a, **k: Ok()):
-            os.environ.pop("BM_MUSESCORE", None)
-            cmd = g.achar_musescore(self.entrada, self.trabalho, None)
-        self.assertEqual(cmd, ["flatpak", "run", "--filesystem=/ent:ro", "--filesystem=/trab", "org.musescore.MuseScore"])
-
-    def test_sem_nada_instalado_devolve_none(self):
-        with mock.patch.object(g.shutil, "which", lambda c: None):
-            os.environ.pop("BM_MUSESCORE", None)
-            self.assertIsNone(g.achar_musescore(self.entrada, self.trabalho, None))
 
 
 class OpcoesVerovio(unittest.TestCase):
@@ -160,128 +69,7 @@ class OpcoesVerovio(unittest.TestCase):
         self.assertLess(g.LARGURA_RETRATO, g.LARGURA_PAISAGEM)
 
     def test_o_nome_da_paisagem_e_o_que_o_app_le(self):
-        self.assertEqual(g.SUFIXO_PAISAGEM, "-paisagem")  # src-tauri/src/pacote.rs: hino-<n>-paisagem.svg
-
-
-class Versoes(unittest.TestCase):
-    def test_retrato_e_paisagem_por_padrao_e_so_retrato_se_pedido(self):
-        self.assertEqual(g.versoes(700, 1200), [("", 700), ("-paisagem", 1200)])
-        self.assertEqual(g.versoes(700, None), [("", 700)])
-        self.assertEqual(g.versoes(650, 1300), [("", 650), ("-paisagem", 1300)])
-
-
-class UltimasLinhas(unittest.TestCase):
-    def test_pega_so_as_ultimas_e_ignora_linhas_vazias(self):
-        self.assertEqual(g.ultimas_linhas("a\n\n b \nc\nd\n", 2), "c | d")
-
-    def test_aceita_vazio_e_none(self):
-        self.assertEqual(g.ultimas_linhas(""), "")
-        self.assertEqual(g.ultimas_linhas(None), "")
-
-
-class MscxParaMusicxml(unittest.TestCase):
-    def falso(self, conteudo=None, codigo=0, erro="", saida=""):
-        """Um subprocess.run falso: escreve (ou não) o arquivo do -o e devolve um resultado."""
-        def run(cmd, **k):
-            if conteudo is not None:
-                Path(cmd[cmd.index("-o") + 1]).write_text(conteudo)
-            return subprocess.CompletedProcess(cmd, codigo, stdout=saida, stderr=erro)
-        return run
-
-    def chama(self, run, tempo=5):
-        with tempfile.TemporaryDirectory() as t:
-            with mock.patch.object(g.subprocess, "run", run):
-                return g.mscx_para_musicxml(["mscore"], Path("x.mscx"), Path(t) / "saida.musicxml", tempo)
-
-    def test_sucesso_devolve_none(self):
-        self.assertIsNone(self.chama(self.falso("<score/>")))
-
-    def test_sucesso_mesmo_com_aviso_no_stderr_e_codigo_diferente_de_zero(self):
-        self.assertIsNone(self.chama(self.falso("<score/>", codigo=1, erro="QCoreApplication::applicationDirPath: aviso")))
-
-    def test_arquivo_ausente_ou_vazio_e_falha_com_codigo_e_causa(self):
-        for conteudo in (None, ""):
-            motivo = self.chama(self.falso(conteudo, codigo=3, erro="linha 1\nNão consegui abrir o arquivo"))
-            self.assertIn("não gerou o MusicXML", motivo)
-            self.assertIn("código 3", motivo)
-            self.assertIn("Não consegui abrir o arquivo", motivo)
-
-    def test_sem_mensagem_do_musescore_o_motivo_nao_termina_em_dois_pontos(self):
-        motivo = self.chama(self.falso(None, codigo=1))
-        self.assertTrue(motivo.endswith("(código 1)"), motivo)
-
-    def test_usa_a_saida_padrao_se_o_stderr_estiver_vazio(self):
-        self.assertIn("só no stdout", self.chama(self.falso(None, codigo=1, saida="só no stdout")))
-
-    def test_tempo_esgotado_e_falha_com_o_limite_no_texto(self):
-        def run(cmd, **k):
-            raise subprocess.TimeoutExpired(cmd, k["timeout"])
-
-        motivo = self.chama(run, tempo=7)
-        self.assertIn("passou de 7 s", motivo)
-
-    def test_passa_o_limite_de_tempo_ao_subprocesso(self):
-        visto = {}
-
-        def run(cmd, **k):
-            visto.update(k)
-            return subprocess.CompletedProcess(cmd, 0, "", "")
-
-        self.chama(run, tempo=42)
-        self.assertEqual(visto["timeout"], 42)
-
-    def test_comando_inexistente_e_falha_com_o_comando_no_texto(self):
-        def run(cmd, **k):
-            raise FileNotFoundError(2, "No such file or directory", "mscore-que-nao-existe")
-
-        motivo = self.chama(run)
-        self.assertIn("não consegui rodar o MuseScore", motivo)
-        self.assertIn("mscore", motivo)
-
-    def test_roda_sem_janela(self):
-        visto = {}
-
-        def run(cmd, env=None, **k):
-            visto["env"] = env
-            return subprocess.CompletedProcess(cmd, 0, "", "")
-
-        self.chama(run)
-        self.assertEqual(visto["env"]["QT_QPA_PLATFORM"], "offscreen")
-
-
-class Gravar(unittest.TestCase):
-    def test_grava_todos_os_arquivos_sem_deixar_temporario(self):
-        with tempfile.TemporaryDirectory() as t:
-            saida = Path(t)
-            g.gravar(saida, {"hino-7.svg": b"<svg/>", "hino-7.timemap.json": b"[1,2]", "hino-7-paisagem.svg": b"<g/>"})
-            self.assertEqual((saida / "hino-7.svg").read_bytes(), b"<svg/>")
-            self.assertEqual((saida / "hino-7.timemap.json").read_bytes(), b"[1,2]")
-            self.assertEqual((saida / "hino-7-paisagem.svg").read_bytes(), b"<g/>")
-            self.assertEqual(sorted(p.name for p in saida.iterdir()), ["hino-7-paisagem.svg", "hino-7.svg", "hino-7.timemap.json"])
-
-    def test_substitui_o_que_ja_existia(self):
-        with tempfile.TemporaryDirectory() as t:
-            saida = Path(t)
-            (saida / "hino-7.svg").write_bytes(b"velho")
-            g.gravar(saida, {"hino-7.svg": b"novo"})
-            self.assertEqual((saida / "hino-7.svg").read_bytes(), b"novo")
-
-    def test_falha_na_escrita_no_meio_nao_deixa_arquivo_nem_temporario(self):
-        with tempfile.TemporaryDirectory() as t:
-            saida = Path(t)
-            original = Path.write_bytes
-            chamadas = []
-
-            def falha_na_terceira(self, dados):
-                chamadas.append(self.name)
-                if len(chamadas) == 3:
-                    raise OSError("disco cheio")
-                return original(self, dados)
-
-            with mock.patch.object(Path, "write_bytes", falha_na_terceira):
-                with self.assertRaises(OSError):
-                    g.gravar(saida, {"a.svg": b"1", "b.svg": b"2", "c.svg": b"3", "d.svg": b"4"})
-            self.assertEqual(list(saida.iterdir()), [], "não pode sobrar nenhum dos quatro, nem o .tmp")
+        self.assertEqual(SUFIXO_PAISAGEM, "-paisagem")  # src-tauri/src/pacote.rs: hino-<n>-paisagem.svg
 
 
 class FalsoToolkit:
@@ -311,7 +99,7 @@ class FalsoToolkit:
 
 
 class GerarHino(unittest.TestCase):
-    def roda(self, tk, musicxml="<score/>", tempo=5, versoes=None, escala=40):
+    def roda(self, tk, musicxml="<score/>", versoes=None, escala=40):
         versoes = versoes if versoes is not None else [("", 700), ("-paisagem", 1200)]
         with tempfile.TemporaryDirectory() as t:
             trabalho, saida = Path(t) / "trab", Path(t) / "out"
@@ -324,8 +112,8 @@ class GerarHino(unittest.TestCase):
                 return subprocess.CompletedProcess(cmd, 0, "", "")
 
             try:
-                with mock.patch.object(g.subprocess, "run", run):
-                    resultado = g.gerar_hino(tk, ["mscore"], 5, Path("hino-5.mscx"), trabalho, saida, escala, versoes, tempo)
+                with mock.patch.object(subprocess, "run", run):
+                    resultado = g.gerar_hino(g.Lote(tk, ["mscore"], trabalho, saida, escala, versoes, 5), 5, Path("hino-5.mscx"))
             finally:
                 self.arquivos = {p.name: p.read_bytes() for p in saida.iterdir()}
             return resultado, sorted(self.arquivos)
@@ -362,8 +150,8 @@ class GerarHino(unittest.TestCase):
 
             self.erro = None
             try:
-                with mock.patch.object(g.subprocess, "run", run):
-                    g.gerar_hino(tk, ["mscore"], 5, Path("hino-5.mscx"), trabalho, saida, 40, versoes, 5)
+                with mock.patch.object(subprocess, "run", run):
+                    g.gerar_hino(g.Lote(tk, ["mscore"], trabalho, saida, 40, versoes, 5), 5, Path("hino-5.mscx"))
             except g.ErroHino as e:
                 self.erro = e
             return {p.name: p.read_bytes() for p in saida.iterdir()}
@@ -439,18 +227,40 @@ class GerarHino(unittest.TestCase):
             self.roda(FalsoToolkit(), musicxml=b"\xff\xfe\xfa")
 
 
+class Principal(unittest.TestCase):
+    def roda(self, *argumentos):
+        erro = io.StringIO()
+        with mock.patch.object(sys, "argv", ["gerar-partituras", *argumentos]), contextlib.redirect_stderr(erro):
+            return g.principal(), erro.getvalue()
+
+    def test_entrada_que_nao_e_pasta_e_erro_2(self):
+        codigo, erro = self.roda("/nao/existe", "saida")
+        self.assertEqual(codigo, 2)
+        self.assertEqual(erro, "erro: /nao/existe não é uma pasta\n")
+
+    def test_pasta_sem_hinos_e_erro_2(self):
+        with tempfile.TemporaryDirectory() as t:
+            (Path(t) / "hino-1.mscz").write_text("x")
+            codigo, erro = self.roda(t, "saida")
+        self.assertEqual(codigo, 2)
+        self.assertEqual(erro, f"erro: nenhum hino-<número>.mscx em {t}\n")
+
+
 class Processar(unittest.TestCase):
     VERSOES = [("", 700), ("-paisagem", 1200)]
 
+    def lote(self, versoes=None):
+        return g.Lote(None, ["m"], Path("t"), Path("s"), 40, versoes or self.VERSOES)
+
     def test_um_hino_ruim_nao_para_os_outros_e_conta_a_falha(self):
-        def falso(tk, musescore, n, mscx, trabalho, saida, escala, versoes, tempo):
+        def falso(lote, n, mscx):
             if n == 2:
                 raise g.ErroHino("deu ruim")
             return [(100 * n, 10, 5), (200 * n, 20, 5)]
 
         erro = io.StringIO()
         with mock.patch.object(g, "gerar_hino", falso), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(erro):
-            falhas, total = g.processar(None, ["mscore"], [(1, Path("a")), (2, Path("b")), (3, Path("c"))], Path("t"), Path("s"), 40, self.VERSOES)
+            falhas, total = g.processar(self.lote(), [(1, Path("a")), (2, Path("b")), (3, Path("c"))])
         self.assertEqual(falhas, 1)
         self.assertEqual(total, 100 + 200 + 300 + 600, "soma as duas versões só dos que deram certo")
         self.assertIn("2  FALHOU: deu ruim", erro.getvalue())
@@ -458,7 +268,7 @@ class Processar(unittest.TestCase):
     def test_tudo_certo_nao_conta_falhas_e_a_tabela_mostra_as_duas_versoes(self):
         saida = io.StringIO()
         with mock.patch.object(g, "gerar_hino", lambda *a, **k: [(50, 5, 1), (80, 8, 1)]), contextlib.redirect_stdout(saida):
-            r = g.processar(None, ["m"], [(1, Path("a")), (2, Path("b"))], Path("t"), Path("s"), 40, self.VERSOES)
+            r = g.processar(self.lote(), [(1, Path("a")), (2, Path("b"))])
         self.assertEqual(r, (0, 260))
         cabecalho = saida.getvalue().splitlines()[0]
         self.assertIn("SVG retrato", cabecalho)
@@ -467,163 +277,9 @@ class Processar(unittest.TestCase):
     def test_so_retrato_mostra_so_uma_coluna(self):
         saida = io.StringIO()
         with mock.patch.object(g, "gerar_hino", lambda *a, **k: [(50, 5, 1)]), contextlib.redirect_stdout(saida):
-            r = g.processar(None, ["m"], [(1, Path("a"))], Path("t"), Path("s"), 40, [("", 700)])
+            r = g.processar(self.lote([("", 700)]), [(1, Path("a"))])
         self.assertEqual(r, (0, 50))
         self.assertNotIn("paisagem", saida.getvalue())
-
-
-class NumeroCurto(unittest.TestCase):
-    def test_sem_zeros_a_direita_e_ate_4_casas(self):
-        self.assertEqual(g.numero_curto(4.0), "4")
-        self.assertEqual(g.numero_curto(1.5), "1.5")
-        self.assertEqual(g.numero_curto(1 / 3), "0.3333")
-        self.assertEqual(g.numero_curto(0.0), "0")
-        self.assertEqual(g.numero_curto(-0.00001), "0")
-
-
-class TemposNoCompasso(unittest.TestCase):
-    """O `timemap` do Verovio: `on`/`off` com ids, `measureOn` no começo de cada compasso, `restsOn`/`restsOff` para as pausas."""
-
-    def test_o_instante_e_relativo_ao_compasso_em_que_a_nota_soa(self):
-        tm = [
-            {"qstamp": 0, "measureOn": "m1", "on": ["a"]},
-            {"qstamp": 1, "off": ["a"], "on": ["b"]},
-            {"qstamp": 4, "measureOn": "m2", "off": ["b"], "on": ["c"]},
-            {"qstamp": 5.5, "off": ["c"]},
-        ]
-        self.assertEqual(g.tempos_no_compasso(tm, lambda i: i), {"a": (0, 1), "b": (1, 4), "c": (0, 1.5)})
-
-    def test_a_pausa_tambem_tem_tempo(self):
-        tm = [{"qstamp": 0, "measureOn": "m1", "on": ["a"]}, {"qstamp": 1, "off": ["a"], "restsOn": ["p"]}, {"qstamp": 2, "restsOff": ["p"]}]
-        self.assertEqual(g.tempos_no_compasso(tm, lambda i: i)["p"], (1, 2))
-
-    def test_na_repeticao_vale_a_primeira_vez_e_a_copia_vira_o_id_do_desenho(self):
-        # a copia "a-rend2" so existe no timemap; no desenho a nota e "a". O compasso repetido recomeca em 8.
-        tm = [
-            {"qstamp": 0, "measureOn": "m1", "on": ["a"]},
-            {"qstamp": 2, "off": ["a"]},
-            {"qstamp": 8, "measureOn": "m1-rend2", "on": ["a-rend2"]},
-            {"qstamp": 9, "off": ["a-rend2"]},
-        ]
-        real = {"a-rend2": "a"}.get
-        self.assertEqual(g.tempos_no_compasso(tm, lambda i: real(i, i)), {"a": (0, 2)})
-
-    def test_nota_que_atravessa_a_barra_tem_fim_maior_que_o_compasso(self):
-        tm = [{"qstamp": 0, "measureOn": "m1", "on": ["a"]}, {"qstamp": 4, "measureOn": "m2", "off": ["a"]}]
-        self.assertEqual(g.tempos_no_compasso(tm, lambda i: i), {"a": (0, 4)})
-
-    def test_nota_que_nunca_fecha_fica_de_fora(self):
-        self.assertEqual(g.tempos_no_compasso([{"qstamp": 0, "measureOn": "m1", "on": ["a"]}], lambda i: i), {})
-
-
-class MarcarNotas(unittest.TestCase):
-    SVG = (
-        '<g id="m1" class="measure"><g id="a" class="note"><g class="notehead"></g></g><g id="b" class="note"></g>'
-        '<g id="c" class="note"></g><g id="p" class="rest"></g><g id="e" class="note"></g><g id="x" class="notehead"></g></g>'
-    )
-
-    def test_poe_data_t_e_data_f_em_notas_e_pausas(self):
-        tempos = {"a": (0, 1), "p": (1, 2)}
-        svg, n = g.marcar_notas(self.SVG, tempos, [])
-        self.assertEqual(n, 2)
-        self.assertIn('<g id="a" class="note" data-t="0" data-f="1">', svg)
-        self.assertIn('<g id="p" class="rest" data-t="1" data-f="2">', svg)
-        # sem tempo: intocado
-        self.assertIn('<g id="b" class="note">', svg)
-
-    SVG_LIGADURA = (
-        '<g id="m1" class="measure"><g id="a" class="note"></g><g id="t1" class="tie"><path d="M0,0"/></g></g>'
-        '<g id="m2" class="measure"><g id="b" class="note"></g><g id="c" class="note"></g><g id="t2" class="tie"></g><g id="t3" class="tie"></g></g>'
-    )
-
-    def test_cada_nota_da_ligadura_acende_no_seu_tempo_e_a_curva_leva_o_tempo_da_primeira(self):
-        tempos = {"a": (2, 4), "b": (0, 2), "c": (2, 3)}
-        svg, n = g.marcar_notas(self.SVG_LIGADURA, tempos, [("t1", "a", "b")])
-        self.assertEqual(n, 3)
-        self.assertIn('<g id="a" class="note" data-t="2" data-f="4">', svg)
-        self.assertIn('<g id="b" class="note" data-t="0" data-f="2">', svg)  # a segunda também acende, no tempo dela
-        self.assertIn('<g id="t1" class="tie" data-t="2" data-f="4">', svg)  # a luz corre pela curva enquanto a primeira soa
-
-    def test_ligadura_em_cadeia_tem_uma_curva_para_cada_par(self):
-        tempos = {"a": (0, 1), "b": (1, 3), "c": (3, 4)}
-        svg, _ = g.marcar_notas(self.SVG_LIGADURA, tempos, [("t1", "a", "b"), ("t2", "b", "c")])
-        self.assertIn('<g id="t1" class="tie" data-t="0" data-f="1">', svg)
-        self.assertIn('<g id="t2" class="tie" data-t="1" data-f="3">', svg)
-
-    def test_ligadura_partida_pelo_fim_da_linha_divide_o_tempo_entre_os_pedacos(self):
-        svg, _ = g.marcar_notas(self.SVG_LIGADURA, {"a": (0, 4), "b": (4, 5)}, [("t2", "a", "b"), ("t3", "a", "b")])
-        self.assertIn('<g id="t2" class="tie" data-t="0" data-f="2">', svg)
-        self.assertIn('<g id="t3" class="tie" data-t="2" data-f="4">', svg)
-
-    def test_ligadura_sem_tempo_na_primeira_nota_fica_sem_atributos(self):
-        svg, _ = g.marcar_notas(self.SVG_LIGADURA, {"b": (0, 2)}, [("t1", "a", "b")])
-        self.assertIn('<g id="t1" class="tie">', svg)
-
-    SVG_EXPRESSAO = (
-        '<g id="m1" class="measure"><g id="a" class="note"></g><g id="s1" class="slur"><path d="M0,0"/></g></g>'
-        '<g id="m2" class="measure"><g id="b" class="note"></g><g id="s2" class="slur"></g><g id="s3" class="slur"></g></g>'
-    )
-
-    def test_ligadura_de_expressao_leva_o_tempo_da_nota_que_abre_ate_o_comeco_da_que_fecha(self):
-        # a abre em 1 (dura 1), a curva corre até o começo de b, 3 semínimas depois: de 1 a 4 (e não de 1 a 2, o fim de a)
-        svg, n = g.marcar_notas(self.SVG_EXPRESSAO, {"a": (1, 2), "b": (0, 1)}, [("s1", "a", "b", 3)])
-        self.assertIn('<g id="s1" class="slur" data-t="1" data-f="4">', svg)
-        self.assertEqual(n, 2)
-
-    def test_ligadura_de_expressao_partida_pelo_fim_da_linha_divide_o_tempo(self):
-        svg, _ = g.marcar_notas(self.SVG_EXPRESSAO, {"a": (0, 1), "b": (0, 1)}, [("s2", "a", "b", 4), ("s3", "a", "b", 4)])
-        self.assertIn('<g id="s2" class="slur" data-t="0" data-f="2">', svg)
-        self.assertIn('<g id="s3" class="slur" data-t="2" data-f="4">', svg)
-
-    def test_ligadura_de_prolongamento_e_de_expressao_sobre_as_mesmas_notas_nao_dividem_o_tempo(self):
-        svg = (
-            '<g id="m1" class="measure"><g id="a" class="note"></g><g id="t1" class="tie"></g><g id="s1" class="slur"></g></g>'
-            '<g id="m2" class="measure"><g id="b" class="note"></g></g>'
-        )
-        # a ligadura (a abre em 0 e dura 1,5) e a de expressão (de a até o começo de b, 1,5 depois) cobrem as MESMAS duas notas: cada uma leva o tempo inteiro
-        svg, _ = g.marcar_notas(svg, {"a": (0, 1.5), "b": (0, 1)}, [("t1", "a", "b"), ("s1", "a", "b", 1.5)])
-        self.assertIn('<g id="t1" class="tie" data-t="0" data-f="1.5">', svg)
-        self.assertIn('<g id="s1" class="slur" data-t="0" data-f="1.5">', svg)
-
-    def test_curvas_duplicadas_com_o_mesmo_desenho_levam_o_tempo_inteiro_e_pedacos_diferentes_dividem(self):
-        base = '<g id="m1" class="measure"><g id="a" class="note"></g>'
-        dup = base + '<g id="s1" class="slur"><path d="M1,1 C2,2 3,3 4,4"/></g><g id="s2" class="slur"><path d="M1,1 C2,2 3,3 4,4"/></g></g><g id="m2" class="measure"><g id="b" class="note"></g></g>'
-        # duas curvas IGUAIS, uma por cima da outra (duplicata): cada uma leva o tempo inteiro, sem dividir
-        svg, _ = g.marcar_notas(dup, {"a": (0, 1), "b": (0, 1)}, [("s1", "a", "b", 1.5), ("s2", "a", "b", 1.5)])
-        self.assertIn('<g id="s1" class="slur" data-t="0" data-f="1.5">', svg)
-        self.assertIn('<g id="s2" class="slur" data-t="0" data-f="1.5">', svg)
-        # dois desenhos DIFERENTES (o pedaço do fim da linha e o do começo da seguinte): dividem o tempo
-        partida = dup.replace('d="M1,1 C2,2 3,3 4,4"/></g></g><g id="m2"', 'd="M9,9 C8,8 7,7 6,6"/></g></g><g id="m2"', 1)
-        svg, _ = g.marcar_notas(partida, {"a": (0, 1), "b": (0, 1)}, [("s1", "a", "b", 1.5), ("s2", "a", "b", 1.5)])
-        self.assertIn('<g id="s1" class="slur" data-t="0" data-f="0.75">', svg)
-        self.assertIn('<g id="s2" class="slur" data-t="0.75" data-f="1.5">', svg)
-
-    def test_ligadura_de_expressao_sem_duracao_conhecida_fica_sem_atributos(self):
-        svg, _ = g.marcar_notas(self.SVG_EXPRESSAO, {"a": (1, 2), "b": (0, 1)}, [])
-        self.assertIn('<g id="s1" class="slur">', svg)
-
-    def test_inicios_absolutos_atravessam_a_barra(self):
-        tm = [
-            {"qstamp": 0, "measureOn": "m1", "on": ["a"]},
-            {"qstamp": 4, "measureOn": "m2", "on": ["b"], "off": ["a"]},
-            {"qstamp": 6, "restsOn": ["p"], "off": ["b"]},
-        ]
-        self.assertEqual(g.inicios_absolutos(tm, lambda i: i), {"a": 0, "b": 4, "p": 6})
-        self.assertEqual(g.inicios_absolutos(tm, lambda i: {"b": "B"}.get(i, i)), {"a": 0, "B": 4, "p": 6})
-
-    def test_ligadura_em_ciclo_nao_trava(self):
-        svg, n = g.marcar_notas(self.SVG_LIGADURA, {"a": (0, 1), "b": (1, 2)}, [("t1", "a", "b"), ("t2", "b", "a")])
-        self.assertEqual(n, 2)
-
-    def test_nota_de_enfeite_sem_duracao_nao_acende(self):
-        svg, n = g.marcar_notas(self.SVG, {"e": (1, 1)}, [])
-        self.assertEqual(n, 0)
-        self.assertNotIn("data-t", svg)
-
-    def test_so_marca_g_de_nota_e_pausa(self):
-        svg, n = g.marcar_notas(self.SVG, {"x": (0, 1), "m1": (0, 4)}, [])
-        self.assertEqual((n, svg), (0, self.SVG))
-
 
 if __name__ == "__main__":
     sys.exit(0 if unittest.main(exit=False).result.wasSuccessful() else 1)
