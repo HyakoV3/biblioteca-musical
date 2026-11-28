@@ -3,8 +3,8 @@
 import { biblioteca, type Recusada } from "../biblioteca.svelte";
 import { instalando } from "../instalando.svelte";
 import { baixarZip } from "../sons/baixar";
-import { ErroPacote, sha256Hex } from "../sons/extrair";
-import { baixarEInstalar, extrairDaPastaReal, type Andamento } from "./baixar";
+import { sha256Hex } from "../sons/extrair";
+import { baixarEInstalar, erroDoPacote, extrairDaPastaReal, type Andamento } from "./baixar";
 import { MANIFESTO } from "./manifesto";
 
 const OCIOSO: Andamento = { fase: "ocioso", progresso: 0, erro: null };
@@ -32,7 +32,7 @@ async function baixar() {
     recusadas = r.recusadas;
     andamento = OCIOSO;
   } catch (e) {
-    andamento = { fase: "erro", progresso: 0, erro: e instanceof ErroPacote ? { codigo: e.codigo } : { bruto: String(e) } };
+    andamento = { fase: "erro", progresso: 0, erro: erroDoPacote(e) };
   } finally {
     instalando.liberar();
   }

@@ -69,6 +69,13 @@ function decodificar(texto: string): string[] | null {
   }
 }
 
+/** O erro de um download de pacote (hinário ou partituras) já traduzido: pelo código do pacote (rede ou arquivo) ou, vindo do Rust, pelo texto bruto. Vazio se não há erro. */
+export function traduzirErroDoDownload(erro: { codigo: string } | { bruto: string } | null, t: Tradutor): string {
+  if (!erro) return "";
+  if ("codigo" in erro) return t(erro.codigo === "rede" ? "sons.erro_rede" : "sons.erro_arquivo");
+  return traduzirErro(erro.bruto, t);
+}
+
 export function traduzirErro(texto: string, t: Tradutor): string {
   const partes = decodificar(texto);
   if (!partes || !Object.hasOwn(ERROS_DO_RUST, partes[0])) return texto;

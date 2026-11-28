@@ -1,7 +1,7 @@
 // Baixar e instalar o pacote de partituras (I-08), no mesmo caminho dos sons gravados: baixa pelo lado nativo, CONFERE o tamanho e o
 // SHA-256 contra o manifesto e só então entrega ao Rust (que confere de novo nomes, limites e cada SVG). Funções injetadas, para o fluxo
 // ser testado sem rede nem Tauri; o store (partituras.svelte.ts) liga as de verdade.
-import { extrairEConferir, type CodigoErro } from "../sons/extrair";
+import { ErroPacote, extrairEConferir, type CodigoErro } from "../sons/extrair";
 import type { PacotePartituras } from "./tipos";
 
 export type Fase = "baixando" | "conferindo" | "instalando";
@@ -14,6 +14,11 @@ export type Andamento = {
   /** Quando `fase` é "erro": o código do erro do pacote (rede, integridade...) ou o texto bruto vindo do Rust (a tela traduz). */
   erro: { codigo: CodigoErro } | { bruto: string } | null;
 };
+
+/** O que guardar no `erro` do andamento quando o download falhou: o código do pacote (`ErroPacote`) ou o texto bruto de qualquer outro erro. */
+export function erroDoPacote(e: unknown): { codigo: CodigoErro } | { bruto: string } {
+  return e instanceof ErroPacote ? { codigo: e.codigo } : { bruto: String(e) };
+}
 
 export type Dependencias<T> = {
   /** Baixa o que o link entrega, avisando o progresso (0 a 1). `estimativa` (bytes) vale quando o servidor não diz o tamanho. */
