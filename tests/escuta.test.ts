@@ -4,7 +4,7 @@ import { Escuta } from "../src/lib/escuta";
 type Registro = string[];
 
 /** Monta um microfone e um áudio falsos que anotam, em ordem, o que a Escuta faz com eles. */
-function montar(opcoes: { negar?: boolean; adiarPermissao?: boolean } = {}) {
+function montar(opcoes: { negar?: boolean; adiarPermissao?: boolean; analisadorFalha?: boolean } = {}) {
   const log: Registro = [];
   const ouvintes: Record<string, () => void> = {};
   const faixa = {
@@ -38,6 +38,7 @@ function montar(opcoes: { negar?: boolean; adiarPermissao?: boolean } = {}) {
     }
     createAnalyser() {
       log.push("createAnalyser");
+      if (opcoes.analisadorFalha) throw new Error("sem analisador");
       return {
         fftSize: 0,
         getFloatTimeDomainData: (a: Float32Array) => {
@@ -142,5 +143,14 @@ describe("Escuta (captura do microfone)", () => {
     e2.parar();
     m2.ouvintes.ended();
     expect(aoPerder2).not.toHaveBeenCalled();
+  });
+
+  it("se montar a leitura falha, solta o microfone e fecha o áudio, relança o mesmo erro e permite iniciar de novo", async () => {
+    const m = montar({ analisadorFalha: true });
+    const e = new Escuta();
+    await expect(e.iniciar(() => {})).rejects.toThrow("sem analisador");
+    expect(m.log).toContain("faixa.stop");
+    expect(m.log).toContain("contexto.close");
+    expect(e.ligada).toBe(false);
   });
 });

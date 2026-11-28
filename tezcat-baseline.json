@@ -551,6 +551,10 @@
     "severity": "WARN",
     "value": 10
   },
+  "src/lib/escuta.ts::Escuta::Clean/Método::iniciar": {
+    "severity": "WARN",
+    "value": 21
+  },
   "src/lib/escuta.ts::Escuta::Clean/Nesting::vigiarFaixas": {
     "severity": "WARN",
     "value": 2

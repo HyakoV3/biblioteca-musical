@@ -21,7 +21,7 @@ export async function pedirMicrofone(contexto: AudioContext): Promise<MediaStrea
   try {
     return await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
   } catch (e) {
-    void contexto.close();
+    void contexto.close().catch(() => {});
     throw e;
   }
 }
@@ -38,4 +38,10 @@ export function iniciarLeitura(contexto: AudioContext, fluxo: MediaStream, aoLer
     analisador.getFloatTimeDomainData(amostras);
     aoLer(medidor.medir(amostras, contexto.sampleRate));
   }, PASSO_MS);
+}
+
+/** Para as faixas do microfone e fecha o contexto. */
+export function soltarMicrofone(fluxo: MediaStream, contexto: AudioContext): void {
+  fluxo.getTracks().forEach((t) => t.stop());
+  void contexto.close().catch(() => {});
 }
