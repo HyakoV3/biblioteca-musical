@@ -15,19 +15,20 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from manifesto.pacote import manifesto_do_pacote, principal_pacote, validar_https  # noqa: E402
+from manifesto.pacote import Regras, montar_pacote, principal_pacote, validar_https  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
 PADRAO = RAIZ / "src" / "lib" / "partituras" / "manifesto.json"
 
 
+def _validar_corpo(nome: str, dados: bytes) -> None:
+    if not dados.startswith(b"PK\x03\x04"):
+        raise ValueError(f"{nome} não parece um zip")
+
+
 def montar(link: str, zip_: Path) -> dict:
     """O manifesto de um pacote. Levanta ValueError se o link ou o arquivo não servem."""
-    validar_https(link)
-    dados = zip_.read_bytes()
-    if not dados.startswith(b"PK\x03\x04"):
-        raise ValueError(f"{zip_.name} não parece um zip")
-    return manifesto_do_pacote(link, zip_.name, dados)
+    return montar_pacote(link, zip_, Regras(validar_https, _validar_corpo))
 
 
 def principal() -> int:

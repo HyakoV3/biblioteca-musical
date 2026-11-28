@@ -7,6 +7,7 @@ import json
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import NamedTuple
 
 # O `montar` de cada script: recebe o link e o arquivo e devolve o manifesto (ou levanta ValueError).
 Montar = Callable[[str, Path], dict]
@@ -21,6 +22,22 @@ def validar_https(link: str) -> None:
 def manifesto_do_pacote(link: str, nome: str, dados: bytes) -> dict:
     """O manifesto de um pacote: o endereço, o nome do arquivo, o tamanho e o SHA-256 dos bytes."""
     return {"versao": 1, "pacote": {"url": link, "arquivo": nome, "bytes": len(dados), "sha256": hashlib.sha256(dados).hexdigest()}}
+
+
+class Regras(NamedTuple):
+    """As validações de cada script: do link, do conteúdo e (opcional, antes de ler o arquivo) do nome."""
+    link: Callable[[str], None]
+    corpo: Callable[[str, bytes], None]
+    nome: Callable[[Path], None] = lambda _: None
+
+
+def montar_pacote(link: str, arquivo: Path, regras: Regras) -> dict:
+    """O `montar` comum: valida o link e o nome, lê o arquivo, valida o conteúdo e monta o manifesto. Levanta ValueError (ou OSError ao ler)."""
+    regras.link(link)
+    regras.nome(arquivo)
+    dados = arquivo.read_bytes()
+    regras.corpo(arquivo.name, dados)
+    return manifesto_do_pacote(link, arquivo.name, dados)
 
 
 def gravar_manifesto(saida: Path, manifesto: dict) -> None:

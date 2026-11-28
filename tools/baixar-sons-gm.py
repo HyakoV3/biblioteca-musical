@@ -11,10 +11,12 @@ do smplr (JSON.parse do objeto de notas), com notas em base64 de mp3. Só leitur
 O total é de cerca de 35 MB (13 arquivos de 2,1 a 3,0 MB), além dos 5 que `baixar-sons-teste.sh` já traz.
 """
 import argparse
-import json
 import sys
 import urllib.request
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from smplr import ler_como_o_smplr  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
 DESTINO = RAIZ / "sons-fonte" / "FluidR3_GM"
@@ -26,13 +28,6 @@ INSTRUMENTOS = {
     "viola": "viola", "tenor_sax": "sax tenor", "trombone": "trombone", "french_horn": "trompa", "cello": "violoncelo",
     "tuba": "tuba", "bassoon": "fagote", "contrabass": "contrabaixo",
 }
-
-
-def ler_como_o_smplr(texto):
-    cabeca = texto.index("MIDI.Soundfont.")
-    inicio = texto.index("=", cabeca) + 2
-    fim = texto.rindex(",")
-    return json.loads(texto[inicio:fim] + "}")
 
 
 def main():
