@@ -43,6 +43,8 @@
   let erro = $state<MotivoDoErro | null>(null);
   /** Busca e filtro de origem (limpos ao sair e ao reabrir: não são lembrados). */
   let consulta = $state<Consulta>({ ...SEM_FILTRO });
+  /** O painel dos filtros (busca e "Com metrônomo"): fica aqui, e não no subcomponente, para sobreviver à lista esvaziar (a busca continua valendo). */
+  let filtrosAbertos = $state(false);
   /** O "agora" dos grupos por dia (Hoje, Ontem...): renovado ao voltar à aba e a cada minuto, para "Hoje" não ficar errado depois da meia-noite. */
   let agora = $state(Date.now());
 
@@ -248,7 +250,7 @@
       <button id="tentar-lista" class="botao" onclick={() => lista.carregarTudo()}>{t("erro.tentar")}</button>
     {/if}
     {#if lista.todas.length > 0}
-      <FiltrosGravacoes {consulta} aoMudar={mudarConsulta} />
+      <FiltrosGravacoes {consulta} aoMudar={mudarConsulta} bind:filtrosAbertos />
       <!-- UMA lista só, com chave por item: a gravação que toca muda de lugar (da janela para o destaque, de "Hoje" para "Ontem") sem ser desmontada, e o áudio segue. Os cabeçalhos de dia são
            linhas da lista (`<li>` com `<h3>`), para a navegação por títulos continuar. -->
       <ul class="lista" id="lista-gravacoes">

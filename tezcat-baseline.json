@@ -333,7 +333,7 @@
   },
   "src/lib/Gravador.svelte::Gravador::Clean/Tamanho::": {
     "severity": "WARN",
-    "value": 210
+    "value": 212
   },
   "src/lib/Gravador.svelte::Gravador::SRP::": {
     "severity": "WARN",

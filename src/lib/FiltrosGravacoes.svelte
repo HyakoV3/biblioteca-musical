@@ -6,13 +6,12 @@
   import type { Consulta, Filtro } from "./organizar";
 
   // Os filtros no título (I-39): os três mais usados ficam à mão, e o chevron abre a busca e o filtro "Com metrônomo". Tudo é UM grupo de escolha única (os quatro botões de rádio têm o mesmo nome).
-  let { consulta, aoMudar }: { consulta: Consulta; aoMudar: (parcial: Partial<Consulta>) => void } = $props();
+  let { consulta, aoMudar, filtrosAbertos = $bindable(false) }: { consulta: Consulta; aoMudar: (parcial: Partial<Consulta>) => void; filtrosAbertos?: boolean } = $props();
   const escolherFiltro = (filtro: Filtro) => aoMudar({ filtro });
 
   const t = (c: Parameters<typeof i18n.t>[0], p?: Record<string, string | number>) => i18n.t(c, p);
   const FILTROS_RAPIDOS: Filtro[] = ["todas", "favoritas", "hino"];
-  /** O painel dos filtros (busca e "Com metrônomo"): começa fechado; fechado, um ponto no chevron avisa que há filtro escondido. */
-  let filtrosAbertos = $state(false);
+  // `filtrosAbertos` mora em quem usa (o painel começa fechado; fechado, um ponto no chevron avisa que há filtro escondido): este componente é desmontado com a lista vazia, e a busca continua valendo.
   let buscaEl = $state<HTMLInputElement>();
   const filtroEscondido = $derived(consulta.busca.trim() !== "" || consulta.filtro === "metronomo");
   async function alternarFiltros() {
