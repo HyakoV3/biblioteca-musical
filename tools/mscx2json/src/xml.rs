@@ -56,14 +56,22 @@ pub(crate) fn e_apojatura(chord: Node) -> bool {
     })
 }
 
+/// Um `<Spanner type="Tie">` com o filho `lado` (`next` abre a ligadura, `prev` a fecha).
+fn spanner_de_ligadura(c: Node, lado: &str) -> bool {
+    c.attribute("type") == Some("Tie") && filho(c, lado).is_some()
+}
+
+/// Algum elemento filho da nota satisfaz `f`, que recebe o filho e o nome da sua tag.
+fn algum_elemento_filho(nota: Node, f: impl Fn(Node, &str) -> bool) -> bool {
+    nota.children()
+        .any(|c| c.is_element() && f(c, c.tag_name().name()))
+}
+
 pub(crate) fn liga_inicio(nota: Node) -> bool {
-    nota.children().any(|c| {
-        c.is_element()
-            && match c.tag_name().name() {
-                "Spanner" => c.attribute("type") == Some("Tie") && filho(c, "next").is_some(),
-                "Tie" => true,
-                _ => false,
-            }
+    algum_elemento_filho(nota, |c, nome| match nome {
+        "Spanner" => spanner_de_ligadura(c, "next"),
+        "Tie" => true,
+        _ => false,
     })
 }
 
@@ -77,19 +85,16 @@ pub(crate) fn abre_ligadura_com_id(nota: Node, id: &str) -> bool {
 }
 
 pub(crate) fn liga_fim(nota: Node) -> bool {
-    nota.children().any(|c| {
-        c.is_element()
-            && match c.tag_name().name() {
-                "Spanner" => c.attribute("type") == Some("Tie") && filho(c, "prev").is_some(),
-                "endTie" => true,
-                // MuseScore 2: o fim da ligadura é um `<endSpanner id="N"/>` dentro da nota, e o `N` é o `<Tie id="N">` de uma nota
-                // anterior. Outros spanners ancorados em nota (glissando, linha de nota) também fecham assim, por isso só vale o
-                // `id` que abriu uma ligadura.
-                "endSpanner" => c
-                    .attribute("id")
-                    .is_some_and(|id| abre_ligadura_com_id(nota, id)),
-                _ => false,
-            }
+    algum_elemento_filho(nota, |c, nome| match nome {
+        "Spanner" => spanner_de_ligadura(c, "prev"),
+        "endTie" => true,
+        // MuseScore 2: o fim da ligadura é um `<endSpanner id="N"/>` dentro da nota, e o `N` é o `<Tie id="N">` de uma nota
+        // anterior. Outros spanners ancorados em nota (glissando, linha de nota) também fecham assim, por isso só vale o
+        // `id` que abriu uma ligadura.
+        "endSpanner" => c
+            .attribute("id")
+            .is_some_and(|id| abre_ligadura_com_id(nota, id)),
+        _ => false,
     })
 }
 

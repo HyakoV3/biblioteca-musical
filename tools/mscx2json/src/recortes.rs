@@ -5,16 +5,31 @@ use crate::percurso::Acorde;
 
 const EPS: f64 = 1e-6;
 
+/// Percorre os `segmentos` em sequência e deixa `f` acrescentar à saída o que cada um contribui. `f` recebe a saída, os índices
+/// `(de, ate)` do segmento, o início `t0` do segmento e o `acumulado` (a duração dos segmentos anteriores), que avança a cada volta.
+fn montar_passada<T>(
+    inicios: &[f64],
+    segmentos: &[(usize, usize)],
+    mut f: impl FnMut(&mut Vec<T>, (usize, usize), f64, f64),
+) -> Vec<T> {
+    let mut saida = vec![];
+    let mut acumulado = 0.0;
+    for &(de, ate) in segmentos {
+        let t0 = inicios[de];
+        f(&mut saida, (de, ate), t0, acumulado);
+        acumulado += inicios[ate] - t0;
+    }
+    saida
+}
+
 /// Recorta os acordes que começam em cada intervalo de compassos e os recoloca em sequência, sem buracos.
 pub(crate) fn selecionar(
     acordes: &[Acorde],
     inicios: &[f64],
     segmentos: &[(usize, usize)],
 ) -> Vec<Acorde> {
-    let mut saida = vec![];
-    let mut acumulado = 0.0;
-    for &(de, ate) in segmentos {
-        let (t0, t1) = (inicios[de], inicios[ate]);
+    montar_passada(inicios, segmentos, |saida, (_, ate), t0, acumulado| {
+        let t1 = inicios[ate];
         let primeiro = saida.len();
         for a in acordes
             .iter()
@@ -26,9 +41,7 @@ pub(crate) fn selecionar(
             saida.push(novo);
         }
         cortar_ligaduras_do_segmento(&mut saida[primeiro..]);
-        acumulado += t1 - t0;
-    }
-    saida
+    })
 }
 
 /// O acorde seguinte tem uma nota `midi` que termina uma ligadura?
@@ -55,16 +68,11 @@ pub(crate) fn compassos_da_passada(
     inicios: &[f64],
     segmentos: &[(usize, usize)],
 ) -> Vec<InicioDeCompasso> {
-    let mut saida = vec![];
-    let mut acumulado = 0.0;
-    for &(de, ate) in segmentos {
-        let t0 = inicios[de];
+    montar_passada(inicios, segmentos, |saida, (de, ate), t0, acumulado| {
         for (i, &inicio) in inicios.iter().enumerate().take(ate).skip(de) {
             saida.push((arredondar(inicio - t0 + acumulado), i));
         }
-        acumulado += inicios[ate] - t0;
-    }
-    saida
+    })
 }
 
 /// Os compassos da introdução: os que começam antes do marcador `*` (`fim_intro`, em batidas). O compasso que contém o `*` entra, porque

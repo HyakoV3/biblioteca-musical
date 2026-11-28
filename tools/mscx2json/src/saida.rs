@@ -4,6 +4,16 @@ use crate::modelo::{Compassos, EstrofeSinc, Hino, Sincronia, Voz, arredondar};
 use crate::tonalidade::nome_da_tonalidade;
 use serde_json::{Map, Value, json};
 
+/// Acrescenta o campo ao objeto JSON só quando o valor existe, convertido por `f`.
+fn campo_opcional<T>(
+    o: &mut Map<String, Value>,
+    chave: &str,
+    valor: Option<T>,
+    f: impl FnOnce(T) -> Value,
+) {
+    o.extend(valor.map(|v| (chave.to_string(), f(v))));
+}
+
 /// Um campo do objeto JSON, para entrar com `Map::extend` só quando existe (`Option` é um iterador de zero ou um).
 fn campo(chave: &str, valor: Value) -> (String, Value) {
     (chave.to_string(), valor)
@@ -49,26 +59,10 @@ pub fn para_json(h: &Hino) -> Value {
     m.extend((!h.letra.is_empty()).then(|| campo("letra", json!(h.letra))));
     m.insert("vozes".into(), Value::Array(vozes_json(&h.vozes)));
     let com_vozes = |v: &Vec<Voz>| json!({ "vozes": vozes_json(v) });
-    m.extend(
-        h.passada_final
-            .as_ref()
-            .map(|f| campo("final", com_vozes(f))),
-    );
-    m.extend(
-        h.introducao
-            .as_ref()
-            .map(|i| campo("introducao", com_vozes(i))),
-    );
-    m.extend(
-        h.sincronia
-            .as_ref()
-            .map(|s| campo("sincronia", sincronia_json(s))),
-    );
-    m.extend(
-        h.compassos
-            .as_ref()
-            .map(|c| campo("compassos", compassos_json(c))),
-    );
+    campo_opcional(&mut m, "final", h.passada_final.as_ref(), com_vozes);
+    campo_opcional(&mut m, "introducao", h.introducao.as_ref(), com_vozes);
+    campo_opcional(&mut m, "sincronia", h.sincronia.as_ref(), sincronia_json);
+    campo_opcional(&mut m, "compassos", h.compassos.as_ref(), compassos_json);
     Value::Object(m)
 }
 
