@@ -26,14 +26,21 @@ def compassos_do_svg(texto: str) -> int:
     return len(MEDIDA.findall(texto))
 
 
+def itens_da_pasta(pasta: Path):
+    """(nome, texto) dos SVGs de partitura de uma pasta, em ordem."""
+    return ((p.name, p.read_text(encoding="utf-8")) for p in sorted(pasta.iterdir()) if p.is_file() and NOME.search(p.name))
+
+
+def itens_do_zip(arquivo: Path):
+    """(nome, texto) dos SVGs de partitura de um zip."""
+    with zipfile.ZipFile(arquivo) as z:
+        return [(n, z.read(n).decode("utf-8")) for n in z.namelist() if NOME.search(n)]
+
+
 def ler_svgs(origem: Path) -> dict:
     """{(número, paisagem): texto do SVG} de uma pasta ou de um zip."""
     svgs = {}
-    if origem.is_dir():
-        itens = ((p.name, p.read_text(encoding="utf-8")) for p in sorted(origem.iterdir()) if p.is_file() and NOME.search(p.name))
-    else:
-        with zipfile.ZipFile(origem) as z:
-            itens = [(n, z.read(n).decode("utf-8")) for n in z.namelist() if NOME.search(n)]
+    itens = itens_da_pasta(origem) if origem.is_dir() else itens_do_zip(origem)
     for nome, texto in itens:
         m = NOME.search(nome)
         if m:
@@ -47,30 +54,51 @@ def maior_indice(compassos: dict):
     return max(indices) if indices else None
 
 
+def problemas_do_hino(n, maior: int, contagem: dict) -> list:
+    """Problemas de um hino, dado o maior índice de `compassos` e {paisagem: compassos do SVG}."""
+    problemas = []
+    for paisagem, quantos in contagem.items():
+        nome = "paisagem" if paisagem else "retrato"
+        if maior + 1 > quantos:
+            problemas.append(f"hino {n} ({nome}): o `compassos` chega ao índice {maior}, mas o SVG desenha só {quantos} compassos")
+    if len(set(contagem.values())) > 1:
+        problemas.append(f"hino {n}: retrato e paisagem têm números diferentes de compassos ({contagem[False]} e {contagem[True]})")
+    return problemas
+
+
+def versoes_do_hino(n, svgs: dict) -> dict:
+    """{paisagem: texto do SVG ou None} das duas versões de um hino."""
+    return {paisagem: svgs.get((n, paisagem)) for paisagem in (False, True)}
+
+
+def conferir_hino(hino: dict, svgs: dict) -> tuple:
+    """(problemas, estado) de um hino; estado é None (sem `compassos`), "sem_svg" ou "conferido"."""
+    n = hino.get("numero")
+    maior = maior_indice(hino.get("compassos") or {})
+    if maior is None:
+        return [], None
+    versoes = versoes_do_hino(n, svgs)
+    if all(v is None for v in versoes.values()):
+        return [], "sem_svg"
+    contagem = {p: compassos_do_svg(t) for p, t in versoes.items() if t is not None}
+    return problemas_do_hino(n, maior, contagem), "conferido"
+
+
 def verificar(hinario: dict, svgs: dict) -> tuple:
     """(problemas, hinos conferidos, hinos sem SVG). Cada problema é um texto."""
     problemas, conferidos, sem_svg = [], 0, 0
     for hino in hinario.get("hinos", []):
-        comp = hino.get("compassos")
-        n = hino.get("numero")
-        if not comp:
-            continue
-        maior = maior_indice(comp)
-        if maior is None:
-            continue
-        versoes = {paisagem: svgs.get((n, paisagem)) for paisagem in (False, True)}
-        if all(v is None for v in versoes.values()):
-            sem_svg += 1
-            continue
-        conferidos += 1
-        contagem = {p: compassos_do_svg(t) for p, t in versoes.items() if t is not None}
-        for paisagem, quantos in contagem.items():
-            nome = "paisagem" if paisagem else "retrato"
-            if maior + 1 > quantos:
-                problemas.append(f"hino {n} ({nome}): o `compassos` chega ao índice {maior}, mas o SVG desenha só {quantos} compassos")
-        if len(set(contagem.values())) > 1:
-            problemas.append(f"hino {n}: retrato e paisagem têm números diferentes de compassos ({contagem[False]} e {contagem[True]})")
+        achados, estado = conferir_hino(hino, svgs)
+        problemas += achados
+        conferidos += estado == "conferido"
+        sem_svg += estado == "sem_svg"
     return problemas, conferidos, sem_svg
+
+
+def ler_entrada(argv):
+    """(hinário, svgs) lidos dos argumentos; levanta OSError, ValueError ou BadZipFile se a entrada não abre."""
+    hinario = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
+    return hinario, ler_svgs(Path(argv[2]))
 
 
 def main(argv):
@@ -80,8 +108,7 @@ def main(argv):
     # Entrada que não abre (arquivo ausente, JSON ruim, zip corrompido, SVG que não é UTF-8) é erro de uso (2), e não "achei problemas" (1):
     # quem checa o código de saída num passo de publicação precisa distinguir os dois.
     try:
-        hinario = json.loads(Path(argv[1]).read_text(encoding="utf-8"))
-        svgs = ler_svgs(Path(argv[2]))
+        hinario, svgs = ler_entrada(argv)
     except (OSError, ValueError, zipfile.BadZipFile) as e:
         print(f"erro: não consegui ler a entrada: {e}", file=sys.stderr)
         return 2

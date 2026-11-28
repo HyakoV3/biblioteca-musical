@@ -51,42 +51,60 @@ def dentro_de_sem_reduzir(pos, lista):
     return any(ini < pos < fim and "prefers-reduced-motion: no-preference" in cab for ini, fim, cab in lista)
 
 
+def problema_de_transition(css, m, linha):
+    """Mensagem se a transition não usa var(--duracao); None se usa."""
+    valor = re.match(r"transition\s*:([^;]*);", css[m.start():], re.S)
+    if valor and "var(--duracao)" in valor.group(1):
+        return None
+    return f"movimento.css:{linha}: transition sem var(--duracao) e fora do bloco no-preference"
+
+
+def problema_do_achado(css, m, lista):
+    """Mensagem de problema para um achado de PADRAO em movimento.css; None se está tudo certo."""
+    if dentro_de_sem_reduzir(m.start(), lista):
+        return None
+    linha = css.count("\n", 0, m.start()) + 1
+    trecho = m.group(0).strip()
+    if SE_MOVE.match(m.group(0)):
+        return f"movimento.css:{linha}: '{trecho}' fora de @media (prefers-reduced-motion: no-preference)"
+    if trecho.startswith("transition"):
+        return problema_de_transition(css, m, linha)
+    return None
+
+
 def verificar_movimento_css(css):
-    problemas = []
     lista = blocos(css)
-    for m in PADRAO.finditer(css):
-        linha = css.count("\n", 0, m.start()) + 1
-        protegido = dentro_de_sem_reduzir(m.start(), lista)
-        trecho = m.group(0).strip()
-        if SE_MOVE.match(m.group(0)) and not protegido:
-            problemas.append(f"movimento.css:{linha}: '{trecho}' fora de @media (prefers-reduced-motion: no-preference)")
-        elif trecho.startswith("transition") and not protegido:
-            valor = re.match(r"transition\s*:([^;]*);", css[m.start():], re.S)
-            if not valor or "var(--duracao)" not in valor.group(1):
-                problemas.append(f"movimento.css:{linha}: transition sem var(--duracao) e fora do bloco no-preference")
-    return problemas
+    achados = (problema_do_achado(css, m, lista) for m in PADRAO.finditer(css))
+    return [p for p in achados if p]
+
+
+def problemas_do_movimento_css():
+    """Problemas do próprio movimento.css (ou o aviso de que ele não existe)."""
+    if not MOVIMENTO.exists():
+        return ["falta src/lib/movimento.css"]
+    return verificar_movimento_css(sem_comentarios(MOVIMENTO.read_text(encoding="utf-8")))
+
+
+def arquivos_de_fora():
+    """Arquivos do src que não são o movimento.css, em ordem."""
+    todos = list(SRC.rglob("*.svelte")) + list(SRC.rglob("*.css")) + list(SRC.rglob("*.ts"))
+    return [a for a in sorted(todos) if a != MOVIMENTO]
+
+
+def problemas_de_arquivo(arq):
+    """Movimento fora de movimento.css num arquivo (vazio se não há ou se o arquivo permitido tem a sua proteção)."""
+    texto = sem_comentarios(arq.read_text(encoding="utf-8"))
+    achados = list(PADRAO.finditer(texto))
+    if arq in PERMITIDOS and "prefers-reduced-motion" in texto:
+        return []
+    rel = arq.relative_to(RAIZ)
+    return [f"{rel}:{texto.count(chr(10), 0, m.start()) + 1}: '{m.group(0).strip()}' fora de movimento.css" for m in achados]
 
 
 def main():
-    problemas = []
-    if not MOVIMENTO.exists():
-        problemas.append("falta src/lib/movimento.css")
-    else:
-        problemas += verificar_movimento_css(sem_comentarios(MOVIMENTO.read_text(encoding="utf-8")))
-
-    for arq in sorted(list(SRC.rglob("*.svelte")) + list(SRC.rglob("*.css")) + list(SRC.rglob("*.ts"))):
-        if arq == MOVIMENTO:
-            continue
-        texto = sem_comentarios(arq.read_text(encoding="utf-8"))
-        achados = [m for m in PADRAO.finditer(texto)]
-        if not achados:
-            continue
-        rel = arq.relative_to(RAIZ)
-        if arq in PERMITIDOS and "prefers-reduced-motion" in texto:
-            continue
-        for m in achados:
-            linha = texto.count("\n", 0, m.start()) + 1
-            problemas.append(f"{rel}:{linha}: '{m.group(0).strip()}' fora de movimento.css")
+    problemas = problemas_do_movimento_css()
+    for arq in arquivos_de_fora():
+        problemas += problemas_de_arquivo(arq)
 
     print(f"verificados: movimento.css + {len(list(SRC.rglob('*.svelte')))} componentes (permitidos: "
           f"{', '.join(str(p.relative_to(RAIZ)) for p in PERMITIDOS)})")
