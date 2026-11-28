@@ -77,7 +77,7 @@
 
 <style>
   .recentes h2 { font-size: 1rem; margin: 0 0 0.5rem; }
-  ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
-  button { width: 100%; min-height: 3rem; justify-content: flex-start; }
+  ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--espaco); }
+  button { width: 100%; min-height: var(--toque); justify-content: flex-start; }
   button[aria-current="true"] { font-weight: 700; border-color: var(--ouro-linha); }
 </style>

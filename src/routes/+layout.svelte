@@ -69,7 +69,7 @@
   /* --largura-trilho: a barra lateral de abas (celular deitado) ocupa o lado esquerdo; a página inteira se afasta dela. */
   :global(body) { margin: 0; -webkit-text-size-adjust: 100%; padding-left: var(--largura-trilho, 0rem); }
   /* Anel de foco visível para teclado e leitores de tela com navegação por foco. */
-  :global(:focus-visible) { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
+  :global(:focus-visible) { outline: var(--anel-foco); outline-offset: var(--anel-foco-recuo); }
   :global(a) { color: var(--acento); }
   /* Alto contraste (I-06): foco e bordas mais grossos e links sempre sublinhados, para nada depender só de cor. */
   :global(:root[data-tema="alto-contraste"] :focus-visible) { outline-width: 0.25rem; }
@@ -94,9 +94,9 @@
     clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
   :global(.botao) {
-    display: inline-flex; align-items: center; justify-content: center; min-height: 3rem; box-sizing: border-box;
-    padding: 0 1rem; font-size: 1rem; text-decoration: none; border-radius: 0.75rem;
-    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; min-height: var(--toque); box-sizing: border-box;
+    padding: 0 1rem; font-size: 1rem; text-decoration: none; border-radius: var(--raio);
+    border: var(--borda-padrao); background: var(--superficie); color: var(--texto); cursor: pointer;
   }
   :global(.botao.primario) { background: var(--acento); color: var(--acento-texto); border-color: var(--acento); font-weight: 600; }
   /* A parte do hino que está tocando: dourado. O contorno escuro dá contraste também no tema claro. */
@@ -106,13 +106,13 @@
   :global(.botao.perigo) { color: var(--perigo); border-color: var(--perigo); }
   :global(.botao:disabled) { opacity: 0.5; cursor: not-allowed; }
   /* Cartão: a moldura dos cartões do player e de Ajustes (Cartao.svelte e o cartão fixo "Tocar"). */
-  :global(.cartao) { border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
+  :global(.cartao) { border: var(--borda-padrao); border-radius: var(--raio); background: var(--superficie); }
   /* Botão quadrado das barras de controle (tamanho e alinhamento da letra, tamanho da partitura): 2,75 rem (o mínimo de toque), só ícone;
      o que está ligado (aria-pressed) leva borda dourada. Com 2,75 rem os dois grupos de 3 cabem lado a lado na largura de 20 rem (18 rem úteis). */
   :global(.botao-barra) {
     display: inline-flex; align-items: center; justify-content: center; padding: 0; min-width: 2.75rem; height: 2.75rem;
-    border-radius: 0.75rem; line-height: 1; cursor: pointer;
-    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+    border-radius: var(--raio); line-height: 1; cursor: pointer;
+    border: var(--borda-padrao); background: var(--superficie); color: var(--texto);
   }
   :global(.botao-barra:disabled) { opacity: 0.5; cursor: default; }
   :global(.botao-barra[aria-pressed="true"]) { border: 0.125rem solid var(--ouro-linha); }

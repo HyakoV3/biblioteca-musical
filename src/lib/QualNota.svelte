@@ -229,8 +229,8 @@
 </Cartao>
 
 <style>
-  .ouvir { min-height: 3.5rem; font-size: 1.15rem; gap: 0.5rem; }
-  .leitura { display: grid; gap: 0.5rem; text-align: center; }
+  .ouvir { min-height: var(--toque-grande); font-size: 1.15rem; gap: var(--espaco); }
+  .leitura { display: grid; gap: var(--espaco); text-align: center; }
   /* Esmaecida (sem nota): só o nome e a trilha; o detalhe ("Toque uma nota") fica com opacidade 1 para manter o contraste mínimo de 4,5:1. */
   .esmaecida .nome, .esmaecida .trilha { opacity: 0.55; }
   .nome { font-size: 3.5rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
@@ -239,7 +239,7 @@
   .trilha { position: relative; height: 2.5rem; }
   .trilha::before { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 0.0625rem); height: 0.125rem; background: var(--borda); }
   /* A faixa "afinado" (±5 cents de ±50): uma faixa mais grossa no centro (a forma diz "aqui", e não só a cor). */
-  .faixa { position: absolute; left: 45%; width: 10%; top: calc(50% - 0.5rem); height: 1rem; border: 0.125rem solid var(--acento); border-radius: 0.25rem; box-sizing: border-box; }
+  .faixa { position: absolute; left: 45%; width: 10%; top: calc(50% - 0.5rem); height: 1rem; border: var(--borda-destaque); border-radius: 0.25rem; box-sizing: border-box; }
   .bola { position: absolute; top: calc(50% - 0.75rem); width: 1.5rem; height: 1.5rem; margin-left: -0.75rem; box-sizing: border-box; border-radius: 50%; background: var(--ouro-linha); border: 0.125rem solid var(--texto); }
   .detalhe { font-variant-numeric: tabular-nums; }
   .instrumentos { display: grid; gap: 0.6rem; margin: 0; padding: 0; border: 0; }

@@ -16,7 +16,7 @@
   .aviso {
     display: flex; gap: 0.75rem; align-items: flex-start; margin: 0.8rem 0; padding: 0.8rem 0.9rem;
     background: var(--superficie); color: var(--texto);
-    border: 0.0625rem solid var(--borda-controle); border-left-width: 0.3125rem; border-radius: 0.75rem;
+    border: var(--borda-padrao); border-left-width: 0.3125rem; border-radius: var(--raio);
   }
   .icone {
     flex: none; width: 1.5rem; height: 1.5rem; display: grid; place-items: center; border-radius: 50%;

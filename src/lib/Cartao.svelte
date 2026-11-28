@@ -44,14 +44,14 @@
 
 <style>
   summary {
-    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; min-height: 3rem; box-sizing: border-box;
+    display: flex; justify-content: space-between; align-items: center; gap: var(--espaco); min-height: var(--toque); box-sizing: border-box;
     padding: 0.5rem 0.9rem; font-weight: 600; cursor: pointer; list-style: none;
   }
   summary::-webkit-details-marker { display: none; }
   /* O <h2> não muda o desenho: o tamanho e o peso são os do summary. */
   .titulo { margin: 0; font: inherit; }
   .direita { display: inline-flex; align-items: center; gap: 0.4rem; min-width: 0; }
-  .resumo { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 400; color: var(--suave); font-size: 0.9rem; text-align: end; }
+  .resumo { display: inline-flex; align-items: center; gap: var(--espaco-p); font-weight: 400; color: var(--suave); font-size: 0.9rem; text-align: end; }
   .corpo { padding: 0.2rem 0.9rem 0.9rem; }
   .corpo.grade { display: grid; gap: 0.8rem; }
 </style>

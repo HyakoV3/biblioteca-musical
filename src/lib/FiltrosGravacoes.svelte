@@ -67,20 +67,20 @@
 
 <style>
   .controles { display: grid; gap: 0.6rem; }
-  .busca { display: grid; gap: 0.25rem; }
-  .busca input { box-sizing: border-box; width: 100%; min-height: 3rem; padding: 0 0.75rem; font: inherit; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); color: var(--texto); }
+  .busca { display: grid; gap: var(--espaco-p); }
+  .busca input { box-sizing: border-box; width: 100%; min-height: var(--toque); padding: 0 0.75rem; font: inherit; border: var(--borda-padrao); border-radius: var(--raio); background: var(--superficie); color: var(--texto); }
   .filtros { margin: 0; padding: 0; border: 0; min-width: 0; }
   .linha-filtros { display: flex; gap: 0.4rem; align-items: stretch; }
   .filtros-rapidos { flex: 1; min-width: 0; }
   .filtros label { position: relative; flex: 1 1 auto; }
   .filtros input[type="radio"] { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
-  .filtros label > span:not(.meta) { display: flex; align-items: center; justify-content: center; gap: 0.25rem; min-height: 3rem; box-sizing: border-box; padding: 0 0.5rem; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); }
-  .filtros label.ativo > span:not(.meta) { border: 0.125rem solid var(--acento); font-weight: 700; }
-  .filtros input[type="radio"]:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
-  .mais-filtros { position: relative; flex: 0 0 3rem; min-height: 3rem; display: flex; align-items: center; justify-content: center; border-radius: 0.75rem; border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto); cursor: pointer; }
-  .mais-filtros:focus-visible { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
+  .filtros label > span:not(.meta) { display: flex; align-items: center; justify-content: center; gap: var(--espaco-p); min-height: var(--toque); box-sizing: border-box; padding: 0 0.5rem; border-radius: var(--raio); border: var(--borda-padrao); background: var(--superficie); color: var(--texto); }
+  .filtros label.ativo > span:not(.meta) { border: var(--borda-destaque); font-weight: 700; }
+  .filtros input[type="radio"]:focus-visible + span { outline: var(--anel-foco); outline-offset: var(--anel-foco-recuo); }
+  .mais-filtros { position: relative; flex: 0 0 3rem; min-height: var(--toque); display: flex; align-items: center; justify-content: center; border-radius: var(--raio); border: var(--borda-padrao); background: var(--superficie); color: var(--texto); cursor: pointer; }
+  .mais-filtros:focus-visible { outline: var(--anel-foco); outline-offset: var(--anel-foco-recuo); }
   /* O ponto: há busca ou "Com metrônomo" ligados com o painel fechado. */
-  .mais-filtros.escondido { border: 0.125rem solid var(--acento); }
+  .mais-filtros.escondido { border: var(--borda-destaque); }
   .mais-filtros.escondido::after { content: ""; position: absolute; top: 0.3rem; right: 0.3rem; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--acento); }
   .painel-filtros { display: grid; gap: 0.6rem; margin-top: 0.6rem; }
   .so-metronomo { display: block; }

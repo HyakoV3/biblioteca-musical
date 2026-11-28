@@ -491,7 +491,7 @@
 
 <style>
   /* "Em nome do Senhor Jesus": numa linha só, com o tamanho acompanhando a largura da tela. Se não couber ao lado do título, a própria barra o põe na linha de baixo (`quebra`). */
-  #aviso-concordo { min-height: 3rem; }
+  #aviso-concordo { min-height: var(--toque); }
   .nome-senhor { display: block; white-space: nowrap; font-size: clamp(0.7rem, 3.4vw, 1rem); font-weight: 600; color: var(--suave); text-align: end; }
   section { margin-bottom: 0.9rem; }
   .versao { margin: 0 0 1.5rem; text-align: center; }
@@ -503,24 +503,24 @@
   .creditos li:first-child { border-top: 0; }
   .creditos .url { overflow-wrap: anywhere; }
   .licenca summary {
-    display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; cursor: pointer; list-style: none;
-    min-height: 2.75rem; padding: 0; font-weight: 500; color: var(--acento);
+    display: flex; justify-content: space-between; align-items: center; gap: var(--espaco); cursor: pointer; list-style: none;
+    min-height: var(--toque-minimo); padding: 0; font-weight: 500; color: var(--acento);
   }
   .licenca summary::-webkit-details-marker { display: none; }
   .licenca pre { margin: 0.4rem 0 0.8rem; font: 0.78rem/1.45 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
   /* O título da seção e o ⓘ na mesma linha; o botão tem alvo de 2,75 rem, mas a margem negativa o deixa sem aumentar a linha. */
-  .cab-secao { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .cab-secao { display: flex; align-items: center; justify-content: space-between; gap: var(--espaco); }
   .info {
-    flex: none; min-width: 2.75rem; min-height: 2.75rem; margin: -0.7rem -0.6rem -0.7rem 0; display: grid; place-items: center;
-    background: transparent; border: 0; border-radius: 0.75rem; color: var(--suave); cursor: pointer;
+    flex: none; min-width: 2.75rem; min-height: var(--toque-minimo); margin: -0.7rem -0.6rem -0.7rem 0; display: grid; place-items: center;
+    background: transparent; border: 0; border-radius: var(--raio); color: var(--suave); cursor: pointer;
   }
   .info[aria-expanded="true"] { color: var(--ouro-linha); }
   .sub { margin: 1.1rem 0 0.2rem; font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--suave); }
   .sub.primeiro { margin-top: 0.4rem; }
   select {
     width: 100%; box-sizing: border-box; /* ocupa toda a largura, como as opções de aparência */
-    min-height: 3rem; font-size: 1rem; padding: 0 0.6rem; border-radius: 0.75rem;
-    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+    min-height: var(--toque); font-size: 1rem; padding: 0 0.6rem; border-radius: var(--raio);
+    border: var(--borda-padrao); background: var(--superficie); color: var(--texto);
   }
   /* Aparência: três opções lado a lado; a escolhida tem "✓", negrito e borda de acento (não só cor). */
   .rotulo-grupo { margin: 0.9rem 0 0.35rem; font-size: 0.9rem; color: var(--suave); }
@@ -533,13 +533,13 @@
   .segmentos label { position: relative; flex: 1; }
   .segmentos input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
   .segmentos span {
-    display: flex; align-items: center; justify-content: center; min-height: 3rem; box-sizing: border-box;
-    padding: 0 0.5rem; text-align: center; border-radius: 0.75rem; font-size: 0.95rem;
-    border: 0.0625rem solid var(--borda-controle); background: var(--superficie); color: var(--texto);
+    display: flex; align-items: center; justify-content: center; min-height: var(--toque); box-sizing: border-box;
+    padding: 0 0.5rem; text-align: center; border-radius: var(--raio); font-size: 0.95rem;
+    border: var(--borda-padrao); background: var(--superficie); color: var(--texto);
   }
   .opcao-tema { display: inline-flex; align-items: center; justify-content: center; gap: 0.3rem; }
-  .segmentos .ativo span { border: 0.125rem solid var(--acento); font-weight: 700; }
-  .segmentos input:focus-visible + span { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
+  .segmentos .ativo span { border: var(--borda-destaque); font-weight: 700; }
+  .segmentos input:focus-visible + span { outline: var(--anel-foco); outline-offset: var(--anel-foco-recuo); }
   /* Os botões do hinário ficam sempre lado a lado, cada um com metade da linha; o texto quebra em duas linhas quando não cabe. */
   .hinario-info { display: grid; gap: 0.15rem; margin: 0.2rem 0 0.4rem; }
 </style>

@@ -378,7 +378,7 @@
 <style>
   main.partitura-larga { max-width: 64rem; }
   .botao-icone { min-width: 3rem; padding: 0; }
-  .acoes-do-topo { display: inline-flex; align-items: center; gap: 0.25rem; }
+  .acoes-do-topo { display: inline-flex; align-items: center; gap: var(--espaco-p); }
   .chave-karaoke[aria-pressed="true"], .chave-tela[aria-pressed="true"] { border: 0.125rem solid var(--ouro-linha); }
   /* A estrofe que soa leva uma barra dourada na borda (o recuo negativo mantém o texto no mesmo lugar). */
   .estrofe { margin-bottom: 1.4rem; margin-left: -1rem; padding-left: calc(1rem - 0.25rem); border-left: 0.25rem solid transparent; }
@@ -399,6 +399,6 @@
   .alinha-centro { text-align: center; }
 
   /* Barra de tamanho e alinhamento da letra (os botões são o `.botao-barra` global). */
-  .barra-letra { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; margin: 0 0 1.2rem; }
+  .barra-letra { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--espaco); margin: 0 0 1.2rem; }
   .barra-letra .grupo { display: flex; gap: 0.2rem; }
 </style>

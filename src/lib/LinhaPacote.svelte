@@ -117,12 +117,12 @@
 </div>
 
 <style>
-  .pacote { display: grid; gap: 0.5rem; margin: 0.6rem 0; padding: 0.8rem 0.9rem; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); }
+  .pacote { display: grid; gap: var(--espaco); margin: 0.6rem 0; padding: 0.8rem 0.9rem; border: var(--borda-padrao); border-radius: var(--raio); background: var(--superficie); }
   .pacote:focus { outline: none; }
   .pacote-info { display: grid; gap: 0.15rem; }
   .pacote progress { width: 100%; height: 0.625rem; accent-color: var(--acento); }
-  .confirma { padding: 0.8rem 0.9rem; border: 0.0625rem solid var(--perigo); border-radius: 0.75rem; background: var(--fundo); }
+  .confirma { padding: 0.8rem 0.9rem; border: 0.0625rem solid var(--perigo); border-radius: var(--raio); background: var(--fundo); }
   .confirma h3 { margin: 0 0 0.4rem; font-size: 1.05rem; }
   .confirma p { margin: 0 0 0.6rem; line-height: 1.5; }
-  .acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .acoes { display: flex; flex-wrap: wrap; gap: var(--espaco); }
 </style>

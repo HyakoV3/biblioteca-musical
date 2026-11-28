@@ -40,11 +40,11 @@
 
 <style>
   .passo { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; width: 100%; }
-  .pilula { display: flex; flex: none; border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; overflow: hidden; background: var(--superficie); }
+  .pilula { display: flex; flex: none; border: var(--borda-padrao); border-radius: var(--raio); overflow: hidden; background: var(--superficie); }
   button { display: inline-flex; align-items: center; justify-content: center; min-width: 3rem; height: 3rem; padding: 0 0.5rem; font-size: 1.05rem; font-weight: 600; line-height: 1; cursor: pointer; border: 0; background: transparent; color: var(--texto); font-variant-numeric: tabular-nums; }
   button + button { border-left: 0.0625rem solid var(--borda-controle); }
   button:active:not(:disabled) { background: color-mix(in srgb, var(--acento) 14%, var(--superficie)); }
-  button:focus-visible { outline: 0.1875rem solid var(--foco); outline-offset: -0.1875rem; }
+  button:focus-visible { outline: var(--anel-foco); outline-offset: -0.1875rem; }
   button:disabled { opacity: 0.4; cursor: default; }
   output { flex: 1; min-width: 0; text-align: center; font-variant-numeric: tabular-nums; }
   output.restauravel { touch-action: manipulation; user-select: none; cursor: pointer; }

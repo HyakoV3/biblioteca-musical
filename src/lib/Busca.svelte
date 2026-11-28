@@ -89,5 +89,5 @@
 
   /* Foco: o input é transparente, então o anel (o do app: 0,1875rem de `--foco`) vai na barra e no ponto. */
   .busca:has(.busca-entrada:focus-visible) .trilho,
-  .busca:has(.busca-entrada:focus-visible) .ponto { outline: 0.1875rem solid var(--foco); outline-offset: 0.125rem; }
+  .busca:has(.busca-entrada:focus-visible) .ponto { outline: var(--anel-foco); outline-offset: var(--anel-foco-recuo); }
 </style>
