@@ -60,7 +60,7 @@ describe("gravação em pedaços e recuperação (AND-002)", () => {
     const g = new Gravacoes(() => fabrica);
     const id = await g.abrirSessao("audio/webm");
     await g.guardarPedaco(id, 0, pedaco(1, 2, 3));
-    const m = await g.salvar(pedaco(1, 2, 3), "audio/webm", 2, null, id);
+    const m = await g.salvar({ blob: pedaco(1, 2, 3), tipo: "audio/webm", segundos: 2, contexto: null, sessao: id });
     const depois = new Gravacoes(() => fabrica); // outra abertura do app
     expect(await depois.recuperarSessoes()).toEqual([]);
     expect((await depois.listarTodas()).map((x) => x.id)).toEqual([m.id]); // uma cópia só

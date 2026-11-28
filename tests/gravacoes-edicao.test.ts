@@ -6,7 +6,7 @@ import { novo, audio } from "./apoio-gravacoes";
 describe("gravações guardadas", () => {
   it("atualizar muda nome e estrela, preserva o resto (inclusive campos desconhecidos) e não toca no áudio", async () => {
     const g = novo();
-    const m = await g.salvar(audio(10), "audio/webm", 1);
+    const m = await g.salvar({ blob: audio(10), tipo: "audio/webm", segundos: 1 });
     const a = await g.atualizar(m.id, { titulo: "  Ensaio   do coro ", favorita: true });
     expect(a).toMatchObject({ id: m.id, bytes: 10, titulo: "Ensaio do coro", favorita: true });
     expect((await g.blob(m.id))?.size).toBe(10);
@@ -26,7 +26,7 @@ describe("gravações guardadas", () => {
 
   it("duas mudanças juntas não se perdem; apagar e mudar juntos não recria o registro", async () => {
     const g = novo();
-    const m = await g.salvar(audio(10), "audio/webm", 1);
+    const m = await g.salvar({ blob: audio(10), tipo: "audio/webm", segundos: 1 });
     await Promise.all([g.atualizar(m.id, { favorita: true }), g.atualizar(m.id, { titulo: "X" })]);
     expect((await g.listarTodas())[0]).toMatchObject({ favorita: true, titulo: "X" });
     await Promise.all([g.apagar(m.id), g.atualizar(m.id, { favorita: false })]);
@@ -37,7 +37,7 @@ describe("gravações guardadas", () => {
   it("listarTodas valida o nome e a estrela lidos do banco", async () => {
     const idb = new IDBFactory();
     const g = new Gravacoes(() => idb);
-    const m = await g.salvar(audio(10), "audio/webm", 1);
+    const m = await g.salvar({ blob: audio(10), tipo: "audio/webm", segundos: 1 });
     const banco = await new Promise<IDBDatabase>((ok, falha) => {
       const r = idb.open("bm-gravacoes");
       r.onsuccess = () => ok(r.result);

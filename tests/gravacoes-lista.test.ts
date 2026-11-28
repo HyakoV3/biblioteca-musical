@@ -8,11 +8,11 @@ describe("gravações guardadas", () => {
     try {
       const g = novo();
       vi.setSystemTime(1_000_000);
-      const a = await g.salvar(audio(10), "audio/webm", 1);
+      const a = await g.salvar({ blob: audio(10), tipo: "audio/webm", segundos: 1 });
       vi.setSystemTime(2_000_000);
-      const b = await g.salvar(audio(20), "audio/webm", 2);
+      const b = await g.salvar({ blob: audio(20), tipo: "audio/webm", segundos: 2 });
       vi.setSystemTime(3_000_000);
-      const c = await g.salvar(audio(30), "audio/webm", 3);
+      const c = await g.salvar({ blob: audio(30), tipo: "audio/webm", segundos: 3 });
       expect((await g.listar()).itens.map((x) => x.id)).toEqual([c.id, b.id, a.id]);
     } finally {
       vi.useRealTimers();
@@ -26,7 +26,7 @@ describe("gravações guardadas", () => {
       const ids: string[] = [];
       for (let i = 0; i < 25; i++) {
         vi.setSystemTime(1_000_000 + i * 1000);
-        ids.unshift((await g.salvar(audio(100 + i), "audio/webm", i)).id);
+        ids.unshift((await g.salvar({ blob: audio(100 + i), tipo: "audio/webm", segundos: i })).id);
       }
       const lidas: string[] = [];
       let antes;
@@ -48,7 +48,7 @@ describe("gravações guardadas", () => {
 
   it("exatamente uma página cheia não promete outra", async () => {
     const g = novo();
-    for (let i = 0; i < TAMANHO_DA_PAGINA; i++) await g.salvar(audio(10), "audio/webm", 1);
+    for (let i = 0; i < TAMANHO_DA_PAGINA; i++) await g.salvar({ blob: audio(10), tipo: "audio/webm", segundos: 1 });
     const p = await g.listar();
     expect(p.itens).toHaveLength(TAMANHO_DA_PAGINA);
     expect(p.temMais).toBe(false);
@@ -59,7 +59,7 @@ describe("gravações guardadas", () => {
     try {
       const g = novo();
       vi.setSystemTime(5_000_000);
-      for (let i = 0; i < 7; i++) await g.salvar(audio(10 + i), "audio/webm", 1);
+      for (let i = 0; i < 7; i++) await g.salvar({ blob: audio(10 + i), tipo: "audio/webm", segundos: 1 });
       const a = await g.listar(3);
       const u1 = a.itens[2];
       const b = await g.listar(3, { criadaEm: u1.criadaEm, id: u1.id });
@@ -80,7 +80,7 @@ describe("gravações guardadas", () => {
       const g = novo();
       for (let i = 0; i < 25; i++) {
         vi.setSystemTime(new Date(2026, 10, 25, 10, i));
-        await g.salvar(audio(10 + i), "audio/webm", i);
+        await g.salvar({ blob: audio(10 + i), tipo: "audio/webm", segundos: i });
       }
       const todas = await g.listarTodas();
       expect(todas).toHaveLength(25);

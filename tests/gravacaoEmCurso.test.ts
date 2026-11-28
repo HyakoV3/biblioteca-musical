@@ -119,7 +119,7 @@ describe("gravação em curso", () => {
     expect(c.gravando).toBe(false);
     expect(chamadas).toEqual(["ligar", "desligar"]);
     expect(resultados).toEqual([{ tipo: "guardada", meta: meta() }]);
-    expect((armazenamento.salvar.mock.calls[0] as unknown[])[4]).toBe("sessao-1");
+    expect((armazenamento.salvar.mock.calls[0] as unknown as [{ sessao: string }])[0].sessao).toBe("sessao-1");
     expect(armazenamento.descartarSessao).not.toHaveBeenCalled(); // a sessão já saiu na própria transação de `salvar`
   });
 
