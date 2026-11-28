@@ -11,11 +11,11 @@ PACOTE.zip o zip de tools/montar-pacote.py, o MESMO arquivo que está no servido
 O app só instala um zip que tenha EXATAMENTE o tamanho e o SHA-256 daqui; mudou o pacote no servidor, refaça o manifesto e gere um APK
 novo. Sem esse manifesto (`"pacote": null`), o botão Baixar não aparece.
 """
-import argparse
-import hashlib
-import json
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from manifesto.pacote import manifesto_do_pacote, principal_pacote, validar_https  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
 PADRAO = RAIZ / "src" / "lib" / "partituras" / "manifesto.json"
@@ -23,30 +23,15 @@ PADRAO = RAIZ / "src" / "lib" / "partituras" / "manifesto.json"
 
 def montar(link: str, zip_: Path) -> dict:
     """O manifesto de um pacote. Levanta ValueError se o link ou o arquivo não servem."""
-    if not link.startswith("https://") or len(link) <= len("https://") or any(c.isspace() for c in link):
-        raise ValueError("o link precisa ser um endereço https:// sem espaços")
+    validar_https(link)
     dados = zip_.read_bytes()
     if not dados.startswith(b"PK\x03\x04"):
         raise ValueError(f"{zip_.name} não parece um zip")
-    return {"versao": 1, "pacote": {"url": link, "arquivo": zip_.name, "bytes": len(dados), "sha256": hashlib.sha256(dados).hexdigest()}}
+    return manifesto_do_pacote(link, zip_.name, dados)
 
 
 def principal() -> int:
-    ap = argparse.ArgumentParser(description="Escreve o manifesto do pacote de partituras.")
-    ap.add_argument("link")
-    ap.add_argument("pacote", type=Path)
-    ap.add_argument("--saida", type=Path, default=PADRAO)
-    a = ap.parse_args()
-    try:
-        manifesto = montar(a.link, a.pacote)
-    except (OSError, ValueError) as e:
-        print(f"erro: {e}", file=sys.stderr)
-        return 2
-    a.saida.parent.mkdir(parents=True, exist_ok=True)
-    a.saida.write_text(json.dumps(manifesto, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    p = manifesto["pacote"]
-    print(f"{a.saida}: {p['bytes']:,} bytes, sha256 {p['sha256'][:12]}…")
-    return 0
+    return principal_pacote("Escreve o manifesto do pacote de partituras.", "pacote", PADRAO, montar)
 
 
 if __name__ == "__main__":
