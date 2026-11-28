@@ -116,7 +116,7 @@
   <!-- O pêndulo: a bolinha vai e volta entre as duas pontas, e cada clique é uma ponta (como num metrônomo de verdade). Embaixo, uma bolinha por tempo do compasso: a do 1º tempo
        (o forte) é maior, e a do tempo atual fica acesa. Decorativo para o leitor de tela (o aviso de status abaixo basta). -->
   <div class="pendulo" aria-hidden="true" data-aceso={aceso ?? ""}>
-    <div class="trilha" bind:clientWidth={larguraTrilha}>
+    <div class="trilha trilha-pendulo" bind:clientWidth={larguraTrilha}>
       <span class="ponta esquerda"></span>
       <span class="ponta direita"></span>
       <span class="bola" bind:clientWidth={larguraBola} style:transform={`translateX(${deslocamento.toFixed(2)}px)`}></span>
@@ -151,8 +151,6 @@
   /* O pêndulo: uma trilha com as duas pontas e a bolinha por cima. A posição vem do JavaScript (relógio de áudio) e vira `transform` (sem layout por quadro); sem transição de CSS, e com movimento reduzido a bolinha só
      pula de ponta em ponta. Embaixo, uma bolinha por tempo do compasso (a do 1º é maior, não só de outra cor). */
   .pendulo { display: flex; flex-direction: column; gap: 0.75rem; margin: 0.25rem 0.75rem; }
-  .trilha { position: relative; height: 2.5rem; }
-  .trilha::before { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 0.0625rem); height: 0.125rem; background: var(--borda); }
   .ponta { position: absolute; top: calc(50% - 1rem); width: 0.25rem; height: 2rem; background: var(--texto); }
   .ponta.esquerda { left: -0.125rem; }
   .ponta.direita { right: -0.125rem; }

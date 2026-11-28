@@ -19,7 +19,7 @@
 <div class="segmentado">
   {#each opcoes as o (o.valor)}
     <label class:ativo={valor === o.valor}>
-      <input type="radio" name={nome} value={o.valor} checked={valor === o.valor} aria-label={o.aria} onchange={() => aoEscolher(o.valor)} />
+      <input class="radio-oculto" type="radio" name={nome} value={o.valor} checked={valor === o.valor} aria-label={o.aria} onchange={() => aoEscolher(o.valor)} />
       <span>{o.rotulo}</span>
     </label>
   {/each}
@@ -28,7 +28,6 @@
 <style>
   .segmentado { display: flex; flex-wrap: wrap; gap: 0.15rem; padding: 0.2rem; border: var(--borda-padrao); border-radius: var(--raio); background: var(--superficie); }
   label { position: relative; flex: 1 1 0; min-width: min-content; }
-  input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
   /* Cada opção tem o seu canto (0.55rem = o da pílula menos o respiro de dentro): a selecionada é um retângulo arredondado inteiro, e não um bloco de cantos retos. */
   span { display: flex; align-items: center; justify-content: center; min-height: var(--toque-minimo); box-sizing: border-box; padding: 0 0.4rem; border-radius: 0.55rem; text-align: center; line-height: 1.2; overflow-wrap: break-word; color: var(--texto); }
   .ativo span { background: color-mix(in srgb, var(--acento) 18%, var(--superficie)); box-shadow: inset 0 0 0 0.125rem var(--acento); font-weight: 700; }

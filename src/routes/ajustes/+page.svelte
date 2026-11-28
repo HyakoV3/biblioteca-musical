@@ -191,7 +191,7 @@
 <!-- "Em nome do Senhor Jesus": ao lado do título quando cabe e, se não couber (tela estreita, letra grande), na linha de baixo, à direita (`quebra`): o título não quebra no meio da palavra. -->
 <!-- O título de uma seção do Conteúdo. Instalada a seção, a explicação some e o ⓘ ao lado a mostra ou esconde (aria-controls só enquanto o texto existe). -->
 {#snippet cabecalho(chave: "hinario" | "partituras" | "sons", titulo: string, instalado: boolean, id?: string)}
-  <div class="cab-secao">
+  <div class="cab-secao linha-entre">
     <h3 class="sub" class:primeiro={chave === "hinario"} {id}>{titulo}</h3>
     {#if instalado}
       <button
@@ -232,7 +232,7 @@
       <fieldset class="segmentos modo" aria-labelledby="rotulo-modo">
         {#each TEMAS as id}
           <label class:ativo={tema.atual === id}>
-            <input type="radio" name="tema" value={id} checked={tema.atual === id} onchange={() => (tema.atual = id)} />
+            <input class="radio-oculto" type="radio" name="tema" value={id} checked={tema.atual === id} onchange={() => (tema.atual = id)} />
             <span class="opcao-tema">{#if tema.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`tema.${id}`)}</span>
           </label>
         {/each}
@@ -242,7 +242,7 @@
       <fieldset class="segmentos" aria-labelledby="rotulo-estilo" disabled={tema.atual === "alto-contraste"}>
         {#each ESTILOS as id}
           <label class:ativo={estilo.atual === id}>
-            <input type="radio" name="estilo" value={id} checked={estilo.atual === id} onchange={() => (estilo.atual = id)} />
+            <input class="radio-oculto" type="radio" name="estilo" value={id} checked={estilo.atual === id} onchange={() => (estilo.atual = id)} />
             <span class="opcao-tema">{#if estilo.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`estilo.${id}`)}</span>
           </label>
         {/each}
@@ -266,7 +266,7 @@
       <fieldset class="segmentos" aria-labelledby="rotulo-notas">
         {#each NOTACOES as id}
           <label class:ativo={notacao.atual === id}>
-            <input type="radio" name="notacao" value={id} checked={notacao.atual === id} onchange={() => (notacao.atual = id)} />
+            <input class="radio-oculto" type="radio" name="notacao" value={id} checked={notacao.atual === id} onchange={() => (notacao.atual = id)} />
             <span class="opcao-tema">{#if notacao.atual === id}<Icone nome="ok" tamanho={18} />{/if}{t(`notacao.${id}`)}</span>
           </label>
         {/each}
@@ -277,7 +277,7 @@
   <!-- Saída de áudio: de onde o som sai e o modo do AudioContext para essa saída (o fone USB-C estala diferente do alto-falante). -->
   <section>
     <Cartao id="cartao-saida" titulo={t("ajustes.saida")} resumo={t(`saida.rota_curta.${rotaDeSaida}`)} bind:aberto={saidaAberta} aoAlternar={(a) => a && reler()}>
-      <div class="cab-secao">
+      <div class="cab-secao linha-entre">
         <p class="rotulo-grupo" id="rotulo-saida">{t("saida.agora", { rota: t(`saida.rota.${rotaDeSaida}`) })}</p>
         <button
           type="button"
@@ -293,7 +293,7 @@
       <fieldset class="segmentos" aria-labelledby="rotulo-saida">
         {#each MODOS as m}
           <label class:ativo={modoDeSaida === m}>
-            <input type="radio" name="modo-saida" value={m} checked={modoDeSaida === m} onchange={() => escolherModo(m)} />
+            <input class="radio-oculto" type="radio" name="modo-saida" value={m} checked={modoDeSaida === m} onchange={() => escolherModo(m)} />
             <span class="opcao-tema">{#if modoDeSaida === m}<Icone nome="ok" tamanho={18} />{/if}{t(`saida.${m}`)}</span>
           </label>
         {/each}
@@ -497,7 +497,6 @@
   .licenca summary::-webkit-details-marker { display: none; }
   .licenca pre { margin: 0.4rem 0 0.8rem; font: 0.78rem/1.45 ui-monospace, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
   /* O título da seção e o ⓘ na mesma linha; o botão tem alvo de 2,75 rem, mas a margem negativa o deixa sem aumentar a linha. */
-  .cab-secao { display: flex; align-items: center; justify-content: space-between; gap: var(--espaco); }
   .info {
     flex: none; min-width: 2.75rem; min-height: var(--toque-minimo); margin: -0.7rem -0.6rem -0.7rem 0; display: grid; place-items: center;
     background: transparent; border: 0; border-radius: var(--raio); color: var(--suave); cursor: pointer;
@@ -519,7 +518,6 @@
   .segmentos:disabled { opacity: 0.6; }
   .segmentos:disabled input { cursor: not-allowed; }
   .segmentos label { position: relative; flex: 1; }
-  .segmentos input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
   .segmentos span {
     display: flex; align-items: center; justify-content: center; min-height: var(--toque); box-sizing: border-box;
     padding: 0 0.5rem; text-align: center; border-radius: var(--raio); font-size: 0.95rem;

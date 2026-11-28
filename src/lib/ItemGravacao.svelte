@@ -241,7 +241,7 @@
       >
         <label>
           <span class="meta">{t("gravador.nome_campo")} ({t("gravador.nome_limite", { n: TITULO_MAX })})</span>
-          <input use:focar type="text" readonly={salvandoNome} placeholder={nomePadrao} value={rascunho} oninput={aoDigitar} onkeydown={(e) => e.key === "Escape" && void cancelarRenomear()} />
+          <input class="campo-texto" use:focar type="text" readonly={salvandoNome} placeholder={nomePadrao} value={rascunho} oninput={aoDigitar} onkeydown={(e) => e.key === "Escape" && void cancelarRenomear()} />
         </label>
         <div class="botoes-nome">
           <button type="submit" class="botao primario">{t("gravador.salvar_nome")}</button>
@@ -249,7 +249,7 @@
         </div>
       </form>
     {:else}
-      <div class="linha-nome">
+      <div class="linha-nome linha-entre">
         <strong class="nome">{nome}</strong>
         <button
           class="estrela"
@@ -292,7 +292,7 @@
   </div>
 
   {#if dialogoAberto}
-  <dialog bind:this={dialogo} use:modal onclose={() => (dialogoAberto = false)} class="envio-contexto" aria-labelledby={`envio-${meta.id}`}>
+  <dialog bind:this={dialogo} use:modal onclose={() => (dialogoAberto = false)} class="envio-contexto caixa-modal" aria-labelledby={`envio-${meta.id}`}>
     <h2 id={`envio-${meta.id}`}>{t("gravador.contexto_titulo")}</h2>
     <p>{t("gravador.contexto_explica")}</p>
     <pre class="previa">{textoDoEnvio}</pre>
@@ -315,18 +315,14 @@
   .acoes { display: flex; flex-wrap: wrap; gap: var(--espaco); }
   .acoes .botao { flex: 1 1 5.5rem; min-height: var(--toque-minimo); }
   /* Confirmando: borda e texto em destaque (não só a cor: o texto do botão muda para "Apagar mesmo?"). */
-  .linha-nome { display: flex; align-items: center; justify-content: space-between; gap: var(--espaco); }
   .estrela { flex: none; min-width: 2.75rem; min-height: var(--toque-minimo); font-size: 1.5rem; line-height: 1; border: var(--borda-padrao); border-radius: var(--raio); background: var(--superficie); color: var(--texto); cursor: pointer; }
   .estrela[aria-pressed="true"] { border: var(--borda-destaque); }
   .renomear { display: grid; gap: var(--espaco); }
   .renomear label { display: grid; gap: var(--espaco-p); }
-  .renomear input { box-sizing: border-box; width: 100%; min-height: var(--toque); padding: 0 0.75rem; font: inherit; border: var(--borda-padrao); border-radius: var(--raio); background: var(--superficie); color: var(--texto); }
   .botoes-nome { display: flex; flex-wrap: wrap; gap: var(--espaco); }
   .botoes-nome .botao { flex: 1 1 5.5rem; min-height: var(--toque-minimo); }
   .contexto summary { cursor: pointer; min-height: var(--toque-minimo); display: flex; align-items: center; }
   .linhas-contexto { margin: 0 0 0.25rem; padding-left: 1.25rem; }
-  .envio-contexto { box-sizing: border-box; width: min(32rem, calc(100% - 2rem)); margin: auto; padding: 1.25rem; border: var(--borda-padrao); border-radius: 1rem; background: var(--fundo); color: var(--texto); }
-  .envio-contexto::backdrop { background: rgb(0 0 0 / 0.55); }
   .envio-contexto h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
   .previa { margin: 0.5rem 0 0.8rem; padding: 0.6rem 0.7rem; white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; font-size: 0.95rem; border: var(--borda-padrao); border-radius: 0.5rem; }
   .botoes { display: grid; gap: var(--espaco); }

@@ -194,7 +194,7 @@
           <span>{escrita !== null ? nomeEscrito(escrita - 1) : ""}</span>
           <span>{escrita !== null ? nomeEscrito(escrita + 1) : ""}</span>
         </div>
-        <div class="trilha" aria-hidden="true">
+        <div class="trilha trilha-pendulo" aria-hidden="true">
           <span class="faixa"></span>
           {#if lida}<span class="bola bola-afinador" style:left={`${50 + posicao * 50}%`}></span>{/if}
         </div>
@@ -236,8 +236,6 @@
   .nome { font-size: 3.5rem; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
   .soa { margin: 0; }
   .vizinhas { display: flex; justify-content: space-between; font-size: 1.1rem; }
-  .trilha { position: relative; height: 2.5rem; }
-  .trilha::before { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 0.0625rem); height: 0.125rem; background: var(--borda); }
   /* A faixa "afinado" (±5 cents de ±50): uma faixa mais grossa no centro (a forma diz "aqui", e não só a cor). */
   .faixa { position: absolute; left: 45%; width: 10%; top: calc(50% - 0.5rem); height: 1rem; border: var(--borda-destaque); border-radius: 0.25rem; box-sizing: border-box; }
   .bola { position: absolute; top: calc(50% - 0.75rem); width: 1.5rem; height: 1.5rem; margin-left: -0.75rem; box-sizing: border-box; border-radius: 50%; background: var(--ouro-linha); border: 0.125rem solid var(--texto); }

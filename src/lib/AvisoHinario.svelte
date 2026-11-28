@@ -31,7 +31,7 @@
   const textoDoErro = $derived(traduzirErroDoDownload(hinario.andamento.erro, t));
 </script>
 
-<dialog bind:this={janela} class="aviso-hinario" aria-labelledby="aviso-hinario-titulo" oncancel={(e) => (e.preventDefault(), dispensar())}>
+<dialog bind:this={janela} class="aviso-hinario caixa-modal" aria-labelledby="aviso-hinario-titulo" oncancel={(e) => (e.preventDefault(), dispensar())}>
   <h2 id="aviso-hinario-titulo">{t("hinario.aviso_titulo")}</h2>
   <p>{t("hinario.aviso_texto")}</p>
   <p class="meta">{t("hinario.aviso_depois")}</p>
@@ -57,11 +57,6 @@
 </dialog>
 
 <style>
-  .aviso-hinario {
-    box-sizing: border-box; width: min(32rem, calc(100% - 2rem)); margin: auto; /* margem lateral de 1rem em tela estreita */ padding: 1.25rem; border: var(--borda-padrao); border-radius: 1rem;
-    background: var(--fundo); color: var(--texto);
-  }
-  .aviso-hinario::backdrop { background: rgb(0 0 0 / 0.55); }
   h2 { margin: 0 0 0.75rem; font-size: 1.2rem; }
   p { margin: 0 0 0.75rem; }
   progress { width: 100%; height: 0.625rem; accent-color: var(--acento); margin-bottom: 0.5rem; }

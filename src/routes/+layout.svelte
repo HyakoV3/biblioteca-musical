@@ -1,6 +1,7 @@
 <script lang="ts">
   import "#lib/tema.css";
   import "#lib/movimento.css";
+  import "#lib/comum.css";
   import { onMount } from "svelte";
   import { biblioteca } from "#lib/biblioteca.svelte";
   import { i18n } from "#lib/i18n/index.svelte";

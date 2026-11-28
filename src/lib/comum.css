@@ -1,0 +1,28 @@
+/*
+ * Classes compartilhadas entre componentes (regras que estavam repetidas, igualzinhas, nos <style> de vários .svelte).
+ * O <style> do Svelte é escopado; estas são globais, então cada nome precisa ser único no app (nada de nomes genéricos como
+ * `.trilha`, que já existe escopada em outro componente). Só rem. Cada classe só soma propriedades que o elemento já recebia.
+ */
+
+/* Linha com o título à esquerda e a ação à direita. */
+.linha-entre { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+
+/* <input type="radio"> escondido por cima do <label>: a caixa visível é o <span> irmão, e o rádio continua recebendo toque, teclado e foco. */
+.radio-oculto { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+
+/* Campo de texto das telas do gravador (busca e renomear). */
+.campo-texto {
+  box-sizing: border-box; width: 100%; min-height: 3rem; padding: 0 0.75rem; font: inherit;
+  border: 0.0625rem solid var(--borda-controle); border-radius: 0.75rem; background: var(--superficie); color: var(--texto);
+}
+
+/* Caixa de diálogo modal (<dialog>): aviso do hinário e envio de contexto. */
+.caixa-modal {
+  box-sizing: border-box; width: min(32rem, calc(100% - 2rem)); margin: auto; padding: 1.25rem;
+  border: 0.0625rem solid var(--borda-controle); border-radius: 1rem; background: var(--fundo); color: var(--texto);
+}
+.caixa-modal::backdrop { background: rgb(0 0 0 / 0.55); }
+
+/* Pêndulo do metrônomo e régua da afinação: a linha fina com as pontas por cima. */
+.trilha-pendulo { position: relative; height: 2.5rem; }
+.trilha-pendulo::before { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 0.0625rem); height: 0.125rem; background: var(--borda); }
