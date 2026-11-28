@@ -96,3 +96,16 @@ pub(super) fn pequenos() -> Limites {
         svg: 1_000,
     }
 }
+
+/// O mesmo zip importado com um limite no valor exato (aceito) e com um limite logo abaixo (recusado com o código dado).
+pub(super) fn aceita_no_limite_e_recusa_abaixo(
+    d: &Path,
+    z: &[u8],
+    aceito: &Limites,
+    recusado: &Limites,
+    codigo_esperado: &str,
+) {
+    assert!(importar_zip_com(d, z, aceito).is_ok());
+    let e = importar_zip_com(d, z, recusado).unwrap_err();
+    assert_eq!(codigo(&e), codigo_esperado);
+}

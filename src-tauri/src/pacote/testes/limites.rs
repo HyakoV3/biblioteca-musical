@@ -33,27 +33,19 @@ fn arquivos_demais() {
         ("partituras/hino-2.svg", SVG),
         ("partituras/hino-3.svg", SVG),
     ]);
-    assert!(
-        importar_zip_com(
-            &d,
-            &z,
-            &Limites {
-                entradas: 3,
-                ..pequenos()
-            }
-        )
-        .is_ok()
-    );
-    let e = importar_zip_com(
+    aceita_no_limite_e_recusa_abaixo(
         &d,
         &z,
+        &Limites {
+            entradas: 3,
+            ..pequenos()
+        },
         &Limites {
             entradas: 2,
             ..pequenos()
         },
-    )
-    .unwrap_err();
-    assert_eq!(codigo(&e), "zip_muitos_arquivos");
+        "zip_muitos_arquivos",
+    );
     std::fs::remove_dir_all(&d).ok();
 }
 
@@ -62,27 +54,19 @@ fn total_descompactado_alto_demais_recusa_antes_de_descompactar() {
     let d = dir_com_hinario("lim_total");
     let z = pacote_ok();
     let total = (SVG.len() * 2) as u64;
-    assert!(
-        importar_zip_com(
-            &d,
-            &z,
-            &Limites {
-                descompactado: total,
-                ..pequenos()
-            }
-        )
-        .is_ok()
-    );
-    let e = importar_zip_com(
+    aceita_no_limite_e_recusa_abaixo(
         &d,
         &z,
+        &Limites {
+            descompactado: total,
+            ..pequenos()
+        },
         &Limites {
             descompactado: total - 1,
             ..pequenos()
         },
-    )
-    .unwrap_err();
-    assert_eq!(codigo(&e), "zip_descompactado_grande");
+        "zip_descompactado_grande",
+    );
     std::fs::remove_dir_all(&d).ok();
 }
 

@@ -269,48 +269,32 @@ fn importar_de_novo_troca_as_duas_versoes_e_remover_apaga_tudo() {
 fn os_limites_contam_os_dois_arquivos_de_cada_hino() {
     let d = dir_com_hinario("lim_variantes");
     let z = pacote_com_paisagem(); // 4 arquivos
-    assert!(
-        importar_zip_com(
-            &d,
-            &z,
-            &Limites {
-                entradas: 4,
-                ..pequenos()
-            }
-        )
-        .is_ok()
-    );
-    let e = importar_zip_com(
+    aceita_no_limite_e_recusa_abaixo(
         &d,
         &z,
+        &Limites {
+            entradas: 4,
+            ..pequenos()
+        },
         &Limites {
             entradas: 3,
             ..pequenos()
         },
-    )
-    .unwrap_err();
-    assert_eq!(codigo(&e), "zip_muitos_arquivos");
-    let total = (SVG.len() * 2 + SVG_LARGO.len() * 2) as u64;
-    assert!(
-        importar_zip_com(
-            &d,
-            &z,
-            &Limites {
-                descompactado: total,
-                ..pequenos()
-            }
-        )
-        .is_ok()
+        "zip_muitos_arquivos",
     );
-    let e = importar_zip_com(
+    let total = (SVG.len() * 2 + SVG_LARGO.len() * 2) as u64;
+    aceita_no_limite_e_recusa_abaixo(
         &d,
         &z,
+        &Limites {
+            descompactado: total,
+            ..pequenos()
+        },
         &Limites {
             descompactado: total - 1,
             ..pequenos()
         },
-    )
-    .unwrap_err();
-    assert_eq!(codigo(&e), "zip_descompactado_grande");
+        "zip_descompactado_grande",
+    );
     std::fs::remove_dir_all(&d).ok();
 }
