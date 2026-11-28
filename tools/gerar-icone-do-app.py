@@ -55,10 +55,8 @@ class ErroIcone(Exception):
     pass
 
 
-def separar_camadas(svg: str):
-    """(cabeçalho do SVG, [(cor, d)] da placa, [(cor, d)] do símbolo). Confere a convenção do desenho e recusa SVG com conteúdo ativo."""
-    if PROIBIDO.search(svg):
-        raise ErroIcone("o SVG tem script, imagem, <use>, <style>, link, entidade externa ou url() externo: só desenho (caminhos) é aceito")
+def achar_grupo(svg: str):
+    """(início, fim) do grupo inicial de traços finos, que vem logo depois do <svg ...>. Levanta ErroIcone se não for o esperado."""
     achou = re.search(r"<g[\s>/]", svg)
     if achou is None or "<svg" not in svg[: achou.start()]:
         raise ErroIcone("não achei o grupo de traços depois do <svg ...>: o arquivo não é o esperado")
@@ -68,8 +66,15 @@ def separar_camadas(svg: str):
     fecha = svg.find("</g>", inicio)
     if fecha < 0:
         raise ErroIcone("o grupo de traços não fecha (</g>): o arquivo está truncado ou não é o esperado")
+    return inicio, fecha + len("</g>")
+
+
+def separar_camadas(svg: str):
+    """(cabeçalho do SVG, [(cor, d)] da placa, [(cor, d)] do símbolo). Confere a convenção do desenho e recusa SVG com conteúdo ativo."""
+    if PROIBIDO.search(svg):
+        raise ErroIcone("o SVG tem script, imagem, <use>, <style>, link, entidade externa ou url() externo: só desenho (caminhos) é aceito")
+    inicio, fim_grupo = achar_grupo(svg)
     cabecalho = svg[:inicio]
-    fim_grupo = fecha + len("</g>")
     caminhos = CAMINHO.findall(svg[fim_grupo:])
     if len(caminhos) < 3:
         raise ErroIcone(f"esperava a moldura, a placa e o símbolo; achei {len(caminhos)} caminhos preenchidos")
@@ -98,12 +103,17 @@ def desenhar(svg: Path, saida: Path, largura: int):
         return aberta.convert("RGBA")
 
 
-def recortar_quadrado(img: Image.Image, lado: int) -> Image.Image:
-    """Recorta rente ao conteúdo (alfa), completa para quadrado, centralizado, e reduz para `lado`."""
+def recortar_conteudo(img: Image.Image, mensagem_vazia: str) -> Image.Image:
+    """Recorta a imagem rente ao conteúdo (alfa acima de 8). Levanta ErroIcone com `mensagem_vazia` se não houver nenhum pixel opaco."""
     caixa = img.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
     if caixa is None:
-        raise ErroIcone("a imagem está vazia")
-    conteudo = img.crop(caixa)
+        raise ErroIcone(mensagem_vazia)
+    return img.crop(caixa)
+
+
+def recortar_quadrado(img: Image.Image, lado: int) -> Image.Image:
+    """Recorta rente ao conteúdo (alfa), completa para quadrado, centralizado, e reduz para `lado`."""
+    conteudo = recortar_conteudo(img, "a imagem está vazia")
     maior = max(conteudo.size)
     tela = Image.new("RGBA", (maior, maior), (0, 0, 0, 0))
     tela.paste(conteudo, ((maior - conteudo.width) // 2, (maior - conteudo.height) // 2))
@@ -126,10 +136,7 @@ def raio_maximo(img: Image.Image) -> float:
 
 def primeiro_plano(simbolo: Image.Image, lado: int) -> Image.Image:
     """O símbolo centralizado numa tela `lado` x `lado`, reduzido para caber no círculo seguro do ícone adaptativo."""
-    caixa = simbolo.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
-    if caixa is None:
-        raise ErroIcone("o símbolo está vazio")
-    conteudo = simbolo.crop(caixa)
+    conteudo = recortar_conteudo(simbolo, "o símbolo está vazio")
     # O recorte tem o centro da caixa do símbolo no meio: o ponto opaco mais afastado desse centro (no tamanho original, antes de reduzir)
     # dá o fator para ele caber no raio alvo. Medir só depois de colar numa tela menor cortaria o símbolo e erraria o fator.
     alvo = lado * ZONA_SEGURA / 2 * MARGEM_SEGURA
@@ -167,28 +174,36 @@ def sem_alfa(pasta: Path, cor: str) -> int:
     return n
 
 
+def desenhar_camadas(pasta: Path, cabecalho: str, placa, simbolo) -> dict:
+    """Desenha o ícone completo e só o símbolo (SVG -> PNG grande, no Inkscape). Devolve {nome: imagem}."""
+    camadas = {"completo": placa + simbolo, "simbolo": simbolo}
+    imagens = {}
+    for nome, caminhos in camadas.items():
+        (pasta / f"{nome}.svg").write_text(montar_svg(cabecalho, caminhos), encoding="utf-8")
+        imagens[nome] = desenhar(pasta / f"{nome}.svg", pasta / f"{nome}-grande.png", TAMANHO * 2)
+    return imagens
+
+
+def gravar_fontes(pasta: Path, imagens: dict, cor_placa: str) -> Image.Image:
+    """Grava as imagens-fonte do `tauri icon` e o manifesto.json delas. Devolve o ícone padrão (para o favicon)."""
+    padrao = recortar_quadrado(imagens["completo"], TAMANHO)
+    padrao.save(pasta / "padrao.png")
+    Image.new("RGBA", (TAMANHO, TAMANHO), cor_placa).save(pasta / "fundo.png")
+    frente = primeiro_plano(imagens["simbolo"], TAMANHO)
+    frente.save(pasta / "frente.png")
+    silhueta(frente).save(pasta / "monocromatico.png")
+    manifesto = {"default": "padrao.png", "bg_color": cor_placa, "android_bg": "fundo.png", "android_fg": "frente.png",
+                 "android_fg_scale": 100, "android_monochrome": "monocromatico.png"}
+    (pasta / "manifesto.json").write_text(json.dumps(manifesto), encoding="utf-8")
+    return padrao
+
+
 def gerar(cabecalho: str, placa, simbolo) -> int:
     """Desenha as camadas, roda o `tauri icon` e acerta o iOS e o favicon. Levanta ErroIcone se algo falhar."""
     cor_placa = placa[1][0]
-
     with tempfile.TemporaryDirectory(prefix="bm-icones-") as t:
         pasta = Path(t)
-        camadas = {"completo": placa + simbolo, "simbolo": simbolo}
-        imagens = {}
-        for nome, caminhos in camadas.items():
-            (pasta / f"{nome}.svg").write_text(montar_svg(cabecalho, caminhos), encoding="utf-8")
-            imagens[nome] = desenhar(pasta / f"{nome}.svg", pasta / f"{nome}-grande.png", TAMANHO * 2)
-
-        padrao = recortar_quadrado(imagens["completo"], TAMANHO)
-        padrao.save(pasta / "padrao.png")
-        Image.new("RGBA", (TAMANHO, TAMANHO), cor_placa).save(pasta / "fundo.png")
-        frente = primeiro_plano(imagens["simbolo"], TAMANHO)
-        frente.save(pasta / "frente.png")
-        silhueta(frente).save(pasta / "monocromatico.png")
-        manifesto = {"default": "padrao.png", "bg_color": cor_placa, "android_bg": "fundo.png", "android_fg": "frente.png",
-                     "android_fg_scale": 100, "android_monochrome": "monocromatico.png"}
-        (pasta / "manifesto.json").write_text(json.dumps(manifesto), encoding="utf-8")
-
+        padrao = gravar_fontes(pasta, desenhar_camadas(pasta, cabecalho, placa, simbolo), cor_placa)
         r = subprocess.run(["npx", "tauri", "icon", str(pasta / "manifesto.json")], cwd=RAIZ, capture_output=True, text=True)
         sys.stdout.write(r.stdout)
         if r.returncode != 0:
@@ -201,15 +216,22 @@ def gerar(cabecalho: str, placa, simbolo) -> int:
     return 0
 
 
-def principal() -> int:
-    fonte = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else FONTE
+def problema_no_ambiente(fonte: Path):
+    """Texto do que impede de rodar (fonte ausente, programa faltando) ou None se está tudo no lugar."""
     if not fonte.is_file():
-        print(f"erro: {fonte} não existe", file=sys.stderr)
-        return 2
+        return f"{fonte} não existe"
     for ferramenta in ("inkscape", "npx"):
         if shutil.which(ferramenta) is None:
-            print(f"erro: falta o programa '{ferramenta}'", file=sys.stderr)
-            return 2
+            return f"falta o programa '{ferramenta}'"
+    return None
+
+
+def principal() -> int:
+    fonte = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else FONTE
+    problema = problema_no_ambiente(fonte)
+    if problema:
+        print(f"erro: {problema}", file=sys.stderr)
+        return 2
     try:
         cabecalho, placa, simbolo = separar_camadas(fonte.read_text(encoding="utf-8"))
     except ErroIcone as e:
