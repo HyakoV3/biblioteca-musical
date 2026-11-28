@@ -763,14 +763,6 @@
     "severity": "WARN",
     "value": 2
   },
-  "src/lib/i18n/en.ts::en::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 556
-  },
-  "src/lib/i18n/es.ts::es::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 556
-  },
   "src/lib/i18n/index.svelte.ts::index.svelte::Clean/Params::preencher": {
     "severity": "WARN",
     "value": 3
@@ -782,10 +774,6 @@
   "src/lib/i18n/index.svelte.ts::index.svelte::Clean/Params::tn": {
     "severity": "WARN",
     "value": 4
-  },
-  "src/lib/i18n/pt.ts::pt::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 559
   },
   "src/lib/karaoke.ts::karaoke::Clean/Nesting::confere": {
     "severity": "WARN",

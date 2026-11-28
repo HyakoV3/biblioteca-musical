@@ -1,0 +1,14 @@
+# Configuração do Tezcat (`tzt`) para este repositório. Precedência: linha de comando > este arquivo > padrões.
+# Só entra aqui o que NÃO é código; limiares não são afrouxados (isso esconderia dívida de verdade).
+
+[scan]
+# Dicionários de tradução: são dados (um objeto com ~550 chaves, texto da interface por idioma), não lógica.
+# A regra de tamanho de módulo (250 linhas) mede código; aqui só conta chaves. Dividi-los em vários arquivos
+# só para passar na regra espalharia as traduções sem ganho de leitura e quebraria o fluxo de
+# `tools/verificar-traducoes.py` e de `docs/TRADUCOES.md`. A paridade das chaves entre os idiomas continua garantida: `en` e `es` têm o tipo
+# `Dicionario` (o `svelte-check` recusa chave a mais ou a menos) e o CI roda `tools/verificar-traducoes.py`.
+skip_files = [
+  "src/lib/i18n/pt.ts",
+  "src/lib/i18n/en.ts",
+  "src/lib/i18n/es.ts",
+]
