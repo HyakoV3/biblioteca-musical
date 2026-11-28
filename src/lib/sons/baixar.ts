@@ -2,6 +2,7 @@
 // Browser não manda os cabeçalhos CORS. A permissão da rede está restrita, em src-tauri/capabilities/default.json, ao
 // endereço do servidor dos sons.
 import { fetch as fetchNativo } from "@tauri-apps/plugin-http";
+import { juntar } from "../bytes";
 import { ErroPacote, LIMITE_ZIP } from "./extrair";
 
 /** Quanto tempo a conexão pode demorar a abrir, e quanto a rede pode ficar sem entregar nenhum pedaço antes de o download ser abortado. */
@@ -126,14 +127,4 @@ async function acumular(leitor: ReadableStreamDefaultReader<Uint8Array>, control
     }
     aoAvancar(feito);
   }
-}
-
-function juntar(partes: Uint8Array[]): Uint8Array {
-  const saida = new Uint8Array(partes.reduce((soma, p) => soma + p.length, 0));
-  let pos = 0;
-  for (const p of partes) {
-    saida.set(p, pos);
-    pos += p.length;
-  }
-  return saida;
 }

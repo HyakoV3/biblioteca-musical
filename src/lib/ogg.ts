@@ -1,5 +1,6 @@
 // Escreve um arquivo Ogg/Opus (RFC 7845) a partir dos pacotes Opus: é um "remux", o áudio não é recodificado. Páginas com CRC (RFC 3533),
 // `OpusHead` e `OpusTags` cada um na sua página, granule position em amostras a 48 kHz contando o pre-skip.
+import { juntar } from "./bytes";
 import { lerOpusDoWebm, opusHeadValido } from "./webm";
 
 const TABELA_CRC = (() => {
@@ -47,17 +48,6 @@ function valoresDeLacing(pacotes: Uint8Array[]): number[] {
   }
   if (segs.length > SEGMENTOS_POR_PAGINA) throw new Error("pacote grande demais para uma página");
   return segs;
-}
-
-/** Concatena os blocos de bytes, na ordem. */
-function juntar(blocos: Uint8Array[]): Uint8Array {
-  const out = new Uint8Array(blocos.reduce((s, b) => s + b.length, 0));
-  let o = 0;
-  for (const b of blocos) {
-    out.set(b, o);
-    o += b.length;
-  }
-  return out;
 }
 
 function pagina({ tipo, granule, serie, seq }: CabecalhoDePagina, pacotes: Uint8Array[]): Uint8Array {
