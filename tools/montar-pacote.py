@@ -47,6 +47,33 @@ def escrever_zip(destino: Path, svgs: dict):
         tmp.unlink(missing_ok=True)
 
 
+def coletar_svgs(pasta: Path) -> dict:
+    """{(número, paisagem): caminho} dos SVG com nome aceito; os outros .svg são ignorados com um aviso."""
+    svgs = {}
+    for p in sorted(pasta.iterdir()):
+        chave = numero_do_svg(p.name)
+        if chave is not None and p.is_file():
+            svgs[chave] = p
+        elif p.suffix == ".svg":
+            print(f"aviso: {p.name} ignorado (o nome precisa ser hino-<número>.svg ou hino-<número>-paisagem.svg, sem zero à esquerda)", file=sys.stderr)
+    return svgs
+
+
+def descartar_paisagens_orfas(svgs: dict):
+    """Tira (com aviso) a paisagem de hino sem retrato: o app a recusaria."""
+    for (n, paisagem) in sorted(svgs):
+        if paisagem and (n, False) not in svgs:
+            print(f"aviso: hino-{n}-paisagem.svg ignorado (falta o hino-{n}.svg, o de retrato: o app recusaria a paisagem sozinha)", file=sys.stderr)
+            del svgs[(n, True)]
+
+
+def resumo(saida: Path, svgs: dict) -> str:
+    tamanho = saida.stat().st_size
+    retratos = sum(1 for (_, p) in svgs if not p)
+    paisagens = len(svgs) - retratos
+    return f"{saida}: {retratos} partituras ({paisagens} com versão de paisagem); {tamanho:,} bytes ({tamanho / 1048576:.1f} MiB)"
+
+
 def principal() -> int:
     ap = argparse.ArgumentParser(description="Monta o pacote .zip de partituras (partituras/hino-N.svg e hino-N-paisagem.svg).")
     ap.add_argument("svgs", type=Path)
@@ -56,26 +83,14 @@ def principal() -> int:
     if not a.svgs.is_dir():
         print(f"erro: {a.svgs} não é uma pasta", file=sys.stderr)
         return 2
-    svgs = {}
-    for p in sorted(a.svgs.iterdir()):
-        chave = numero_do_svg(p.name)
-        if chave is not None and p.is_file():
-            svgs[chave] = p
-        elif p.suffix == ".svg":
-            print(f"aviso: {p.name} ignorado (o nome precisa ser hino-<número>.svg ou hino-<número>-paisagem.svg, sem zero à esquerda)", file=sys.stderr)
-    for (n, paisagem) in sorted(svgs):
-        if paisagem and (n, False) not in svgs:
-            print(f"aviso: hino-{n}-paisagem.svg ignorado (falta o hino-{n}.svg, o de retrato: o app recusaria a paisagem sozinha)", file=sys.stderr)
-            del svgs[(n, True)]
+    svgs = coletar_svgs(a.svgs)
+    descartar_paisagens_orfas(svgs)
     if not svgs:
         print(f"erro: nenhum hino-<número>.svg em {a.svgs}", file=sys.stderr)
         return 2
     a.saida.parent.mkdir(parents=True, exist_ok=True)
     escrever_zip(a.saida, svgs)
-    tamanho = a.saida.stat().st_size
-    retratos = sum(1 for (_, p) in svgs if not p)
-    paisagens = len(svgs) - retratos
-    print(f"{a.saida}: {retratos} partituras ({paisagens} com versão de paisagem); {tamanho:,} bytes ({tamanho / 1048576:.1f} MiB)")
+    print(resumo(a.saida, svgs))
     return 0
 
 

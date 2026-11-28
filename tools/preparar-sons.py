@@ -56,7 +56,10 @@ def escrever(nome_instrumento, notas):
     )
 
 
-def main():
+SUFIXO = "-mp3.js"
+
+
+def ler_argumentos():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--entrada", type=Path, default=ENTRADA_PADRAO)
     ap.add_argument("--saida", type=Path, default=SAIDA_PADRAO)
@@ -64,49 +67,69 @@ def main():
     ap.add_argument("--instrumentos", nargs="+", metavar="NOME", help="só estes (ex.: drawbar_organ flute); padrão: todos os da entrada")
     ap.add_argument("--pacote", default="sons", help="nome do pacote, gravado no manifesto (ex.: sons-001)")
     ap.add_argument("--banco", default="FluidR3_GM", help="nome do banco de origem, gravado no manifesto (ex.: GeneralUserGS-2.0.3)")
-    args = ap.parse_args()
-    minimo, maximo = args.faixa
+    return ap.parse_args()
 
-    arquivos = sorted(args.entrada.expanduser().glob("*-mp3.js"))
-    if args.instrumentos:
-        pedidos = set(args.instrumentos)
-        arquivos = [a for a in arquivos if a.name[: -len("-mp3.js")] in pedidos]
-        faltam = pedidos - {a.name[: -len("-mp3.js")] for a in arquivos}
-        if faltam:
-            sys.exit(f"instrumento(s) sem arquivo de entrada: {', '.join(sorted(faltam))}")
+
+def nome_do_instrumento(arquivo: Path) -> str:
+    return arquivo.name[: -len(SUFIXO)]
+
+
+def filtrar_pedidos(arquivos, instrumentos):
+    """Só os arquivos dos `instrumentos` pedidos. Encerra com mensagem se faltar algum."""
+    pedidos = set(instrumentos)
+    arquivos = [a for a in arquivos if nome_do_instrumento(a) in pedidos]
+    faltam = pedidos - {nome_do_instrumento(a) for a in arquivos}
+    if faltam:
+        sys.exit(f"instrumento(s) sem arquivo de entrada: {', '.join(sorted(faltam))}")
+    return arquivos
+
+
+def escolher_arquivos(entrada: Path, instrumentos):
+    """Os `*-mp3.js` da entrada (só os `instrumentos` pedidos, se houver). Encerra com mensagem se não houver nenhum."""
+    arquivos = sorted(entrada.expanduser().glob("*" + SUFIXO))
+    if instrumentos:
+        arquivos = filtrar_pedidos(arquivos, instrumentos)
     if not arquivos:
-        sys.exit(f"nenhum *-mp3.js em {args.entrada} (rode tools/baixar-sons-teste.sh)")
-    args.saida = args.saida.expanduser()
-    args.saida.mkdir(parents=True, exist_ok=True)
+        sys.exit(f"nenhum *-mp3.js em {entrada} (rode tools/baixar-sons-teste.sh)")
+    return arquivos
 
-    lista = []
-    for arq in arquivos:
-        instrumento = arq.name[: -len("-mp3.js")]
-        todas = ler_como_o_smplr(arq.read_text(encoding="utf-8"))
-        mantidas = {k: v for k, v in todas.items() if minimo <= midi(k) <= maximo}
-        if not mantidas:
-            sys.exit(f"{instrumento}: nenhuma nota na faixa {minimo} a {maximo}")
-        texto = escrever(instrumento, mantidas)
-        # confere relendo do jeito do smplr: as mesmas notas, com os mesmos dados
-        relido = ler_como_o_smplr(texto)
-        if relido != mantidas:
-            sys.exit(f"{instrumento}: o arquivo gravado não bate com o original")
-        dados = texto.encode("utf-8")
-        destino = args.saida / arq.name
-        destino.write_bytes(dados)
-        lista.append({
-            "instrumento": instrumento,
-            "arquivo": arq.name,
-            "notas": len(mantidas),
-            "bytes": len(dados),
-            "sha256": hashlib.sha256(dados).hexdigest(),
-        })
-        print(f"{instrumento:14} {len(todas):3} -> {len(mantidas):3} notas | {arq.stat().st_size/1e6:5.2f} MB -> {len(dados)/1e6:5.2f} MB")
 
-    manifesto = {"versao": 1, "pacote": args.pacote, "banco": args.banco, "faixa": [minimo, maximo], "arquivos": lista}
-    (args.saida / "manifesto.json").write_text(json.dumps(manifesto, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+def preparar_instrumento(arq: Path, saida: Path, faixa):
+    """Corta um instrumento à faixa, grava em `saida`, confere a releitura e imprime o resumo. Devolve a linha do manifesto."""
+    minimo, maximo = faixa
+    instrumento = nome_do_instrumento(arq)
+    todas = ler_como_o_smplr(arq.read_text(encoding="utf-8"))
+    mantidas = {k: v for k, v in todas.items() if minimo <= midi(k) <= maximo}
+    if not mantidas:
+        sys.exit(f"{instrumento}: nenhuma nota na faixa {minimo} a {maximo}")
+    texto = escrever(instrumento, mantidas)
+    # confere relendo do jeito do smplr: as mesmas notas, com os mesmos dados
+    if ler_como_o_smplr(texto) != mantidas:
+        sys.exit(f"{instrumento}: o arquivo gravado não bate com o original")
+    dados = texto.encode("utf-8")
+    (saida / arq.name).write_bytes(dados)
+    print(f"{instrumento:14} {len(todas):3} -> {len(mantidas):3} notas | {arq.stat().st_size/1e6:5.2f} MB -> {len(dados)/1e6:5.2f} MB")
+    return {
+        "instrumento": instrumento,
+        "arquivo": arq.name,
+        "notas": len(mantidas),
+        "bytes": len(dados),
+        "sha256": hashlib.sha256(dados).hexdigest(),
+    }
+
+
+def main():
+    args = ler_argumentos()
+    arquivos = escolher_arquivos(args.entrada, args.instrumentos)
+    saida = args.saida.expanduser()
+    saida.mkdir(parents=True, exist_ok=True)
+
+    lista = [preparar_instrumento(arq, saida, args.faixa) for arq in arquivos]
+
+    manifesto = {"versao": 1, "pacote": args.pacote, "banco": args.banco, "faixa": list(args.faixa), "arquivos": lista}
+    (saida / "manifesto.json").write_text(json.dumps(manifesto, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     total = sum(a["bytes"] for a in lista)
-    print(f"{len(lista)} arquivo(s), {total/1e6:.2f} MB no total, manifesto em {args.saida / 'manifesto.json'}")
+    print(f"{len(lista)} arquivo(s), {total/1e6:.2f} MB no total, manifesto em {saida / 'manifesto.json'}")
 
 
 if __name__ == "__main__":
