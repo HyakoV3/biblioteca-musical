@@ -1,164 +1,20 @@
-// O metrônomo (I-20): um clique regular, com o 1º tempo do compasso forte e os demais fracos. Duas partes:
-//  - funções PURAS (`agendar`, `progressoNoCompasso`, `tempoAceso`): dado o andamento, o compasso e o instante do relógio de áudio, dizem quais cliques agendar e
-//    onde está a bolinha. Não tocam em áudio nem em temporizador, então são testadas com um relógio falso;
-//  - a classe `Metronomo`, a casca fina com o `AudioContext`.
+// O metrônomo (I-20): um clique regular, com o 1º tempo do compasso forte e os demais fracos. Partes:
+//  - `metronomoAgenda.ts`: função PURA `agendar` (quais cliques agendar) e os limites;
+//  - `metronomoPosicao.ts`: funções PURAS da bolinha (progresso, pêndulo, lado, tempo aceso);
+//  - `metronomoClique.ts`: o timbre e o som de cada clique; `metronomoVigia.ts`: o temporizador que olha adiante; `metronomoLeitura.ts`: o lado de leitura da classe;
+//  - aqui, a classe `Metronomo`, a casca fina com o `AudioContext`.
 // O padrão é o de "A Tale of Two Clocks" (Chris Wilson): um temporizador grosso só OLHA ADIANTE e agenda os cliques no relógio de áudio (`start(tempo)`); o relógio
 // de áudio é preciso, o JavaScript só precisa acordar a tempo, não na hora. O temporizador nunca soa o clique.
 
+import { JANELA, JANELA_ESCONDIDA, agendar, compassoValido, limitarBpm, novoEstado } from "./metronomoAgenda";
+import { cancelarAgendados, soarClique, type Agendado } from "./metronomoClique";
+import { LeituraDoMetronomo } from "./metronomoLeitura";
+import { Vigia } from "./metronomoVigia";
 import { criarContexto } from "./saidaAudio";
 
-export const BPM_MIN = 30;
-export const BPM_MAX = 240;
-export const BPM_PADRAO = 60;
-/** Tempos por compasso que a tela oferece. */
-/** Os simples (2, 3 e 4 tempos) e os compostos (6, 9 e 12: colcheias, de 3 em 3). Não há 1 (não existe como compasso) nem 5 e 7 (irregulares, fora dos hinos). */
-export const COMPASSOS = [2, 3, 4, 6, 9, 12] as const;
-export const COMPASSO_PADRAO = 4;
-
-/** Quanto, depois de o áudio acordar, o 1º clique espera (s): a saída ainda está começando, e no Bluetooth o primeiro som costuma se perder. */
-export const ATRASO_INICIAL = 0.1;
-/** De quanto em quanto o temporizador acorda para olhar adiante (ms). */
-export const INTERVALO_MS = 25;
-/** Quanto à frente se agenda com o app à vista (s) e escondido (s): escondido o navegador freia os temporizadores (a ~1 por segundo), então a janela é maior. */
-export const JANELA = 0.1;
-export const JANELA_ESCONDIDA = 2;
-
-export function limitarBpm(bpm: number): number {
-  if (!Number.isFinite(bpm)) return BPM_PADRAO;
-  return Math.min(BPM_MAX, Math.max(BPM_MIN, Math.round(bpm)));
-}
-
-export function compassoValido(n: unknown): n is (typeof COMPASSOS)[number] {
-  return typeof n === "number" && (COMPASSOS as readonly number[]).includes(n);
-}
-
-/** `n`: o número do clique desde que o metrônomo ligou (0, 1, 2…): a paridade diz de que lado do pêndulo ele está (par = esquerda, ímpar = direita). */
-export type Clique = { tempo: number; indice: number; n: number };
-/** `ultimo`: instante (relógio de áudio) do último clique agendado, ou null se ainda não há nenhum. `indice`: o tempo (0 = o forte) do PRÓXIMO clique. `n`: o número do PRÓXIMO clique desde que ligou. */
-export type EstadoAgenda = { ultimo: number | null; indice: number; n: number };
-
-/** Teto de cliques agendados numa chamada (a 240 bpm, 64 cliques são 16 s: muito além da maior janela). */
-const MAX_CLIQUES_POR_CHAMADA = 64;
-
-export function novoEstado(): EstadoAgenda {
-  return { ultimo: null, indice: 0, n: 0 };
-}
-
-/**
- * Agenda os cliques que caem entre `agora` e `agora + janela`. O instante do próximo clique é calculado SÓ AQUI, a partir do último e do andamento de agora: assim uma troca de
- * andamento vale a partir do primeiro clique ainda não agendado (o que já está na janela soa como estava). Se o temporizador acordou tarde e o próximo clique já ficou para trás,
- * pula para o próximo ponto da grade, mantendo a fase (o tempo certo do compasso), em vez de soar todos os perdidos de uma vez.
- */
-export function agendar(
-  estado: EstadoAgenda,
-  p: { bpm: number; compasso: number; agora: number; janela: number; atrasoInicial?: number },
-): { cliques: Clique[]; estado: EstadoAgenda } {
-  const cliques: Clique[] = [];
-  const { compasso, agora, janela } = p;
-  // A função é pública: valida tudo o que recebe, para uma entrada ruim não gerar laço infinito, memória sem fim nem NaN que trava o metrônomo em silêncio.
-  if (!Number.isFinite(p.bpm) || p.bpm <= 0 || !Number.isInteger(compasso) || compasso < 1 || !Number.isFinite(agora) || !Number.isFinite(janela) || janela < 0) {
-    return { cliques, estado };
-  }
-  const bpm = Math.min(BPM_MAX, Math.max(BPM_MIN, p.bpm));
-  const periodo = 60 / bpm;
-  const atraso = Number.isFinite(p.atrasoInicial) && (p.atrasoInicial as number) >= 0 ? (p.atrasoInicial as number) : ATRASO_INICIAL;
-  let ultimo = estado.ultimo !== null && Number.isFinite(estado.ultimo) ? estado.ultimo : null;
-  let indice = Number.isInteger(estado.indice) ? ((estado.indice % compasso) + compasso) % compasso : 0;
-  let seq = Number.isInteger(estado.n) && estado.n >= 0 ? estado.n : 0;
-  let proximo = ultimo === null ? agora + atraso : ultimo + periodo;
-  // O 1º clique (ultimo nulo) é sempre agendado, mesmo que o atraso inicial caia fora da janela: senão o começo dependeria de uma borda de comparação.
-  while ((proximo < agora + janela || ultimo === null) && cliques.length < MAX_CLIQUES_POR_CHAMADA) {
-    if (proximo < agora) {
-      // atrasado: pula as batidas perdidas e segue na grade, na fase certa
-      const perdidas = Math.ceil((agora - proximo) / periodo);
-      proximo += perdidas * periodo;
-      indice = (indice + perdidas) % compasso;
-      seq += perdidas;
-      continue;
-    }
-    cliques.push({ tempo: proximo, indice, n: seq });
-    ultimo = proximo;
-    indice = (indice + 1) % compasso;
-    seq += 1;
-    proximo = ultimo + periodo;
-  }
-  return { cliques, estado: { ultimo, indice, n: seq } };
-}
-
-/**
- * Onde está a bolinha na trilha do compasso, de 0 a 1 (0 = o início do 1º tempo; chega a 1 no fim do último, que é o 1º tempo seguinte). `fila` são os cliques já agendados e
- * `agora`, o instante visível (o relógio de áudio menos a latência de saída). Antes do primeiro clique soar, devolve null.
- */
-export function progressoNoCompasso(fila: readonly Clique[], agora: number, bpm: number, compasso: number): number | null {
-  const c = cliqueAtual(fila, agora);
-  if (!c || !(bpm > 0) || !(compasso >= 1)) return null;
-  // O espaçamento é o até o PRÓXIMO clique da fila, quando há: logo depois de uma troca de andamento o clique em curso ainda tem o espaçamento antigo.
-  const prox = fila.find((x) => x.tempo > c.tempo);
-  const periodo = prox ? prox.tempo - c.tempo : 60 / bpm;
-  const decorrido = Math.min(Math.max((agora - c.tempo) / periodo, 0), 1);
-  return (c.indice + decorrido) / compasso;
-}
-
-/**
- * Onde está a bolinha do PÊNDULO, de 0 (esquerda) a 1 (direita): cada clique é uma ponta (par à esquerda, ímpar à direita) e entre dois cliques ela vai de uma ponta à outra, como num
- * metrônomo de verdade. O compasso não aparece no trajeto (só nas marcas e no acento). Antes do primeiro clique soar, devolve null.
- */
-export function posicaoDoPendulo(fila: readonly Clique[], agora: number, bpm: number): number | null {
-  const c = cliqueAtual(fila, agora);
-  if (!c || !(bpm > 0)) return null;
-  // Se o agendador atrasou e pulou batidas, o intervalo até o próximo clique da fila cobre VÁRIAS batidas (`passos`): a bolinha faz esse número de idas e vindas, no ritmo certo, em vez de
-  // uma só (que, com um número ímpar de batidas perdidas, voltaria de uma ponta à outra num salto).
-  const prox = fila.find((x) => x.tempo > c.tempo);
-  const passos = prox ? Math.max(1, prox.n - c.n) : 1;
-  const periodo = prox ? (prox.tempo - c.tempo) / passos : 60 / bpm;
-  const t = Math.min(Math.max((agora - c.tempo) / periodo, 0), passos);
-  const m = (c.n + t) % 2; // onda triangular: 0 (esquerda) → 1 (direita) → 0…
-  return m <= 1 ? m : 2 - m;
-}
-
-/** De que lado o clique mais recente soou (0 = esquerda, 1 = direita), ou null antes do primeiro: com movimento reduzido a bolinha só pula de ponta em ponta. */
-export function ladoDoClique(fila: readonly Clique[], agora: number): 0 | 1 | null {
-  const c = cliqueAtual(fila, agora);
-  return c ? (c.n % 2 === 0 ? 0 : 1) : null;
-}
-
-/** O tempo (0 = o forte) cujo clique soou por último até `agora`, ou null antes do primeiro. */
-export function tempoAceso(fila: readonly Clique[], agora: number): number | null {
-  return cliqueAtual(fila, agora)?.indice ?? null;
-}
-
-function cliqueAtual(fila: readonly Clique[], agora: number): Clique | null {
-  let achado: Clique | null = null;
-  for (const c of fila) {
-    if (c.tempo <= agora && (achado === null || c.tempo >= achado.tempo)) achado = c;
-  }
-  return achado;
-}
-
-/** Timbre do clique: o forte é mais agudo e mais alto (a diferença se confere pelo `hz` no teste, e se ouve). */
-export const CLIQUE_FORTE = { hz: 1600, ganho: 0.7 };
-export const CLIQUE_FRACO = { hz: 1000, ganho: 0.45 };
-/** Nos compostos (6, 9 e 12), o 1º clique de cada grupo de 3 (o tempo pontuado) soa entre o forte e o fraco: sem ele, 6/8 soaria como 6/4 simples. */
-export const CLIQUE_MEDIO = { hz: 1250, ganho: 0.55 };
-
-/** Compasso composto: os cliques (colcheias) vão de 3 em 3. */
-export const ehComposto = (compasso: number): boolean => compasso >= 6 && compasso % 3 === 0;
-
-/** O timbre do clique de `indice` (0 = o 1º tempo do compasso) num compasso de `compasso` cliques. */
-export function perfilDoClique(indice: number, compasso: number) {
-  if (indice === 0) return CLIQUE_FORTE;
-  return ehComposto(compasso) && indice % 3 === 0 ? CLIQUE_MEDIO : CLIQUE_FRACO;
-}
-const ATAQUE = 0.002;
-const DURACAO = 0.05;
-
-/** Quanto o som demora a sair do aparelho depois de agendado (s), para a bolinha não adiantar o clique (fone Bluetooth: 100 a 300 ms). */
-export function atrasoDeSaida(ctx: Pick<AudioContext, "state" | "outputLatency">): number {
-  const l = ctx.outputLatency;
-  return ctx.state === "running" && Number.isFinite(l) ? Math.max(0, l) : 0;
-}
-
-type Agendado = { osc: OscillatorNode; ganho: GainNode; tempo: number };
+export * from "./metronomoAgenda";
+export * from "./metronomoClique";
+export * from "./metronomoPosicao";
 
 export type OpcoesMetronomo = {
   /** Cria o contexto de áudio (um falso nos testes). */
@@ -171,33 +27,20 @@ export type OpcoesMetronomo = {
  * A casca fina do metrônomo, com o seu PRÓPRIO `AudioContext` criado no toque da pessoa (o do sintetizador é privado e a pausa do hino é `suspend()`, que calaria o clique; o
  * `TomSustentado` do afinador tomou a mesma decisão). Não há controle de volume: quem ajusta é o volume de mídia do celular.
  */
-export class Metronomo {
-  private ctx: AudioContext | null = null;
+export class Metronomo extends LeituraDoMetronomo {
   private estado = novoEstado();
-  private fila: Clique[] = [];
   private agendados: Agendado[] = [];
-  private temporizador: ReturnType<typeof setInterval> | null = null;
+  private readonly vigia = new Vigia(() => this.olharAdiante());
   /** Muda a cada `iniciar()`, `parar()` e `fechar()`: um `iniciar()` que ainda esperava o áudio e vê o número mudado já não vale. */
   private geracao = 0;
-  private _bpm = BPM_PADRAO;
-  private _compasso: number = COMPASSO_PADRAO;
-  private _ligado = false;
 
   /** Chamado quando o estado muda (ligou, desligou, trocou o compasso): a tela se atualiza. */
   aoMudar: (() => void) | null = null;
   /** Chamado quando o sistema tirou o áudio (ligação, outro app com o foco) e o metrônomo parou sozinho: a tela avisa. */
   aoInterromper: (() => void) | null = null;
 
-  constructor(private readonly opcoes: OpcoesMetronomo = {}) {}
-
-  get ligado(): boolean {
-    return this._ligado;
-  }
-  get bpm(): number {
-    return this._bpm;
-  }
-  get compasso(): number {
-    return this._compasso;
+  constructor(private readonly opcoes: OpcoesMetronomo = {}) {
+    super();
   }
 
   /** Muda o andamento (limitado a 30..240). Vale a partir do primeiro clique ainda não agendado, sem parar nem estalar. */
@@ -229,28 +72,14 @@ export class Metronomo {
       this.aoInterromper?.();
       return;
     }
-    this.desligarTemporizador();
-    this.recomecar();
-    this._ligado = true;
-    ctx.onstatechange = () => {
-      // O sistema tirou o áudio com o metrônomo ligado: para e avisa, sem tentar `resume()` sozinho (sem gesto, falha).
-      if (ctx.state !== "running" && this._ligado && this.ctx === ctx) {
-        this.parar();
-        this.aoInterromper?.();
-      }
-    };
-    this.olharAdiante();
-    this.temporizador = setInterval(() => this.olharAdiante(), INTERVALO_MS);
-    // Ao esconder a página o navegador freia os temporizadores: agenda já a janela grande, antes do próximo (atrasado) tick.
-    if (typeof document !== "undefined") document.addEventListener("visibilitychange", this.aoVisibilidade);
-    this.aoMudar?.();
+    this.ligar(ctx);
   }
 
   /** Para na hora: os cliques agendados que ainda não soaram são cancelados (senão soariam ao reiniciar). O contexto fica (como o do afinador). */
   parar(): void {
     this.geracao++;
-    this.desligarTemporizador();
-    this.cancelarAgendados();
+    this.vigia.desligar();
+    this.cancelar();
     this.fila = [];
     const estava = this._ligado;
     this._ligado = false;
@@ -268,36 +97,25 @@ export class Metronomo {
     }
   }
 
-  /** Posição da bolinha (0 a 1) no instante visível, ou null se não está tocando. */
-  progresso(): number | null {
-    const ctx = this.ctx;
-    if (!ctx || !this._ligado) return null;
-    return progressoNoCompasso(this.fila, ctx.currentTime - atrasoDeSaida(ctx), this._bpm, this._compasso);
-  }
-
-  /** Posição do pêndulo (0 esquerda, 1 direita) no instante visível, ou null se não está tocando. */
-  posicaoPendulo(): number | null {
-    const ctx = this.ctx;
-    if (!ctx || !this._ligado) return null;
-    return posicaoDoPendulo(this.fila, ctx.currentTime - atrasoDeSaida(ctx), this._bpm);
-  }
-
-  /** O lado do clique mais recente (0 esquerda, 1 direita), ou null se não está tocando. */
-  ladoAceso(): 0 | 1 | null {
-    const ctx = this.ctx;
-    if (!ctx || !this._ligado) return null;
-    return ladoDoClique(this.fila, ctx.currentTime - atrasoDeSaida(ctx));
-  }
-
-  /** O tempo (0 = forte) aceso agora, ou null se não está tocando. */
-  tempoAcesoAgora(): number | null {
-    const ctx = this.ctx;
-    if (!ctx || !this._ligado) return null;
-    return tempoAceso(this.fila, ctx.currentTime - atrasoDeSaida(ctx));
+  private ligar(ctx: AudioContext): void {
+    this.vigia.desligar();
+    this.recomecar();
+    this._ligado = true;
+    ctx.onstatechange = () => {
+      // O sistema tirou o áudio com o metrônomo ligado: para e avisa, sem tentar `resume()` sozinho (sem gesto, falha).
+      if (ctx.state !== "running" && this._ligado && this.ctx === ctx) {
+        this.parar();
+        this.aoInterromper?.();
+      }
+    };
+    this.olharAdiante();
+    // Ao esconder a página o navegador freia os temporizadores: o vigia agenda já a janela grande, antes do próximo (atrasado) tick.
+    this.vigia.ligar();
+    this.aoMudar?.();
   }
 
   private recomecar(): void {
-    this.cancelarAgendados();
+    this.cancelar();
     this.fila = [];
     this.estado = novoEstado();
   }
@@ -314,56 +132,21 @@ export class Metronomo {
     });
     this.estado = estado;
     for (const c of cliques) {
-      this.soar(ctx, c);
+      this.agendados.push(soarClique(ctx, c, this._compasso));
       this.fila.push(c);
     }
-    // Poda o que já soou e não serve mais: só a fila das últimas batidas importa para a bolinha.
-    const limite = ctx.currentTime - 2;
+    this.podar(ctx.currentTime);
+  }
+
+  /** Poda o que já soou e não serve mais: só a fila das últimas batidas importa para a bolinha. */
+  private podar(agora: number): void {
+    const limite = agora - 2;
     this.agendados = this.agendados.filter((a) => a.tempo > limite);
     if (this.fila.length > 16) this.fila = this.fila.slice(-16);
   }
 
-  private soar(ctx: AudioContext, c: Clique): void {
-    const perfil = perfilDoClique(c.indice, this._compasso);
-    const osc = ctx.createOscillator();
-    osc.frequency.value = perfil.hz;
-    const ganho = ctx.createGain();
-    ganho.gain.setValueAtTime(0, c.tempo);
-    ganho.gain.linearRampToValueAtTime(perfil.ganho, c.tempo + ATAQUE);
-    ganho.gain.exponentialRampToValueAtTime(0.0001, c.tempo + DURACAO);
-    osc.connect(ganho).connect(ctx.destination);
-    osc.start(c.tempo);
-    osc.stop(c.tempo + DURACAO + 0.01);
-    this.agendados.push({ osc, ganho, tempo: c.tempo });
-  }
-
-  private cancelarAgendados(): void {
-    const agora = this.ctx?.currentTime ?? 0;
-    for (const a of this.agendados) {
-      if (a.tempo <= agora) continue; // já soou (ou está soando): deixa terminar
-      // Desconecta primeiro (isso garante o silêncio) e isola o `stop`: ele já foi chamado em `soar()` e, em WebKit antigo, uma segunda chamada lança.
-      try {
-        a.ganho.disconnect();
-        a.osc.disconnect();
-      } catch {
-        // já desconectado
-      }
-      try {
-        a.osc.stop(0); // parar antes de começar: o clique agendado nunca soa
-      } catch {
-        // já tinha parado
-      }
-    }
+  private cancelar(): void {
+    cancelarAgendados(this.agendados, this.ctx?.currentTime ?? 0);
     this.agendados = [];
-  }
-
-  private readonly aoVisibilidade = () => this.olharAdiante();
-
-  private desligarTemporizador(): void {
-    if (typeof document !== "undefined") document.removeEventListener("visibilitychange", this.aoVisibilidade);
-    if (this.temporizador !== null) {
-      clearInterval(this.temporizador);
-      this.temporizador = null;
-    }
   }
 }
