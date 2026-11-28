@@ -24,6 +24,9 @@ import re
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from smplr import ler_como_o_smplr  # noqa: E402
+
 RAIZ = Path(__file__).resolve().parent.parent
 NOMES = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
 ENTRADA_PADRAO = RAIZ / "sons-fonte" / "FluidR3_GM"
@@ -37,14 +40,6 @@ def midi(nome):
         raise ValueError(f"nome de nota inesperado: {nome!r}")
     ajuste = 1 if m.group(2) == "#" else -1 if m.group(2) == "b" else 0
     return 12 * (int(m.group(3)) + 1) + NOMES[m.group(1)] + ajuste
-
-
-def ler_como_o_smplr(texto):
-    """Mesma leitura do smplr (midiJsToJson): acha 'MIDI.Soundfont.', pega do '=' até a última vírgula e faz JSON.parse."""
-    cabeca = texto.index("MIDI.Soundfont.")
-    inicio = texto.index("=", cabeca) + 2
-    fim = texto.rindex(",")
-    return json.loads(texto[inicio:fim] + "}")
 
 
 def escrever(nome_instrumento, notas):

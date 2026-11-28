@@ -16,7 +16,7 @@ from pathlib import Path
 from urllib.parse import SplitResult, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from manifesto.pacote import manifesto_do_pacote, principal_pacote, validar_https  # noqa: E402
+from manifesto.pacote import Regras, montar_pacote, principal_pacote, validar_https  # noqa: E402
 
 RAIZ = Path(__file__).resolve().parent.parent
 PADRAO = RAIZ / "src" / "lib" / "hinario" / "manifesto.json"
@@ -53,14 +53,14 @@ def _validar_corpo(nome: str, dados: bytes) -> None:
         raise ValueError(f"{nome} não parece um hinario.json (faltam `hinario` e `hinos`)")
 
 
-def montar(link: str, arquivo: Path) -> dict:
-    """O manifesto do hinário. Levanta ValueError se o link ou o arquivo não servem."""
-    _validar_endereco(link)
+def _validar_nome(arquivo: Path) -> None:
     if not arquivo.name.endswith(".json"):
         raise ValueError(f"{arquivo.name}: o hinário é um arquivo .json")
-    dados = arquivo.read_bytes()
-    _validar_corpo(arquivo.name, dados)
-    return manifesto_do_pacote(link, arquivo.name, dados)
+
+
+def montar(link: str, arquivo: Path) -> dict:
+    """O manifesto do hinário. Levanta ValueError se o link ou o arquivo não servem."""
+    return montar_pacote(link, arquivo, Regras(_validar_endereco, _validar_corpo, _validar_nome))
 
 
 def principal() -> int:
