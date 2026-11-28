@@ -36,3 +36,13 @@ def apagar_versoes_nao_pedidas(saida: Path, n: int, versoes_: list):
     for sufixo in {"", SUFIXO_PAISAGEM} - {s for s, _ in versoes_}:
         for extensao in EXTENSOES:
             (saida / f"hino-{n}{sufixo}{extensao}").unlink(missing_ok=True)
+
+
+def simular(entrada: Path, saida: Path, hinos: list, versoes_: list):
+    """Diz o que seria gerado (hinos achados e arquivos de saída), sem rodar o MuseScore nem o Verovio e sem criar nada."""
+    nomes = [f"hino-N{sufixo}{extensao}" for sufixo, _ in versoes_ for extensao in EXTENSOES]
+    print(f"{len(hinos)} hino(s) achado(s) em {entrada}: hino-{hinos[0][0]}.mscx ... hino-{hinos[-1][0]}.mscx")
+    print(f"por hino, {len(nomes)} arquivos em {saida}: {', '.join(nomes)}")
+    print(f"ao todo {len(hinos) * len(nomes)} arquivos")
+    if len(versoes_) == 1:
+        print("e apagaria a versão de paisagem (e o timemap dela) que já existir na saída")

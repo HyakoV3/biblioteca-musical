@@ -78,11 +78,11 @@ nos sons, desligar o visualizador. O `config.yaml` do contêiner já dá aos usu
 
 ```sh
 # 1. SVG de cada hino, SEM a letra, em DUAS versões: retrato (largura 700) e paisagem (1200), cada uma com o seu timemap
-#    (precisa do MuseScore 4 e do pacote Python verovio; ver tools/gerar-partituras.py; --so-retrato pula a paisagem)
-python3 tools/gerar-partituras.py <pasta dos hino-N.mscx> <pasta dos svg>
+#    (precisa do MuseScore 4 e do pacote Python verovio; ver tools/gerar-partituras.py; --so-retrato pula a paisagem; sem --aplicar só simula, e o mesmo vale para o passo 2)
+python3 tools/gerar-partituras.py <pasta dos hino-N.mscx> <pasta dos svg> --aplicar
 
 # 2. o zip (só partituras/hino-N.svg e hino-N-paisagem.svg, reproduzível; os timemap não entram)
-python3 tools/montar-pacote.py <pasta dos svg> partituras.zip
+python3 tools/montar-pacote.py <pasta dos svg> partituras.zip --aplicar
 mv partituras.zip partituras-$(sha256sum partituras.zip | cut -c1-8).zip   # o nome leva os 8 primeiros caracteres do SHA-256
 
 # 3. no servidor de arquivos (o mesmo dos sons): uma pasta PRÓPRIA, fora de BibliotecaMusicalSons/, com o zip dentro, e o link público só dela;

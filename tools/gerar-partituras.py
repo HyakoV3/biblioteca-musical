@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Gera a partitura de cada hino em SVG (I-08): .mscx -> MusicXML (MuseScore 4) -> SVG (Verovio).
 
-Uso:  python3 tools/gerar-partituras.py ENTRADA SAIDA [--largura 700] [--largura-paisagem 1200] [--so-retrato] [--escala 40]
+Uso:  python3 tools/gerar-partituras.py ENTRADA SAIDA [--aplicar] [--largura 700] [--largura-paisagem 1200] [--so-retrato] [--escala 40]
                                               [--musescore "CMD"] [--tempo 180]
+Sem --aplicar (ou --apply) só SIMULA: lista o que seria gravado, sem MuseScore, sem Verovio e sem criar nada. Com --aplicar gera e grava.
 
 ENTRADA  pasta com arquivos hino-<número>.mscx (os mesmos que o conversor lê).
 SAIDA    pasta onde ficam, para cada hino, hino-<número>.svg (RETRATO) e hino-<número>-paisagem.svg (PAISAGEM), cada um com o seu
@@ -38,7 +39,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from partituras.gravacao import apagar_versoes_nao_pedidas, gravar, versoes  # noqa: E402
+from aplicar import aplicar_ou_simular, flag_aplicar  # noqa: E402
+from partituras.gravacao import apagar_versoes_nao_pedidas, gravar, simular, versoes  # noqa: E402
 from partituras.marcacao import marcar_notas  # noqa: E402
 from partituras.musescore import TEMPO_LIMITE, achar_musescore, mscx_para_musicxml  # noqa: E402
 from partituras.musicxml import remover_andamento, remover_letra  # noqa: E402
@@ -178,6 +180,7 @@ def montar_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description="Gera a partitura (SVG) de cada hino-N.mscx.")
     ap.add_argument("entrada", type=Path)
     ap.add_argument("saida", type=Path)
+    flag_aplicar(ap)
     ap.add_argument("--largura", type=inteiro_positivo, default=LARGURA_RETRATO, help=f"largura da página do RETRATO, em unidades do Verovio (padrão {LARGURA_RETRATO})")
     ap.add_argument("--largura-paisagem", type=inteiro_positivo, default=LARGURA_PAISAGEM, help=f"largura da página da PAISAGEM (padrão {LARGURA_PAISAGEM})")
     ap.add_argument("--so-retrato", action="store_true", help="não gera a versão de paisagem")
@@ -231,10 +234,14 @@ def principal() -> int:
     a = montar_parser().parse_args()
     entrada = a.entrada.resolve()
     hinos = hinos_da_pasta(entrada, a.entrada)
-    verovio = importar_verovio() if hinos else None
-    if not (hinos and verovio):
+    if not hinos:
         return 2
-    return gerar_tudo(a, entrada, hinos, verovio)
+    if not a.aplicar:
+        simular(a.entrada, a.saida, hinos, versoes(a.largura, None if a.so_retrato else a.largura_paisagem))
+    if not aplicar_ou_simular(a.aplicar, f"gravaria os SVG e timemaps dos {len(hinos)} hino(s) em {a.saida}"):
+        return 0
+    verovio = importar_verovio()
+    return gerar_tudo(a, entrada, hinos, verovio) if verovio else 2
 
 
 if __name__ == "__main__":
