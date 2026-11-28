@@ -53,17 +53,16 @@ def distancia_espectral(tabela, medida):
     return float(np.sqrt(np.sum(w * d**2)))
 
 
-def _notas_fora_das_ancoras(arquivo, lo, hi, ancoras):
+def _notas_fora_das_ancoras(amostras, lo, hi, ancoras):
     """Notas gravadas da faixa que não são âncoras nem estão mudas: [(midi, medida dos harmônicos)]."""
     em_ancora = {a["midi"] for a in ancoras}
-    amostras = ler_amostras(arquivo)
     notas = []
     for midi in range(lo, hi + 1):
         if midi in em_ancora or midi not in amostras:
             continue
         x = decodificar(amostras[midi])
         env, _ = rms_janelas(x)
-        if env.max() >= 1e-4:
+        if not env.max() < 1e-4:  # como no original: um NaN (amostra estragada) NÃO é descartado
             notas.append((midi, analisar_nota(x, midi)["h"]))
     return notas
 
@@ -71,8 +70,9 @@ def _notas_fora_das_ancoras(arquivo, lo, hi, ancoras):
 def _distancias_do_instrumento(nome, ancoras):
     """(distâncias da tabela antiga, distâncias da interpolada) em cada nota fora das âncoras."""
     arquivo, lo, hi = INSTRUMENTOS[nome]
-    notas = _notas_fora_das_ancoras(arquivo, lo, hi, ancoras)
-    antiga = tabela_antiga(nome)
+    amostras = ler_amostras(arquivo)
+    antiga = tabela_antiga(nome)  # antes de decodificar qualquer nota, como no original: se faltar a tabela, falha logo
+    notas = _notas_fora_das_ancoras(amostras, lo, hi, ancoras)
     antes = [distancia_espectral(antiga, medida) for _, medida in notas]
     agora = [distancia_espectral(interpolar(ancoras, midi)[: len(medida)], medida) for midi, medida in notas]
     return antes, agora
