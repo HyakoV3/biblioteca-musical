@@ -7,7 +7,7 @@ import { Gravador } from "./gravador";
 import { SessoesDeRecuperacao, guardarGravacao } from "./gravacaoSessoes";
 import { ligarOuvintes, pedirMicrofone } from "./gravacaoMicrofone";
 import { Medicao } from "./gravacaoMedicao";
-import { dependenciasReais, entregarResultado, guardarComPrazo, type Dependencias, type Resultado, type ResultadoDeIniciar } from "./gravacaoEmCursoDeps";
+import { dependenciasReais, entregarResultado, type Dependencias, type Resultado, type ResultadoDeIniciar } from "./gravacaoEmCursoDeps";
 
 // A API pública continua aqui: os componentes e os testes importam tudo de `gravacaoEmCurso.svelte`.
 export { guardarComPrazo, type Dependencias, type Resultado, type ResultadoDeIniciar, type ResultadoDoGuardar } from "./gravacaoEmCursoDeps";
@@ -104,7 +104,14 @@ export class GravacaoEmCurso {
   async parar(): Promise<void> {
     if (!this.gravando) return; // outra parada já está em andamento
     const contexto = marcarMudanca(this.contextoDoInicio, this.d.lerContexto()); // antes de qualquer espera: o que mudar enquanto o arquivo fecha não conta
-    const sessao = this.encerrar();
+    // O lado síncrono da parada: tira a gravação de cena (relógio, estado, serviço, ouvintes); a sessão de recuperação dela passa a "fechando".
+    const sessao = this.sessoes.fechar();
+    this.tentativa++;
+    this.medicao.parar();
+    this.gravando = false;
+    this.protegida = false;
+    this.d.servico.desligar();
+    for (const desfazer of this.ouvintes.splice(0)) desfazer();
     const nova = await this.gravador.parar();
     this.gravador.aoPedaco = null;
     if (!nova) {
@@ -146,21 +153,11 @@ export class GravacaoEmCurso {
   }
 
   /** Apaga a sessão de recuperação (e os pedaços dela). Usado quando a gravação está guardada por outro caminho, ou quando a pessoa descarta a que não pôde ser guardada. */
-  esquecerSessao = (sessao: Promise<string | null> | null): void => this.sessoes.esquecer(sessao);
+  esquecerSessao(sessao: Promise<string | null> | null): void {
+    this.sessoes.esquecer(sessao);
+  }
 
   // ---- por dentro ----
-
-  /** O lado síncrono da parada: tira a gravação de cena (relógio, estado, serviço, ouvintes) e devolve a sessão de recuperação dela, que passa a "fechando". */
-  private encerrar(): Promise<string | null> | null {
-    const sessao = this.sessoes.fechar();
-    this.tentativa++;
-    this.medicao.parar();
-    this.gravando = false;
-    this.protegida = false;
-    this.d.servico.desligar();
-    for (const desfazer of this.ouvintes.splice(0)) desfazer();
-    return sessao;
-  }
 }
 
 export const emCurso = new GravacaoEmCurso();
