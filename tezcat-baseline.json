@@ -1107,38 +1107,6 @@
     "severity": "WARN",
     "value": 18
   },
-  "src/lib/sintetizador.ts::Sintetizador::Clean/Método::parar": {
-    "severity": "WARN",
-    "value": 29
-  },
-  "src/lib/sintetizador.ts::Sintetizador::Clean/Nesting::parar": {
-    "severity": "WARN",
-    "value": 2
-  },
-  "src/lib/sintetizador.ts::Sintetizador::Clean/Nesting::real": {
-    "severity": "WARN",
-    "value": 3
-  },
-  "src/lib/sintetizador.ts::Sintetizador::Clean/Params::real": {
-    "severity": "WARN",
-    "value": 4
-  },
-  "src/lib/sintetizador.ts::Sintetizador::SRP::": {
-    "severity": "WARN",
-    "value": 10
-  },
-  "src/lib/sintetizador.ts::sintetizador::Clean/Método::agendarNota": {
-    "severity": "FAIL",
-    "value": 52
-  },
-  "src/lib/sintetizador.ts::sintetizador::Clean/Params::agendarNota": {
-    "severity": "FAIL",
-    "value": 8
-  },
-  "src/lib/sintetizador.ts::sintetizador::Clean/Tamanho::": {
-    "severity": "FAIL",
-    "value": 320
-  },
   "src/lib/sons/armazenamento.ts::armazenamento::Clean/Método::listar": {
     "severity": "WARN",
     "value": 21
