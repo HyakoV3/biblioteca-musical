@@ -30,7 +30,7 @@ def gravar_manifesto(saida: Path, manifesto: dict) -> None:
 
 
 def principal_pacote(descricao: str, argumento: str, padrao: Path, montar: Montar) -> int:
-    """A linha de comando `LINK ARQUIVO [--saida X]`: monta, grava e resume. Devolve o código de saída (2 se o link ou o arquivo não servem)."""
+    """A linha de comando `LINK ARQUIVO [--saida X]`: monta, grava e resume. Devolve o código de saída (2 se o link, o arquivo ou a gravação não servem)."""
     ap = argparse.ArgumentParser(description=descricao)
     ap.add_argument("link")
     ap.add_argument(argumento, type=Path)
@@ -38,10 +38,10 @@ def principal_pacote(descricao: str, argumento: str, padrao: Path, montar: Monta
     a = ap.parse_args()
     try:
         manifesto = montar(a.link, getattr(a, argumento))
+        gravar_manifesto(a.saida, manifesto)
     except (OSError, ValueError) as e:
         print(f"erro: {e}", file=sys.stderr)
         return 2
-    gravar_manifesto(a.saida, manifesto)
     p = manifesto["pacote"]
     print(f"{a.saida}: {p['bytes']:,} bytes, sha256 {p['sha256'][:12]}…")
     return 0
