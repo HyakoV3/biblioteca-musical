@@ -4,6 +4,8 @@
 
 **Meta (2026-11-27):** resolver **todas as violações FAIL** e as **WARN que valem a pena**, em Kotlin, Svelte/TypeScript e Rust, nos princípios **SRP, OCP e Clean Code**, até a nota média de cada linguagem passar de 90. Python (as ferramentas em `tools/`) fica fora da meta, mas está catalogado.
 
+**Quem faz a refatoração:** o **Claude (Anthropic)** escreve as mudanças, em pull requests pequenas (uma por arquivo), com testes de caracterização e sem mudar o comportamento. O responsável do projeto revisa, mescla e responde pelo app; a revisão automática (vandame) comenta cada PR. O que só se prova num aparelho (áudio, microfone, Android) fica como risco a verificar.
+
 **Como a nota funciona (conferido no código do `tzt` 0.4.0, `scoring.py`):**
 - A nota vai de 0 a 100 **por unidade** (classe, módulo, `test` ou `receiver`; não por arquivo), com **piso em 0**, e a média da linguagem é a **média simples** das unidades, incluindo as limpas (nota 100) e as de teste. Não há nota por princípio, só a contagem de violações.
 - **Dividir só para inflar o denominador não vale:** unidades novas com 100 sobem a média sem melhorar o código. A divisão só conta quando tira uma violação de verdade.
