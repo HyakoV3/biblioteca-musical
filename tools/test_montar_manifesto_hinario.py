@@ -52,3 +52,17 @@ def test_recusa_hinario_acima_do_limite_do_app(tmp_path):
 def test_aceita_o_release_do_repositorio_de_pacotes(tmp_path):
     link = "https://github.com/HyakoV3/biblioteca-musical-pacotes/releases/download/hinario-x/hinario-x.json"
     assert mod.montar(link, _hinario(tmp_path))["pacote"]["url"] == link
+
+
+def test_saida_que_nao_da_para_gravar_sai_com_erro_e_codigo_2(tmp_path, capsys, monkeypatch):
+    """`--saida` apontando para um diretório: `erro: ...` e código 2, não um traceback (a gravação está dentro do mesmo try da leitura)."""
+    import sys
+
+    from manifesto import pacote
+
+    arquivo = tmp_path / "hinario.json"
+    arquivo.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["x", "https://exemplo.org/a.json", str(arquivo), "--saida", str(tmp_path)])
+    montar = lambda link, arq: {"pacote": {"bytes": 1, "sha256": "0" * 64}}  # noqa: E731
+    assert pacote.principal_pacote("d", "arquivo", tmp_path / "padrao.json", montar) == 2
+    assert capsys.readouterr().err.startswith("erro:")
