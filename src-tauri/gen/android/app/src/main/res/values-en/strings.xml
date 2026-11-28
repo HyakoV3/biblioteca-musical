@@ -5,4 +5,7 @@
     <string name="notificacao_gravando">Recording</string>
     <string name="notificacao_metronomo_titulo">Metronome</string>
     <string name="notificacao_metronomo">Click on</string>
+    <string name="notificacao_tocar">Play</string>
+    <string name="notificacao_pausar">Pause</string>
+    <string name="notificacao_pausado">Paused</string>
 </resources>

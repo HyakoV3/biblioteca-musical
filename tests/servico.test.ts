@@ -62,6 +62,46 @@ describe("serviço de reprodução (I-22)", () => {
     expect(aviso).toHaveBeenCalled();
   });
 
+  it("pausar o hino mantém a notificação (pausar) e tocar de novo religa", async () => {
+    g.BmServico = { iniciar: (t: string) => chamadas.push(`iniciar:${t}`), parar: () => chamadas.push("parar"), pausar: (q: string) => chamadas.push(`pausar:${q}`) } as never;
+    const { sincronizarServico } = await carregar();
+    sincronizarServico(true, "A");
+    sincronizarServico(false, "A", true);
+    sincronizarServico(false, "A", true); // repetir não chama de novo
+    sincronizarServico(true, "A");
+    sincronizarServico(false, "A", true);
+    sincronizarServico(false, "", false); // parar de vez
+    expect(chamadas).toEqual(["iniciar:A", "pausar:hino", "iniciar:A", "pausar:hino", "parar"]);
+  });
+
+  it("com uma ponte sem pausar, pausar solta o serviço como antes", async () => {
+    const { sincronizarServico } = await carregar();
+    sincronizarServico(true, "A");
+    sincronizarServico(false, "A", true);
+    expect(chamadas).toEqual(["iniciar:A", "parar"]);
+  });
+
+  it("o Tocar ou Pausar da notificação chama o que o app registrou, e soltar remove", async () => {
+    const aviso = globalThis as { __bmAlternadoPelaNotificacao?: () => void };
+    const { aoAlternarPelaNotificacao } = await carregar();
+    const alternou = vi.fn();
+    const soltar = aoAlternarPelaNotificacao(alternou);
+    aviso.__bmAlternadoPelaNotificacao?.();
+    expect(alternou).toHaveBeenCalledTimes(1);
+    soltar();
+    expect(aviso.__bmAlternadoPelaNotificacao).toBeUndefined();
+  });
+
+  it("pausar o metrônomo usa pausar('metronomo'), ou solta o serviço com uma ponte antiga", async () => {
+    const lista: string[] = [];
+    g.BmServico = { iniciar: () => {}, parar: () => {}, pararMetronomo: () => lista.push("parar") } as never;
+    const { pausarServicoDoMetronomo } = await carregar();
+    pausarServicoDoMetronomo();
+    (g.BmServico as unknown as { pausar: (q: string) => void }).pausar = (q) => lista.push(`pausar:${q}`);
+    pausarServicoDoMetronomo();
+    expect(lista).toEqual(["parar", "pausar:metronomo"]);
+  });
+
   it("o botão Parar da notificação chama o que o app registrou", async () => {
     const { aoPararPelaNotificacao } = await carregar();
     const parou = vi.fn();

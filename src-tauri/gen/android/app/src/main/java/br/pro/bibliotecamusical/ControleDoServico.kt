@@ -32,8 +32,8 @@ internal class ControleDoServico(private val atividade: MainActivity) {
     }
 
     fun desligarSeOcioso() {
-        if (ServicoAudio.tocando || ServicoAudio.gravando || ServicoAudio.metronomo) {
-            // Só uma das duas atividades terminou: o serviço fica, com o tipo, o título e o texto do que sobrou.
+        if (ServicoAudio.tocando || ServicoAudio.gravando || ServicoAudio.metronomo || ServicoAudio.pausadoAlgum()) {
+            // Só uma das atividades terminou (ou há mídia pausada, que mantém a notificação): o serviço fica, com o tipo, o título e o texto do que sobrou.
             if (ServicoAudio.ativo) ligar("")
             return
         }

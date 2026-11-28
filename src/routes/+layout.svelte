@@ -7,7 +7,8 @@
   import { i18n } from "#lib/i18n/index.svelte";
   import Miniplayer from "#lib/Miniplayer.svelte";
   import { reproducao } from "#lib/reproducao.svelte";
-  import { aoPararPelaNotificacao, foneConectado, manterTelaLigada, sincronizarServico } from "#lib/servico";
+  import { alternarPelaNotificacao } from "#lib/alternarMidia";
+  import { aoAlternarPelaNotificacao, aoPararPelaNotificacao, foneConectado, manterTelaLigada, sincronizarServico } from "#lib/servico";
   import { emCurso } from "#lib/gravacaoEmCurso.svelte";
   import { limparEscolhaAntigaDoFormato } from "#lib/preferencias";
   import { telaLigada } from "#lib/telaLigada.svelte";
@@ -23,11 +24,12 @@
     limparEscolhaAntigaDoFormato(); // o interruptor .webm | .weba saiu
     sons.atualizar(); // quais sons gravados já estão instalados
     aoPararPelaNotificacao(() => reproducao.parar()); // o botão "Parar" da notificação do Android (I-22)
+    return aoAlternarPelaNotificacao(alternarPelaNotificacao); // o "Tocar ou Pausar" da notificação e do fone (I-47)
   });
 
   // No Android, o serviço em primeiro plano segura o app vivo enquanto um hino toca (I-22); fora dele a ponte não existe e isto não faz nada.
   $effect(() => {
-    sincronizarServico(reproducao.estado === "tocando", reproducao.atual?.titulo ?? "");
+    sincronizarServico(reproducao.estado === "tocando", reproducao.atual?.titulo ?? "", reproducao.estado === "pausado");
   });
 
   // Com "manter a tela ligada" escolhido, a tela não apaga enquanto o hino toca; ao parar (ou ao desligar a opção) volta ao tempo do sistema.

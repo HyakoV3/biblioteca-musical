@@ -7,4 +7,7 @@
     <string name="notificacao_gravando">Gravando</string>
     <string name="notificacao_metronomo_titulo">Metrônomo</string>
     <string name="notificacao_metronomo">Clique ligado</string>
+    <string name="notificacao_tocar">Tocar</string>
+    <string name="notificacao_pausar">Pausar</string>
+    <string name="notificacao_pausado">Pausado</string>
 </resources>

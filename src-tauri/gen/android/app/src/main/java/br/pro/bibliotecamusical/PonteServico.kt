@@ -22,6 +22,7 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
         ServicoAudio.aoFalharMetronomo = { avisarJs(fraca, "__bmServicoDoMetronomoFalhou") }
         ServicoAudio.aoFalhar = { avisarJs(fraca, "__bmServicoDeGravacaoFalhou") }
         ServicoAudio.aoParar = { avisarJs(fraca, "__bmParadoPelaNotificacao") }
+        ServicoAudio.aoAlternar = { avisarJs(fraca, "__bmAlternadoPelaNotificacao") }
     }
 
     /** Solta o aviso do botão "Parar" quando a Activity é destruída (ela e a WebView não podem ficar presas a um campo estático). */
@@ -31,12 +32,15 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
         ServicoAudio.aoFalhar = null
         ServicoAudio.aoPararMetronomo = null
         ServicoAudio.aoFalharMetronomo = null
+        ServicoAudio.aoAlternar = null
     }
 
     @JavascriptInterface
     fun iniciar(titulo: String) {
         atividade.runOnUiThread {
             ServicoAudio.tocando = true
+            ServicoAudio.hinoPausado = false
+            ServicoAudio.metronomoPausado = false
             controle.ligar(titulo)
         }
     }
@@ -45,6 +49,28 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
     fun parar() {
         atividade.runOnUiThread {
             ServicoAudio.tocando = false
+            ServicoAudio.hinoPausado = false
+            controle.desligarSeOcioso()
+        }
+    }
+
+    /**
+     * Hino ou metrônomo foram pausados (I-47): o serviço e a notificação ficam, sem som e com o botão "Tocar". `quem` é "hino" ou "metronomo"
+     * (qualquer outro valor é ignorado). Parar de vez é `parar` ou `pararMetronomo`.
+     */
+    @JavascriptInterface
+    fun pausar(quem: String) {
+        atividade.runOnUiThread {
+            when (quem) {
+                "hino" -> {
+                    ServicoAudio.tocando = false
+                    ServicoAudio.hinoPausado = true
+                }
+                "metronomo" -> {
+                    ServicoAudio.metronomo = false
+                    ServicoAudio.metronomoPausado = true
+                }
+            }
             controle.desligarSeOcioso()
         }
     }
@@ -63,6 +89,8 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
     fun iniciarMetronomo() {
         atividade.runOnUiThread {
             ServicoAudio.metronomo = true
+            ServicoAudio.metronomoPausado = false
+            ServicoAudio.hinoPausado = false // um som de cada vez: o metrônomo que começa tira o hino pausado da notificação
             controle.ligar("")
         }
     }
@@ -71,6 +99,7 @@ class PonteServico(private val atividade: MainActivity, webView: WebView) {
     fun pararMetronomo() {
         atividade.runOnUiThread {
             ServicoAudio.metronomo = false
+            ServicoAudio.metronomoPausado = false
             controle.desligarSeOcioso()
         }
     }

@@ -1,7 +1,7 @@
 // O estado do metrônomo (I-20), UM para o app todo. Fica fora do componente porque o clique NÃO para ao sair da aba nem ao abrir um hino (só quando a pessoa manda, quando o
 // sistema tira o áudio ou quando um hino começa a tocar): a tela inicial é desmontada ao abrir um hino e o clique tem de seguir.
 import { Metronomo } from "./metronomo";
-import { aoFalharServicoDoMetronomo, aoPararMetronomoPelaNotificacao, desligarServicoDoMetronomo, ligarServicoDoMetronomo } from "./servico";
+import { aoFalharServicoDoMetronomo, aoPararMetronomoPelaNotificacao, desligarServicoDoMetronomo, ligarServicoDoMetronomo, pausarServicoDoMetronomo } from "./servico";
 import { adicionarRecente, lerMetronomo, salvarMetronomo, type Recente } from "./metronomoPrefs";
 
 /** Guarda o andamento, o compasso e os recentes (o que o estado mostra). */
@@ -12,6 +12,8 @@ class EstadoMetronomo {
   bpm = $state(60);
   compasso = $state(4);
   ligado = $state(false);
+  /** Pausado pela notificação (I-47): o clique calou, mas a notificação fica com o botão "Tocar". Parar de vez (ou ligar de novo) apaga isto. */
+  pausado = $state(false);
   recentes = $state<Recente[]>([]);
   /** O áudio não pôde iniciar neste aparelho (indisponível ou bloqueado). */
   erroAudio = $state(false);
@@ -30,6 +32,7 @@ class EstadoMetronomo {
     this.nucleo.aoInterromper = () => {
       this.interrompido = true;
       this.ligado = false;
+      this.pausado = false;
       desligarServicoDoMetronomo();
     };
     // O botão "Parar" da notificação e a recusa do Android (o serviço não subiu: o clique não está protegido) chegam pelo JavaScript.
@@ -78,6 +81,7 @@ class EstadoMetronomo {
     this.erroAudio = false;
     this.interrompido = false;
     this.erroServico = false;
+    this.pausado = false;
     this.recentes = adicionarRecente(this.recentes, { bpm: this.bpm, compasso: this.compasso });
     guardar(this);
     try {
@@ -91,11 +95,14 @@ class EstadoMetronomo {
     if (this.ligado && minha === this.tentativa) ligarServicoDoMetronomo();
   }
 
-  parar(): void {
+  /** Para o clique. Com `pausando` (pela notificação, I-47), o serviço e a notificação ficam, com o botão "Tocar", para a pessoa voltar a tocar dali. */
+  parar(pausando = false): void {
     this.tentativa++;
     this.nucleo.parar();
     this.ligado = false;
-    desligarServicoDoMetronomo();
+    this.pausado = pausando;
+    if (pausando) pausarServicoDoMetronomo();
+    else desligarServicoDoMetronomo();
   }
 
   /** Para e devolve o áudio ao aparelho. */
@@ -103,6 +110,7 @@ class EstadoMetronomo {
     this.tentativa++;
     this.nucleo.fechar();
     this.ligado = false;
+    this.pausado = false;
     desligarServicoDoMetronomo();
   }
 

@@ -18,6 +18,7 @@ class ServicoAudio : Service() {
         const val CANAL = "reproducao"
         const val ID_NOTIFICACAO = 1
         const val ACAO_PARAR = "br.pro.bibliotecamusical.PARAR"
+        const val ACAO_ALTERNAR = "br.pro.bibliotecamusical.ALTERNAR"
 
         /** Avisa o JavaScript que a pessoa tocou em "Parar" na notificação (definido pela ponte; nulo com o app fechado). */
         @Volatile
@@ -54,6 +55,23 @@ class ServicoAudio : Service() {
         @Volatile
         var aoOcioso: (() -> Unit)? = null
 
+        /**
+         * Hino ou metrônomo PAUSADOS (I-47): o JavaScript manda o estado, e com um deles pausado o serviço e a notificação ficam, só que sem som
+         * (botão "Tocar"). Só o JavaScript os liga (`pausar` da ponte) e eles se apagam ao tocar de novo ou parar.
+         */
+        @Volatile
+        var hinoPausado = false
+
+        @Volatile
+        var metronomoPausado = false
+
+        /** Algo de mídia está pausado (a notificação fica, com "Tocar"). */
+        fun pausadoAlgum(): Boolean = hinoPausado || metronomoPausado
+
+        /** Avisa o JavaScript que a pessoa tocou em "Tocar ou Pausar" na notificação ou no fone (definido pela ponte; o JavaScript decide e devolve o estado). */
+        @Volatile
+        var aoAlternar: (() -> Unit)? = null
+
         /** Título do hino que toca (a notificação o mostra enquanto `tocando`); o da gravação é o nome do app. */
         var tituloAtual = ""
 
@@ -79,12 +97,18 @@ class ServicoAudio : Service() {
 
     private val trava by lazy { TravaDeCpu(this) }
     private val notificacao by lazy { NotificacaoServico(this) }
+    private val sessaoPreguicosa = lazy { SessaoDeMidia(this, this::alternarPeloFone, this::pararPelaNotificacao) }
+    private val sessao by sessaoPreguicosa
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACAO_PARAR) {
             pararPelaNotificacao()
+            return START_NOT_STICKY
+        }
+        if (intent?.action == ACAO_ALTERNAR) {
+            alternarPelaNotificacao()
             return START_NOT_STICKY
         }
         ativo = true
@@ -106,6 +130,9 @@ class ServicoAudio : Service() {
         tocando = false
         gravando = false
         metronomo = false
+        hinoPausado = false
+        metronomoPausado = false
+        if (sessaoPreguicosa.isInitialized()) sessao.liberar()
         trava.soltar()
         try {
             aoOcioso?.invoke()
@@ -129,8 +156,24 @@ class ServicoAudio : Service() {
         tocando = false
         gravando = false
         metronomo = false
+        hinoPausado = false
+        metronomoPausado = false
         tituloAtual = ""
         encerrar()
+    }
+
+    /** O toque em "Tocar ou Pausar" na notificação: o JavaScript decide o que fazer (hino ou metrônomo) e devolve o novo estado. Na gravação não alterna nada. */
+    private fun alternarPelaNotificacao() {
+        if (!ativo) {
+            stopSelf()
+            return
+        }
+        if (!gravando) aoAlternar?.invoke()
+    }
+
+    /** O play ou o pause do fone: só vale se muda o estado (play com o som saindo, ou pause sem som, não faz nada). */
+    private fun alternarPeloFone(querTocar: Boolean) {
+        if (querTocar != somSaindo(tocando, metronomo)) alternarPelaNotificacao()
     }
 
     /** Chama `startForeground` com a notificação do estado atual. Devolve false se o Android recusou (o serviço já se encerrou). */
@@ -138,7 +181,8 @@ class ServicoAudio : Service() {
         val titulo = notificacao.titulo()
         try {
             notificacao.criarCanal()
-            val pronta = notificacao.montar(titulo)
+            sessao.atualizar(titulo)
+            val pronta = notificacao.montar(titulo, sessao.token)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) startForeground(ID_NOTIFICACAO, pronta, tipoDoServico()) else startForeground(ID_NOTIFICACAO, pronta)
             return true
         } catch (e: Exception) {
@@ -149,6 +193,8 @@ class ServicoAudio : Service() {
             paradaPendente = false
             val eraGravacao = gravando
             val eraMetronomo = metronomo
+            hinoPausado = false
+            metronomoPausado = false
             tocando = false
             gravando = false
             metronomo = false

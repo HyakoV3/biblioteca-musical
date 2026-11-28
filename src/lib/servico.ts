@@ -2,7 +2,9 @@
 // para o som não parar com a tela bloqueada ou o app em segundo plano. O lado Android é `ServicoAudio.kt` e a ponte `PonteServico.kt`, exposta à
 // WebView como `window.BmServico`. Fora do Android (navegador, computador, testes) a ponte não existe e tudo aqui não faz nada.
 
-type Ponte = { iniciar(titulo: string): void; parar(): void; iniciarGravacao?(): void; pararGravacao?(): void; temFone?(): boolean; rotaDeSaida?(): string; manterTela?(ligar: boolean): void; iniciarMetronomo?(): void; pararMetronomo?(): void };
+import { passoDoServico, type PassoDoServico } from "./servicoPasso";
+
+type Ponte = { iniciar(titulo: string): void; parar(): void; iniciarGravacao?(): void; pararGravacao?(): void; temFone?(): boolean; rotaDeSaida?(): string; manterTela?(ligar: boolean): void; iniciarMetronomo?(): void; pararMetronomo?(): void; pausar?(quem: "hino" | "metronomo"): void };
 
 const ponte = (): Ponte | null => (globalThis as { BmServico?: Ponte }).BmServico ?? null;
 
@@ -39,21 +41,49 @@ function desligarPelaPonte(metodo: "pararGravacao" | "pararMetronomo", quem: str
   }
 }
 
+/** O que o serviço sabe do hino: o título com que foi ligado e se está pausado (a notificação fica, com o botão "Tocar"). */
+let hinoPausadoNoServico = false;
+
 /**
- * Liga o serviço quando o hino passa a tocar, atualiza o título da notificação se o hino mudou e o desliga ao pausar, parar ou terminar.
- * Chamar de novo com o mesmo estado não faz nada. Uma falha da ponte nunca derruba o som: vai para o console.
+ * Liga o serviço quando o hino passa a tocar, atualiza o título da notificação se o hino mudou, deixa a notificação com o botão "Tocar" quando o hino
+ * está `pausado` (I-47) e a desliga ao parar ou terminar. Chamar de novo com o mesmo estado não faz nada. Uma falha da ponte nunca derruba o som: vai para o console.
  */
-export function sincronizarServico(tocando: boolean, titulo: string): void {
+export function sincronizarServico(tocando: boolean, titulo: string, pausado = false): void {
   try {
-    if (tocando && ligadoCom !== titulo) {
-      ponte()?.iniciar(titulo);
-      ligadoCom = titulo;
-    } else if (!tocando && ligadoCom !== null) {
-      ponte()?.parar();
-      ligadoCom = null;
-    }
+    aplicarPasso(passoDoServico({ tocando, pausado, titulo, ligadoCom, jaPausado: hinoPausadoNoServico }), titulo);
   } catch (e) {
     console.warn("servico: a ponte do serviço de reprodução falhou", e);
+  }
+}
+
+/**
+ * Manda o passo à ponte e guarda o que o serviço sabe agora. Ao pausar, uma ponte sem `pausar` (APK antigo) solta o serviço como antes.
+ */
+function aplicarPasso(passo: PassoDoServico, titulo: string): void {
+  if (passo === "nada") return;
+  const p = ponte();
+  if (passo === "ligar") p?.iniciar(titulo);
+  else if (passo === "pausar" && p?.pausar) p.pausar("hino");
+  else p?.parar();
+  if (passo === "ligar") ligadoCom = titulo;
+  if (passo === "parar") ligadoCom = null;
+  hinoPausadoNoServico = passo === "pausar";
+}
+
+/**
+ * O botão "Tocar ou Pausar" da notificação (ou do fone) chama isto (o Android avisa o JavaScript): `quando` deve alternar o hino ou o metrônomo, o que
+ * estiver à mão, e o novo estado volta ao Android por `sincronizarServico` e pelo metrônomo. Devolve a função que remove o aviso.
+ */
+export const aoAlternarPelaNotificacao = (quando: () => void): (() => void) => registrarAviso("__bmAlternadoPelaNotificacao", quando);
+
+/** O metrônomo foi pausado: o serviço e a notificação ficam, com o botão "Tocar" (sem a ponte nova, solta o serviço como antes). */
+export function pausarServicoDoMetronomo(): void {
+  try {
+    const p = ponte();
+    if (p?.pausar) p.pausar("metronomo");
+    else desligarServicoDoMetronomo();
+  } catch (e) {
+    console.warn("servico: a ponte do serviço do metrônomo falhou", e);
   }
 }
 
